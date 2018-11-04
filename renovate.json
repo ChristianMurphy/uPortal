@@ -7,5 +7,6 @@
   ],
   "gradle": {
     "enable": true
-  }
+  },
+  "renovateFork": true
 }
