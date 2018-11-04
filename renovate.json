@@ -6,7 +6,13 @@
     ":semanticPrefixChore"
   ],
   "gradle": {
-    "enabled": true
+    "enabled": true,
+    "extends": [
+      "config:base",
+      ":rebaseStalePrs",
+      ":preserveSemverRanges",
+      ":semanticPrefixChore"
+    ],
   },
   "renovateFork": true
 }
