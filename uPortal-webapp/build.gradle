@@ -75,10 +75,10 @@ dependencies {
     webjars "org.webjars.npm:whatwg-fetch:${whatwgFetchPolyfillVersion}"
 }
 
-node {
-    version = nodejsVersion
-    download = true
-}
+// node {
+//     version = nodejsVersion
+//     download = true
+// }
 
 // Support for filtering properties files
 import org.apache.tools.ant.filters.ReplaceTokens
