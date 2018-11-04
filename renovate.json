@@ -6,7 +6,7 @@
     ":semanticPrefixChore"
   ],
   "gradle": {
-    "enable": true
+    "enabled": true
   },
   "renovateFork": true
 }
