@@ -12,7 +12,7 @@
       ":rebaseStalePrs",
       ":preserveSemverRanges",
       ":semanticPrefixChore"
-    ],
+    ]
   },
   "renovateFork": true
 }
