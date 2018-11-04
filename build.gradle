@@ -23,10 +23,10 @@ repositories {
     mavenLocal()
 }
 
-node {
-    version = nodejsVersion
-    download = true
-}
+// node {
+//     version = nodejsVersion
+//     download = true
+// }
 
 allprojects {
     apply plugin: 'java'
