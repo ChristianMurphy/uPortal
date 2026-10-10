@@ -39,6 +39,7 @@ import org.junit.runner.RunWith;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -48,6 +49,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
     @Autowired private IClusterLockDao clusterLockDao;
     @Autowired private IPortalInfoProvider portalInfoProvider;
+    @Autowired private AutowireCapableBeanFactory beanFactory;
 
     @Test
     public void testConcurrentCreation() throws InterruptedException {
@@ -101,6 +103,16 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
                     }
                 });
 
+        // The context's DAO treats a lock as abandoned after 100ms, but MySQL and MariaDB keep
+        // LOCK_UPDATE in whole seconds: a thread that reads the lock just after another thread
+        // took it can see it as older than that, and take it over. Lock with the default (60s).
+        final IClusterLockDao lockingDao =
+                (IClusterLockDao)
+                        beanFactory.createBean(
+                                JpaClusterLockDao.class,
+                                AutowireCapableBeanFactory.AUTOWIRE_NO,
+                                false);
+
         final ThreadGroupRunner threadGroupRunner =
                 new ThreadGroupRunner("JpaClusterLockDaoTest-", true);
 
@@ -119,7 +131,7 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
                                             threadGroupRunner.tick(1);
                                             try {
                                                 final ClusterMutex mutex =
-                                                        clusterLockDao.getLock(mutexName);
+                                                        lockingDao.getLock(mutexName);
                                                 if (mutex != null) {
                                                     lockCounter.incrementAndGet();
                                                 }
