@@ -367,6 +367,18 @@ research report.
   * A JDK 21 is needed for Gradle.
   * Rebase `etc/tomcat` customisations onto Tomcat 9.
   * Rename the overlay build-script configurations.
+* **G-ci result:**
+  * uPortal: Phase 1 merge runs 38058739659 and 38058850716 are green
+    (ubuntu temurin/zulu/corretto on JDK 21, windows/macos on JDK 25).
+  * uPortal-start: the first post-merge run failed on windows-latest.
+    setup-gradle moves `GRADLE_USER_HOME` to `D:\\a\\.gradle`, so the
+    daemon-JDK hint written to `~/.gradle` was never read and Gradle
+    tried to auto-provision a JDK. Fixed in `9dbed695b`, which writes to
+    `${GRADLE_USER_HOME}` and sets `fail-fast: false`.
+  * CI run 38060775616 and Integration run 38060775604 (uPortal built
+    from source, DB harness and Playwright) are green on all legs.
+  * Docs-only pushes now carry `[skip ci]`, so they don't queue (and
+    cancel) full matrix runs.
 
 ### MOD-D18: replace uPortal's own portlets with REST + web components before Jakarta
 
