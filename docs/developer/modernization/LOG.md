@@ -599,6 +599,36 @@ chosen per portlet.
     Bootstrap 5.3.x with the same layer structure and move to 6 in
     6.x, decided at the RC.
 
+### MOD-D22: prefer the Spring approach for every migration
+
+* **Decision (project owner):** when something has to be migrated or
+  replaced, prefer the Spring-ecosystem way wherever one exists. Applied
+  across the plan:
+
+| Area | Today | Spring approach |
+| --- | --- | --- |
+| Caching | Ehcache 2 API in 58 files, spring-modules-cache | Spring Cache abstraction (`@Cacheable`/`@CacheEvict`, `CacheManager`); providers Caffeine, JCache/Infinispan, Redis/Valkey (MOD-Q10) |
+| Sessions | Spring Session 1.3 (Redis, Jedis) | Spring Session 4.x (Lettuce; works with Valkey) |
+| Built-in portlets | Spring Portlet MVC + Web Flow portlet glue | Spring MVC: `@Controller` + Thymeleaf for pages, `@RestController` + Jackson for the web components' APIs (MOD-D18/D19) |
+| REST auth for web components | Custom JWT (jjwt, 10 files) | Spring Security OAuth2 Resource Server (JWT); uPortal keeps issuing the tokens |
+| CAS integration | Jasig/Apereo cas-client filters wired by hand (8 files) | Evaluate `spring-security-cas` (re-added in Security 6.1) in P7 |
+| HTTP clients | `RestTemplate` (9 files) on HttpClient 4 | `RestClient` (Spring 6.1+) on the JDK or HttpClient 5 request factory |
+| Password hashing | jasypt MD5 / SHA-256 | Spring Security Crypto `DelegatingPasswordEncoder`, upgraded on login |
+| Dates | Joda-Time (86 files) | `java.time`, using Spring's JSR-310 formatting and conversion |
+| JSON views | json-lib (`net.sf.json`, 3 files) | Spring MVC's Jackson message converters |
+| Scheduling | `task:scheduled` (2), `@Scheduled` (1), custom cluster lock | Spring `@Scheduled`/`TaskScheduler`; Spring Integration `JdbcLockRegistry` for cluster-wide locks, if replacing `JpaClusterLockDao` pays off |
+| Retry | none / ad hoc | Spring Framework 7 core retry (`@Retryable`) |
+| Bulk DB copy (MOD-D11) | plain JDBC (v0 in progress) | Spring JDBC; Spring Batch chunk steps (restartable, partitioned) in a standalone Spring Boot CLI module |
+| Schema migrations after 6.0 | hbm2ddl | Flyway (MOD-Q4), as Spring Boot integrates it |
+| Configuration | 113 XML contexts | New code uses `@Configuration` Java config; XML is converted opportunistically when a context is touched |
+| Observability | custom JMX/statistics (3 files) | Micrometer, via Spring's observation API (6.x) |
+| Packaging | external Tomcat WAR | Spring Boot's `SpringBootServletInitializer` WAR stays the 6.x candidate (MOD-Q1). Boot's BOM is used for version alignment now. |
+
+* **Limits:** where no Spring option exists, or the Spring option would
+  break adopters without benefit (the portlet container for third-party
+  portlets, the XSLT rendering pipeline, Pluto), the plan keeps the
+  existing choice. Each such exception is recorded in this log.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
