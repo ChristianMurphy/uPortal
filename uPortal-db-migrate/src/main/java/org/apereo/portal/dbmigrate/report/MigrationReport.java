@@ -238,6 +238,19 @@ public final class MigrationReport {
                                 t.verify + (t.error == null ? "" : " " + t.error)));
             }
         }
+        // What the plan noted per table: conversions that change values (lower precision,
+        // Oracle's '' as NULL, ...), target-only columns, foreign keys loaded in a second pass.
+        // In the JSON report too, but a lossy conversion must not pass unseen on the console.
+        boolean notesHeader = false;
+        for (TableEntry t : tables) {
+            for (String n : t.notes) {
+                if (!notesHeader) {
+                    sb.append(String.format(Locale.ROOT, "%n  notes:%n"));
+                    notesHeader = true;
+                }
+                sb.append("    ").append(t.target).append(": ").append(n).append('\n');
+            }
+        }
         if (!generators.isEmpty()) {
             int ok = 0;
             int changed = 0;
