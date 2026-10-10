@@ -649,6 +649,50 @@ chosen per portlet.
 * **Still to do:** remove the `continue-on-error` markings once
   MOD-I82–I84 are fixed (in progress).
 
+### MOD-D24: database version matrix covers oldest supported, latest, and next
+
+* **Finding (2026-10-10, Docker Hub tags):** the current CI matrix tests
+  mid-range versions (PostgreSQL 16, MySQL 8.4, MariaDB 10.6/11.4, SQL
+  Server 2022, Oracle Free 23, HSQLDB 2.7.4). Latest available:
+  * **PostgreSQL:** 18.6 is the latest major; 19 is at beta4.
+  * **MySQL:** 9.7.2 is the current LTS (`lts` tag); 26.7 is the newest
+    innovation release (`latest`); 8.4 is the previous LTS.
+  * **MariaDB:** 12.3 is the current LTS (`lts`); 13.0 is the newest
+    release (`latest`). 10.6 has passed its July 2026 end of life.
+  * **SQL Server:** 2025.
+  * **Oracle:** Free 23.26. Oracle 19c, still common on campuses, has no
+    free container image; `gvenzl/oracle-xe:21` is the closest available
+    older version.
+* **Policy:**
+  * Test the **oldest supported** and the **latest stable** version of
+    each vendor on every push. Run a **next/canary** version nightly as
+    allowed-to-fail, so breakage shows early.
+  * The oldest supported version follows Hibernate 7.4's floors
+    (MOD-I43) and vendor end-of-life dates.
+* **Proposed matrix:**
+
+| Vendor | Every push | Nightly |
+| --- | --- | --- |
+| PostgreSQL | 15 (floor; 14 reaches EOL Nov 2026) and 18 | 19 beta/rc (canary) |
+| MySQL | 8.4 (LTS floor) and 9.7 (LTS) | 26.x innovation (canary) |
+| MariaDB | 10.11 (LTS floor; 10.6 is EOL) and 12.3 (LTS) | 13.x (canary) |
+| SQL Server | 2022 and 2025 | 2019 |
+| Oracle | Free 23.26 | XE 21 (older-engine proxy) |
+| HSQLDB | 2.7.4 | — |
+
+* **How it gets wired in:**
+  * The `tests/db/vendors/*.properties` files gain the new versions.
+  * Each new version needs a 5.17 baseline, recorded through the
+    CI-annotation flow (MOD-D23).
+  * uPortal `db-integration` and uPortal-start `integration` adopt the
+    matrix, with images pinned by digest and Renovate updating digests
+    and tags.
+  * The copy-tool gate (G-migrate) uses *old* versions as sources and
+    *latest* versions as targets, which mirrors how adopters upgrade.
+* **Status:** this is a proposed default; the project owner can adjust
+  the floors. It gets implemented after the MOD-I82–I84 fixes land, so
+  workflow edits don't collide.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
