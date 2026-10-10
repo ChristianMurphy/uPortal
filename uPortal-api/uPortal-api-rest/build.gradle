@@ -21,6 +21,7 @@ dependencies {
 
     testImplementation "${servletApiDependency}"
     testImplementation "${portletApiDependency}"
+    testImplementation "org.skyscreamer:jsonassert:${jsonassertVersion}"
     //need to add for SessionRESTControllerTest.java
     testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
     testImplementation project(':uPortal-security:uPortal-security-permissions')
