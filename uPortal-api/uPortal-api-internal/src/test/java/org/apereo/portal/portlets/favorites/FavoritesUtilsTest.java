@@ -111,6 +111,27 @@ public class FavoritesUtilsTest extends TestCase {
         Assert.assertEquals(findNodeEmptyFavListEmptyFname.size(), 0);
     }
 
+    public void testGetDuplicateFavoritesByFNameToDeleteComparesNamesByValue() {
+        // The fname of the portlet to remove does not come from the layout, so it is a different
+        // String instance with the same value
+        final String fname = new StringBuilder("cache-").append("manager").toString();
+
+        Assert.assertEquals(
+                1,
+                FavoritesUtils.getDuplicateFavoritesByFNameToDelete(
+                                FavoritesUtils.castListChannelDescriptionToListNodeDescription(
+                                        favArray),
+                                fname)
+                        .size());
+        Assert.assertEquals(
+                2,
+                FavoritesUtils.getDuplicateFavoritesByFNameToDelete(
+                                FavoritesUtils.castListChannelDescriptionToListNodeDescription(
+                                        favArrayWithDuplicate),
+                                fname)
+                        .size());
+    }
+
     @Override
     public void tearDown() throws Exception {
         favArrayWithDuplicate = null;
