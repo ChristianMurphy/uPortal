@@ -16,7 +16,7 @@ confidence in the categories listed in `config/spotbugs/include.xml`:
 `MT_CORRECTNESS`, `SECURITY` (FindSecBugs), `BAD_PRACTICE`, `PERFORMANCE`
 and `STYLE`.
 
-The code base had findings when SpotBugs became a CI gate. They are
+The code base had findings when SpotBugs became a required CI check. They are
 recorded in one baseline per module, `config/spotbugs/baseline/<module>.xml`,
 a SpotBugs exclude filter with one entry per class, method (or field) and
 bug pattern. `spotbugsMain` fails on any finding that its module's baseline

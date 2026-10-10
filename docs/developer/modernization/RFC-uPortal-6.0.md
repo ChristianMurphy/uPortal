@@ -67,7 +67,7 @@ Databases should upgrade in place with no manual SQL. 6.0 freezes Hibernate's 4.
 
 ## Delivery plan
 
-The plan is about 50 small PRs over phases P0 to P7, each green on its own, followed by P8 as ordinary 6.x work. Everything that can happen on javax happens first, which leaves four atomic steps. Each phase must pass four gates. G-unit is the build on Linux, Windows and macOS. G-portal is every Playwright spec, three runs in a row. G-db upgrades a 5.17 dump on every supported database, and G-flows runs new admin and import/export specs.
+The plan is about 50 small PRs over phases P0 to P7, each green on its own, followed by P8 as ordinary 6.x work. Everything that can happen on javax happens first, which leaves four atomic steps. Each phase must pass four required checks. G-unit is the build on Linux, Windows and macOS. G-portal is every Playwright spec, three runs in a row. G-db upgrades a 5.17 dump on every supported database, and G-flows runs new admin and import/export specs.
 
 | Phase | Main changes | Atomic step | Tag |
 |---|---|---|---|

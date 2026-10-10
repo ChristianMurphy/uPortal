@@ -8,7 +8,7 @@ behind it.
 ## Coordination rules
 
 * **Integrator:** one owner manages the integration branch. It merges green
-  workstream branches, keeps LOG.md current, and runs the full gate:
+  workstream branches, keeps LOG.md current, and runs every required check:
   uPortal `build`, uPortal-start `portalInit`, and every Playwright spec.
 * **Worktrees:** each workstream gets its own git worktree and branch. A
   workstream rebases onto the integration branch before handing work back.
@@ -37,8 +37,8 @@ behind it.
   the merge. Workstreams don't push to the integration branch themselves.
 * **Task size:** one future upstream PR per task, about 1 to 3 hours. Each
   task ends with a handoff note in
-  `docs/developer/modernization/notes/<topic>.md`: what changed, gate
-  results with run IDs, findings, and what's left.
+  `docs/developer/modernization/notes/<topic>.md`: what changed, results
+  of the required checks with run IDs, findings, and what's left.
 * **Log entries:** workstreams propose LOG.md entries in their handoff
   note, using placeholders (`MOD-I?`, `MOD-D?`). The integrator assigns
   the numbers when merging, so parallel branches don't collide. Local agents that started earlier
@@ -58,7 +58,7 @@ behind it.
 | WS1 | uPortal build toolchain (Gradle 9, JDK 21/25 build, Spotless, error-prone, CI matrix) | nothing | started |
 | WS2 | uPortal-start toolchain (Gradle 9, buildSrc, Java 25 runtime, Tomcat 9 → 10.1 → 11 tasks, parameterised ports, Docker images) | nothing | now |
 | WS3 | Safety-net tests. Playwright for the admin Web Flow flows (Portlet Manager, Groups, Permissions, Users), CAS login and data import/export. A DB in-place upgrade harness (5.17 schema + data → 6.0) on HSQLDB, then Postgres/MySQL/MSSQL/Oracle via Testcontainers in CI | WS2 helps | now |
-| WS4 | Persistence. Hibernate 4.3 → 5.2 (still on Spring 4.3), new schema tooling, naming strategy and ID-generator compatibility, Jadira/Joda → java.time. Then 5.6 → 6.x → 7.x | WS1; WS3 for gating | after WS1 |
+| WS4 | Persistence. Hibernate 4.3 → 5.2 (still on Spring 4.3), new schema tooling, naming strategy and ID-generator compatibility, Jadira/Joda → java.time. Then 5.6 → 6.x → 7.x | WS1; WS3 for the required checks | after WS1 |
 | WS5 | Caching. Ehcache 2 → JCache (Ehcache 3 or Caffeine) for Spring cache, Hibernate L2 and the direct API uses (58 files). Clustered invalidation | WS1 | after WS1 |
 | WS6 | Spring core/web (unversioned XSDs, split packages, Spring 4.3 → 5.3 → 6 → 7, springfox → springdoc, multipart, Joda in MVC, `-parameters`) | WS1, WS4 (Hibernate 5.2+ first) | after WS1 |
 | WS7 | Security (Spring Security 4.2 → 5.8 → 7, CAS client 4.x on jakarta, password-encoder migration) | WS6 | with WS6 |
