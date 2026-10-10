@@ -20,7 +20,7 @@ These override any instinct to "be helpful by doing more."
 - **JUnit 4.13.2 + Mockito 4.11.0** (NOT JUnit 5); **Groovy 3.0.24** + Spock 2.1 for some tests
 - **JavaScript ES2021 + jQuery** (no React/Vue), **LESS** + **Bootstrap 3.4.1**, **Node 20.15.1** for linting only
 - **XSLT** rendering pipeline; **CAS 3.6.2** SSO, **LDAP/Grouper** groups; **HSQLDB** dev / RDBMS prod
-- **AOSP Java style** via google-java-format 1.7
+- **AOSP Java style** via google-java-format 1.8 (driven by Spotless 7.2.1)
 
 Java versions are managed with [SDKMAN](https://sdkman.io/); each repo's `.sdkmanrc` pins the version — run `sdk env` to activate. uPortal and uPortal-start both need `11.0.30-amzn`.
 
@@ -49,7 +49,7 @@ End-to-end Playwright tests (TypeScript) also live in uPortal-start under `tests
 ./gradlew :uPortal-core:test                  # test one module
 ./gradlew :uPortal-core:test --tests "org.apereo.portal.PortalExceptionTest"  # single class
 ./gradlew install                             # publish to ~/.m2
-./gradlew verGJF                              # check Java format (AOSP); goJF to auto-fix
+./gradlew spotlessCheck                       # check Java format (AOSP); spotlessApply to auto-fix
 ./gradlew codenarcMain codenarcTest           # Groovy static analysis
 npx eslint . --report-unused-disable-directives --max-warnings 0   # lint JS; npm run format-js to fix
 npm run lint-less                             # lint LESS
@@ -95,7 +95,7 @@ Key config files: `portal.properties` (overridable via `${portal.home}/uPortal.p
 
 ## Code style
 
-- **Java:** AOSP via google-java-format 1.7 (4-space indent, same-line braces). Package root `org.apereo.portal`. Every file needs the Apereo Apache 2.0 license header. `./gradlew verGJF` / `goJF`.
+- **Java:** AOSP via google-java-format 1.8 (4-space indent, same-line braces). Package root `org.apereo.portal`. Every file needs the Apereo Apache 2.0 license header. `./gradlew spotlessCheck` / `spotlessApply` (the old `verGJF` / `goJF` still work).
 - **Tests:** JUnit 4 + Mockito — `@Before`/`@Test`, `@Mock`/`@InjectMocks`, `MockitoAnnotations.initMocks(this)`. Static-import `org.junit.Assert.*` and `org.mockito.Mockito.*`.
 - **JavaScript:** Prettier (single quotes, 4-space indent, ES5 trailing commas). Globals: `jQuery`, `$`, `_`, `up`, `fluid`.
 - **LESS:** 2-space indent, Prettier via stylelint-prettier.
@@ -125,7 +125,7 @@ Key config files: `portal.properties` (overridable via `${portal.home}/uPortal.p
 ```
 [ ] Every changed line traces to the stated task
 [ ] Tests exist (or explained why not) and pass: ./gradlew :module:test
-[ ] Java formatting passes: ./gradlew verGJF
+[ ] Java formatting passes: ./gradlew spotlessCheck
 [ ] No Java 12+ features or APIs; no inline dependency versions
 [ ] License header on new files; no secrets or hardcoded hostnames
 ```
