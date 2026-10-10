@@ -11,7 +11,7 @@ dependencies {
     api project(':uPortal-layout:uPortal-layout-impl')
     api project(':uPortal-rendering')
 
-    api "com.github.ci-rt:google-visualization-java:${googleVisualizationVersion}"
+    api "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     api "joda-time:joda-time:${jodaTimeVersion}"
 
     testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')

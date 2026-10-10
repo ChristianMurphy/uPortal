@@ -14,8 +14,8 @@
  */
 package org.apereo.portal.portlets.statistics;
 
-import com.google.visualization.datasource.datatable.ColumnDescription;
 import java.util.List;
+import org.apereo.portal.web.report.ReportColumn;
 
 /**
  * Interface to define the strategies used to determine the text of the statistics report titles and
@@ -55,7 +55,7 @@ public interface ReportTitleAndColumnDescriptionStrategy {
      * @param form statistics report form
      * @return List of column descriptions for the report
      */
-    List<ColumnDescription> getColumnDescriptions(
+    List<ReportColumn> getColumnDescriptions(
             TitleAndCount[] items, boolean showAll, BaseReportForm form);
 
     public class TitleAndCount {

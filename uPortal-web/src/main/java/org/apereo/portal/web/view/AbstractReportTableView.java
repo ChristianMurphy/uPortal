@@ -14,15 +14,16 @@
  */
 package org.apereo.portal.web.view;
 
-import com.google.visualization.datasource.datatable.DataTable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apereo.portal.web.report.ReportTable;
 import org.springframework.web.servlet.view.AbstractView;
 
-/** Base class for views that serialize {@link DataTable} objects */
-public abstract class AbstractGoogleDataTableView extends AbstractView {
+/** Base class for views that serialize {@link ReportTable} objects */
+public abstract class AbstractReportTableView extends AbstractView {
     public static final String DATA_TABLE_MODEL_ATTRIBUTE = "dataTable";
 
     @Override
@@ -31,15 +32,16 @@ public abstract class AbstractGoogleDataTableView extends AbstractView {
             throws Exception {
 
         try {
-            DataTable data = (DataTable) model.get(DATA_TABLE_MODEL_ATTRIBUTE);
+            ReportTable data = (ReportTable) model.get(DATA_TABLE_MODEL_ATTRIBUTE);
             if (data == null) {
                 for (final Object value : model.values()) {
-                    if (value instanceof DataTable) {
+                    if (value instanceof ReportTable) {
                         if (data == null) {
-                            data = (DataTable) value;
+                            data = (ReportTable) value;
                         } else {
                             throw new IllegalArgumentException(
-                                    "Multiple DataTable objects exist in the model but none of them are stored under the key: "
+                                    "Multiple ReportTable objects exist in the model but none of"
+                                            + " them are stored under the key: "
                                             + DATA_TABLE_MODEL_ATTRIBUTE);
                         }
                     }
@@ -47,22 +49,30 @@ public abstract class AbstractGoogleDataTableView extends AbstractView {
             }
 
             if (data == null) {
-                throw new IllegalArgumentException("No DataTable could be found in the model");
+                throw new IllegalArgumentException("No ReportTable could be found in the model");
             }
 
-            renderDataTable(model, data, request, response);
+            renderReportTable(model, data, request, response);
         } catch (RuntimeException rte) {
-            this.logger.error("Failed to generate response for DataTable view serialization", rte);
+            this.logger.error(
+                    "Failed to generate response for ReportTable view serialization", rte);
             response.sendError(
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to generate response for DataTable view serialization");
+                    "Failed to generate response for ReportTable view serialization");
         }
     }
 
-    protected abstract void renderDataTable(
+    protected abstract void renderReportTable(
             Map<String, Object> model,
-            DataTable data,
+            ReportTable data,
             HttpServletRequest request,
             HttpServletResponse response)
             throws IOException;
+
+    /** Writes the body as UTF-8, with its length in bytes. */
+    protected static void writeUtf8(HttpServletResponse response, String body) throws IOException {
+        final byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        response.setContentLength(bytes.length);
+        response.getOutputStream().write(bytes);
+    }
 }

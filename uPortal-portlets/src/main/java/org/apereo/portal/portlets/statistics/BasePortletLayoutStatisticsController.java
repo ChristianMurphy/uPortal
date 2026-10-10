@@ -14,10 +14,6 @@
  */
 package org.apereo.portal.portlets.statistics;
 
-import com.google.visualization.datasource.base.TypeMismatchException;
-import com.google.visualization.datasource.datatable.ColumnDescription;
-import com.google.visualization.datasource.datatable.value.Value;
-import com.google.visualization.datasource.datatable.value.ValueType;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -42,6 +38,9 @@ import org.apereo.portal.events.aggr.portlets.AggregatedPortletLookupDao;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMappingNameComparator;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.web.report.ReportColumn;
+import org.apereo.portal.web.report.ReportValue;
+import org.apereo.portal.web.report.ReportValueType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -58,11 +57,11 @@ public abstract class BasePortletLayoutStatisticsController<F extends BasePortle
 
     @Autowired protected AggregatedPortletLookupDao aggregatedPortletLookupDao;
 
-    public String getLoginView() throws TypeMismatchException {
+    public String getLoginView() {
         return "jsp/Statistics/reportGraph";
     }
 
-    public ModelAndView renderPortletAddAggregationReport(F form) throws TypeMismatchException {
+    public ModelAndView renderPortletAddAggregationReport(F form) {
         return renderAggregationReport(form);
     }
 
@@ -224,7 +223,7 @@ public abstract class BasePortletLayoutStatisticsController<F extends BasePortle
      * @return
      */
     @Override
-    protected List<ColumnDescription> getColumnDescriptions(
+    protected List<ReportColumn> getColumnDescriptions(
             PortletLayoutAggregationDiscriminator reportColumnDiscriminator, F form) {
         int groupSize = form.getGroups().size();
         int portletSize = form.getPortlets().size();
@@ -240,11 +239,11 @@ public abstract class BasePortletLayoutStatisticsController<F extends BasePortle
             description = groupSize == 1 && portletSize > 1 ? portletName : groupName;
         }
 
-        final List<ColumnDescription> columnDescriptions = new ArrayList<ColumnDescription>();
-        columnDescriptions.add(new ColumnDescription(description, ValueType.NUMBER, description));
+        final List<ReportColumn> columnDescriptions = new ArrayList<ReportColumn>();
+        columnDescriptions.add(new ReportColumn(description, ReportValueType.NUMBER, description));
         return columnDescriptions;
     }
 
     @Override
-    protected abstract List<Value> createRowValues(PortletLayoutAggregation aggr, F form);
+    protected abstract List<ReportValue> createRowValues(PortletLayoutAggregation aggr, F form);
 }

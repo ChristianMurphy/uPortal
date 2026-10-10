@@ -14,28 +14,25 @@
  */
 package org.apereo.portal.web.view;
 
-import com.google.visualization.datasource.datatable.DataTable;
-import com.google.visualization.datasource.render.CsvRenderer;
-import com.ibm.icu.util.ULocale;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apereo.portal.web.report.ReportTable;
+import org.apereo.portal.web.report.ReportTableRenderer;
 
-/** Renders a google {@link DataTable} to a CSV */
-public class GoogleCsvDataTableView extends AbstractGoogleDataTableView {
+/** Renders a {@link ReportTable} to a CSV */
+public class ReportTableCsvView extends AbstractReportTableView {
     public static final String OUT_FILE_NAME_ATTRIBUTE = "outFileName";
 
     @Override
-    protected void renderDataTable(
+    protected void renderReportTable(
             Map<String, Object> model,
-            DataTable data,
+            ReportTable data,
             HttpServletRequest request,
             HttpServletResponse response)
             throws IOException {
-        final CharSequence csvDataTable =
-                CsvRenderer.renderDataTable(data, ULocale.forLocale(request.getLocale()), ",");
+        final String csvDataTable = ReportTableRenderer.renderCsv(data, request.getLocale());
 
         response.setContentType("text/csv; charset=UTF-8");
 
@@ -48,9 +45,6 @@ public class GoogleCsvDataTableView extends AbstractGoogleDataTableView {
             outFileName = outFileName + ".csv";
         }
         response.setHeader("Content-Disposition", "attachment; filename=" + outFileName);
-        response.setContentLength(csvDataTable.length());
-
-        final PrintWriter writer = response.getWriter();
-        writer.append(csvDataTable);
+        writeUtf8(response, csvDataTable);
     }
 }

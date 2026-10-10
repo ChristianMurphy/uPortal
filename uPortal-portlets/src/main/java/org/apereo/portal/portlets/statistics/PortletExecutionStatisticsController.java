@@ -14,10 +14,6 @@
  */
 package org.apereo.portal.portlets.statistics;
 
-import com.google.visualization.datasource.base.TypeMismatchException;
-import com.google.visualization.datasource.datatable.ColumnDescription;
-import com.google.visualization.datasource.datatable.value.NumberValue;
-import com.google.visualization.datasource.datatable.value.Value;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -46,6 +42,8 @@ import org.apereo.portal.portlets.statistics.ReportTitleAndColumnDescriptionStra
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
+import org.apereo.portal.web.report.ReportColumn;
+import org.apereo.portal.web.report.ReportValue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
@@ -81,13 +79,12 @@ public class PortletExecutionStatisticsController
     }
 
     @RenderMapping(value = "MAXIMIZED", params = "report=" + REPORT_NAME)
-    public String getLoginView() throws TypeMismatchException {
+    public String getLoginView() {
         return "jsp/Statistics/reportGraph";
     }
 
     @ResourceMapping(DATA_TABLE_RESOURCE_ID)
-    public ModelAndView renderPortletExecutionAggregationReport(PortletExecutionReportForm form)
-            throws TypeMismatchException {
+    public ModelAndView renderPortletExecutionAggregationReport(PortletExecutionReportForm form) {
         return renderAggregationReport(form);
     }
 
@@ -274,7 +271,7 @@ public class PortletExecutionStatisticsController
      * @return
      */
     @Override
-    protected List<ColumnDescription> getColumnDescriptions(
+    protected List<ReportColumn> getColumnDescriptions(
             PortletExecutionAggregationDiscriminator reportColumnDiscriminator,
             PortletExecutionReportForm form) {
         int groupSize = form.getGroups().size();
@@ -297,9 +294,9 @@ public class PortletExecutionStatisticsController
     }
 
     @Override
-    protected List<Value> createRowValues(
+    protected List<ReportValue> createRowValues(
             PortletExecutionAggregation aggr, PortletExecutionReportForm form) {
         int count = aggr != null ? aggr.getExecutionCount() : 0;
-        return Collections.<Value>singletonList(new NumberValue(count));
+        return Collections.<ReportValue>singletonList(ReportValue.number(count));
     }
 }

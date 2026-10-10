@@ -14,10 +14,10 @@
  */
 package org.apereo.portal.portlets.statistics;
 
-import com.google.visualization.datasource.datatable.ColumnDescription;
-import com.google.visualization.datasource.datatable.value.ValueType;
 import java.util.ArrayList;
 import java.util.List;
+import org.apereo.portal.web.report.ReportColumn;
+import org.apereo.portal.web.report.ReportValueType;
 import org.springframework.stereotype.Component;
 
 /**
@@ -86,7 +86,7 @@ public class DefaultStatisticsReportLabellingStrategy
      * @return List of column descriptions for the report
      */
     @Override
-    public List<ColumnDescription> getColumnDescriptions(
+    public List<ReportColumn> getColumnDescriptions(
             TitleAndCount[] items, boolean showAll, BaseReportForm form) {
         String description = null;
         int multipleValues = 0;
@@ -105,8 +105,8 @@ public class DefaultStatisticsReportLabellingStrategy
             description = items[0].getCriteriaItem();
         }
 
-        final List<ColumnDescription> columnDescriptions = new ArrayList<ColumnDescription>();
-        columnDescriptions.add(new ColumnDescription(description, ValueType.NUMBER, description));
+        final List<ReportColumn> columnDescriptions = new ArrayList<ReportColumn>();
+        columnDescriptions.add(new ReportColumn(description, ReportValueType.NUMBER, description));
         return columnDescriptions;
     }
 }

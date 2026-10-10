@@ -14,31 +14,25 @@
  */
 package org.apereo.portal.web.view;
 
-import com.google.visualization.datasource.datatable.DataTable;
-import com.google.visualization.datasource.render.HtmlRenderer;
-import com.ibm.icu.util.ULocale;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apereo.portal.web.report.ReportTable;
+import org.apereo.portal.web.report.ReportTableRenderer;
 
-/** Renders a google {@link DataTable} to HTML */
-public class GoogleHtmlDataTableView extends AbstractGoogleDataTableView {
+/** Renders a {@link ReportTable} to HTML */
+public class ReportTableHtmlView extends AbstractReportTableView {
     @Override
-    protected void renderDataTable(
+    protected void renderReportTable(
             Map<String, Object> model,
-            DataTable data,
+            ReportTable data,
             HttpServletRequest request,
             HttpServletResponse response)
             throws IOException {
-        final CharSequence htmlDataTable =
-                HtmlRenderer.renderDataTable(data, ULocale.forLocale(request.getLocale()));
+        final String htmlDataTable = ReportTableRenderer.renderHtml(data, request.getLocale());
 
-        response.setContentType("text/html");
-        response.setContentLength(htmlDataTable.length());
-
-        final PrintWriter writer = response.getWriter();
-        writer.append(htmlDataTable);
+        response.setContentType("text/html; charset=UTF-8");
+        writeUtf8(response, htmlDataTable);
     }
 }

@@ -14,7 +14,6 @@
  */
 package org.apereo.portal.portlets.popular;
 
-import com.google.visualization.datasource.base.TypeMismatchException;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -99,7 +98,7 @@ public class PopularPortletsController {
     }
 
     @RenderMapping
-    public String getReportList() throws TypeMismatchException {
+    public String getReportList() {
         return "jsp/PopularPortlets/listPortlets";
     }
 

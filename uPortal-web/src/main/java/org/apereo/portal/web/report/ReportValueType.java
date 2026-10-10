@@ -12,11 +12,29 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apereo.portal.portlets.statistics;
+package org.apereo.portal.web.report;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.visualization.datasource.datatable.DataTable;
+/** The type of a {@link ReportColumn} and of the values in it. */
+public enum ReportValueType {
+    /** A {@code double} */
+    NUMBER("number"),
+    /** A {@link String} */
+    TEXT("string"),
+    /** A {@link java.time.LocalDate} */
+    DATE("date"),
+    /** A {@link java.time.LocalDateTime} */
+    DATETIME("datetime"),
+    /** A {@link java.time.LocalTime} */
+    TIMEOFDAY("timeofday");
 
-/** JsonDataTable extends Google's DataTable class so that we can use a custom Json serializer. */
-@JsonSerialize(using = GoogleDataTableSerializer.class)
-public class JsonDataTable extends DataTable {}
+    private final String jsonName;
+
+    ReportValueType(String jsonName) {
+        this.jsonName = jsonName;
+    }
+
+    /** The name of this type in the table JSON, as the report charts read it. */
+    public String getJsonName() {
+        return jsonName;
+    }
+}
