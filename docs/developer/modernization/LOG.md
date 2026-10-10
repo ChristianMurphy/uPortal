@@ -60,6 +60,20 @@ databases upgrading in place.
   egress policy, so Gradle toolchain auto-provisioning can't be used locally.
   CI uses actions/setup-java as before.
 
+### MOD-D5: move Spring and Hibernate together along the supported pairs
+
+* **Decision:** The upgrade path is Spring 4.3 + Hibernate 5.2 → Spring 5.3 +
+  Hibernate 5.6 → Spring 6.2 + Hibernate 6.6 (a test-only checkpoint, not
+  released) → Spring 7.0 + Hibernate 7.x. The latest Hibernate is 7.4.12.Final;
+  8.0 is still beta. Spring 7.0 officially supports Hibernate 7.1/7.2, and
+  Spring Boot 4.1 pairs it with 7.4.
+* **Why:** Spring 4.3 tops out at Hibernate 5.2, so Hibernate 4.3 → 5.2 can
+  land first on Spring 4.3. That lets the schema-tooling rewrite (MOD-I1)
+  happen without a framework change.
+* **Alternatives considered:** Jump straight to Spring 7 + Hibernate 7.
+  Rejected for the PR series, because it gives no green checkpoints. It is
+  still used as the exploratory spike to surface blockers early.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -86,6 +100,16 @@ databases upgrading in place.
 | MOD-I20 | Upstream | The published roadmap defines uP6 as Java 21 + Tomcat upgrade + converting external portlets to web components, and uP7 as dropping portlets. It also lists "Maven" (2025) and "Replace Gradle" (2028). An April 2025 uportal-dev thread (seen only via search snippets) revised uP6 to Java 17 on Tomcat 9 / javax. Renovate pins Spring < 5 and blocks Hibernate majors. A Spring 7 / Jakarta / Tomcat 11 6.0 merges uP6 and uP7 scope. | Needs an RFC in `uPortal-Project/community` Discussions before large PRs land (MOD-Q6). |
 | MOD-I21 | Upstream | The owner has open upstream PRs that overlap phase 1: uPortal #2921 (Gradle 6.9.4 → 8.5, branch `build/gradle-8`), #2988 (sherter → Spotless, branch `refactor/spotless-migration`), and uPortal-start #681. | Phase 1 reuses their decisions. Then either update those PRs or replace them with the finer-grained series. |
 | MOD-I22 | Upstream | `docs/architecture/subsystem-analysis.md` (PR #2917) already recommends: decomposing `uPortal-utils-core`; splitting `core-api` / `core-portlet`; extracting the rendering pipeline from Pluto; adopting Liquibase or Flyway; turning the Soffit connector into a servlet filter. It estimates about 21k portlet-specific LOC. | Align workstreams with these "first moves" so the work reads as executing the agreed analysis. |
+| MOD-I23 | Persistence | IDs on SQL Server / MariaDB: `PortalDialectResolver` forces `SQLServer2005Dialect`, and MariaDB is detected as MySQL, so neither supports sequences. The `@SequenceGenerator`-named generators therefore probably fall back to tables there (inferred from dialect behaviour, not yet checked on a real database). Hibernate 7.4's `SQLServerDialect` / `MariaDBDialect` always use native sequences. | Data-compat risk. Either add a dialect subclass that turns sequence support off, or convert those tables to sequences once and run `SchemaManager.resynchronizeGenerators()` (7.2+). Verify on real databases with Testcontainers (WS3). |
+| MOD-I24 | Persistence | PostgreSQL `@Lob`: Hibernate 4.3 stored large-object OIDs in `text` columns, while 5.6.2+ generates `oid` columns. `vacuumlo` can delete large objects referenced only from `text` columns, which is data loss. | Pin explicit column types for `@Lob` on PostgreSQL. Document this for adopters. |
+| MOD-I25 | Persistence | `PortletPreferenceImpl.PREF_VALUE` is mapped as `@Lob` plus `@Type(StringType)`. Hibernate 6 removes that override, so the column would be treated as a CLOB. | Map it explicitly (`@JdbcTypeCode` / `columnDefinition`) so the existing column type stays the same. |
+| MOD-I26 | Persistence | Hibernate 6.x/7.x change several defaults: native timezone storage (6.2), native booleans on Oracle 23, sequence naming (6.0), and the increment-size check (5.4). Each has a legacy setting. | Ship a "freeze 5.x behaviour" settings block in `hibernate.cfg.xml`, then remove settings one at a time behind tests. |
+| MOD-I27 | uPortal-start | HSQLDB 2.5.1 (uPortal-start) is too old for Hibernate 6.2+, which needs 2.6.1+. uPortal itself uses 2.7.4. | Upgrade the uPortal-start HSQLDB with the toolchain work (WS2). |
+| MOD-I28 | Tooling | The OpenRewrite Spring and Hibernate recipes are under the Moderne Source Available License, not Apache. They cover only mechanical renames, with nothing for 4.x→5.x or 7.2+. The `web.xml` recipe regex-replaces every `javax.`, including `javax.portlet`. | Use them as local tools only, and review every diff. Use Eclipse Transformer with custom rules for the namespace switch. |
+| MOD-I29 | Spring | Spring Security 7's namespace handler rejects versioned XSDs older than 7.0. 3 files use `spring-security-4.2.xsd`. XML `request-matcher` only accepts `path` / `regex` / `ciRegex`. | Switch to the unversioned XSD early; this is safe on 4.2. |
+| MOD-I30 | Spring | From Spring 6.1, `-parameters` is required, or name-based XML `<constructor-arg name=...>` and implicit `@RequestParam` / `@PathVariable` names fail at runtime. | Add `-parameters` to the compiler options in phase 1; it is harmless on Spring 4.3. |
+| MOD-I31 | Spring | Spring 7 makes Jackson 3 (`tools.jackson`) the default. Jackson 2 support is deprecated in 7.0 and slated for removal in 7.2. uPortal uses Jackson 2 in UserTypes, REST and JSON views. | Move to Jackson 3 in the Spring 7 step. Keep the persisted JSON format byte-compatible (`JacksonType` columns). |
+| MOD-I32 | Spring | Spring Session 1.3 → 2.0 changes the JDBC schema and the module layout. uPortal uses the data-redis store. | Sessions are transient; document that they are dropped at upgrade. |
 
 ## Open questions
 
