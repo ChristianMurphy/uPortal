@@ -26,17 +26,15 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullWriter;
 import org.apache.commons.lang.StringUtils;
 import org.apereo.portal.hibernate.DelegatingHibernateIntegrator.HibernateConfiguration;
 import org.apereo.portal.hibernate.HibernateConfigurationAware;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.dialect.Dialect;
+import org.apereo.portal.hibernate.SchemaTool;
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.internal.Formatter;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.tool.hbm2ddl.FixedDatabaseMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
@@ -52,8 +50,7 @@ public class DataSourceSchemaExport implements ISchemaExport, HibernateConfigura
 
     private final Formatter formatter = FormatStyle.DDL.getFormatter();
     private JdbcOperations jdbcOperations;
-    private Configuration configuration;
-    private Dialect dialect;
+    private SchemaTool schemaTool;
     private String persistenceUnit;
 
     /** The name of the persistence unit to use */
@@ -80,35 +77,30 @@ public class DataSourceSchemaExport implements ISchemaExport, HibernateConfigura
     @Override
     public void setConfiguration(
             String persistenceUnit, HibernateConfiguration hibernateConfiguration) {
-        this.configuration = hibernateConfiguration.getConfiguration();
-        final SessionFactoryImplementor sessionFactory = hibernateConfiguration.getSessionFactory();
-        this.dialect = sessionFactory.getDialect();
+        this.schemaTool = hibernateConfiguration.getSchemaTool();
     }
 
     @Override
     public void drop(boolean export, String outputFile, boolean append) {
-        final String[] dropSQL = configuration.generateDropSchemaScript(dialect);
+        final List<String> dropSQL = schemaTool.getDropScript();
         perform(dropSQL, export, outputFile, append, false);
     }
 
     @Override
     public void create(boolean export, String outputFile, boolean append) {
-        final String[] createSQL = configuration.generateSchemaCreationScript(dialect);
+        final List<String> createSQL = schemaTool.getCreateScript();
         perform(createSQL, export, outputFile, append, true);
     }
 
     @Override
     public void update(boolean export, String outputFile, boolean append) {
-        final String[] updateSQL =
+        final List<String> updateSQL =
                 this.jdbcOperations.execute(
-                        new ConnectionCallback<String[]>() {
+                        new ConnectionCallback<List<String>>() {
                             @Override
-                            public String[] doInConnection(Connection con)
+                            public List<String> doInConnection(Connection con)
                                     throws SQLException, DataAccessException {
-                                final FixedDatabaseMetadata databaseMetadata =
-                                        new FixedDatabaseMetadata(con, dialect);
-                                return configuration.generateSchemaUpdateScript(
-                                        dialect, databaseMetadata);
+                                return schemaTool.getUpdateScript(con);
                             }
                         });
 
@@ -116,7 +108,7 @@ public class DataSourceSchemaExport implements ISchemaExport, HibernateConfigura
     }
 
     private void perform(
-            String[] sqlCommands,
+            List<String> sqlCommands,
             boolean executeSql,
             String outputFile,
             boolean append,

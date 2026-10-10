@@ -28,7 +28,6 @@ import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.BasePortalJpaDao;
 import org.apereo.portal.jpa.BaseRawEventsJpaDao;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,9 +107,7 @@ public class DbTestImpl implements HibernateConfigurationAware, DbTest {
 
             try {
                 final HibernateConfiguration hibernateConfiguration = configEntry.getValue();
-                final SessionFactoryImplementor sessionFactory =
-                        hibernateConfiguration.getSessionFactory();
-                final Dialect dialect = sessionFactory.getDialect();
+                final Dialect dialect = hibernateConfiguration.getDialect();
 
                 logger.info("\t" + persistenceUnit + ": " + dialect);
             } catch (Exception e) {

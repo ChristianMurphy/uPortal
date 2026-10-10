@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.metamodel.source.MetadataImplementor;
@@ -77,7 +78,10 @@ public class DelegatingHibernateIntegrator implements Integrator {
         }
 
         final HibernateConfiguration hibernateConfiguration =
-                new HibernateConfiguration(configuration, sessionFactory, serviceRegistry);
+                new HibernateConfiguration(
+                        new ConfigurationSchemaTool(configuration, sessionFactory.getDialect()),
+                        sessionFactory,
+                        serviceRegistry);
 
         synchronized (configurationAwareBeans) {
             hibernateInfoMap.put(persistenceUnitName, hibernateConfiguration);
@@ -107,21 +111,27 @@ public class DelegatingHibernateIntegrator implements Integrator {
     }
 
     public static final class HibernateConfiguration {
-        private final Configuration configuration;
+        private final SchemaTool schemaTool;
         private final SessionFactoryImplementor sessionFactory;
         private final SessionFactoryServiceRegistry serviceRegistry;
 
         public HibernateConfiguration(
-                Configuration configuration,
+                SchemaTool schemaTool,
                 SessionFactoryImplementor sessionFactory,
                 SessionFactoryServiceRegistry serviceRegistry) {
-            this.configuration = configuration;
+            this.schemaTool = schemaTool;
             this.sessionFactory = sessionFactory;
             this.serviceRegistry = serviceRegistry;
         }
 
-        public Configuration getConfiguration() {
-            return configuration;
+        /** The DDL of this persistence unit, independent of the Hibernate bootstrap API. */
+        public SchemaTool getSchemaTool() {
+            return schemaTool;
+        }
+
+        /** The dialect the persistence unit's session factory uses. */
+        public Dialect getDialect() {
+            return sessionFactory.getDialect();
         }
 
         public SessionFactoryImplementor getSessionFactory() {
