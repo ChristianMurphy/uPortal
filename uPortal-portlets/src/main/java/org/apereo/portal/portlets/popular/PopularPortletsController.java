@@ -15,6 +15,7 @@
 package org.apereo.portal.portlets.popular;
 
 import com.google.visualization.datasource.base.TypeMismatchException;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +42,7 @@ import org.apereo.portal.services.GroupService;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.apereo.portal.url.IPortalRequestUtils;
-import org.joda.time.DateTime;
+import org.apereo.portal.utils.time.JodaTimeBridge;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -121,15 +122,18 @@ public class PopularPortletsController {
     }
 
     private List<PortletUsage> buildEventCounts(Integer days, IPerson user, Locale locale) {
-        final DateTime end = new DateTime();
-        final DateTime begin = end.minusDays(days);
+        final ZonedDateTime end = ZonedDateTime.now();
+        final ZonedDateTime begin = end.minusDays(days);
 
         final IEntityGroup everyone = GroupService.getRootGroup(IPerson.class);
         final AggregatedGroupMapping group =
                 aggregatedGroupLookupDao.getGroupMapping(everyone.getKey());
         final List<PortletLayoutAggregation> aggregations =
                 portletLayoutDao.getAggregationsForAllPortlets(
-                        begin, end, AGGREGATION_INTERVAL, group);
+                        JodaTimeBridge.toDateTime(begin),
+                        JodaTimeBridge.toDateTime(end),
+                        AGGREGATION_INTERVAL,
+                        group);
 
         final EntityIdentifier ei = user.getEntityIdentifier();
         final AuthorizationServiceFacade authService = AuthorizationServiceFacade.instance();
