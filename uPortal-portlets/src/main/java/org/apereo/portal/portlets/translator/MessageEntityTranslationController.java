@@ -21,13 +21,13 @@ import java.util.Set;
 import org.apereo.portal.i18n.LocaleManagerFactory;
 import org.apereo.portal.i18n.Message;
 import org.apereo.portal.i18n.dao.IMessageDao;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 /**
  * This controller is used in order to respond to AJAX calls that require message code list, message

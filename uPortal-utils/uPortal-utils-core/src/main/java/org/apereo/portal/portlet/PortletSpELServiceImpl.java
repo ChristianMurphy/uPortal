@@ -21,6 +21,7 @@ import net.sf.ehcache.Element;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apereo.portal.spring.web.portlet.context.PortletWebRequest;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -37,7 +38,6 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.portlet.context.PortletWebRequest;
 
 /**
  * PortletSpELServiceImpl provides the default implementation of IPortletSpELService.

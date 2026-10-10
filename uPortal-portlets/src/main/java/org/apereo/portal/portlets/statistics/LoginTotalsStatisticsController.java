@@ -37,12 +37,12 @@ import org.apereo.portal.events.aggr.login.LoginAggregationDiscriminator;
 import org.apereo.portal.events.aggr.login.LoginAggregationDiscriminatorImpl;
 import org.apereo.portal.events.aggr.login.LoginAggregationKey;
 import org.apereo.portal.events.aggr.login.LoginAggregationKeyImpl;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 /** Login reports */
 @Controller

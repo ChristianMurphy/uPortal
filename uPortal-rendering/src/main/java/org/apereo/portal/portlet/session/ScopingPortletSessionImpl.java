@@ -21,11 +21,16 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.pluto.container.PortletWindow;
 import org.apache.pluto.container.impl.PortletSessionImpl;
 import org.apereo.portal.portlet.om.IPortletEntityId;
+import org.apereo.portal.spring.web.portlet.DispatcherPortlet;
 
 /**
  * Custom portlet session impl, uses the entityId instead of the windowId for the session namespace
  */
 public class ScopingPortletSessionImpl extends PortletSessionImpl {
+    /** Where Spring's own DispatcherPortlet keeps an action exception for the render phase. */
+    private static final String SPRING_ACTION_EXCEPTION_ATTRIBUTE =
+            "org.springframework.web.portlet.DispatcherPortlet.ACTION_EXCEPTION";
+
     protected final Log logger = LogFactory.getLog(this.getClass());
 
     private final IPortletEntityId portletEntityId;
@@ -73,7 +78,10 @@ public class ScopingPortletSessionImpl extends PortletSessionImpl {
 
     private void checkForExceptionAttribute(String name, Object value) throws Error {
         // Work Around for https://jira.springsource.org/browse/SPR-9287
-        if ("org.springframework.web.portlet.DispatcherPortlet.ACTION_EXCEPTION".equals(name)) {
+        // uPortal's own portlets use the vendored DispatcherPortlet; portlet applications may
+        // still use Spring's, which keeps the exception under its own class name.
+        if (SPRING_ACTION_EXCEPTION_ATTRIBUTE.equals(name)
+                || DispatcherPortlet.ACTION_EXCEPTION_SESSION_ATTRIBUTE.equals(name)) {
             if (value instanceof RuntimeException) {
                 throw (RuntimeException) value;
             }

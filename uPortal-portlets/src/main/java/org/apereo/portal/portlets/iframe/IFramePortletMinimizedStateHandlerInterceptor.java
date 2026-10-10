@@ -17,7 +17,7 @@ package org.apereo.portal.portlets.iframe;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import javax.portlet.WindowState;
-import org.springframework.web.portlet.handler.HandlerInterceptorAdapter;
+import org.apereo.portal.spring.web.portlet.handler.HandlerInterceptorAdapter;
 
 /** */
 public class IFramePortletMinimizedStateHandlerInterceptor extends HandlerInterceptorAdapter {

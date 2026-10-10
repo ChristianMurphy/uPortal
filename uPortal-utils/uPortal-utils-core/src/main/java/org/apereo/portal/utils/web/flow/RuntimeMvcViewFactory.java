@@ -15,6 +15,7 @@
 package org.apereo.portal.utils.web.flow;
 
 import javax.portlet.PortletRequest;
+import org.apereo.portal.spring.webflow.mvc.portlet.PortletMvcView;
 import org.springframework.binding.convert.ConversionService;
 import org.springframework.binding.expression.Expression;
 import org.springframework.binding.expression.ExpressionParser;
@@ -23,7 +24,6 @@ import org.springframework.web.servlet.View;
 import org.springframework.webflow.context.ExternalContext;
 import org.springframework.webflow.engine.builder.BinderConfiguration;
 import org.springframework.webflow.execution.RequestContext;
-import org.springframework.webflow.mvc.portlet.PortletMvcView;
 import org.springframework.webflow.mvc.servlet.ServletMvcView;
 import org.springframework.webflow.mvc.view.AbstractMvcView;
 import org.springframework.webflow.mvc.view.AbstractMvcViewFactory;

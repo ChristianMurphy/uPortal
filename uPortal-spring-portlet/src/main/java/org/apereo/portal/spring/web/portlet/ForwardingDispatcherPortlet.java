@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.web.portlet;
+package org.apereo.portal.spring.web.portlet;
 
 import java.util.Map;
 import javax.portlet.MimeResponse;

@@ -41,14 +41,14 @@ import org.apereo.portal.events.aggr.tabrender.TabRenderAggregationKeyImpl;
 import org.apereo.portal.events.aggr.tabs.AggregatedTabLookupDao;
 import org.apereo.portal.events.aggr.tabs.AggregatedTabMapping;
 import org.apereo.portal.events.aggr.tabs.AggregatedTabMappingNameComparator;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 /** Tab render reports */
 @Controller
