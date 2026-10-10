@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apereo.portal.dbmigrate.it.DbServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -39,10 +40,11 @@ public class CrossVendorCopyIT {
 
     @BeforeClass
     public static void start() throws Exception {
-        oldPostgres = new PostgreSQLContainer("postgres:16-alpine");
-        newPostgres = new PostgreSQLContainer("postgres:18-alpine");
+        // Pinned by digest (db-images.properties)
+        oldPostgres = new PostgreSQLContainer(DbServer.pinned("postgres16", "postgres"));
+        newPostgres = new PostgreSQLContainer(DbServer.pinned("postgres", "postgres"));
         mariadb =
-                new MariaDBContainer("mariadb:12.3")
+                new MariaDBContainer(DbServer.pinned("mariadb", "mariadb"))
                         .withCommand(
                                 "--character-set-server=utf8mb4", "--lower-case-table-names=1");
         oldPostgres.start();
