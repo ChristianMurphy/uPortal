@@ -6,9 +6,9 @@ links at the published branch: relative links will not resolve from a Discussion
 
 # RFC: uPortal 6.0 on Java 25, Spring 7 and Jakarta EE 11
 
-**Author:** Christian Murphy (@ChristianMurphy) · **Status:** open for comment
+By Christian Murphy (@ChristianMurphy) · **Status:** open for comment
 
-This RFC proposes the scope of uPortal 6.0, how it would land as small PRs, and what adopters would need to do to upgrade. I'd like agreement on direction before any large PR opens. The research is in [`docs/developer/modernization/research/REPORT.md`](research/REPORT.md). The issue and decision log, which the `MOD-*` IDs below refer to, is in [`docs/developer/modernization/LOG.md`](LOG.md).
+This RFC proposes the scope of uPortal 6.0, how it would be split into small PRs, and what adopters would need to do to upgrade. I'd like agreement on direction before any large PR opens. The research is in [`docs/developer/modernization/research/REPORT.md`](research/REPORT.md). The issue and decision log, which the `MOD-*` IDs below refer to, is in [`docs/developer/modernization/LOG.md`](LOG.md).
 
 ## The problem
 
@@ -18,15 +18,15 @@ uPortal 5.17 runs on components whose support has ended or is ending:
 - **Spring Framework 4.3 and Spring Security 4.2:** both reached OSS end of life in 2020.
 - **Hibernate ORM 4.3:** a Java 6/7-era line that has been out of support for years.
 - **Tomcat 8.5:** EOL since March 2024.
-- **Apache Pluto:** Apache Portals moved to the Attic in 2025. Pluto's last release still uses javax.
+- **Apache Pluto:** the Apache Portals project moved to the Attic in 2025. Pluto's last release still uses javax.
 - **Ehcache 2:** no release since 2021. Spring 6 and Hibernate 6 both dropped support for it.
 - **Vue 2:** end of life since the end of 2023.
 
-Old stacks also hide breakage. Since the Hibernate 4.3 upgrade ([#3012](https://github.com/uPortal-Project/uPortal/pull/3012)), every startup has fetched a DTD from www.hibernate.org, because the Woodstox parser on our classpath ignores Hibernate's local resolver. A portal that can't reach hibernate.org won't start (MOD-I50). The prototype already fixes this, and I'll offer the fix to 5.17.x on its own whatever happens here.
+Old stacks also hide breakage. Since the Hibernate 4.3 upgrade ([#3012](https://github.com/uPortal-Project/uPortal/pull/3012)), every startup has fetched a DTD from www.hibernate.org, because the Woodstox parser on our classpath ignores Hibernate's local resolver. A portal that can't connect to hibernate.org won't start (MOD-I50). The prototype already fixes this, and I'll offer the fix to 5.17.x on its own whatever happens here.
 
 ## The proposal
 
-uPortal 6.0 would target **Java 25, Gradle 9, Spring Framework 7, Spring Security 7, Hibernate ORM 7.4, and Jakarta EE 11 on Tomcat 11**. Apereo CAS 8.0 already runs Spring 7, Hibernate 7.4 and Tomcat 11 on Java 25 in production.
+I propose that uPortal 6.0 target **Java 25, Gradle 9, Spring Framework 7, Spring Security 7, Hibernate ORM 7.4, and Jakarta EE 11 on Tomcat 11**. Apereo CAS 8.0 already runs Spring 7, Hibernate 7.4 and Tomcat 11 on Java 25 in production.
 
 This departs from current direction in three ways:
 
@@ -45,8 +45,8 @@ This proposal does not drop portlets. There's also no usable Jakarta portlet con
 1. **In-tree Pluto on jakarta.servlet.** We import the Pluto 2.1 source unchanged while still on javax, then switch it along with everything else.
 2. **A hybrid javax.portlet 2.0 API, recompiled against jakarta.servlet.** In Portlet 2.0, only the `Cookie` type touches the servlet API. The jar goes in Tomcat's `shared/lib`.
 3. **A vendored Spring Portlet MVC.** We copy Spring 4.3.30's `web.portlet` package and the Web Flow portlet glue into `org.apereo.portal` while still on Spring 4.3, then adapt them at each Spring step. This keeps the 37 internal portlets and the Soffit connector working.
-4. **Build-time transformation of the bundled portlet WARs** in uPortal-start. A scanner fails the build if a WAR calls a Servlet API that Servlet 6 removed. This is a bridge that lets 6.0 ship without changes to the portlet repositories. It is also the least proven piece. There's no public precedent for running unmodified JSR-286 WARs this way, so a spike in P5 decides whether it holds up.
-5. **In 6.x, a native web-component channel and a pipeline-level Soffit connector**, so content no longer needs the portlet container. Then the bundled portlets move to REST services plus custom elements, most valuable first, and the Vue 2 components move to Lit or plain custom elements.
+4. **Build-time transformation of the bundled portlet WARs** in uPortal-start. A scanner fails the build if a WAR calls a Servlet API that Servlet 6 removed. This is a bridge that lets 6.0 be released without changes to the portlet repositories. It is also the least proven piece. There's no public precedent for running unmodified JSR-286 WARs this way, so a spike in P5 decides whether it holds up.
+5. **In 6.x, a native web-component channel and a pipeline-level Soffit connector**, so content no longer needs the portlet container. Then the bundled portlets move, most valuable first, to REST services plus custom elements. The Vue 2 components move to Lit or plain custom elements.
 
 Sakai took the same route. Its [PR #15141](https://github.com/sakaiproject/sakai/pull/15141), merged on 9 October 2026, imported Pluto into Sakai's tree and compiled `javax.portlet` against `jakarta.servlet`.
 
@@ -56,18 +56,18 @@ Where they line up, this plan carries out the "Recommended First Moves" from the
 
 - **Upgrade from 5.17.x only.**
 - **Meet the database minimums** that Hibernate 7.4 requires: PostgreSQL 14, MariaDB 10.6, SQL Server 2014, Oracle 19 and MySQL 8.
-- **Run Java 25 on Tomcat 11.** uPortal-start will carry the Tomcat configuration, including explicit connector limits.
-- **Expect a session flush**, so every user logs in again, and **a Lucene reindex** on first start.
+- **Run Java 25 on Tomcat 11.** uPortal-start will provide the Tomcat configuration, including explicit connector limits.
+- **Expect a session flush** (every user logs in again) and **a Lucene reindex** on first start.
 - **Take care with PostgreSQL LOBs.** Our current mappings keep large-object OIDs in `text` columns, and `vacuumlo` can delete large objects referenced only that way. Don't run `vacuumlo` against a uPortal database, and back up before upgrading. 6.0 pins these column types, and the upgrade test runs `vacuumlo` and re-reads every LOB.
 - **Migrate clustered caching.** Ehcache 2 with JGroups replication goes away. Single-node portals use JCache with Ehcache 3, and clusters use Infinispan. Custom cache and JGroups configuration will need migrating.
-- **Note the new uPortal-start default: local login.** CAS 8 becomes an opt-in Compose service that CI still runs for the login spec. I haven't confirmed that an official CAS 8.0 image exists; a CAS Initializr overlay is the fallback.
+- **Note the new uPortal-start default: local login.** CAS 8 becomes an opt-in Compose service that CI still runs for the login spec. I haven't confirmed that an official CAS 8.0 image exists. A CAS Initializr overlay is the fallback.
 - **Plan for custom code.** Custom portlet WARs go through the same transformation, and custom Java code moves to jakarta.
 
 Databases should upgrade in place with no manual SQL. 6.0 freezes Hibernate's 4.3-era DDL behaviour with documented legacy settings, and never runs `hbm2ddl update` on an upgraded database.
 
 ## Delivery plan
 
-The plan is about 50 small PRs over phases P0–P7, each green on its own, followed by P8 as ordinary 6.x work. Everything that can happen on javax happens first, which leaves four atomic steps. Each phase must pass four gates. G-unit is the build on Linux, Windows and macOS. G-portal is every Playwright spec, three runs in a row. G-db upgrades a 5.17 dump on every supported database, and G-flows runs new admin and import/export specs.
+The plan is about 50 small PRs over phases P0 to P7, each green on its own, followed by P8 as ordinary 6.x work. Everything that can happen on javax happens first, which leaves four atomic steps. Each phase must pass four gates. G-unit is the build on Linux, Windows and macOS. G-portal is every Playwright spec, three runs in a row. G-db upgrades a 5.17 dump on every supported database, and G-flows runs new admin and import/export specs.
 
 | Phase | Main changes | Atomic step | Tag |
 |---|---|---|---|
@@ -89,9 +89,9 @@ The milestone train starts with 6.0.0-M1 after the Spring 5.3 bloc, a javax buil
 
 ## Branches and releases
 
-- `master` becomes 6.0 development once this RFC is accepted. Until then, I'd only ask for work that doesn't depend on the direction: the P0 tests, the CI fix (MOD-I33), Spotless and the MOD-I50 fix.
-- `rel-5-17-patches` carries 5.x fixes for 12 months after 6.0.0 GA. That period is a suggestion and open to discussion.
-- uPortal-start gets a `6.x` branch. Adopters fork `master` and the repository has no tags, so `master` stays on 5.17 until 6.0 ships.
+- `master` becomes 6.0 development once this RFC is accepted. Until then, I'd only ask for work that doesn't depend on the direction, which means the P0 tests, the CI fix (MOD-I33), Spotless and the MOD-I50 fix.
+- `rel-5-17-patches` gets 5.x fixes for 12 months after 6.0.0 GA. That period is a suggestion and open to discussion.
+- uPortal-start gets a `6.x` branch. Adopters fork `master` and the repository has no tags, so `master` stays on 5.17 until 6.0 is released.
 - Renovate pins are lifted phase by phase. The portlet repositories can keep theirs.
 - PRs follow the usual conventions and the PR template, and each adds notes to `docs/UPGRADING-6.0.md`.
 
@@ -99,7 +99,7 @@ The milestone train starts with 6.0.0-M1 after the Spring 5.3 bloc, a javax buil
 
 Since October 2025, one maintainer has done 43 of 45 merges to `master`, and about 50 PRs can't rest on one person. I'm asking for **a second reviewer for each phase**. I commit to **co-maintaining the vendored Spring Portlet MVC and the Pluto fork**, and I'm glad to review other people's PRs.
 
-**Much of the prototype is produced with AI coding agents under my direction and review.** I review every change before it goes upstream, and I'm responsible for it. Commits carry me as the human author plus a `Co-Authored-By` trailer for the agent. I'd like the steering committee to confirm that this is acceptable under my ICLA before the first large PR.
+**Much of the prototype is produced with AI coding agents under my direction and review.** I review every change before it goes upstream, and I'm responsible for it. Commits list me as the human author, with a `Co-Authored-By` trailer for the agent. I'd like the steering committee to confirm that this is acceptable under my ICLA before the first large PR.
 
 ## How my open PRs fit
 
