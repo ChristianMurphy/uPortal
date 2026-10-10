@@ -111,12 +111,34 @@ dependencies {
      */
     providedRuntime "org.hsqldb:hsqldb:${hsqldbVersion}"
 
+    /*
+     * JDBC drivers for running the JPA/DAO tests on other databases (db-integration.yml). The
+     * tests use the in-memory HSQLDB unless the uportal.test.db.* system properties are set.
+     */
+    testRuntimeOnly "com.microsoft.sqlserver:mssql-jdbc:${mssqlJdbcVersion}"
+    testRuntimeOnly "com.mysql:mysql-connector-j:${mysqlConnectorJVersion}"
+    testRuntimeOnly "com.oracle.database.jdbc:ojdbc11:${ojdbcVersion}"
+    testRuntimeOnly "org.mariadb.jdbc:mariadb-java-client:${mariadbJdbcVersion}"
+    testRuntimeOnly "org.postgresql:postgresql:${postgresqlJdbcVersion}"
+
     implementation "org.webjars:webjars-locator-core:0.59"
     
     webjars "org.jasig.resourceserver:resource-server-content:${resourceServerVersion}"
     webjars "org.webjars.npm:bootstrap:${bootstrapVersion}"
     webjars "org.webjars.npm:jstree:${jstreeVersion}"
 
+}
+
+// Pass the database the JPA/DAO tests run on (src/test/resources/dataSource.properties) from
+// the Gradle command line to the test JVM, e.g. -Duportal.test.db.url=jdbc:postgresql://...
+tasks.withType(Test).configureEach {
+    ['driver', 'url', 'username', 'password', 'dialect'].each { String key ->
+        String name = "uportal.test.db.${key}"
+        String value = providers.systemProperty(name).getOrNull()
+        if (value != null) {
+            systemProperty name, value
+        }
+    }
 }
 
 node {
