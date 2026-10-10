@@ -109,3 +109,18 @@ Framework 5 removed its class, so uPortal now has its own copy:
 If your overlay replaces `web.xml`, change the `servlet-class` of the `ViewRendererServlet`
 servlet. Keep the servlet name and its mapping (`/WEB-INF/servlet/view`): uPortal's portlets
 forward to that path.
+
+## Servlet controllers are mapped by RequestMappingHandlerMapping
+
+The servlet contexts for login and logout (`authenticationServletContext.xml`), page rendering
+(`renderingServletContext.xml`, `jsonRenderingServletContext.xml`) and the `/s/*` redirection
+service (`redirectionServletContext.xml`) now map their controllers with Spring MVC's
+`RequestMappingHandlerMapping` and `RequestMappingHandlerAdapter`. Spring Framework 5 removed the
+`DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter` they used before. URLs and
+behaviour are unchanged.
+
+If your overlay replaces one of these files, make the same change. The old mapping's
+`useDefaultSuffixPattern` property is called `useSuffixPatternMatch` on the new one. If you added
+your own `@Controller` to one of these servlets and it reads
+`HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE`, note that the new mapping sets it to the
+whole path within the servlet, not just the part the pattern's wildcards matched.
