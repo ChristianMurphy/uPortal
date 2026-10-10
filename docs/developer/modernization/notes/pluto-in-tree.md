@@ -164,9 +164,9 @@ imported, because it is the one that runs.
   `uPortal-pluto-container`/`-portal-driver` are the in-tree code that actually
   runs.
 
-## Gates
+## Required checks
 
-| Gate | Result |
+| Check | Result |
 | --- | --- |
 | uPortal CI (`ccr-43ba0785-hzlrj5-pluto`) | run 38089044859: _pending_ |
 | uPortal DB integration | run 38089044904: _pending_ |
@@ -264,7 +264,7 @@ issues.
   `uPortal-pluto-portlet-api`, not a 2.0 jar.
 * **F4 (sandbox, known as MOD-I51):** jitpack.io is refused by the proxy, so
   uPortal-web can't compile in a cloud session until the jar is installed
-  into mavenLocal (see Gates). The embedded POM has different coordinates
+  into mavenLocal (see Required checks). The embedded POM has different coordinates
   from the ones in uPortal-web's dependency, which the workaround has to correct.
 * **F5 (upstream data):** portlet-api's upstream `META-INF/NOTICE` has a
   corrupted copyright sign (U+FFFD). The imported copy keeps it; uPortal's
@@ -295,7 +295,7 @@ issues.
   * Built with Servlet 2.4 and `--release 8`; Spotless and Error Prone off;
     SpotBugs baselines with 84 findings.
   * `shared/lib` keeps Apache's jars until P5-5.
-  * Gates: (run IDs).
+  * Required checks: (run IDs).
 * **MOD-I?: the Pluto container doesn't define Servlet 3.1's `ServletOutputStream`
   methods** (F1). P6-1 must add `isReady`/`setWriteListener` to three classes.
 * **MOD-I?: the Pluto modules need `--release 8`** (F2). Fix `getPrefixes` and move to 11
