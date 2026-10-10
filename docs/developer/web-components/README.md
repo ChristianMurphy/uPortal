@@ -292,3 +292,35 @@ records each request for assertions. Snapshots are only for small, stable markup
 
 Coverage (V8) must stay at 90% or more of lines, branches, functions and statements; `vp test`
 fails below that. The report is in `build/coverage`.
+
+## REST APIs for web components
+
+Components get their data from Spring MVC `@RestController`s in `uPortal-api-rest`, with
+Jackson for JSON (MOD-D22). Conventions:
+
+* Paths start with `/api/v6-0/`, for example `/api/v6-0/favorites`.
+* The user is the one of the portal session, established by Spring Security's
+  pre-authentication filter (or an OIDC bearer token, see above). Controllers use the portal's
+  services (`IPersonManager`, the user's layout manager, `IAuthorizationService`) and answer 401
+  to guests when the resource is personal.
+* Unsafe requests to `/api/v6-0/` need Spring Security's CSRF token. The older APIs under `/api`
+  are exempt from CSRF protection; `PortalCsrfSecurityRequestMatcher` protects the new ones,
+  except requests that carry a bearer token.
+* Refusals answer a JSON body with a `message`, and a status the component can map to text: 400,
+  401, 403, 404 or 409.
+* Code against annotations and types that Spring 5, 6 and 7 keep (`@GetMapping`,
+  `ResponseEntity`, constructor injection), and test controllers with MockMvc.
+
+### Favorites
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/favorites` | `{"collections": [...], "portlets": [...], "marketplaceUrl": ...}` in layout order; one entry per portlet, only portlets the user may render. |
+| `POST /api/v6-0/favorites` with `{"fname": "calendar"}` | 201 and the new favorite (or 200 and the existing one); 403 without the `FAVORITE` permission; 404 for an unknown portlet; 409 when the layout has no favorites folder. |
+| `DELETE /api/v6-0/favorites/{nodeId}` | 204; removes every copy of a portlet; 403 for a locked favorite. |
+| `POST /api/v6-0/favorites/{nodeId}/move` with `{"before": "<nodeId>"}` or `{"after": "<nodeId>"}` | 200 and the favorites; moves among favorites of the same kind; 403 for a locked one. |
+
+A favorite collection or portlet carries its layout `nodeId`, `name`, `url`, `moveAllowed` and
+`deleteAllowed`; a portlet also its `fname`, `description`, `target` and `iconUrl`. The service
+reuses `FavoritesUtils` and the user's layout manager, so the distributed layout manager's rules
+for locked fragments apply.

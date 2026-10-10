@@ -21,6 +21,7 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -31,6 +32,11 @@ import org.springframework.stereotype.Component;
  * requests (URLs) to protect with CSRF tokens. Nearly all URLs are protected. The exceptions are
  * uPortal's REST APIs (which are secured by other means and should be available to non-portal
  * clients) and a few odds-and-ends like /Login.
+ *
+ * <p>The REST APIs under {@code /api/v6-0/}, written for uPortal's web components, are protected
+ * like portal pages: their browser clients authenticate with the session cookie, which the browser
+ * would also send with a forged request. A request that carries a bearer token in the {@code
+ * Authorization} header is exempt, because a browser never adds that header by itself.
  */
 @Component("portalCsrfSecurityRequestMatcher")
 public class PortalCsrfSecurityRequestMatcher implements RequestMatcher {
@@ -49,7 +55,15 @@ public class PortalCsrfSecurityRequestMatcher implements RequestMatcher {
     private static final String[] IGNORED_PATTERNS =
             new String[] {LOGIN_PATTERN, LOGOUT_PATTERN, API_PATTERN, API_DOCS_PATTERN};
 
+    /** The web components' REST APIs, protected although they live under /api. */
+    private static final String PROTECTED_API_PATTERN = "/api/v6-0/.*";
+
+    private static final String BEARER_PREFIX = "Bearer ";
+
     private final Set<RequestMatcher> ignoredMatchers = new HashSet<>();
+
+    private final RequestMatcher protectedApiMatcher =
+            new RegexRequestMatcher(PROTECTED_API_PATTERN, null);
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -75,7 +89,11 @@ public class PortalCsrfSecurityRequestMatcher implements RequestMatcher {
 
         // Check URI
         if (result) {
-            result = ignoredMatchers.stream().noneMatch(matcher -> matcher.matches(request));
+            if (protectedApiMatcher.matches(request)) {
+                result = !hasBearerToken(request);
+            } else {
+                result = ignoredMatchers.stream().noneMatch(matcher -> matcher.matches(request));
+            }
         }
 
         logger.trace(
@@ -85,5 +103,11 @@ public class PortalCsrfSecurityRequestMatcher implements RequestMatcher {
                 result ? "ENABLED" : "DISABLED");
 
         return result;
+    }
+
+    private static boolean hasBearerToken(HttpServletRequest request) {
+        final String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        return authorization != null
+                && authorization.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length());
     }
 }
