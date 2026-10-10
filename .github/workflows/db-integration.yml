@@ -178,9 +178,7 @@ jobs:
   # an incompatibility shows up early without blocking anyone; a failure still shows on the run.
   db-canary:
     name: "DB canary: ${{ matrix.vendor }}"
-    # Temporary (MOD-D25): also on push, to prove the canaries once on the fork, where the
-    # workflow is not on the default branch and cannot be scheduled or dispatched. Reverted next.
-    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     continue-on-error: ${{ matrix.canary }}
