@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.constructs.blocking.SelfPopulatingCache;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apereo.portal.jdbc.RDBMServices;
@@ -41,8 +39,11 @@ import org.apereo.portal.security.provider.BrokenSecurityContext;
 import org.apereo.portal.security.provider.PersonImpl;
 import org.apereo.portal.spring.locator.CounterStoreLocator;
 import org.apereo.portal.utils.SerializableObject;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.ConnectionCallback;
@@ -64,6 +65,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class RDBMUserIdentityStore implements IUserIdentityStore {
 
     private static final Log log = LogFactory.getLog(RDBMUserIdentityStore.class);
+    static final String USER_LOCK_CACHE_NAME =
+            "org.apereo.portal.RDBMUserIdentityStore.userLockCache";
     private static final String PROFILE_TABLE = "UP_USER_PROFILE";
 
     private static final String USERNAME_VALIDATOR_REGEX = "^[^\\s]{1,100}$";
@@ -82,7 +85,7 @@ public class RDBMUserIdentityStore implements IUserIdentityStore {
     private IPortletEntityDao portletEntityDao;
     private IStylesheetUserPreferencesDao stylesheetUserPreferencesDao;
     private ILocalAccountDao localAccountDao;
-    private Ehcache userLockCache;
+    private Cache userLockCache;
 
     @Autowired
     public void setPortletEntityDao(@Qualifier("persistence") IPortletEntityDao portletEntityDao) {
@@ -101,10 +104,12 @@ public class RDBMUserIdentityStore implements IUserIdentityStore {
     }
 
     @Autowired
-    @Qualifier("org.apereo.portal.RDBMUserIdentityStore.userLockCache")
-    public void setUserLockCache(Ehcache userLockCache) {
-        this.userLockCache =
-                new SelfPopulatingCache(userLockCache, key -> new SerializableObject());
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setUserLockCache(CacheLookup.requireCache(cacheManager, USER_LOCK_CACHE_NAME));
+    }
+
+    public void setUserLockCache(Cache userLockCache) {
+        this.userLockCache = userLockCache;
     }
 
     @Autowired
@@ -121,7 +126,8 @@ public class RDBMUserIdentityStore implements IUserIdentityStore {
 
     private Serializable getLock(IPerson person) {
         final String username = (String) person.getAttribute(IPerson.USERNAME);
-        return this.userLockCache.get(username);
+        // One lock object per username, created under a per-key lock while it stays cached
+        return this.userLockCache.get(username, SerializableObject::new);
     }
 
     /**
