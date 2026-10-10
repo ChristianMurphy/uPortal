@@ -17,6 +17,7 @@ package org.apereo.portal.redirect;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
@@ -36,9 +37,11 @@ import org.apereo.portal.url.IPortletUrlBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * PortletRedirectionController issues a 302 redirect from an abstract service URL to the configured
@@ -47,6 +50,9 @@ import org.springframework.web.servlet.HandlerMapping;
  */
 @Controller
 public class PortletRedirectionController {
+
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+    private static final UrlPathHelper URL_PATH_HELPER = new UrlPathHelper();
 
     protected final Log log = LogFactory.getLog(getClass());
 
@@ -79,10 +85,17 @@ public class PortletRedirectionController {
             @PathVariable String serviceKey)
             throws IOException {
 
-        String path =
-                (String) request.getAttribute(HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE);
+        // The path after the service key. It is worked out from the matched pattern because
+        // RequestMappingHandlerMapping sets PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE to the whole
+        // lookup path, where the DefaultAnnotationHandlerMapping removed in Spring 5 set it to
+        // the part that the pattern's wildcards matched.
+        final String pattern =
+                (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        final String path =
+                PATH_MATCHER.extractPathWithinPattern(
+                        pattern, URL_PATH_HELPER.getLookupPathForRequest(request));
 
-        List<String> pathElements = Arrays.asList(path.split("/"));
+        List<String> pathElements = new ArrayList<>(Arrays.asList(path.split("/")));
 
         final IRedirectionUrl url = services.get(serviceKey);
         if (url == null) {
