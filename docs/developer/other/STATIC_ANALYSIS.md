@@ -61,6 +61,18 @@ module adds as a `compileOnly` dependency.
 Deleting the entries of the fixed findings by hand works too. Don't add
 entries by hand.
 
+## Imported code
+
+Code copied from other projects keeps its upstream formatting, so it can
+still be diffed against the original:
+
+* `uPortal-spring-portlet/src/vendored` (Spring Portlet MVC and Web Flow's
+  portlet glue): Spotless skips it. Error Prone and SpotBugs run as for the
+  rest of the module.
+* `uPortal-pluto` (Apache Pluto 2.1.0-M3 and the portlet API, see its
+  `README.md`): Spotless and Error Prone (with NullAway) skip it. SpotBugs
+  runs, with one baseline per module like everywhere else.
+
 ## Null safety
 
 uPortal adopts [JSpecify](https://jspecify.dev/) nullness annotations one

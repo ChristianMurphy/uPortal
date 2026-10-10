@@ -1,0 +1,30 @@
+/*
+ * Apache Pluto 2.1.0-M3 and the Java Portlet API 2.1.0, imported unchanged from their official
+ * -sources jars on Maven Central (see README.md). Apache Portals is in the Attic, so uPortal owns
+ * this code; P5-5 and P6-1 move it to jakarta.servlet.
+ *
+ * Skip publishing this level of the hierarchy; it's merely a convenient grouping for submodules.
+ */
+install.enabled = false
+tasks.withType(PublishToMavenLocal).configureEach { enabled = false }
+tasks.withType(PublishToMavenRepository).configureEach { enabled = false }
+
+subprojects {
+    // Keep the upstream sources as they are, so they can still be diffed against the -sources
+    // jars: no google-java-format, and no Error Prone or NullAway findings to act on. SpotBugs
+    // still runs, against its own baseline per module (config/spotbugs/baseline/), so later
+    // changes to this code can't add findings.
+    spotless {
+        java {
+            targetExclude 'src/**'
+        }
+    }
+    tasks.withType(JavaCompile).configureEach {
+        options.errorprone.enabled = false
+        // The sources predate JDK 9, which changed NamespaceContext.getPrefixes to return
+        // Iterator<String> (PortletAppDescriptorServiceImpl doesn't compile against it), so
+        // build them for the Java 8 platform API. Java 8 bytecode runs on any JDK uPortal runs on.
+        options.release = 8
+        options.compilerArgs.add('-Xlint:-options')
+    }
+}

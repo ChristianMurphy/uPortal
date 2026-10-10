@@ -1,0 +1,17 @@
+description = "Apereo uPortal Pluto: Apache Pluto Portlet Container 2.1.0-M3"
+
+// Dependencies as org.apache.portals.pluto:pluto-container:2.1.0-M3 declares them, with the
+// exclusion that its parent POM (org.apache.portals.pluto:pluto) manages
+dependencies {
+    api "org.slf4j:slf4j-api:${slf4jVersion}"
+    api "javax.xml.bind:jaxb-api:${plutoJaxbApiVersion}"
+    api "com.sun.xml.bind:jaxb-impl:${plutoJaxbImplVersion}"
+    api("stax:stax:${plutoStaxVersion}") {
+        exclude group: 'stax', module: 'stax-api'
+    }
+
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    compileOnly "${plutoServletApiDependency}"
+    compileOnly "javax.ccpp:ccpp:${ccppVersion}"
+}

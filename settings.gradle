@@ -45,6 +45,13 @@ include 'uPortal-io:uPortal-io-types'
 include 'uPortal-layout:uPortal-layout-core'
 include 'uPortal-layout:uPortal-layout-impl'
 
+include 'uPortal-pluto:uPortal-pluto-container'
+include 'uPortal-pluto:uPortal-pluto-container-api'
+include 'uPortal-pluto:uPortal-pluto-container-driver-api'
+include 'uPortal-pluto:uPortal-pluto-portal-driver'
+include 'uPortal-pluto:uPortal-pluto-portlet-api'
+include 'uPortal-pluto:uPortal-pluto-taglib'
+
 include 'uPortal-security:uPortal-security-authn'
 include 'uPortal-security:uPortal-security-core'
 include 'uPortal-security:uPortal-security-mvc'

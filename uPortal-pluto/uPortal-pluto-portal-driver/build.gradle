@@ -1,0 +1,20 @@
+description = "Apereo uPortal Pluto: Apache Pluto Portal Driver 2.1.0-M3"
+
+// Dependencies as org.apache.portals.pluto:pluto-portal-driver:2.1.0-M3 declares them
+dependencies {
+    api project(':uPortal-pluto:uPortal-pluto-container')
+    api "javax.servlet:jstl:${plutoJstlVersion}"
+    api "taglibs:standard:${plutoJstlVersion}"
+    api "org.springframework:spring-core:${springVersion}"
+    api "org.springframework:spring-beans:${springVersion}"
+    api "org.springframework:spring-web:${springVersion}"
+    api "commons-io:commons-io:${commonsIoVersion}"
+
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-driver-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-taglib')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    compileOnly "${plutoServletApiDependency}"
+    compileOnly "javax.ccpp:ccpp:${ccppVersion}"
+    compileOnly "javax.servlet.jsp:javax.servlet.jsp-api:${jspApiVersion}"
+}
