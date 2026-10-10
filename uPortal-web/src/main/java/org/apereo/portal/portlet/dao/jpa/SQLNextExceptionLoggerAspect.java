@@ -57,15 +57,26 @@ public class SQLNextExceptionLoggerAspect implements Ordered {
         if (sqle.getCause() == null) {
             SQLException nextException;
             while ((nextException = sqle.getNextException()) != null) {
-                sqle.initCause(nextException);
+                try {
+                    sqle.initCause(nextException);
+                } catch (IllegalStateException e) {
+                    // The cause was set to null in the constructor, as Oracle's driver does for a
+                    // BatchUpdateException. Log the rest; this aspect must not replace t.
+                    logNextExceptions(t, sqle);
+                    return;
+                }
                 sqle = nextException;
             }
         }
         // The SQLException already has a cause so log the results of all getNextException calls
         else {
-            while ((sqle = sqle.getNextException()) != null) {
-                this.logger.error("Logging getNextException for root SQLException: " + t, sqle);
-            }
+            logNextExceptions(t, sqle);
+        }
+    }
+
+    private void logNextExceptions(Throwable t, SQLException sqle) {
+        while ((sqle = sqle.getNextException()) != null) {
+            this.logger.error("Logging getNextException for root SQLException: " + t, sqle);
         }
     }
 }
