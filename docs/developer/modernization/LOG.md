@@ -282,6 +282,17 @@ research report.
   * Upstream candidates keep accumulating in this log, for example the
     5.17.x fixes MOD-I50/I53/I63 and the P0 test assets.
 
+### MOD-D15: every integration push must pass real CI and workflow lint
+
+* **G-ci:** after each merge into a `ccr-*` branch, the GitHub Actions CI
+  run on that push must be green. For uPortal that is the build matrix on
+  Linux/Windows/macOS × temurin/zulu/corretto. For uPortal-start it is the
+  build matrix plus Playwright. The Workflow lint run (zizmor + actionlint)
+  must also be green.
+* A phase isn't "done" until G-ci is green in addition to the local gates.
+* Any workflow change gets checked with zizmor (regular and pedantic
+  personas) and actionlint locally before it is pushed.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -359,8 +370,8 @@ research report.
 | MOD-I71 | Runtime | The person lookup workers never clear the request data they are handed, so idle threads keep a reference to the last request. | Minor leak. Upstream fix later. |
 | MOD-I72 | Persistence | **Found by the P0-4 harness.** Master (Hibernate 4.3, unreleased 5.17.10) already differs from released 5.17.9 (Hibernate 4.2) on the same schema. The structure and constraint names are the same, but `UP_SEQUENCE` counters come out at 110 vs 60 (POOLED became POOLED_LO in #3012), `UP_PORTLET_PREF_SEQ` at 131 vs 121, and the PostgreSQL dialect changed from 82 to 81. | Check that 5.17.9 → 5.17.10 is safe for existing counters before 5.17.10 ships. Re-record the baselines from 5.17.9 if the harness should gate the upgrade from the last release. |
 | MOD-I73 | Persistence | On MySQL and MariaDB, 5.17 needs `lower_case_table_names=1` (the import scripts use `up_group`). MariaDB Connector/J needs `useMysqlMetadata=true`. On MariaDB, the dialect depends on the driver: through MySQL Connector/J, 10.6 gets `MySQL5InnoDBCompressedDialect` and `ROW_FORMAT=COMPRESSED` tables, while 11.4 doesn't. | Document this as adopter configuration. Hibernate 6/7's MariaDB dialect detection changes it again, so the harness has to cover both drivers. |
-| MOD-I74 | CI | No GitHub Actions run has validated any modernization change yet. Both repos' `CI.yml` only trigger on `push`/`pull_request` to `master`, so pushes to the `ccr-*` branches don't run CI. Local gates and static checks (actionlint and a YAML parse for `db-harness.yml`) are all that has run. | Add a prototype-only trigger for `ccr-*` branches, kept out of upstream PRs, plus `workflow_dispatch`. Push, then watch the runs and fix failures until green. |
-| MOD-I75 | CI security | zizmor 1.30.1 (offline) flags every workflow in both repos: `unpinned-uses` (high) on every action, `artipacked` (checkout persists credentials), and `excessive-permissions` (top-level `contents: write` in uPortal-start `CI.yml`). The new `db-harness.yml` has the same findings. | CI-hardening commit per repo: pin actions to commit SHAs with version comments (Renovate keeps digests current), `persist-credentials: false`, least-privilege `permissions:` (top-level `contents: read`; `contents: write` only on the dependency-submission job), and a zizmor + actionlint workflow so findings stay at zero. Upstream candidate. |
+| MOD-I74 | CI | No GitHub Actions run has validated any modernization change yet. Both repos' `CI.yml` only trigger on `push`/`pull_request` to `master`, so pushes to the `ccr-*` branches don't run CI. Local gates and static checks (actionlint and a YAML parse for `db-harness.yml`) are all that has run. | **Addressed:** commits `2a2289c3e` (uPortal) and `77d75ab28` (uPortal-start) add a prototype-only `ccr-*` push trigger. Both commits are marked to be dropped before upstreaming. CI now runs on every integration push. The DB harness workflow is left out until MOD-I72's baseline question is settled. |
+| MOD-I75 | CI security | zizmor 1.30.1 (offline) flags every workflow in both repos: `unpinned-uses` (high) on every action, `artipacked` (checkout persists credentials), and `excessive-permissions` (top-level `contents: write` in uPortal-start `CI.yml`). The new `db-harness.yml` has the same findings. | CI-hardening commit per repo: pin actions to commit SHAs with version comments (Renovate keeps digests current), `persist-credentials: false`, least-privilege `permissions:` (top-level `contents: read`; `contents: write` only on the dependency-submission job), and a zizmor + actionlint workflow so findings stay at zero. **Done:** `ebb11e0e2` (uPortal) and `ba38035e9` (uPortal-start). zizmor reports zero findings with the regular and pedantic personas (service images pinned by digest too). The new Workflow lint run on GitHub passed for uPortal. Also found: gradle/actions v6 defaults to a commercial cache provider, so both repos now set `cache-provider: basic`. Upstream candidate. |
 
 ## Open questions
 
