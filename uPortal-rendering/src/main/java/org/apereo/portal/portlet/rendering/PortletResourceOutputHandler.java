@@ -40,28 +40,44 @@ public interface PortletResourceOutputHandler extends PortletOutputHandler {
      */
     void setLocale(Locale locale);
 
-    /** @see HttpServletResponse#setStatus(int) */
+    /**
+     * @see HttpServletResponse#setStatus(int)
+     */
     void setStatus(int status);
 
-    /** @see HttpServletResponse#setDateHeader(String, long) */
+    /**
+     * @see HttpServletResponse#setDateHeader(String, long)
+     */
     void setDateHeader(String name, long date);
 
-    /** @see HttpServletResponse#addDateHeader(String, long) */
+    /**
+     * @see HttpServletResponse#addDateHeader(String, long)
+     */
     void addDateHeader(String name, long date);
 
-    /** @see HttpServletResponse#setHeader(String, String) */
+    /**
+     * @see HttpServletResponse#setHeader(String, String)
+     */
     void setHeader(String name, String value);
 
-    /** @see HttpServletResponse#addHeader(String, String) */
+    /**
+     * @see HttpServletResponse#addHeader(String, String)
+     */
     void addHeader(String name, String value);
 
-    /** @see HttpServletResponse#setIntHeader(String, int) */
+    /**
+     * @see HttpServletResponse#setIntHeader(String, int)
+     */
     void setIntHeader(String name, int value);
 
-    /** @see HttpServletResponse#addIntHeader(String, int) */
+    /**
+     * @see HttpServletResponse#addIntHeader(String, int)
+     */
     void addIntHeader(String name, int value);
 
-    /** @see HttpServletResponse#containsHeader(String) */
+    /**
+     * @see HttpServletResponse#containsHeader(String)
+     */
     boolean containsHeader(String name);
 
     /**

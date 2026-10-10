@@ -37,7 +37,9 @@ public abstract class PortletLayoutPortalEvent extends LayoutPortalEvent {
         this.fname = fname;
     }
 
-    /** @return the fname */
+    /**
+     * @return the fname
+     */
     public String getFname() {
         return this.fname;
     }

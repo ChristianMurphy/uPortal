@@ -16,15 +16,23 @@ package org.apereo.portal.portlet.om;
 
 /** Describes the IDs at the core of a portlet entity */
 public interface IPortletEntityDescriptor {
-    /** @return ID of the entity */
+    /**
+     * @return ID of the entity
+     */
     public IPortletEntityId getPortletEntityId();
 
-    /** @return ID of the parent definition */
+    /**
+     * @return ID of the parent definition
+     */
     public IPortletDefinitionId getPortletDefinitionId();
 
-    /** @return Layout node ID the entity exists for */
+    /**
+     * @return Layout node ID the entity exists for
+     */
     public String getLayoutNodeId();
 
-    /** @return User the entity exists for */
+    /**
+     * @return User the entity exists for
+     */
     public int getUserId();
 }

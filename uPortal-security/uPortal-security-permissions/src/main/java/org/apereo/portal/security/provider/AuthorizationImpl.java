@@ -261,6 +261,7 @@ public class AuthorizationImpl implements IAuthorizationService {
                 isAllowed);
         return isAllowed;
     }
+
     /**
      * Answers if the principal has permission to MANAGE this Channel.
      *
@@ -689,7 +690,9 @@ public class AuthorizationImpl implements IAuthorizationService {
         return getPrincipalsFromPermissions(permissions);
     }
 
-    /** @return org.apereo.portal.security.IPermissionPolicy */
+    /**
+     * @return org.apereo.portal.security.IPermissionPolicy
+     */
     protected IPermissionPolicy getDefaultPermissionPolicy() {
         return this.defaultPermissionPolicy;
     }
@@ -803,7 +806,9 @@ public class AuthorizationImpl implements IAuthorizationService {
         return getPermissionStore().select(owner, null, null, target, null);
     }
 
-    /** @return org.apereo.portal.security.IPermissionStore */
+    /**
+     * @return org.apereo.portal.security.IPermissionStore
+     */
     private IPermissionStore getPermissionStore() {
         return this.permissionStore;
     }

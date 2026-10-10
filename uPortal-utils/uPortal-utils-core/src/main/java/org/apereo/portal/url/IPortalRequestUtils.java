@@ -39,7 +39,9 @@ public interface IPortalRequestUtils {
      */
     HttpServletRequest getOriginalPortalRequest(HttpServletRequest request);
 
-    /** @see #getPortletHttpRequest(PortletRequest) */
+    /**
+     * @see #getPortletHttpRequest(PortletRequest)
+     */
     HttpServletRequest getOriginalPortalRequest(WebRequest request);
 
     /**
@@ -51,7 +53,9 @@ public interface IPortalRequestUtils {
      */
     HttpServletResponse getOriginalPortalResponse(PortletRequest portletRequest);
 
-    /** @see #getOriginalPortalResponse(PortletRequest) */
+    /**
+     * @see #getOriginalPortalResponse(PortletRequest)
+     */
     HttpServletResponse getOriginalPortalResponse(HttpServletRequest portletRequest);
 
     /**

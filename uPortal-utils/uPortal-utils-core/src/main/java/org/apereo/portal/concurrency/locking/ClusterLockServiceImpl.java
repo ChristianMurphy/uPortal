@@ -74,6 +74,7 @@ public class ClusterLockServiceImpl implements IClusterLockService {
             @Qualifier("uPortalLockExecutor") ExecutorService lockMonitorExecutorService) {
         this.lockMonitorExecutorService = lockMonitorExecutorService;
     }
+
     /**
      * Rate at which {@link IClusterLockDao#updateLock(String)} is called while a mutex is locked,
      * defaults to 500ms

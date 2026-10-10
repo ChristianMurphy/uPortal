@@ -828,14 +828,18 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
         session.removeAttribute(key);
     }
 
-    /** @return Map<nodeId, Map<name, value>> */
+    /**
+     * @return Map<nodeId, Map<name, value>>
+     */
     protected ConcurrentMap<String, Map<String, String>> getRequestLayoutAttributes(
             HttpServletRequest request, StylesheetPreferencesKey stylesheetPreferencesKey) {
         return PortalWebUtils.getMapRequestAttribute(
                 request, LAYOUT_ATTRIBUTES_KEY + stylesheetPreferencesKey.toString(), false);
     }
 
-    /** @return Map<nodeId, Map<name, value>> */
+    /**
+     * @return Map<nodeId, Map<name, value>>
+     */
     protected ConcurrentMap<String, Map<String, String>> getSessionLayoutAttributes(
             HttpSession session, StylesheetPreferencesKey stylesheetPreferencesKey) {
         return PortalWebUtils.getMapSessionAttribute(

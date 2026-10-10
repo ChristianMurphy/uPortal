@@ -38,6 +38,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
         authorizationService = authService;
         initialize();
     }
+
     /**
      * Answers if this <code>IAuthorizationPrincipal</code> has permission to manage this channel.
      *
@@ -50,6 +51,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
     public boolean canManage(String channelPublishId) throws AuthorizationException {
         return getAuthorizationService().canPrincipalManage(this, channelPublishId);
     }
+
     /**
      * Answers if this <code>IAuthorizationPrincipal</code> has permission to publish.
      *
@@ -67,6 +69,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
     public boolean canConfigure(String channelPublishId) throws AuthorizationException {
         return getAuthorizationService().canPrincipalConfigure(this, channelPublishId);
     }
+
     /**
      * Answers if this <code>IAuthorizationPrincipal</code> has permission to render this channel.
      *
@@ -79,6 +82,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
     public boolean canRender(String channelPublishId) throws AuthorizationException {
         return getAuthorizationService().canPrincipalRender(this, channelPublishId);
     }
+
     /**
      * Answers if this <code>IAuthorizationPrincipal</code> has permission to subscribe to this
      * channel.
@@ -107,6 +111,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
         } else if (!type.equals(other.getType())) return false;
         return true;
     }
+
     /**
      * Returns the <code>IPermissions</code> for this <code>IAuthorizationPrincipal</code>,
      * including inherited <code>IPermissions</code>.
@@ -118,6 +123,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
     public IPermission[] getAllPermissions() throws AuthorizationException {
         return getAllPermissions(null, null, null);
     }
+
     /**
      * Returns the <code>IPermissions</code> for this <code>IAuthorizationPrincipal</code> for the
      * specified <code>owner</code>, <code>activity</code> and <code>target</code>. Inherited <code>
@@ -137,16 +143,22 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
         return getAuthorizationService()
                 .getAllPermissionsForPrincipal(this, owner, activity, target);
     }
-    /** @return org.apereo.portal.security.IAuthorization */
+
+    /**
+     * @return org.apereo.portal.security.IAuthorization
+     */
     IAuthorizationService getAuthorizationService() {
         return authorizationService;
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     @Override
     public String getKey() {
         return key;
     }
+
     /**
      * Returns the <code>IPermissions</code> for this <code>IAuthorizationPrincipal</code>.
      *
@@ -157,6 +169,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
     public IPermission[] getPermissions() throws AuthorizationException {
         return getPermissions(null, null, null);
     }
+
     /**
      * Returns the <code>IPermissions</code> for this <code>IAuthorizationPrincipal</code> for the
      * specified <code>owner</code>, <code>activity</code> and <code>target</code>. Null parameters
@@ -174,12 +187,18 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
             throws AuthorizationException {
         return getAuthorizationService().getPermissionsForPrincipal(this, owner, activity, target);
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     @Override
     public String getPrincipalString() {
         return principalString;
     }
-    /** @return Class */
+
+    /**
+     * @return Class
+     */
     @Override
     public Class getType() {
         return type;
@@ -198,6 +217,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
         result = prime * result + ((type == null) ? 0 : type.hashCode());
         return result;
     }
+
     /**
      * Answers if this <code>IAuthorizationPrincipal</code> has permission to perform the <code>
      * activity</code> on the <code>target</code>. Params <code>owner</code> and <code>activity
@@ -214,6 +234,7 @@ public class AuthorizationPrincipalImpl implements IAuthorizationPrincipal {
             throws AuthorizationException {
         return getAuthorizationService().doesPrincipalHavePermission(this, owner, activity, target);
     }
+
     /** Set the value of the principal string. */
     private void initialize() {
         principalString = getAuthorizationService().getPrincipalString(this);

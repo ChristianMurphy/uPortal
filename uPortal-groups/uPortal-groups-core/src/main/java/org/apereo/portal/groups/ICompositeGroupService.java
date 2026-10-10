@@ -37,20 +37,25 @@ public interface ICompositeGroupService extends IComponentGroupService {
      * @param gm IGroupMember
      */
     public Iterator findParentGroups(IGroupMember gm) throws GroupsException;
+
     /** Returns a pre-existing <code>IEntityGroup</code> or null if it does not exist. */
     public IEntityGroup findGroup(String key) throws GroupsException;
+
     /** Returns a pre-existing <code>IEntityGroup</code> or null if it does not exist. */
     public ILockableEntityGroup findGroupWithLock(String key, String owner) throws GroupsException;
+
     /**
      * Returns an <code>IEntity</code> representing a portal entity. This does not guarantee that
      * the entity actually exists.
      */
     public IEntity getEntity(String key, Class type) throws GroupsException;
+
     /**
      * Returns an <code>IEntity</code> representing a portal entity. This does not guarantee that
      * the entity actually exists.
      */
     public IEntity getEntity(String key, Class type, String service) throws GroupsException;
+
     /**
      * Returns an <code>IGroupMember</code> representing either a group or a portal entity. If the
      * parm <code>type</code> is the group type, the <code>IGroupMember</code> is an <code>
@@ -63,12 +68,14 @@ public interface ICompositeGroupService extends IComponentGroupService {
      * service.
      */
     public IEntityGroup newGroup(Class type, Name serviceName) throws GroupsException;
+
     /**
      * Find EntityIdentifiers for entities whose name matches the query string according to the
      * specified method and is of the specified type
      */
     public EntityIdentifier[] searchForEntities(
             String query, IGroupConstants.SearchMethod method, Class type) throws GroupsException;
+
     /**
      * Find EntityIdentifiers for entities whose name matches the query string according to the
      * specified method, is of the specified type and descends from the specified group
@@ -76,6 +83,7 @@ public interface ICompositeGroupService extends IComponentGroupService {
     public EntityIdentifier[] searchForEntities(
             String query, IGroupConstants.SearchMethod method, Class type, IEntityGroup ancestor)
             throws GroupsException;
+
     /**
      * Find EntityIdentifiers for groups whose name matches the query string according to the
      * specified method and matches the provided leaf type
@@ -83,6 +91,7 @@ public interface ICompositeGroupService extends IComponentGroupService {
     public EntityIdentifier[] searchForGroups(
             String query, IGroupConstants.SearchMethod method, Class leaftype)
             throws GroupsException;
+
     /**
      * Find EntityIdentifiers for groups whose name matches the query string according to the
      * specified method, has the provided leaf type and descends from the specified group

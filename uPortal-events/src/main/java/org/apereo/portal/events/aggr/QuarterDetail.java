@@ -35,7 +35,9 @@ public interface QuarterDetail extends DateRange<MonthDay>, Comparable<QuarterDe
      */
     DateMidnight getEndDateMidnight(ReadableInstant instant);
 
-    /** @return The id of the quarter (0 - 3) */
+    /**
+     * @return The id of the quarter (0 - 3)
+     */
     int getQuarterId();
 
     /** Compare to another {@link QuarterDetail}, must sort by {@link #getQuarterId()} */

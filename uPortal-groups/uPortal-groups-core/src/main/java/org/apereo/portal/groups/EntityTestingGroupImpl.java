@@ -35,6 +35,7 @@ public class EntityTestingGroupImpl extends EntityGroupImpl {
     public EntityTestingGroupImpl(String groupKey, Class entityType) throws GroupsException {
         super(groupKey, entityType);
     }
+
     /**
      * Checks if <code>GroupMember</code> gm is a member of this.
      *

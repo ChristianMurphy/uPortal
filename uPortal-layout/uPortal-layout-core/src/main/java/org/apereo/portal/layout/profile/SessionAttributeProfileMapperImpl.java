@@ -53,7 +53,9 @@ public class SessionAttributeProfileMapperImpl
         this.defaultProfileName = defaultProfileName;
     }
 
-    /** @param attributeName */
+    /**
+     * @param attributeName
+     */
     public void setAttributeName(String attributeName) {
         this.attributeName = attributeName;
     }

@@ -64,7 +64,9 @@ public class TenantService {
 
     @Autowired private IPortalTenantEventFactory tenantEventFactory;
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     @PostConstruct
     public void init() {
         Map<String, ITenantManagementAction> map = new HashMap<>();
@@ -81,7 +83,9 @@ public class TenantService {
         operationsListenerAvailableActions = Collections.unmodifiableMap(map);
     }
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public ITenant getTenantByFName(final String fname) {
         // Assertions
         if (StringUtils.isBlank(fname)) {
@@ -287,7 +291,9 @@ public class TenantService {
         return new HashSet<ITenantManagementAction>(operationsListenerAvailableActions.values());
     }
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public ITenantManagementAction getAction(final String fname) {
         // Assertions
         if (StringUtils.isBlank(fname)) {

@@ -21,10 +21,14 @@ import org.apereo.portal.utils.IncludeExcludeUtils;
 /** Describes common Include/Exclude configuration of aggregation dimensions */
 public interface BaseAggregatedDimensionConfig<D> extends Serializable {
 
-    /** @return The aggregator the includes/excludes are for */
+    /**
+     * @return The aggregator the includes/excludes are for
+     */
     Class<? extends IPortalEventAggregator> getAggregatorType();
 
-    /** @return The revision number of the config object, can be used to detect changes */
+    /**
+     * @return The revision number of the config object, can be used to detect changes
+     */
     long getVersion();
 
     /**

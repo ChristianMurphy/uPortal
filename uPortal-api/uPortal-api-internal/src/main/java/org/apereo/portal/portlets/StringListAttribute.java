@@ -39,7 +39,9 @@ public class StringListAttribute implements Serializable {
         this.value = values;
     }
 
-    /** @return the value */
+    /**
+     * @return the value
+     */
     public List<String> getValue() {
         return value;
     }
@@ -63,7 +65,9 @@ public class StringListAttribute implements Serializable {
         return result;
     }
 
-    /** @param value the value to set */
+    /**
+     * @param value the value to set
+     */
     public void setValue(List<String> value) {
         removeAllEmptyItems(value);
         this.value = value;

@@ -39,7 +39,9 @@ public final class RandomTokenGenerator {
     private final char[] tokenChars;
     private final double bitsPerChar;
 
-    /** @param random User defined random source */
+    /**
+     * @param random User defined random source
+     */
     public RandomTokenGenerator(Random random) {
         this(random, DEFAULT_TOKEN_CHARS);
     }

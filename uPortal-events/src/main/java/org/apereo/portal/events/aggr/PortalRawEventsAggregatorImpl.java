@@ -913,7 +913,9 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
             }
         }
 
-        /** @return The interval info map for the aggregator */
+        /**
+         * @return The interval info map for the aggregator
+         */
         protected Map<AggregationInterval, AggregationIntervalInfo> getAggregatorIntervalInfo(
                 final Class<? extends IPortalEventAggregator<?>> aggregatorType) {
             final AggregatedIntervalConfig aggregatorIntervalConfig =

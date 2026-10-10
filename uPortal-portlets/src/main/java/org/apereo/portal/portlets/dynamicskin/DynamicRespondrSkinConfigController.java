@@ -82,7 +82,10 @@ public class DynamicRespondrSkinConfigController {
 
     @ActionMapping(params = "action=cancel")
     public void cancelUpdate(ActionResponse response)
-            throws IOException, ReadOnlyException, ValidatorException, PortletModeException,
+            throws IOException,
+                    ReadOnlyException,
+                    ValidatorException,
+                    PortletModeException,
                     WindowStateException {
         response.setPortletMode(PortletMode.VIEW);
 

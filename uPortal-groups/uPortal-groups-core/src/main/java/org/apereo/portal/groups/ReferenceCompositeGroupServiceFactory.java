@@ -25,6 +25,7 @@ public class ReferenceCompositeGroupServiceFactory implements ICompositeGroupSer
     public ReferenceCompositeGroupServiceFactory() {
         super();
     }
+
     /**
      * Return an instance of the service implementation.
      *

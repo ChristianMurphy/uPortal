@@ -100,6 +100,7 @@ public class JavaManagementServerBean {
     public boolean isFailOnException() {
         return this.failOnException;
     }
+
     /** If an exception should be thrown if setting up the JMX server fails */
     public void setFailOnException(boolean failOnException) {
         this.failOnException = failOnException;
@@ -108,6 +109,7 @@ public class JavaManagementServerBean {
     public int getPortTwo() {
         return this.portTwo;
     }
+
     /** Second port in the JMX connection string */
     public void setPortTwo(int portTwo) {
         this.portTwo = portTwo;
@@ -116,6 +118,7 @@ public class JavaManagementServerBean {
     public int getPortOne() {
         return portOne;
     }
+
     /** First port in the JMX connection string */
     @Required
     public void setPortOne(int portOne) {
@@ -126,6 +129,7 @@ public class JavaManagementServerBean {
     public String getHost() {
         return host;
     }
+
     /** The host to listen on */
     public void setHost(String host) {
         this.host = host;

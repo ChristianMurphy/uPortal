@@ -26,7 +26,9 @@ import org.w3c.dom.NodeList;
 public class PortletSubscribeIdResolver implements INodeIdResolver {
     private final String fname;
 
-    /** @param fname Functional name of portlet whose subscribe id to search for. */
+    /**
+     * @param fname Functional name of portlet whose subscribe id to search for.
+     */
     public PortletSubscribeIdResolver(String fname) {
         this.fname = fname;
     }

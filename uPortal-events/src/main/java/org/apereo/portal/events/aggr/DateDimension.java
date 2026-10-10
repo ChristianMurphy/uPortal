@@ -20,10 +20,14 @@ import org.joda.time.DateTimeFieldType;
 
 /** Describes a dimension in time (hours). Each object represents one minute in a 24 period */
 public interface DateDimension extends Serializable {
-    /** @return The ID of the dimension */
+    /**
+     * @return The ID of the dimension
+     */
     long getId();
 
-    /** @return The fully built date for this date dimension */
+    /**
+     * @return The fully built date for this date dimension
+     */
     DateMidnight getDate();
 
     /**
@@ -61,7 +65,9 @@ public interface DateDimension extends Serializable {
      */
     int getDay();
 
-    /** @return The optional designation of the current term the day exists in, may be null */
+    /**
+     * @return The optional designation of the current term the day exists in, may be null
+     */
     String getTerm();
 
     /** Set the term, only allowed if {@link #getTerm()} returns null */

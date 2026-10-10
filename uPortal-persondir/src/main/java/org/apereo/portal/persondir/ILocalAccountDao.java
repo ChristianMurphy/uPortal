@@ -57,7 +57,9 @@ public interface ILocalAccountDao {
      */
     public List<ILocalAccountPerson> getAllAccounts();
 
-    /** @param account */
+    /**
+     * @param account
+     */
     public void deleteAccount(ILocalAccountPerson account);
 
     /**

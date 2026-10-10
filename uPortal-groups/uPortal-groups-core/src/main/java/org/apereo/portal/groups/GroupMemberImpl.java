@@ -111,19 +111,25 @@ public abstract class GroupMemberImpl implements IGroupMember {
         return Collections.unmodifiableSet(result);
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     @Override
     public String getKey() {
         return getUnderlyingEntityIdentifier().getKey();
     }
 
-    /** @return Class */
+    /**
+     * @return Class
+     */
     @Override
     public Class getType() {
         return getUnderlyingEntityIdentifier().getType();
     }
 
-    /** @return EntityIdentifier */
+    /**
+     * @return EntityIdentifier
+     */
     @Override
     public EntityIdentifier getUnderlyingEntityIdentifier() {
         return underlyingEntityIdentifier;
@@ -138,13 +144,17 @@ public abstract class GroupMemberImpl implements IGroupMember {
         return isMemberOf(group) ? true : group.deepContains(this);
     }
 
-    /** @return boolean */
+    /**
+     * @return boolean
+     */
     @Override
     public boolean isGroup() {
         return false;
     }
 
-    /** @return boolean. */
+    /**
+     * @return boolean.
+     */
     protected boolean isKnownEntityType(Class anEntityType) throws GroupsException {
         return (EntityTypesLocator.getEntityTypes().getEntityIDFromType(anEntityType) != null);
     }
@@ -155,7 +165,9 @@ public abstract class GroupMemberImpl implements IGroupMember {
         return getParentGroups().contains(group);
     }
 
-    /** @throws UnsupportedOperationException */
+    /**
+     * @throws UnsupportedOperationException
+     */
     @Override
     public IEntityGroup asGroup() {
         throw new UnsupportedOperationException("This member is not a group:  " + this.getKey());

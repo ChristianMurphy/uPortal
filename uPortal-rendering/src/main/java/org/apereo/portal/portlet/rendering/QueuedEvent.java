@@ -26,14 +26,21 @@ public class QueuedEvent {
         this.portletWindowId = portletWindowId;
         this.event = event;
     }
-    /** @return the portletWindowId that created the event */
+
+    /**
+     * @return the portletWindowId that created the event
+     */
     public IPortletWindowId getPortletWindowId() {
         return portletWindowId;
     }
-    /** @return the event */
+
+    /**
+     * @return the event
+     */
     public Event getEvent() {
         return event;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
@@ -45,6 +52,7 @@ public class QueuedEvent {
         result = prime * result + ((portletWindowId == null) ? 0 : portletWindowId.hashCode());
         return result;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#equals(java.lang.Object)
      */
@@ -62,6 +70,7 @@ public class QueuedEvent {
         } else if (!portletWindowId.equals(other.portletWindowId)) return false;
         return true;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
      */

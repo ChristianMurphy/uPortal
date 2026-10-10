@@ -19,12 +19,18 @@ import org.joda.time.ReadableInstant;
 /** Describes a basic date range with an inclusive start and and exclusive end */
 public interface DateRange<DT> {
 
-    /** @return Start of the range, inclusive */
+    /**
+     * @return Start of the range, inclusive
+     */
     DT getStart();
 
-    /** @return End of the range, exclusive */
+    /**
+     * @return End of the range, exclusive
+     */
     DT getEnd();
 
-    /** @see EventDateTimeUtils#compareTo(ReadableInstant, ReadableInstant, ReadableInstant) */
+    /**
+     * @see EventDateTimeUtils#compareTo(ReadableInstant, ReadableInstant, ReadableInstant)
+     */
     int compareTo(ReadableInstant instant);
 }

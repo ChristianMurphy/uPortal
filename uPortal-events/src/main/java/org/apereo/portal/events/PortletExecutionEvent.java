@@ -36,6 +36,7 @@ public abstract class PortletExecutionEvent extends PortalEvent {
     private final String fname;
     private final WindowState windowState;
     private final PortletMode portletMode;
+
     /**
      * Still here to support deserializing old event json
      *
@@ -77,7 +78,9 @@ public abstract class PortletExecutionEvent extends PortalEvent {
         return portletWindowId;
     }
 
-    /** @return the executionTime in milliseconds */
+    /**
+     * @return the executionTime in milliseconds
+     */
     public long getExecutionTime() {
         if (this.executionTime == null) {
             this.executionTime = TimeUnit.NANOSECONDS.toMillis(this.executionTimeNano);
@@ -86,7 +89,9 @@ public abstract class PortletExecutionEvent extends PortalEvent {
         return this.executionTime;
     }
 
-    /** @return the executionTime in nanoseconds */
+    /**
+     * @return the executionTime in nanoseconds
+     */
     public long getExecutionTimeNano() {
         if (this.executionTimeNano == -1 && this.executionTime != null) {
             this.executionTimeNano = TimeUnit.MILLISECONDS.toNanos(this.executionTime);
@@ -95,7 +100,9 @@ public abstract class PortletExecutionEvent extends PortalEvent {
         return this.executionTimeNano;
     }
 
-    /** @return the fname */
+    /**
+     * @return the fname
+     */
     public String getFname() {
         return this.fname;
     }

@@ -42,13 +42,18 @@ public class PermissionSetImpl implements IPermissionSet {
         permissions = perms;
         entityIdentifier = new EntityIdentifier(key, type);
     }
-    /** @return IPermission[] */
+
+    /**
+     * @return IPermission[]
+     */
     @Override
     public IPermission[] getPermissions() {
         return permissions;
     }
 
-    /** @return EntityIdentifier IPermission[] */
+    /**
+     * @return EntityIdentifier IPermission[]
+     */
     @Override
     public EntityIdentifier getEntityIdentifier() {
         return entityIdentifier;

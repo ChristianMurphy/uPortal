@@ -21,10 +21,14 @@ import org.joda.time.DateMidnight;
 /** DAO for creation/lookup of date dimensions */
 public interface DateDimensionDao {
 
-    /** @return The newest (largest time in millis) date dimension in the persistent store */
+    /**
+     * @return The newest (largest time in millis) date dimension in the persistent store
+     */
     DateDimension getNewestDateDimension();
 
-    /** @return The oldest (smallest time in millis) date dimension in the persistent store */
+    /**
+     * @return The oldest (smallest time in millis) date dimension in the persistent store
+     */
     DateDimension getOldestDateDimension();
 
     /**
@@ -37,7 +41,9 @@ public interface DateDimensionDao {
     /** Store an updated DateDimension */
     void updateDateDimension(DateDimension dateDimension);
 
-    /** @return A list of all date dimensions in the persistent store, chronological order */
+    /**
+     * @return A list of all date dimensions in the persistent store, chronological order
+     */
     List<DateDimension> getDateDimensions();
 
     /**
@@ -47,10 +53,14 @@ public interface DateDimensionDao {
      */
     List<DateDimension> getDateDimensionsBetween(DateMidnight start, DateMidnight end);
 
-    /** @return {@link DateDimension}s that do not have terms */
+    /**
+     * @return {@link DateDimension}s that do not have terms
+     */
     List<DateDimension> getDateDimensionsWithoutTerm();
 
-    /** @return The {@link DateDimension} corresponding to the specified id */
+    /**
+     * @return The {@link DateDimension} corresponding to the specified id
+     */
     DateDimension getDateDimensionById(long id);
 
     /** Get the {@link DateDimension} for the specified year, month and day. */

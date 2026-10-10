@@ -23,13 +23,19 @@ public interface IPortalRequestInfo {
     public static final String URL_TYPE_HEADER = UrlType.class.getName();
     public static final String URL_STATE_HEADER = UrlState.class.getName();
 
-    /** @return The state rendered by the URL */
+    /**
+     * @return The state rendered by the URL
+     */
     public UrlState getUrlState();
 
-    /** @return Type of url this request is for */
+    /**
+     * @return Type of url this request is for
+     */
     public UrlType getUrlType();
 
-    /** @return Parameters targeting the portal itself */
+    /**
+     * @return Parameters targeting the portal itself
+     */
     public Map<String, List<String>> getPortalParameters();
 
     /**

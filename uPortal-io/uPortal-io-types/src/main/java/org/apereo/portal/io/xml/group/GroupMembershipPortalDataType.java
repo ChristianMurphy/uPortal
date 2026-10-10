@@ -37,7 +37,9 @@ public class GroupMembershipPortalDataType extends AbstractPortalDataType
 
     public static final String TYPE_ID = "group-membership";
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_30_DATA_KEY =
             new PortalDataKey(

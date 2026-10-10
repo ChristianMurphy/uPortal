@@ -27,10 +27,14 @@ import org.springframework.core.Ordered;
  */
 public interface IPortalDataType extends Ordered {
 
-    /** @return The unique name of this portal data type, must be a valid XML element name. */
+    /**
+     * @return The unique name of this portal data type, must be a valid XML element name.
+     */
     String getTypeId();
 
-    /** @return Message code to use for displaying the user readable title of this data type */
+    /**
+     * @return Message code to use for displaying the user readable title of this data type
+     */
     String getTitleCode();
 
     /**

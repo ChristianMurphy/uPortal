@@ -35,7 +35,10 @@ public class ParentUrlTag extends TagSupport implements ParameterizableTag {
     public String getPortletMode() {
         return portletMode;
     }
-    /** @param portletMode The portletMode to set */
+
+    /**
+     * @param portletMode The portletMode to set
+     */
     public void setPortletMode(String portletMode) {
         this.portletMode = portletMode;
     }
@@ -43,7 +46,10 @@ public class ParentUrlTag extends TagSupport implements ParameterizableTag {
     public String getWindowState() {
         return windowState;
     }
-    /** @param windowState The windowState to set */
+
+    /**
+     * @param windowState The windowState to set
+     */
     public void setWindowState(String windowState) {
         this.windowState = windowState;
     }

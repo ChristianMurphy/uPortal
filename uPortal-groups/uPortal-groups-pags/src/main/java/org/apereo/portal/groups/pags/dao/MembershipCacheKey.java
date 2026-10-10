@@ -17,7 +17,9 @@ package org.apereo.portal.groups.pags.dao;
 import java.io.Serializable;
 import org.apereo.portal.EntityIdentifier;
 
-/** @since 5.0 */
+/**
+ * @since 5.0
+ */
 /* package-private */ final class MembershipCacheKey implements Serializable {
 
     private static final long serialVersionUID = 1L;

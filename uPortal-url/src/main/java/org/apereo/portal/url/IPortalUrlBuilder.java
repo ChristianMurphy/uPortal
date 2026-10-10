@@ -32,7 +32,9 @@ public interface IPortalUrlBuilder extends IUrlBuilder {
      */
     IPortletWindowId getTargetPortletWindowId();
 
-    /** @return The type of URL that will be generated, will never return null. */
+    /**
+     * @return The type of URL that will be generated, will never return null.
+     */
     UrlType getUrlType();
 
     /**

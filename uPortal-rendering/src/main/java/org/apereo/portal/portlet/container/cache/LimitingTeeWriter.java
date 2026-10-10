@@ -61,12 +61,16 @@ public class LimitingTeeWriter extends TeeWriter {
         }
     }
 
-    /** @return Number of characters seen so far */
+    /**
+     * @return Number of characters seen so far
+     */
     public long getCharacterCount() {
         return characterCount;
     }
 
-    /** @return true if the limit has been reached */
+    /**
+     * @return true if the limit has been reached
+     */
     public boolean isLimitReached() {
         return limitReached;
     }

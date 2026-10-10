@@ -136,7 +136,9 @@ class PermissionActivityImpl implements IPermissionActivity, Serializable {
         return id;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
@@ -150,7 +152,9 @@ class PermissionActivityImpl implements IPermissionActivity, Serializable {
         return this.fname.equals(activity.getFname());
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(464270933, -1074792143).append(this.fname).toHashCode();

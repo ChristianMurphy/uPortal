@@ -52,7 +52,9 @@ public class PortletEventQueue implements Iterable<IPortletWindowId> {
         this.rawEventQueue.addAll(events);
     }
 
-    /** @return The Queue of unresolved events */
+    /**
+     * @return The Queue of unresolved events
+     */
     public Queue<QueuedEvent> getUnresolvedEvents() {
         return this.rawEventQueue;
     }

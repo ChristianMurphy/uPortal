@@ -31,17 +31,23 @@ public class XMLEventBufferWriter implements XMLEventWriter {
     private NamespaceContext namespaceContext;
     private String defaultNamespace;
 
-    /** @return The buffer of events written to the writer so far */
+    /**
+     * @return The buffer of events written to the writer so far
+     */
     public List<XMLEvent> getEventBuffer() {
         return this.eventBuffer;
     }
 
-    /** @return Prefixes configured via {@link #setPrefix(String, String)} */
+    /**
+     * @return Prefixes configured via {@link #setPrefix(String, String)}
+     */
     public Map<String, String> getPrefixes() {
         return this.prefixes;
     }
 
-    /** @return The default namespace specified by {@link #setDefaultNamespace(String)} */
+    /**
+     * @return The default namespace specified by {@link #setDefaultNamespace(String)}
+     */
     public String getDefaultNamespace() {
         return this.defaultNamespace;
     }

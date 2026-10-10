@@ -71,21 +71,33 @@ public interface IDatabaseMetadata {
      */
     public String sqlTimeStamp(Date date);
 
-    /** @return Database Name */
+    /**
+     * @return Database Name
+     */
     public String getDatabaseProductName();
 
-    /** @return Database Version */
+    /**
+     * @return Database Version
+     */
     public String getDatabaseProductVersion();
 
-    /** @return The JDBC Driver being used */
+    /**
+     * @return The JDBC Driver being used
+     */
     public String getJdbcDriver();
 
-    /** @return The JDBC Driver version */
+    /**
+     * @return The JDBC Driver version
+     */
     public String getJdbcDriverVersion();
 
-    /** @return The JDBC URL being used */
+    /**
+     * @return The JDBC URL being used
+     */
     public String getJdbcUrl();
 
-    /** @return The JDBC user name */
+    /**
+     * @return The JDBC user name
+     */
     public String getJdbcUser();
 }

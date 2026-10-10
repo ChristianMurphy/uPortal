@@ -29,27 +29,32 @@ public interface IPortletWorkerFactory {
             HttpServletRequest request,
             HttpServletResponse response,
             IPortletWindowId portletWindowId);
+
     /** Create a worker that will execute an event request on the specified portlet window */
     public IPortletEventExecutionWorker createEventWorker(
             HttpServletRequest request,
             HttpServletResponse response,
             IPortletWindowId portletWindowId,
             Event event);
+
     /** Create a worker that will execute a render request on the specified portlet window */
     public IPortletRenderExecutionWorker createRenderHeaderWorker(
             HttpServletRequest request,
             HttpServletResponse response,
             IPortletWindowId portletWindowId);
+
     /** Create a worker that will execute a render request on the specified portlet window */
     public IPortletRenderExecutionWorker createRenderWorker(
             HttpServletRequest request,
             HttpServletResponse response,
             IPortletWindowId portletWindowId);
+
     /** Create a worker that will execute a resource request on the specified portlet window */
     public IPortletResourceExecutionWorker createResourceWorker(
             HttpServletRequest request,
             HttpServletResponse response,
             IPortletWindowId portletWindowId);
+
     /**
      * Create a worker that will execute the failure handler on the specified portlet window that
      * threw an exception

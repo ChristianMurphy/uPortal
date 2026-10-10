@@ -68,6 +68,7 @@ public class BadPropertyException extends RuntimeException {
     public String getDesiredType() {
         return this.desiredType;
     }
+
     /**
      * Get the name of the bad property.
      *
@@ -76,6 +77,7 @@ public class BadPropertyException extends RuntimeException {
     public String getPropertyName() {
         return this.propertyName;
     }
+
     /**
      * Get the actual value of the property.
      *

@@ -22,6 +22,8 @@ import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
  * purposes.
  */
 public interface PortletLayoutAggregationDiscriminator extends BaseGroupedAggregationDiscriminator {
-    /** @return The name of the tab */
+    /**
+     * @return The name of the tab
+     */
     AggregatedPortletMapping getPortletMapping();
 }

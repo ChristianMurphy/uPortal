@@ -22,9 +22,14 @@ import org.apereo.portal.portlet.om.IPortletWindowId;
 
 /** Information from the request that targets a particular portlet */
 public interface IPortletRequestInfo {
-    /** @return The {@link IPortletWindowId} this request info is for, will never return null */
+    /**
+     * @return The {@link IPortletWindowId} this request info is for, will never return null
+     */
     public IPortletWindowId getPortletWindowId();
-    /** @return The portlet parameters from the request, will never return null. */
+
+    /**
+     * @return The portlet parameters from the request, will never return null.
+     */
     public Map<String, List<String>> getPortletParameters();
 
     /**
@@ -40,18 +45,21 @@ public interface IPortletRequestInfo {
      *     {@link UrlType#RESOURCE}
      */
     public WindowState getWindowState();
+
     /**
      * @return The requested PortletMode, null if no change to the PortletMode is requested
      * @throws IllegalStateException If parent {@link IPortalRequestInfo#getUrlType()} returns
      *     {@link UrlType#RESOURCE}
      */
     public PortletMode getPortletMode();
+
     /**
      * @return The requested resource ID for a resource request
      * @throws IllegalStateException If parent {@link IPortalRequestInfo#getUrlType()} does not
      *     return {@link UrlType#RESOURCE}
      */
     public String getResourceId();
+
     /**
      * @return The cacheability requested for the resource request
      * @throws IllegalStateException If parent {@link IPortalRequestInfo#getUrlType()} does not

@@ -118,7 +118,9 @@ public final class UrlStringBuilder extends BaseEncodedStringBuilder {
         return this;
     }
 
-    /** @see #setParameter(String, String...) */
+    /**
+     * @see #setParameter(String, String...)
+     */
     public UrlStringBuilder setParameter(String name, List<String> values) {
         Validate.notNull(name, "parameter name cannot be null");
 
@@ -139,7 +141,9 @@ public final class UrlStringBuilder extends BaseEncodedStringBuilder {
         return this;
     }
 
-    /** @see #addParameter(String, List) */
+    /**
+     * @see #addParameter(String, List)
+     */
     public UrlStringBuilder addParameter(String name, List<String> values) {
         Validate.notNull(name, "parameter name cannot be null");
 

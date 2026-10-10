@@ -44,12 +44,16 @@ public final class FolderMovedInLayoutPortalEvent extends LayoutPortalEvent {
         this.movedFolderId = movedFolderId;
     }
 
-    /** @return the oldParentFolderId */
+    /**
+     * @return the oldParentFolderId
+     */
     public String getOldParentFolderId() {
         return this.oldParentFolderId;
     }
 
-    /** @return the movedFolderId */
+    /**
+     * @return the movedFolderId
+     */
     public String getMovedFolderId() {
         return this.movedFolderId;
     }

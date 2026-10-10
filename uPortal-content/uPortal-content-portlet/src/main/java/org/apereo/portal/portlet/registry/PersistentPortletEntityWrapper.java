@@ -40,7 +40,9 @@ class PersistentPortletEntityWrapper implements IPortletEntity {
         this.standardEntityId = standardEntityId;
     }
 
-    /** @return The wrapped entity */
+    /**
+     * @return The wrapped entity
+     */
     public IPortletEntity getPersistentEntity() {
         return this.persistentEntity;
     }

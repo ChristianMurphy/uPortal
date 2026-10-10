@@ -66,10 +66,14 @@ public interface BaseAggregationDao<T extends BaseAggregation<K, ?>, K extends B
     Map<K, T> getAggregationsForInterval(
             DateDimension dateDimension, TimeDimension timeDimension, AggregationInterval interval);
 
-    /** @return All aggregation intervals that have aggregation data associated with them */
+    /**
+     * @return All aggregation intervals that have aggregation data associated with them
+     */
     Set<AggregationInterval> getAggregationIntervals();
 
-    /** @return All aggregated groups that have aggregation data associated with them */
+    /**
+     * @return All aggregated groups that have aggregation data associated with them
+     */
     Set<AggregatedGroupMapping> getAggregatedGroupMappings();
 
     /** Get a specific aggregation */

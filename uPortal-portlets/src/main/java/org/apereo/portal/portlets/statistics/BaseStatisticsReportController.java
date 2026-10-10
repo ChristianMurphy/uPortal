@@ -143,7 +143,9 @@ public abstract class BaseStatisticsReportController<
         return sortedGroupMappings;
     }
 
-    /** @return The default report request form to use, populates the initial form view */
+    /**
+     * @return The default report request form to use, populates the initial form view
+     */
     @ModelAttribute("reportRequest")
     public final F getReportForm(F report) {
         setReportFormDateRangeAndInterval(report);
@@ -272,7 +274,9 @@ public abstract class BaseStatisticsReportController<
      */
     protected void initReportForm(F report) {}
 
-    /** @return The dao for the aggregation */
+    /**
+     * @return The dao for the aggregation
+     */
     protected abstract BaseAggregationDao<T, K> getBaseAggregationDao();
 
     /**

@@ -33,7 +33,10 @@ public interface IPermissionManager {
      */
     public IAuthorizationPrincipal[] getAuthorizedPrincipals(String activity, String target)
             throws AuthorizationException;
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     public String getOwner();
 
     /** Obtains all permissions records with the specified target. */

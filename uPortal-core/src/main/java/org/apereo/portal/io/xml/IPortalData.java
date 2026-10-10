@@ -16,10 +16,18 @@ package org.apereo.portal.io.xml;
 
 /** Represents a piece of data in the portal that can be exported. */
 public interface IPortalData {
-    /** @return The unique id of the data object this represents */
+    /**
+     * @return The unique id of the data object this represents
+     */
     public String getDataId();
-    /** @return The user readable title of the data */
+
+    /**
+     * @return The user readable title of the data
+     */
     public String getDataTitle();
-    /** @return The user readable description of the data */
+
+    /**
+     * @return The user readable description of the data
+     */
     public String getDataDescription();
 }

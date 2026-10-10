@@ -18,10 +18,14 @@ import org.springframework.oxm.Marshaller;
 
 /** Defines a class that can export a specific type of portal data */
 public interface IDataExporter<T> {
-    /** @return The type descriptor for the */
+    /**
+     * @return The type descriptor for the
+     */
     public IPortalDataType getPortalDataType();
 
-    /** @return All of the available data for this type */
+    /**
+     * @return All of the available data for this type
+     */
     public Iterable<? extends IPortalData> getPortalData();
 
     /** Return portal data to export, if no data exists for the id null should be returned. */
@@ -33,6 +37,8 @@ public interface IDataExporter<T> {
      */
     public String getFileName(T data);
 
-    /** @return The Marshaller to use the convert the data to XML */
+    /**
+     * @return The Marshaller to use the convert the data to XML
+     */
     public Marshaller getMarshaller();
 }

@@ -35,10 +35,14 @@ public interface XPathOperations {
     public <T> T doWithExpression(
             String expression, Map<String, ?> variables, Function<XPathExpression, T> callback);
 
-    /** @see XPathExpression#evaluate(Object, QName) */
+    /**
+     * @see XPathExpression#evaluate(Object, QName)
+     */
     public <T> T evaluate(String expression, final Object item, final QName returnType);
 
-    /** @see XPathExpression#evaluate(Object, QName) */
+    /**
+     * @see XPathExpression#evaluate(Object, QName)
+     */
     public <T> T evaluate(
             String expression, Map<String, ?> variables, final Object item, final QName returnType);
 }

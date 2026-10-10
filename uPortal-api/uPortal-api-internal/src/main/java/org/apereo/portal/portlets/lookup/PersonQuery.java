@@ -31,11 +31,16 @@ public class PersonQuery implements Serializable {
     private Map<String, Attribute> attributes =
             LazyMap.decorate(new HashMap<String, Attribute>(), new AttributeFactory());
 
-    /** @return the attributes */
+    /**
+     * @return the attributes
+     */
     public Map<String, Attribute> getAttributes() {
         return this.attributes;
     }
-    /** @param attributes the attributes to set */
+
+    /**
+     * @param attributes the attributes to set
+     */
     @SuppressWarnings("unchecked")
     public void setAttributes(Map<String, Attribute> attributes) {
         if (attributes == null) {
@@ -46,7 +51,9 @@ public class PersonQuery implements Serializable {
         }
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)

@@ -71,12 +71,16 @@ public class EntityLockService {
     private static EntityLockService instance = null;
     // The lock service:
     private IEntityLockService lockService = null;
+
     /** Creates new EntityLockService */
     private EntityLockService() throws LockingException {
         super();
         initialize();
     }
-    /** @exception LockingException */
+
+    /**
+     * @exception LockingException
+     */
     private void initialize() throws LockingException {
         String eMsg = null;
         String factoryName =
@@ -106,6 +110,7 @@ public class EntityLockService {
         }
         return instance;
     }
+
     /**
      * Returns a read lock for the entity type, entity key and owner.
      *
@@ -119,6 +124,7 @@ public class EntityLockService {
             throws LockingException {
         return lockService.newLock(entityType, entityKey, IEntityLockService.READ_LOCK, owner);
     }
+
     /**
      * Returns a read lock for the entity type, entity key and owner.
      *
@@ -134,6 +140,7 @@ public class EntityLockService {
         return lockService.newLock(
                 entityType, entityKey, IEntityLockService.READ_LOCK, owner, duration);
     }
+
     /**
      * Returns a read lock for the <code>IBasicEntity</code> and owner.
      *
@@ -147,6 +154,7 @@ public class EntityLockService {
         return lockService.newLock(
                 entityID.getType(), entityID.getKey(), IEntityLockService.READ_LOCK, owner);
     }
+
     /**
      * Returns a read lock for the <code>IBasicEntity</code>, owner and duration.
      *
@@ -165,6 +173,7 @@ public class EntityLockService {
                 owner,
                 durationSecs);
     }
+
     /**
      * Returns a write lock for the entity type, entity key and owner.
      *
@@ -178,6 +187,7 @@ public class EntityLockService {
             throws LockingException {
         return lockService.newLock(entityType, entityKey, IEntityLockService.WRITE_LOCK, owner);
     }
+
     /**
      * Returns a write lock for the entity type, entity key and owner.
      *
@@ -194,6 +204,7 @@ public class EntityLockService {
         return lockService.newLock(
                 entityType, entityKey, IEntityLockService.WRITE_LOCK, owner, durationSecs);
     }
+
     /**
      * Returns a write lock for the <code>IBasicEntity</code> and owner.
      *
@@ -207,6 +218,7 @@ public class EntityLockService {
         return lockService.newLock(
                 entityID.getType(), entityID.getKey(), IEntityLockService.WRITE_LOCK, owner);
     }
+
     /**
      * Returns a write lock for the <code>IBasicEntity</code>, owner and duration.
      *

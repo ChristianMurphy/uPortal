@@ -22,6 +22,8 @@ import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
  */
 public interface BaseGroupedAggregationDiscriminator {
 
-    /** @return The group this aggregation is for, null if it is for all users */
+    /**
+     * @return The group this aggregation is for, null if it is for all users
+     */
     AggregatedGroupMapping getAggregatedGroup();
 }

@@ -19,9 +19,13 @@ import org.springframework.core.io.Resource;
 
 /** Represents a resources loaded by a {@link Loader}. */
 public interface LoadedResource<T> {
-    /** @return The built resource object */
+    /**
+     * @return The built resource object
+     */
     public T getLoadedResource();
 
-    /** @return Additional resource files involved with loading the Resource */
+    /**
+     * @return Additional resource files involved with loading the Resource
+     */
     public Map<Resource, Long> getAdditionalResources();
 }

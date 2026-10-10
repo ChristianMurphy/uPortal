@@ -18,6 +18,8 @@ import org.springframework.context.ApplicationEvent;
 
 /** Filter for determining if an {@link ApplicationEvent} is supported */
 public interface ApplicationEventFilter<E extends ApplicationEvent> {
-    /** @return true if the event is supported, false if not */
+    /**
+     * @return true if the event is supported, false if not
+     */
     boolean supports(E event);
 }

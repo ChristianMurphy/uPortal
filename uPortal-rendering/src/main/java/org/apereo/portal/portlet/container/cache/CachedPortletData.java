@@ -39,7 +39,9 @@ public class CachedPortletData<T extends Serializable>
     private final long timeStored;
     private long expirationTime;
 
-    /** @param expirationTime Time in seconds the content is valid for (from now) */
+    /**
+     * @param expirationTime Time in seconds the content is valid for (from now)
+     */
     public CachedPortletData(
             T portletResult,
             String cachedWriterOutput,
@@ -88,7 +90,9 @@ public class CachedPortletData<T extends Serializable>
         return expirationTime;
     }
 
-    /** @param expirationTime Time in seconds the content is valid for (from now) */
+    /**
+     * @param expirationTime Time in seconds the content is valid for (from now)
+     */
     public void updateExpirationTime(int expirationTime) {
         if (expirationTime == -1) {
             this.expirationTime = -1;

@@ -31,13 +31,17 @@ public class UserPortalDataType extends AbstractPortalDataType implements IExpor
     public static final QName USER_QNAME =
             new QName("https://source.jasig.org/schemas/uportal/io/user", "user");
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated public static final QName LEGACY_USER_QNAME = new QName("user");
 
     public static final PortalDataKey IMPORT_40_DATA_KEY =
             new PortalDataKey(USER_QNAME, null, "4.0");
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_32_DATA_KEY =
             new PortalDataKey(
@@ -45,7 +49,9 @@ public class UserPortalDataType extends AbstractPortalDataType implements IExpor
                     "classpath://org/jasig/portal/io/import-user_v3-2.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_30_DATA_KEY =
             new PortalDataKey(
@@ -53,7 +59,9 @@ public class UserPortalDataType extends AbstractPortalDataType implements IExpor
                     "classpath://org/jasig/portal/io/import-user_v3-0.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_26_DATA_KEY =
             new PortalDataKey(

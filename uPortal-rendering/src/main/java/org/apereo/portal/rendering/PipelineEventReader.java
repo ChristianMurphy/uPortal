@@ -23,7 +23,9 @@ import java.util.Map;
  * @param <E> The type of event the reader exposes
  */
 public interface PipelineEventReader<R, E> extends Iterable<E> {
-    /** @return The native event reader */
+    /**
+     * @return The native event reader
+     */
     public R getEventReader();
 
     /**
@@ -34,6 +36,8 @@ public interface PipelineEventReader<R, E> extends Iterable<E> {
      */
     public String getOutputProperty(String name);
 
-    /** @return A read-only map of all output properties */
+    /**
+     * @return A read-only map of all output properties
+     */
     public Map<String, String> getOutputProperties();
 }

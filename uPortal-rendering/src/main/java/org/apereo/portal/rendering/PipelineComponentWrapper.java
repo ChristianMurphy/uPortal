@@ -23,12 +23,16 @@ public abstract class PipelineComponentWrapper<R, E> implements PipelineComponen
 
     protected PipelineComponent<R, E> wrappedComponent;
 
-    /** @return The wrapped component */
+    /**
+     * @return The wrapped component
+     */
     public PipelineComponent<R, E> getWrappedComponent() {
         return this.wrappedComponent;
     }
 
-    /** @param wrappedComponent The component to wrap */
+    /**
+     * @param wrappedComponent The component to wrap
+     */
     public void setWrappedComponent(PipelineComponent<R, E> wrappedComponent) {
         this.wrappedComponent = wrappedComponent;
     }

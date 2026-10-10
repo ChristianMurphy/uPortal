@@ -27,7 +27,9 @@ public class XalanAuthorizationHelper {
         XalanAuthorizationHelper.authorizationHelper = authorizationHelper;
     }
 
-    /** @see IXalanAuthorizationHelper#canRender(java.lang.String, java.lang.String) */
+    /**
+     * @see IXalanAuthorizationHelper#canRender(java.lang.String, java.lang.String)
+     */
     public static boolean canRender(final String userName, final String channelFName) {
         return authorizationHelper.canRender(userName, channelFName);
     }

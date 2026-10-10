@@ -16,6 +16,8 @@ package org.apereo.portal.portlet.om;
 
 /** Identifier type for portlet definitions. */
 public interface IPortletDefinitionId extends IObjectId {
-    /** @return the numeric version of the id */
+    /**
+     * @return the numeric version of the id
+     */
     long getLongId();
 }

@@ -54,6 +54,7 @@ public interface IPortletCookie {
      * @return the cookie comment
      */
     String getComment();
+
     /**
      * @see Cookie#getMaxAge()
      * @return the cookie max age (in minutes)
@@ -103,6 +104,7 @@ public interface IPortletCookie {
      * @param comment
      */
     void setComment(String comment);
+
     /**
      * Set the cookie max age (in minutes)
      *
@@ -130,6 +132,8 @@ public interface IPortletCookie {
     /** Update all of the fields from the specified Cookie */
     void updateFromCookie(Cookie cookie);
 
-    /** @return a new {@link Cookie} created from the values of the fields in this instance */
+    /**
+     * @return a new {@link Cookie} created from the values of the fields in this instance
+     */
     Cookie toCookie();
 }

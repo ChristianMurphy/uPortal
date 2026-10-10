@@ -37,34 +37,46 @@ public class PortalContextImpl implements PortalContext {
         this.portalVersion = portalVersion;
     }
 
-    /** @return the portalProperties, will not be null. */
+    /**
+     * @return the portalProperties, will not be null.
+     */
     public Properties getPortalProperties() {
         return portalProperties;
     }
 
-    /** @param portalProperties the portalProperties to set, can not be null. */
+    /**
+     * @param portalProperties the portalProperties to set, can not be null.
+     */
     public void setPortalProperties(Properties portalProperties) {
         Validate.notNull(portalProperties, "portalProperties can not be null");
         this.portalProperties = portalProperties;
     }
 
-    /** @return the portletModes, will not be null. */
+    /**
+     * @return the portletModes, will not be null.
+     */
     public Set<PortletMode> getPortletModes() {
         return portletModes;
     }
 
-    /** @param portletModes the portletModes to set, can not be null. */
+    /**
+     * @param portletModes the portletModes to set, can not be null.
+     */
     public void setPortletModes(Set<PortletMode> portletModes) {
         Validate.notNull(portletModes, "portletModes can not be null");
         this.portletModes = portletModes;
     }
 
-    /** @return the windowStates, will not be null. */
+    /**
+     * @return the windowStates, will not be null.
+     */
     public Set<WindowState> getWindowStates() {
         return windowStates;
     }
 
-    /** @param windowStates the windowStates to set, can not be null. */
+    /**
+     * @param windowStates the windowStates to set, can not be null.
+     */
     public void setWindowStates(Set<WindowState> windowStates) {
         Validate.notNull(windowStates, "windowStates can not be null");
         this.windowStates = windowStates;

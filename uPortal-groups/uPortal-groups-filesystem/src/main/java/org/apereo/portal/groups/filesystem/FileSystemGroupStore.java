@@ -195,12 +195,16 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     public FileSystemGroupStore() {
         this(null);
     }
+
     /** FileSystemGroupStore constructor. */
     public FileSystemGroupStore(GroupServiceConfiguration cfg) {
         super();
         initialize(cfg);
     }
-    /** @return GroupHolder */
+
+    /**
+     * @return GroupHolder
+     */
     protected GroupHolder cacheGet(String key) {
         return (GroupHolder) getCache().get(key);
     }
@@ -212,6 +216,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     protected String conformSeparatorChars(String s) {
         return s.replace(getBadSeparator(), getGoodSeparator());
     }
+
     /**
      * Delete this <code>IEntityGroup</code> from the data store. We assume that groups will be
      * deleted via the file system, not the group service.
@@ -222,6 +227,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     public void delete(IEntityGroup group) throws GroupsException {
         throw new UnsupportedOperationException("FileSystemGroupStore.delete() not supported");
     }
+
     /**
      * Returns an instance of the <code>IEntityGroup</code> from the data store.
      *
@@ -231,6 +237,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     private IEntityGroup find(File file) throws GroupsException {
         return find(getKeyFromFile(file));
     }
+
     /**
      * Returns an instance of the <code>IEntityGroup</code> from the data store.
      *
@@ -269,6 +276,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return groupHolder.getGroup();
     }
+
     /**
      * Returns an <code>Iterator</code> over the <code>Collection</code> of <code>IEntityGroups
      * </code> that the <code>IEntity</code> belongs to.
@@ -298,6 +306,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
 
         return groups.iterator();
     }
+
     /**
      * Returns an <code>Iterator</code> over the <code>Collection</code> of <code>IEntityGroups
      * </code> that the <code>IGroupMember</code> belongs to.
@@ -331,6 +340,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return groups.iterator();
     }
+
     /**
      * Returns an <code>Iterator</code> over the <code>Collection</code> of <code>IEntityGroups
      * </code> that the <code>IGroupMember</code> belongs to.
@@ -348,6 +358,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
             return findParentGroups(ent);
         }
     }
+
     /**
      * Returns an <code>Iterator</code> over the <code>Collection</code> of <code>IEntities</code>
      * that are members of this <code>IEntityGroup</code>.
@@ -373,6 +384,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
 
         return entities.iterator();
     }
+
     /**
      * Returns an instance of the <code>ILockableEntityGroup</code> from the data store.
      *
@@ -383,6 +395,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     public ILockableEntityGroup findLockable(String key) throws GroupsException {
         throw new UnsupportedOperationException(DEBUG_CLASS_NAME + ".findLockable() not supported");
     }
+
     /**
      * Returns a <code>String[]</code> containing the keys of <code>IEntityGroups</code> that are
      * members of this <code>IEntityGroup</code>. In a composite group system, a group may contain a
@@ -418,6 +431,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return keys;
     }
+
     /**
      * Returns an <code>Iterator</code> over the <code>Collection</code> of <code>IEntityGroups
      * </code> that are members of this <code>IEntityGroup</code>.
@@ -434,6 +448,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return groups.iterator();
     }
+
     /**
      * Recursive search of directories underneath dir for files that match filter.
      *
@@ -446,6 +461,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return allDirectories;
     }
+
     /** Recursive search of directories underneath dir for files that match filter. */
     public File[] getAllFilesBelow(File dir) {
         Set allFiles = new HashSet();
@@ -454,6 +470,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return (File[]) allFiles.toArray(new File[allFiles.size()]);
     }
+
     /**
      * Returns the filesystem separator character NOT in use.
      *
@@ -462,10 +479,14 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     protected char getBadSeparator() {
         return badSeparator;
     }
-    /** @return java.util.Map */
+
+    /**
+     * @return java.util.Map
+     */
     protected java.util.Map getCache() {
         return cache;
     }
+
     /**
      * Returns a Class representing the default entity type.
      *
@@ -474,6 +495,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     protected Class getDefaultEntityType() {
         return defaultEntityType;
     }
+
     /**
      * @param idFile java.io.File - a file of ids.
      * @return entities Collection.
@@ -509,6 +531,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
 
         return entities;
     }
+
     /**
      * @param idFile java.io.File - a file of ids.
      * @return String[] ids.
@@ -526,6 +549,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
 
         return ids;
     }
+
     /**
      * @param f File
      * @return java.lang.Class The Class is the first node of the full path name.
@@ -546,6 +570,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return type;
     }
+
     /**
      * @param group IEntityGroup.
      * @return File
@@ -568,12 +593,14 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
 
         return conformSeparatorChars(fullKey);
     }
+
     /** Returns a File that is the root for groups of the given type. */
     protected File getFileRoot(Class type) {
         String path = getGroupsRootPath() + type.getName();
         File f = new File(path);
         return (f.exists()) ? f : null;
     }
+
     /**
      * Returns the filesystem separator character in use.
      *
@@ -582,6 +609,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     protected char getGoodSeparator() {
         return goodSeparator;
     }
+
     /**
      * @param idFile java.io.File - a file of ids.
      * @return String[] ids.
@@ -598,10 +626,14 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
 
         return ids;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     public java.lang.String getGroupsRootPath() {
         return groupsRootPath;
     }
+
     /**
      * @param idFile java.io.File - a file of ids.
      * @return String[] ids.
@@ -671,13 +703,17 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
             useSubstitutePeriod = sep.equals(period);
         }
     }
-    /** @return org.apereo.portal.groups.IEntityGroup */
+
+    /**
+     * @return org.apereo.portal.groups.IEntityGroup
+     */
     private IEntityGroup newInstance(File f) throws GroupsException {
         String key = getKeyFromFile(f);
         String name = f.getName();
         Class cl = getEntityType(f);
         return newInstance(key, cl, name);
     }
+
     /**
      * @return org.apereo.portal.groups.IEntityGroup We assume that new groups will be created
      *     updated via the file system, not the group service.
@@ -695,13 +731,17 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         }
         return new EntityImpl(key, type);
     }
-    /** @return org.apereo.portal.groups.IEntityGroup */
+
+    /**
+     * @return org.apereo.portal.groups.IEntityGroup
+     */
     private IEntityGroup newInstance(String newKey, Class newType, String newName)
             throws GroupsException {
         EntityGroupImpl egi = new EntityGroupImpl(newKey, newType);
         egi.primSetName(newName);
         return egi;
     }
+
     /** Returns all directories under dir. */
     private void primGetAllDirectoriesBelow(File dir, Set allDirectories) {
         File[] files = dir.listFiles(fileFilter);
@@ -712,6 +752,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
             }
         }
     }
+
     /** Returns all files (not directories) underneath dir. */
     private void primGetAllFilesBelow(File dir, Set allFiles) {
         File[] files = dir.listFiles(fileFilter);
@@ -723,6 +764,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
             }
         }
     }
+
     /**
      * Find EntityIdentifiers for entities whose name matches the query string according to the
      * specified method and is of the specified type
@@ -732,6 +774,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
             throws GroupsException {
         return new EntityIdentifier[0];
     }
+
     /**
      * Returns an EntityIdentifier[] of groups of the given leaf type whose names match the query
      * string according to the search method.
@@ -814,14 +857,21 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
 
         return (EntityIdentifier[]) ids.toArray(new EntityIdentifier[ids.size()]);
     }
-    /** @param newCache java.util.Map */
+
+    /**
+     * @param newCache java.util.Map
+     */
     protected void setCache(java.util.Map newCache) {
         cache = newCache;
     }
-    /** @param newGroupsRootPath java.lang.String */
+
+    /**
+     * @param newGroupsRootPath java.lang.String
+     */
     protected void setGroupsRootPath(java.lang.String newGroupsRootPath) {
         groupsRootPath = conformSeparatorChars(newGroupsRootPath) + getGoodSeparator();
     }
+
     /**
      * Adds or updates the <code>IEntityGroup</code> AND ITS MEMBERSHIPS to the data store, as
      * appropriate. We assume that groups will be updated via the file system, not the group
@@ -833,6 +883,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
     public void update(IEntityGroup group) throws GroupsException {
         throw new UnsupportedOperationException(DEBUG_CLASS_NAME + ".update() not supported");
     }
+
     /**
      * Commits the group memberships of the <code>IEntityGroup</code> to the data store. We assume
      * that groups will be updated via the file system, not the group service.
@@ -844,6 +895,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         throw new UnsupportedOperationException(
                 DEBUG_CLASS_NAME + ".updateMembers() not supported");
     }
+
     /**
      * Answers if <code>group</code> contains <code>member</code>.
      *
@@ -856,6 +908,7 @@ public class FileSystemGroupStore implements IEntityGroupStore, IEntityStore, IE
         File f = getFile(group);
         return (f.isDirectory()) ? directoryContains(f, member) : fileContains(f, member);
     }
+
     /**
      * Answers if <code>file</code> contains <code>member</code>.
      *

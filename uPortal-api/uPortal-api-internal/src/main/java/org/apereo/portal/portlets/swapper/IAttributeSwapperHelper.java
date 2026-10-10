@@ -26,6 +26,7 @@ public interface IAttributeSwapperHelper {
      */
     public static final String ATTRIBUTE_SWAPPER_ATTRIBUTES_FORM_SWAPPABLE_ATTRIBUTES =
             "attribute-swapper.attributesForm.swappableAttributes";
+
     /**
      * Portlet preference name to use to specify a List of attributes that will be displayed for the
      * user to work with.

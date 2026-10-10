@@ -95,7 +95,9 @@ public class JpaFragmentDefinitionDaoTest extends BasePortalJpaDaoTest {
             return new FragmentDefinition(name);
         }
 
-        /** @param name */
+        /**
+         * @param name
+         */
         public MockFragmentDefinition(String name) {
             super(name);
         }

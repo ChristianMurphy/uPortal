@@ -37,7 +37,9 @@ public class InjectAttributeRegexTesterTest {
     private List stringList = null;
     private int testListSize = 10;
 
-    /** @return org.apereo.portal.groups.IEntity */
+    /**
+     * @return org.apereo.portal.groups.IEntity
+     */
     private IPerson getIPerson(String key) {
         IPerson ip = new PersonImpl();
         ip.setAttribute(IPerson.USERNAME, key);

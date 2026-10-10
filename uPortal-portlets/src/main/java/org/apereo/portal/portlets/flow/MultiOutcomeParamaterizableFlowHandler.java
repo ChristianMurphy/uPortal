@@ -33,17 +33,23 @@ public class MultiOutcomeParamaterizableFlowHandler extends AbstractFlowHandler 
     private String flowId = "view";
     private Map<String, String> redirectOnEnds;
 
-    /** @return the redirectOnEnd */
+    /**
+     * @return the redirectOnEnd
+     */
     public Map<String, String> getRedirectOnEnds() {
         return this.redirectOnEnds;
     }
 
-    /** @param redirectOnEnds The locations to redirect to at the end of the flow */
+    /**
+     * @param redirectOnEnds The locations to redirect to at the end of the flow
+     */
     public void setRedirectOnEnds(Map<String, String> redirectOnEnds) {
         this.redirectOnEnds = redirectOnEnds;
     }
 
-    /** @param flowId the flowId to set */
+    /**
+     * @param flowId the flowId to set
+     */
     public void setFlowId(String flowId) {
         this.flowId = flowId;
     }

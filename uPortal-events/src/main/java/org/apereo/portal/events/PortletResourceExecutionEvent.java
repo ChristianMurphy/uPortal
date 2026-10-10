@@ -50,18 +50,24 @@ public final class PortletResourceExecutionEvent extends PortletExecutionEvent {
         return this.resourceId;
     }
 
-    /** @deprecated use {@link #usedPortalCache} or {@link #usedBrowserCache} */
+    /**
+     * @deprecated use {@link #usedPortalCache} or {@link #usedBrowserCache}
+     */
     @Deprecated
     public boolean isCached() {
         return this.usedBrowserCache;
     }
 
-    /** @return true if the browser's cached content was used */
+    /**
+     * @return true if the browser's cached content was used
+     */
     public boolean isUsedBrowserCache() {
         return usedBrowserCache;
     }
 
-    /** @return true if the portal's cached content was used */
+    /**
+     * @return true if the portal's cached content was used
+     */
     public boolean isUsedPortalCache() {
         return usedPortalCache;
     }

@@ -151,7 +151,9 @@ abstract class PortletExecutionWorker<V> implements IPortletExecutionWorker<V> {
         return this.portletFname;
     }
 
-    /** @return The timeout setting for the operation in process */
+    /**
+     * @return The timeout setting for the operation in process
+     */
     @Override
     public long getApplicableTimeout() {
         return this.timeout;
@@ -282,7 +284,9 @@ abstract class PortletExecutionWorker<V> implements IPortletExecutionWorker<V> {
         }
     }
 
-    /** @see Callable#call() */
+    /**
+     * @see Callable#call()
+     */
     protected abstract V callInternal() throws Exception;
 
     @Override

@@ -31,7 +31,9 @@ public class EntityTypePortalDataType extends AbstractPortalDataType
 
     public static final QName LEGACY_ENTITY_TYPE_QNAME = new QName("entity-type");
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_26_DATA_KEY =
             new PortalDataKey(

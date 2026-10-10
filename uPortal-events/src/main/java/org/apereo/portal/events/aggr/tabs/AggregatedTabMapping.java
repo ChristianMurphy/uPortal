@@ -18,6 +18,7 @@ package org.apereo.portal.events.aggr.tabs;
 public interface AggregatedTabMapping {
     /** Returned by {@link #getFragmentName()} for personal tabs */
     static final String PERSONAL_TAB_FRAGMENT_NAME = "CATCH_ALL_PERSONAL_TAB_OWNER";
+
     /** Returned by {@link #getTabName()} for personal tabs */
     static final String PERSONAL_TAB_NAME = "Personal Tab";
 
@@ -26,6 +27,7 @@ public interface AggregatedTabMapping {
      * database
      */
     static final String MISSING_TAB_FRAGMENT_NAME = "CATCH_ALL_MISSING_TAB_OWNER";
+
     /**
      * Returned by {@link #getTabName()} for tabs where no info could be found in the portal
      * database
@@ -40,12 +42,18 @@ public interface AggregatedTabMapping {
 
     long getId();
 
-    /** @return Name of the fragment owner for the tab */
+    /**
+     * @return Name of the fragment owner for the tab
+     */
     String getFragmentName();
 
-    /** @return Name of the mapped tab */
+    /**
+     * @return Name of the mapped tab
+     */
     String getTabName();
 
-    /** @return String suitable for displaying to user */
+    /**
+     * @return String suitable for displaying to user
+     */
     String getDisplayString();
 }

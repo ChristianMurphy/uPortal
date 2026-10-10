@@ -57,6 +57,7 @@ public class AttributeSwapperHelperImpl implements IAttributeSwapperHelper {
     public PortalRootPersonAttributeDao getPersonAttributeDao() {
         return portalRootPersonAttributeDao;
     }
+
     /** The {@link PortalRootPersonAttributeDao} instance to use to override attributes */
     @Required
     public void setPersonAttributeDao(PortalRootPersonAttributeDao personAttributeDao) {
@@ -66,6 +67,7 @@ public class AttributeSwapperHelperImpl implements IAttributeSwapperHelper {
     public IPersonManager getPersonManager() {
         return personManager;
     }
+
     /** The {@link IPersonManager} to use to access the current IPerson */
     @Autowired
     public void setPersonManager(IPersonManager personManager) {

@@ -74,12 +74,16 @@ public class ResourceLoader {
         }
     }
 
-    /** @param resourceUrlCache the resourceUrlCache to set */
+    /**
+     * @param resourceUrlCache the resourceUrlCache to set
+     */
     public void setResourceUrlCache(Map<Tuple<Class<?>, String>, URL> resourceUrlCache) {
         ResourceLoader.resourceUrlCache = resourceUrlCache;
     }
 
-    /** @param resourceUrlNotFoundCache the resourceUrlNotFoundCache to set */
+    /**
+     * @param resourceUrlNotFoundCache the resourceUrlNotFoundCache to set
+     */
     public void setResourceUrlNotFoundCache(
             Map<Tuple<Class<?>, String>, ResourceMissingException> resourceUrlNotFoundCache) {
         ResourceLoader.resourceUrlNotFoundCache = resourceUrlNotFoundCache;
@@ -177,7 +181,9 @@ public class ResourceLoader {
      */
     public static Document getResourceAsDocument(
             Class<?> requestingClass, String resource, boolean validate)
-            throws ResourceMissingException, IOException, ParserConfigurationException,
+            throws ResourceMissingException,
+                    IOException,
+                    ParserConfigurationException,
                     SAXException {
         Document document;
         InputStream inputStream = null;

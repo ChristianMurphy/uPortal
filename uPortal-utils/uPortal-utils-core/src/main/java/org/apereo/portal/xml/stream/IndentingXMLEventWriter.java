@@ -55,7 +55,9 @@ public class IndentingXMLEventWriter extends EventWriterDelegate {
         this.indentSize = indentSize;
     }
 
-    /** @return System.getProperty("line.separator") or {@link #NEW_LINE} if that fails. */
+    /**
+     * @return System.getProperty("line.separator") or {@link #NEW_LINE} if that fails.
+     */
     public static String getLineSeparator() {
         try {
             return System.getProperty("line.separator");

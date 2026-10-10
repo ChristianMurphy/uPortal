@@ -24,18 +24,26 @@ import org.apereo.portal.layout.om.IStylesheetDescriptor;
  * model.
  */
 public interface IPortletEntity extends IPortletEntityDescriptor {
-    /** @return The unique identifier for this portlet entity. */
+    /**
+     * @return The unique identifier for this portlet entity.
+     */
     @Override
     public IPortletEntityId getPortletEntityId();
 
-    /** @return The parent portlet defintion */
+    /**
+     * @return The parent portlet defintion
+     */
     public IPortletDefinition getPortletDefinition();
 
-    /** @return The ID of the layout node this entity represents. */
+    /**
+     * @return The ID of the layout node this entity represents.
+     */
     @Override
     public String getLayoutNodeId();
 
-    /** @return The ID of the user this entity is for. */
+    /**
+     * @return The ID of the user this entity is for.
+     */
     @Override
     public int getUserId();
 
@@ -45,13 +53,19 @@ public interface IPortletEntity extends IPortletEntityDescriptor {
      */
     public Map<Long, WindowState> getWindowStates();
 
-    /** @return The persisted window state for the this portlet and stylesheet */
+    /**
+     * @return The persisted window state for the this portlet and stylesheet
+     */
     public WindowState getWindowState(IStylesheetDescriptor stylesheetDescriptor);
 
-    /** @param state The persisted window state for this portlet and stylesheet */
+    /**
+     * @param state The persisted window state for this portlet and stylesheet
+     */
     public void setWindowState(IStylesheetDescriptor stylesheetDescriptor, WindowState state);
 
-    /** @return The List of PortletPreferences, will not be null */
+    /**
+     * @return The List of PortletPreferences, will not be null
+     */
     public List<IPortletPreference> getPortletPreferences();
 
     /**

@@ -37,13 +37,17 @@ public class PropertiesFilesIsIncludedUser implements Function<String, Boolean> 
         this.userLayoutStore = userLayoutStore;
     }
 
-    /** @param userNames the userNames to set */
+    /**
+     * @param userNames the userNames to set
+     */
     public void setUserNames(Set<String> userNames) {
         this.userNames = userNames;
         this.allUsers = this.userNames.contains("*");
     }
 
-    /** @param userNames just the {@link Map#keySet()} is used. */
+    /**
+     * @param userNames just the {@link Map#keySet()} is used.
+     */
     public void setUserNamesMap(Map<String, Object> userNames) {
         this.userNames = userNames.keySet();
         this.allUsers = this.userNames.contains("*");

@@ -47,7 +47,9 @@ public class CacheManagementHelper {
 
     private CacheManager cacheManager;
 
-    /** @param cacheManager the cacheManager to set */
+    /**
+     * @param cacheManager the cacheManager to set
+     */
     @Autowired
     public void setCacheManager(CacheManager cacheManager) {
         this.cacheManager = cacheManager;

@@ -39,7 +39,9 @@ public final class FolderAddedToLayoutPortalEvent extends LayoutPortalEvent {
         this.newFolderId = newFolderId;
     }
 
-    /** @return the newFolderId */
+    /**
+     * @return the newFolderId
+     */
     public String getNewFolderId() {
         return this.newFolderId;
     }

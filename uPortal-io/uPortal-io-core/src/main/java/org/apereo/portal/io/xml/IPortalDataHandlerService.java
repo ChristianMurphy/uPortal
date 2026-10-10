@@ -55,11 +55,17 @@ public interface IPortalDataHandlerService {
             super.setLogDirectoryParent(logDirectoryParent);
             return this;
         }
-        /** @return defaults to true */
+
+        /**
+         * @return defaults to true
+         */
         public final boolean isRecursive() {
             return this.recursive;
         }
-        /** @return defaults to true */
+
+        /**
+         * @return defaults to true
+         */
         public final boolean isIgnoreNonDataFiles() {
             return this.ignoreNonDataFiles;
         }
@@ -105,11 +111,17 @@ public interface IPortalDataHandlerService {
             this.logDirectoryParent = new File(logDirectoryParent);
             return this;
         }
-        /** @return defaults to true */
+
+        /**
+         * @return defaults to true
+         */
         public final boolean isFailOnError() {
             return failOnError;
         }
-        /** @return The directory to log the export to, if null a temp directory is used. */
+
+        /**
+         * @return The directory to log the export to, if null a temp directory is used.
+         */
         public final File getLogDirectoryParent() {
             return logDirectoryParent;
         }
@@ -146,10 +158,14 @@ public interface IPortalDataHandlerService {
      */
     public void importDataDirectory(File directory, String pattern, BatchImportOptions options);
 
-    /** @return All portal data types that can be exported */
+    /**
+     * @return All portal data types that can be exported
+     */
     public Iterable<IPortalDataType> getExportPortalDataTypes();
 
-    /** @return All portal data types that can be deleted */
+    /**
+     * @return All portal data types that can be deleted
+     */
     public Iterable<IPortalDataType> getDeletePortalDataTypes();
 
     /**

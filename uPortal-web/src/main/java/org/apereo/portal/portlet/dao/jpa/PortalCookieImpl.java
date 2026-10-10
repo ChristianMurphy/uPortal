@@ -104,7 +104,9 @@ class PortalCookieImpl implements IPortalCookie {
         this.portletCookies = new HashSet<IPortletCookie>();
     }
 
-    /** @param value */
+    /**
+     * @param value
+     */
     PortalCookieImpl(String value, DateTime expiration) {
         this.internalPortalCookieId = -1;
         this.entityVersion = -1;
@@ -116,36 +118,48 @@ class PortalCookieImpl implements IPortalCookie {
         this.portletCookies = new HashSet<IPortletCookie>();
     }
 
-    /** @return the internalPortalCookieId */
+    /**
+     * @return the internalPortalCookieId
+     */
     public long getInternalPortalCookieId() {
         return internalPortalCookieId;
     }
 
-    /** @return the created */
+    /**
+     * @return the created
+     */
     @Override
     public DateTime getCreated() {
         return created;
     }
 
-    /** @return the expires */
+    /**
+     * @return the expires
+     */
     @Override
     public DateTime getExpires() {
         return expires;
     }
 
-    /** @return the value */
+    /**
+     * @return the value
+     */
     @Override
     public String getValue() {
         return value;
     }
 
-    /** @return the portletCookies */
+    /**
+     * @return the portletCookies
+     */
     @Override
     public Set<IPortletCookie> getPortletCookies() {
         return portletCookies;
     }
 
-    /** @param expires the expires to set */
+    /**
+     * @param expires the expires to set
+     */
     @Override
     public void setExpires(DateTime expires) {
         this.expires = expires;

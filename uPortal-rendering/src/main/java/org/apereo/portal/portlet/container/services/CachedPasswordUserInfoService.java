@@ -54,7 +54,9 @@ public class CachedPasswordUserInfoService implements UserInfoService {
     private IStringEncryptionService stringEncryptionService;
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    /** @param portalRequestUtils the portalRequestUtils to set */
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired(required = true)
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         Validate.notNull(portalRequestUtils);
@@ -64,41 +66,61 @@ public class CachedPasswordUserInfoService implements UserInfoService {
     /** The default name of the preferences attribute used to pass the PT to the portlet. */
     private String passwordKey = "password";
 
-    /** @return the UserInstanceManager */
+    /**
+     * @return the UserInstanceManager
+     */
     public IUserInstanceManager getUserInstanceManager() {
         return userInstanceManager;
     }
-    /** @param userInstanceManager the UserInstanceManager */
+
+    /**
+     * @param userInstanceManager the UserInstanceManager
+     */
     @Autowired(required = true)
     public void setUserInstanceManager(IUserInstanceManager userInstanceManager) {
         this.userInstanceManager = userInstanceManager;
     }
 
-    /** @return the portletEntityRegistry */
+    /**
+     * @return the portletEntityRegistry
+     */
     public IPortletEntityRegistry getPortletEntityRegistry() {
         return this.portletEntityRegistry;
     }
-    /** @param portletEntityRegistry the portletEntityRegistry to set */
+
+    /**
+     * @param portletEntityRegistry the portletEntityRegistry to set
+     */
     @Autowired(required = true)
     public void setPortletEntityRegistry(IPortletEntityRegistry portletEntityRegistry) {
         this.portletEntityRegistry = portletEntityRegistry;
     }
 
-    /** @return the portletWindowRegistry */
+    /**
+     * @return the portletWindowRegistry
+     */
     public IPortletWindowRegistry getPortletWindowRegistry() {
         return this.portletWindowRegistry;
     }
-    /** @param portletWindowRegistry the portletWindowRegistry to set */
+
+    /**
+     * @param portletWindowRegistry the portletWindowRegistry to set
+     */
     @Autowired(required = true)
     public void setPortletWindowRegistry(IPortletWindowRegistry portletWindowRegistry) {
         this.portletWindowRegistry = portletWindowRegistry;
     }
 
-    /** @return the portletDefinitionRegistry */
+    /**
+     * @return the portletDefinitionRegistry
+     */
     public IPortletDefinitionRegistry getPortletDefinitionRegistry() {
         return this.portletDefinitionRegistry;
     }
-    /** @param portletDefinitionRegistry the portletDefinitionRegistry to set */
+
+    /**
+     * @param portletDefinitionRegistry the portletDefinitionRegistry to set
+     */
     @Autowired(required = true)
     public void setPortletDefinitionRegistry(IPortletDefinitionRegistry portletDefinitionRegistry) {
         this.portletDefinitionRegistry = portletDefinitionRegistry;
@@ -120,11 +142,16 @@ public class CachedPasswordUserInfoService implements UserInfoService {
         this.decryptPassword = decryptPassword;
     }
 
-    /** @return name of the key to save the password under */
+    /**
+     * @return name of the key to save the password under
+     */
     public String getPasswordKey() {
         return passwordKey;
     }
-    /** @param passwordKey name of the key to save the password under */
+
+    /**
+     * @param passwordKey name of the key to save the password under
+     */
     public void setPasswordKey(String passwordKey) {
         this.passwordKey = passwordKey;
     }
