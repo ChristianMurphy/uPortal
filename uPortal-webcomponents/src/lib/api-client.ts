@@ -54,6 +54,12 @@ export interface ApiClientOptions {
     fetch?: typeof fetch;
 }
 
+/** Per-request options. */
+export interface RequestOptions {
+    /** Aborts the request; it then fails as a `network` error. */
+    signal?: AbortSignal | undefined;
+}
+
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export function errorKindForStatus(status: number): ApiErrorKind {
@@ -79,8 +85,8 @@ export class ApiClient {
     }
 
     /** GETs `path` (relative to the context path) and validates the JSON body. */
-    async get<T>(path: string, validate: Validator<T>): Promise<T> {
-        const response = await this.#fetch('GET', path, undefined);
+    async get<T>(path: string, validate: Validator<T>, options: RequestOptions = {}): Promise<T> {
+        const response = await this.#fetch('GET', path, undefined, options);
         return this.#parse(response, 'GET', path, validate);
     }
 
@@ -93,8 +99,9 @@ export class ApiClient {
         path: string,
         body?: unknown,
         validate?: Validator<T>,
+        options: RequestOptions = {},
     ): Promise<T | undefined> {
-        const response = await this.#fetch(method, path, body);
+        const response = await this.#fetch(method, path, body, options);
         if (validate === undefined || response.status === 204) {
             return undefined;
         }
@@ -102,7 +109,12 @@ export class ApiClient {
     }
 
     /** Fetches with the session cookie (and CSRF token); throws unless the status is 2xx. */
-    async #fetch(method: string, path: string, body: unknown): Promise<Response> {
+    async #fetch(
+        method: string,
+        path: string,
+        body: unknown,
+        { signal }: RequestOptions,
+    ): Promise<Response> {
         const headers: Record<string, string> = { Accept: 'application/json' };
         if (body !== undefined) {
             headers['Content-Type'] = 'application/json';
@@ -120,6 +132,7 @@ export class ApiClient {
                 headers,
                 credentials: 'same-origin',
                 ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+                ...(signal === undefined ? {} : { signal }),
             });
         } catch (cause) {
             throw new ApiError('network', undefined, `${method} ${path} failed: ${String(cause)}`);
