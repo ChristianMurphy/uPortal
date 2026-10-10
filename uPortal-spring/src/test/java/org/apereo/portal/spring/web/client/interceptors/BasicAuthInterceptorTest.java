@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.web.client.interceptors;
+package org.apereo.portal.spring.web.client.interceptors;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasKey;
