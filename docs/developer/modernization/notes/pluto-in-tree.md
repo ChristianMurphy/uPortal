@@ -173,6 +173,7 @@ imported, because it is the one that runs.
 | uPortal-start CI | run 38089219745: _pending_ |
 | uPortal-start Integration, uPortal from this branch (after) | run 38089219769: _pending_ |
 | uPortal-start Integration, uPortal from the integration branch (before) | run 38089226181 (workflow_dispatch, `uportal-ref=ccr-43ba0785-hzlrj5`): _pending_ |
+| Full Playwright suite, local portal on this branch (HSQLDB, Tomcat 9, JDK 11) | 123 passed, 2 failed: only the two web-proxy tests that need internet access (sandbox, as in MOD-D17) |
 | Pluto testsuite before / after (local, HSQLDB, Tomcat 9, JDK 11) | identical for all 32 tests: 12 PASSED, 10 FAILED, 8 MANUAL, 2 WARNING; 144/16 checks (see below) |
 
 **Local unit tests (sandbox, JDK 21, `./gradlew test --rerun` in both trees):**
