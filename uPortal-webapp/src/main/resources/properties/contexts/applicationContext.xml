@@ -135,6 +135,8 @@
                 <entry key="javax.portlet.WindowState"><bean class="org.apereo.portal.spring.properties.WindowStateEditor" /></entry>
                 <entry key="org.joda.time.ReadablePeriod"><bean class="org.apereo.portal.spring.properties.ReadablePeriodEditor" /></entry>
                 <entry key="org.joda.time.ReadableDuration"><bean class="org.apereo.portal.spring.properties.ReadableDurationEditor" /></entry>
+                <entry key="java.time.Duration"><bean class="org.apereo.portal.spring.properties.DurationEditor" /></entry>
+                <entry key="java.time.temporal.TemporalAmount"><bean class="org.apereo.portal.spring.properties.TemporalAmountEditor" /></entry>
                 <entry key="org.apereo.portal.version.om.Version"><bean class="org.apereo.portal.spring.properties.VersionEditor"/></entry>
                 <entry key="com.fasterxml.jackson.databind.JsonNode">
                     <bean class="org.apereo.portal.spring.properties.MappingJackson2JsonTreeEditor">
