@@ -250,11 +250,14 @@ that name. This applies to these classes and caches:
 | `RDBMUserIdentityStore` | `org.apereo.portal.RDBMUserIdentityStore.userLockCache` |
 | `PortletEntityRegistryImpl` | `org.apereo.portal.portlet.dao.jpa.PortletEntityImpl.idParseCache` |
 | `PortletEventCoordinationHelper`, `PortletEventCoordinatationService` | `org.apereo.portal.portlet.rendering.SupportedEventCache` |
+| `JpaAggregatedTabLookupDao` | `org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver` |
+| `FileSystemDynamicSkinService`, `AwsS3DynamicSkinService` | `org.apereo.portal.skinManager.failureCache` |
 
 If your overlay has its own `ehcache.xml`, keep these cache names in it. If it replaced one of
 these caches by defining a bean with the cache's name, that bean is no longer used: configure
 the cache in `ehcache.xml` instead. In Java code, the `setXCache` setters of these classes now
-take an `org.springframework.cache.Cache`.
+take an `org.springframework.cache.Cache`. The dynamic skin services'
+constructors take the Spring `CacheManager` instead of the failure cache.
 
 `CacheHealthReporterService.reportCacheSizeNotLargeEnough` now takes the cache name instead of
 the Ehcache `Cache` and `Element`. This matters only if you wrote your own cache event listener

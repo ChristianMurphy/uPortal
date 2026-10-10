@@ -19,6 +19,8 @@ and in uPortal-start (no uPortal-start changes).
 | `refactor(cache): move the portlet entity id parse cache to Spring's cache API` | uPortal-rendering | `PortletEntityRegistryImpl` |
 | `refactor(cache): move the supported event cache to Spring's cache API` | uPortal-web | `PortletEventCoordinationHelper`, `PortletEventCoordinatationService` |
 | `refactor(cache): make the cache health report independent of Ehcache` | uPortal-utils-core | `CacheHealthReporterService` takes cache names. `InsufficientSizeCacheEventListener` is the Ehcache 2 adapter. |
+| `refactor(cache): move the tab name resolution cache to Spring's cache API` | uPortal-events | `JpaAggregatedTabLookupDao`. Its test context uses a real Ehcache, because the DAO caches a null key. |
+| `refactor(cache): move the dynamic skin failure cache to Spring's cache API` | uPortal-portlets | `AbstractDynamicSkinService` and its two subclasses. `getKeysWithExpiryCheck().contains(k)` → `get(k) != null`. |
 
 Each commit is meant to become one upstream PR. They are in dependency order: the first one
 adds `CacheLookup`, and the others use it.
@@ -114,7 +116,7 @@ after this branch:
 | `org.apereo.portal.portlet.registry.PersistentPortletEntityWrapper.windowStates` | `"windowStates"` → window state map | 50 | 1800 | 0 | no | — | PersistentPortletEntityWrapper | @Cacheable |
 | `org.apereo.portal.layout.dlm.FragmentActivator.userViews` / `userViewErrors` | fragment owner + locale → `UserView` / `Exception` | 100 | 600/30 | 0 | inval/no | size/— | FragmentActivator (`SelfPopulatingCache` with an error cache) | Ehcache |
 | `org.apereo.portal.layout.dlm.RDBMDistributedLayoutStore.fragmentNodeInfoCache` | node id → `FragmentNodeInfo` | 1000 | 300 | 0 | no | size | RDBMDistributedLayoutStore | Ehcache |
-| `org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver` | layout node id (may be `null`) → `Tuple<String, String>` | 1000 | 300 | 0 | no | — | JpaAggregatedTabLookupDao | Ehcache |
+| `org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver` | layout node id (may be `null`) → `Tuple<String, String>` | 1000 | 300 | 0 | no | — | JpaAggregatedTabLookupDao | Spring |
 | `org.apereo.portal.jpa.cache.EntityManagerCache` | `CacheKey` → entity | 1000 | 0 | 300 | no | tag | EntityManagerCacheImpl | Ehcache |
 | `org.apereo.portal.groups.IEntityGroup` / `IEntity` / `org.apereo.portal.security.IPermissionSet` | entity key → entity | 1000/2500/1000 | 21600 | 0 | inval | size/—/size | CacheFactoryEntityCachingService (name built from the entity class) | Map |
 | `org.apereo.portal.groups.GroupMemberImpl.parentGroups` | member key → parent group keys | 5000 | 300 | 0 | inval | tag | GroupMemberImpl, LocalGroupsCacheAuthenticationListener (looked up through `ApplicationContextLocator`) | Ehcache |
@@ -130,7 +132,7 @@ after this branch:
 | `org.apereo.portal.portlets.portletadmin.PortletAdministrationHelper.CPD_CACHE` | portlet type → `PortletPublishingDefinition` | 250 | 28800 | 0 | no | — | channelContainerContext.xml | Map |
 | `org.apereo.portal.utils.cache.ConfigurablePageCachingFilter.PAGE_CACHE` | request → page | 250 | 0 | 900 | no | — | resource-server-utils `ConfigurablePageCachingFilter` (cacheContext.xml) | 3rd party |
 | `...MarketplaceService.marketplacePortletDefinitionCache` / `marketplaceUserPortletDefinitionCache` / `marketplaceCategoryCache` | fname / username / categories → definition / `Future<Set<MarketplaceEntry>>` / list | 1000/1000/20 | 300/300/600 | 0 | no | — | MarketplaceService, PortletMarketplaceController | Ehcache |
-| `org.apereo.portal.skinManager.failureCache` | css instance key → failure | 100 | 60 | 60 | no | — | Abstract/FileSystem/AwsS3DynamicSkinService (`getKeysWithExpiryCheck`) | Ehcache |
+| `org.apereo.portal.skinManager.failureCache` | css instance key → failure | 100 | 60 | 60 | no | — | Abstract/FileSystem/AwsS3DynamicSkinService | Spring |
 | `org.apereo.portal.portlets.sqlquery.SqlQueryPortletController.queryResults` | query → results | 2000 | 300 | 0 | no | — | SqlQueryPortletController (`CacheManager.getInstance()`) | Ehcache |
 | `org.apereo.portlet.soffit.connector.SoffitConnectorController.RESPONSE_CACHE` | `ResponseCacheTuple` → `ResponseWrapper` | 2000 | 0 | 0 | no | — | SoffitConnectorController (per-element TTL from the soffit's Cache-Control) | Ehcache |
 | `org.apereo.portal.web.skin.Resources` / `Resources_DocumentFragment` | — | 50 | 28800 | 0 | no | — | no reference in this repository | unused? |
@@ -158,22 +160,21 @@ list is in the appendix, because P4-3 renames them. Findings from the inventory:
 
 ## Callers: moved and remaining
 
-The `net.sf.ehcache` API was used in 47 main source files. After this branch it is used in 36,
-counting the Javadoc-only reference in `CacheHealthReporterService`. **Moved (12 files):**
+The `net.sf.ehcache` API was used in 47 main source files. After this branch it is used in 32,
+counting the Javadoc-only reference in `CacheHealthReporterService`. **Moved (16 files):**
 PersonDirectoryConfiguration, PortalSpELServiceImpl, PortletSpELServiceImpl,
 LayoutCachingService, AuthorizationImpl, AnyUnblockedGrantPermissionPolicy, LrsActorService,
 RDBMUserIdentityStore, PortletEntityRegistryImpl, PortletEventCoordinationHelper,
-PortletEventCoordinatationService and CacheHealthReporterService. spring-modules-cache is
+PortletEventCoordinatationService, CacheHealthReporterService, JpaAggregatedTabLookupDao and
+the three dynamic skin services (Abstract, FileSystem and AwsS3). spring-modules-cache is
 gone (2 files).
 
 **Remaining, grouped by what each needs:**
 
 1. **Plain get/put/remove, ready to move the same way (next PRs):**
-   * JpaAggregatedTabLookupDao. Its webapp test context has a Mockito `Ehcache` and it caches a
-     `null` key; use an Ehcache-backed test cache manager, not `ConcurrentMapCache`, because
-     `ConcurrentMapCache` rejects null keys.
-   * EntityManagerCacheImpl. MOD-I102's NPE is in the same class; fix that first, with its
-     test.
+   * EntityManagerCacheImpl. MOD-I102 is now fixed on the integration branch.
+     `sharedJpaTestContext.xml` gives it a Mockito `Ehcache`; replace that with a real Ehcache
+     behind an `EhCacheCacheManager`, as `jpaAggrEventsTestContext.xml` now does.
    * RDBMDistributedLayoutStore (`fragmentNodeInfoCache`).
    * CachingPipelineComponent (structure and theme transform caches).
    * MarketplaceService and PortletMarketplaceController.
@@ -194,8 +195,6 @@ gone (2 files).
      has no per-entry expiry, and neither does JCache's put. Proposal: store the expiry time in
      the value and check it on read, or use Caffeine's `Expiry` behind a small `ExpiringCache`
      interface.
-   * **Key iteration:** `AbstractDynamicSkinService` uses `getKeysWithExpiryCheck().contains(k)`,
-     which is just `get(k) != null`. Moving it is trivial.
    * **Search API:** `PagsMembershipCacheAuthenticationListener` searches `membership` by the
      `memberId` attribute (`EhcacheMemberIdAttributeExtractor`, `<searchable>`) to evict a
      user's entries. Proposal: tag the `MembershipCacheKey` with the username
