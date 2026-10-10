@@ -513,6 +513,60 @@ chosen per portlet.
   * Browser-mode tests in this sandbox need the Chromium shim; CI uses
     the Playwright-installed browsers.
 
+### MOD-D21: Bootstrap stays the theme; target Bootstrap 6
+
+* **Decision (project owner):** keep Bootstrap as uPortal's theme
+  framework and aim for **Bootstrap 6**. Today uPortal ships Bootstrap
+  5.3.8 as a webjar, with the Respondr skin in SCSS plus a legacy
+  `common.less`.
+* **What Bootstrap 6 is today** (from the npm package, since getbootstrap
+  and the GitHub API are blocked in the sandbox):
+  * `6.0.0-alpha.1`, published 2026-10-08, MIT, npm dist-tag `next`.
+    Peer deps: `@floating-ui/dom` (replaces Popper) and
+    `vanilla-calendar-pro`.
+  * The SCSS uses Sass modules only (`@use`/`@forward`; zero `@import`).
+  * The CSS uses cascade layers: `colors, config, root, reboot, layout,
+    content, forms, components, custom, helpers, utilities`. The
+    `custom` layer is where skins belong.
+  * The JS is TypeScript. New components: avatar, banner, chip,
+    combobox, datepicker, drawer, menu, dialog, nav-overflow, otp-input,
+    range, stepper, strength, toggler. There is no `dropdown.ts`,
+    `modal.ts` or `offcanvas.ts` any more. They appear to be replaced by
+    menu, dialog and drawer, but this is inferred from file names and
+    still to be confirmed against the v6 migration guide.
+* **Impact on uPortal** (file counts in uPortal-webapp and
+  uPortal-portlets):
+  * `dropdown` 20, `modal` 15, `offcanvas` 7, `data-bs-` 15, `tooltip` 3,
+    `btn-` 48, `form-control` 22.
+  * 4 skin files use `@import`.
+  * Adopters' custom skins (SCSS `@import`) and uPortal-start's
+    `skinGenerate`/SCSS compile (#709) need to move to Sass modules.
+* **Plan:**
+  1. New UI work (WS14 Thymeleaf pages and web components) is written
+     against Bootstrap 6 markup from day one, with the alpha version
+     pinned and upgraded deliberately through beta to GA.
+  2. Port the Respondr skin to Sass modules and put skin overrides in
+     the `custom` layer.
+  3. Migrate existing JSP/XSL markup (menu, dialog, drawer, Floating UI)
+     as WS14 replaces those views. Whatever remains gets a focused
+     markup PR.
+  4. Bundled external portlets still emit Bootstrap 3/5 markup. Ship a
+     small compatibility stylesheet in its own cascade layer, so they
+     keep rendering until each one is ported (MOD-D13). The visual smoke
+     specs gate this.
+  5. Web components: Bootstrap CSS doesn't reach into shadow DOM.
+     Either style through Bootstrap 6 CSS custom properties (design
+     tokens do cross shadow roots) plus a shared constructable
+     stylesheet, or render simple components in light DOM. The choice is
+     made in the WS14 foundation and covered by the Vitest browser-mode
+     tests.
+* **Risks:**
+  * Alpha API churn. Mitigation: pin it, and keep Bootstrap-specific
+    markup in Thymeleaf fragments and a small set of Lit base classes.
+  * Bootstrap 6 GA may land after uPortal 6.0. Fallback: ship 6.0 on
+    Bootstrap 5.3.x with the same layer structure and move to 6 in
+    6.x, decided at the RC.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
