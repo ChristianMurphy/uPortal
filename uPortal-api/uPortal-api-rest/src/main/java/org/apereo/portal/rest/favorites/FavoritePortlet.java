@@ -14,16 +14,18 @@
  */
 package org.apereo.portal.rest.favorites;
 
+import org.jspecify.annotations.Nullable;
+
 /** A favorite portlet: a channel in the favorites folder of the user's layout. */
 public final class FavoritePortlet {
 
     private final String nodeId;
     private final String fname;
     private final String name;
-    private final String description;
+    private final @Nullable String description;
     private final String url;
-    private final String target;
-    private final String iconUrl;
+    private final @Nullable String target;
+    private final @Nullable String iconUrl;
     private final boolean moveAllowed;
     private final boolean deleteAllowed;
 
@@ -31,10 +33,10 @@ public final class FavoritePortlet {
             String nodeId,
             String fname,
             String name,
-            String description,
+            @Nullable String description,
             String url,
-            String target,
-            String iconUrl,
+            @Nullable String target,
+            @Nullable String iconUrl,
             boolean moveAllowed,
             boolean deleteAllowed) {
         this.nodeId = nodeId;
@@ -62,7 +64,7 @@ public final class FavoritePortlet {
     }
 
     /** The portlet's description, or null. */
-    public String getDescription() {
+    public @Nullable String getDescription() {
         return description;
     }
 
@@ -72,12 +74,12 @@ public final class FavoritePortlet {
     }
 
     /** The window to open {@link #getUrl()} in, or null for the portal's own window. */
-    public String getTarget() {
+    public @Nullable String getTarget() {
         return target;
     }
 
     /** The portlet's icon, or null. */
-    public String getIconUrl() {
+    public @Nullable String getIconUrl() {
         return iconUrl;
     }
 

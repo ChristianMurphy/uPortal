@@ -31,6 +31,7 @@ import org.apereo.portal.portlet.om.IPortletPreference;
 import org.apereo.portal.portlet.om.IPortletWindow;
 import org.apereo.portal.user.IUserInstance;
 import org.apereo.portal.user.IUserInstanceManager;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Component;
@@ -67,16 +68,13 @@ public class WebComponentChannelRenderer {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private IUserInstanceManager userInstanceManager;
-    private WebComponentModuleResolver moduleResolver;
+    private final IUserInstanceManager userInstanceManager;
+    private final WebComponentModuleResolver moduleResolver;
 
     @Autowired
-    public void setUserInstanceManager(IUserInstanceManager userInstanceManager) {
+    public WebComponentChannelRenderer(
+            IUserInstanceManager userInstanceManager, WebComponentModuleResolver moduleResolver) {
         this.userInstanceManager = userInstanceManager;
-    }
-
-    @Autowired
-    public void setModuleResolver(WebComponentModuleResolver moduleResolver) {
         this.moduleResolver = moduleResolver;
     }
 
@@ -126,12 +124,15 @@ public class WebComponentChannelRenderer {
             html.append("<script type=\"module\" src=\"").append(escape(moduleSrc)).append("\">");
             html.append("</script>");
         }
-        html.append('<').append(config.getTagName());
+        // WebComponentConfig validated the tag and attribute names; they are escaped anyway, as
+        // every value written into the page is
+        final String tagName = escape(config.getTagName());
+        html.append('<').append(tagName);
         for (final Map.Entry<String, String> attribute : attributes.entrySet()) {
-            html.append(' ').append(attribute.getKey());
+            html.append(' ').append(escape(attribute.getKey()));
             html.append("=\"").append(escape(attribute.getValue())).append('"');
         }
-        html.append("></").append(config.getTagName()).append('>');
+        html.append("></").append(tagName).append('>');
         return html.toString();
     }
 
@@ -158,7 +159,7 @@ public class WebComponentChannelRenderer {
     }
 
     /** Spring Security's token for this request (the same one portlet action URLs carry). */
-    private CsrfToken getCsrfToken(HttpServletRequest request) {
+    private @Nullable CsrfToken getCsrfToken(HttpServletRequest request) {
         final Object token = request.getAttribute(CsrfToken.class.getName());
         return token instanceof CsrfToken ? (CsrfToken) token : null;
     }
@@ -167,7 +168,8 @@ public class WebComponentChannelRenderer {
      * The user's value of the preference, else the definition's. A single value is passed as is,
      * several values as a JSON array, and a preference without values not at all.
      */
-    private String getPreferenceValue(IPortletEntity portletEntity, String preferenceName) {
+    private @Nullable String getPreferenceValue(
+            IPortletEntity portletEntity, String preferenceName) {
         IPortletPreference preference =
                 findPreference(portletEntity.getPortletPreferences(), preferenceName);
         if (preference == null) {
@@ -190,8 +192,8 @@ public class WebComponentChannelRenderer {
         }
     }
 
-    private static IPortletPreference findPreference(
-            List<IPortletPreference> preferences, String preferenceName) {
+    private static @Nullable IPortletPreference findPreference(
+            @Nullable List<IPortletPreference> preferences, String preferenceName) {
         if (preferences != null) {
             for (final IPortletPreference preference : preferences) {
                 if (preferenceName.equals(preference.getName())) {
@@ -202,7 +204,7 @@ public class WebComponentChannelRenderer {
         return null;
     }
 
-    private static String escape(String value) {
+    private static String escape(@Nullable String value) {
         return HtmlUtils.htmlEscape(value == null ? "" : value, "UTF-8");
     }
 }

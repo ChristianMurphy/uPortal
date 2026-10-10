@@ -40,6 +40,7 @@ import org.apereo.portal.security.IPersonManager;
 import org.apereo.portal.security.PermissionHelper;
 import org.apereo.portal.user.IUserInstanceManager;
 import org.apereo.portal.utils.personalize.IPersonalizer;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +87,7 @@ public class FavoritesService {
     private final IPortletDefinitionRegistry portletDefinitionRegistry;
     private final FavoritesUtils favoritesUtils;
     private final IPersonalizer personalizer;
-    private String marketplaceFname;
+    private @Nullable String marketplaceFname;
 
     @Autowired
     public FavoritesService(
@@ -155,7 +156,7 @@ public class FavoritesService {
     }
 
     /** Adds the portlet to the user's favorites, unless it already is one. */
-    public AddResult addFavorite(HttpServletRequest request, String fname) {
+    public AddResult addFavorite(HttpServletRequest request, @Nullable String fname) {
         final IPerson person = requireUser(request);
         final IPortletDefinition portletDefinition =
                 StringUtils.isBlank(fname)
@@ -179,7 +180,7 @@ public class FavoritesService {
         final String contextPath = request.getContextPath();
         for (final IUserLayoutChannelDescription channel :
                 getFavoriteChannels(layoutManager.getUserLayout())) {
-            if (fname.equals(channel.getFunctionalName())) {
+            if (portletDefinition.getFName().equals(channel.getFunctionalName())) {
                 return new AddResult(toFavoritePortlet(channel, contextPath), false);
             }
         }
@@ -241,16 +242,23 @@ public class FavoritesService {
      * collection). Exactly one of {@code before} and {@code after} must be given.
      */
     public void moveFavorite(
-            HttpServletRequest request, String nodeId, String before, String after) {
+            HttpServletRequest request,
+            String nodeId,
+            @Nullable String before,
+            @Nullable String after) {
         requireUser(request);
-        if ((before == null) == (after == null)) {
+        final String targetId;
+        if (before != null && after == null) {
+            targetId = before;
+        } else if (after != null && before == null) {
+            targetId = after;
+        } else {
             throw new FavoritesException(
                     HttpStatus.BAD_REQUEST, "Give exactly one of 'before' and 'after'");
         }
         final IUserLayoutManager layoutManager = getLayoutManager(request);
         final IUserLayout layout = layoutManager.getUserLayout();
         final IUserLayoutNodeDescription node = findFavorite(layout, nodeId);
-        final String targetId = before != null ? before : after;
         final IUserLayoutNodeDescription target = findFavorite(layout, targetId);
         if (node.getType() != target.getType()) {
             throw new FavoritesException(
@@ -262,7 +270,7 @@ public class FavoritesService {
         }
 
         final String nextSiblingId =
-                before != null ? before : layoutManager.getNextSiblingId(after);
+                before != null ? targetId : layoutManager.getNextSiblingId(targetId);
         if (nodeId.equals(nextSiblingId) || nodeId.equals(targetId)) {
             return; // Already in place
         }
@@ -320,7 +328,7 @@ public class FavoritesService {
     }
 
     /** Adds the channel to the first column of the folder that takes it, making one if needed. */
-    private static IUserLayoutNodeDescription addToFolder(
+    private static @Nullable IUserLayoutNodeDescription addToFolder(
             IUserLayoutManager layoutManager,
             IUserLayoutChannelDescription channel,
             String folderId) {
@@ -384,7 +392,7 @@ public class FavoritesService {
     }
 
     /** A publishing parameter of the channel, or null when it is missing or blank. */
-    private static String parameter(IUserLayoutChannelDescription channel, String name) {
+    private static @Nullable String parameter(IUserLayoutChannelDescription channel, String name) {
         final Map<?, ?> parameters = channel.getParameterMap();
         final Object value = parameters != null ? parameters.get(name) : null;
         return value != null ? StringUtils.trimToNull(value.toString()) : null;

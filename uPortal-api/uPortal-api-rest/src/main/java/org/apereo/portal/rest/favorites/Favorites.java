@@ -16,18 +16,19 @@ package org.apereo.portal.rest.favorites;
 
 import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 /** The user's favorites, in layout order, as {@code GET /api/v6-0/favorites} returns them. */
 public final class Favorites {
 
     private final List<FavoriteCollection> collections;
     private final List<FavoritePortlet> portlets;
-    private final String marketplaceUrl;
+    private final @Nullable String marketplaceUrl;
 
     public Favorites(
             List<FavoriteCollection> collections,
             List<FavoritePortlet> portlets,
-            String marketplaceUrl) {
+            @Nullable String marketplaceUrl) {
         this.collections = Collections.unmodifiableList(collections);
         this.portlets = Collections.unmodifiableList(portlets);
         this.marketplaceUrl = marketplaceUrl;
@@ -43,7 +44,7 @@ public final class Favorites {
     }
 
     /** Where to find more portlets to favorite, or null when the portal has no marketplace. */
-    public String getMarketplaceUrl() {
+    public @Nullable String getMarketplaceUrl() {
         return marketplaceUrl;
     }
 }

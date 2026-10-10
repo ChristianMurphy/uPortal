@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletDefinitionParameter;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The publishing parameters of one web-component channel, parsed and validated.
@@ -34,7 +35,7 @@ public final class WebComponentConfig {
      * Valid custom element names, restricted to ASCII: a lowercase letter, then lowercase letters,
      * digits, {@code .}, {@code _} or {@code -}, with at least one {@code -}.
      */
-    private static final Pattern TAG_NAME = Pattern.compile("[a-z][a-z0-9._]*(-[a-z0-9._]*)+");
+    private static final Pattern TAG_NAME = Pattern.compile("[a-z][a-z0-9._]*-[a-z0-9._-]*");
 
     /** Names the HTML specification reserves, so they cannot be custom elements. */
     private static final Set<String> RESERVED_TAG_NAMES =
@@ -174,7 +175,8 @@ public final class WebComponentConfig {
         return value;
     }
 
-    private static String optional(IPortletDefinition portletDefinition, String parameterName) {
+    private static @Nullable String optional(
+            IPortletDefinition portletDefinition, String parameterName) {
         final IPortletDefinitionParameter parameter = portletDefinition.getParameter(parameterName);
         if (parameter == null || parameter.getValue() == null) {
             return null;
@@ -188,7 +190,7 @@ public final class WebComponentConfig {
      * {@code #} are ignored; the value is everything after the first {@code =}.
      */
     private static Map<String, String> parsePairs(
-            String fname, String parameterName, String text, boolean valueRequired) {
+            String fname, String parameterName, @Nullable String text, boolean valueRequired) {
         final Map<String, String> result = new LinkedHashMap<>();
         if (text == null) {
             return result;

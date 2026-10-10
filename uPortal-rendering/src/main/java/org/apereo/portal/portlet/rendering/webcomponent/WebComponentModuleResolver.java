@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -49,12 +50,13 @@ public class WebComponentModuleResolver implements ServletContextAware {
     private final Logger logger = LoggerFactory.getLogger(getClass());
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private ServletContext servletContext;
+    // Set by Spring before first use (ServletContextAware)
+    private @Nullable ServletContext servletContext;
 
     /**
      * Entry name to file, read from the manifest on first use; the manifest only changes on deploy.
      */
-    private volatile Map<String, String> bundledModules;
+    private volatile @Nullable Map<String, String> bundledModules;
 
     @Override
     public void setServletContext(ServletContext servletContext) {
@@ -93,7 +95,12 @@ public class WebComponentModuleResolver implements ServletContextAware {
     }
 
     private Map<String, String> readManifest() {
-        try (InputStream manifest = servletContext.getResourceAsStream(MANIFEST_PATH)) {
+        final ServletContext context = servletContext;
+        if (context == null) {
+            throw new IllegalStateException(
+                    "No servlet context, so " + MANIFEST_PATH + " cannot be read");
+        }
+        try (InputStream manifest = context.getResourceAsStream(MANIFEST_PATH)) {
             if (manifest == null) {
                 logger.warn(
                         "{} is missing, so no bundled web-component module can be resolved",
