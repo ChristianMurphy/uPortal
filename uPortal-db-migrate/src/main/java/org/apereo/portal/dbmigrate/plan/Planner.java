@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import org.apereo.portal.dbmigrate.Vendor;
 import org.apereo.portal.dbmigrate.catalog.GeneratorCatalog;
 import org.apereo.portal.dbmigrate.rules.RuleSet;
 import org.apereo.portal.dbmigrate.rules.ValueTransform;
@@ -248,21 +249,26 @@ public final class Planner {
             RuleSet.TransformRule rule) {
         try {
             ValueTransform.Function fn = rule == null ? null : RuleSet.bind(rule);
+            // lob-oid comes from the schema profiles and from the run's own rule files (which
+            // name source tables; a target column is also found by its own table's name)
             ColumnType tType =
                     ColumnType.classify(
                             plan.target().vendor(),
                             tc,
-                            plan.target().vendor() == org.apereo.portal.dbmigrate.Vendor.POSTGRESQL
-                                    && targetProfile.rules().isLobOid(t.name(), tc.name()));
+                            plan.target().vendor() == Vendor.POSTGRESQL
+                                    && (targetProfile.rules().isLobOid(t.name(), tc.name())
+                                            || rules.isLobOid(t.name(), tc.name())
+                                            || rules.isLobOid(
+                                                    s.name(), sc == null ? tc.name() : sc.name())));
             ColumnType sType =
                     sc == null
                             ? null
                             : ColumnType.classify(
                                     plan.source().vendor(),
                                     sc,
-                                    plan.source().vendor()
-                                                    == org.apereo.portal.dbmigrate.Vendor.POSTGRESQL
-                                            && sourceProfile.rules().isLobOid(s.name(), sc.name()));
+                                    plan.source().vendor() == Vendor.POSTGRESQL
+                                            && (sourceProfile.rules().isLobOid(s.name(), sc.name())
+                                                    || rules.isLobOid(s.name(), sc.name())));
             ColumnPair pair =
                     ColumnPair.resolve(sType, tType, fn == null ? null : fn.resultFamily());
             return new ColumnMapping(sc, tc, pair, fn, rule == null ? null : rule.toString());

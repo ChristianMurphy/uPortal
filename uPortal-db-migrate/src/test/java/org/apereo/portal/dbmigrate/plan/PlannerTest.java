@@ -197,4 +197,28 @@ public class PlannerTest {
         assertEquals(p.errors().toString(), 0, p.errors().size());
         assertEquals("UP_PERSON", p.table("UP_USER").target().name());
     }
+
+    @Test
+    public void lobOidRulesFromARulesFileApply() {
+        // The plan error for undeclared OIDs says to add a lob-oid rule; one in a --rules file
+        // must then take effect on a PostgreSQL source and target, as the profile's do
+        SchemaModel source = postgres();
+        source.addTable(
+                new Table(null, "public", "up_note")
+                        .addColumn(col("note_id", Types.BIGINT, "int8", false))
+                        .addColumn(col("body", Types.VARCHAR, "text", true))
+                        .primaryKey(Collections.singletonList("note_id")));
+        SchemaModel target = mariadb();
+        target.addTable(
+                new Table("uportal", null, "up_note")
+                        .addColumn(col("NOTE_ID", Types.BIGINT, "BIGINT", false))
+                        .addColumn(col("BODY", Types.LONGVARCHAR, "LONGTEXT", true))
+                        .primaryKey(Collections.singletonList("NOTE_ID")));
+        MigrationPlan p = planner("lob-oid UP_NOTE.BODY").plan(source, target);
+        assertEquals(p.errors().toString(), 0, p.errors().size());
+        assertTrue(p.table("UP_NOTE").columns().get(1).pair().source().postgresOidText());
+
+        MigrationPlan back = planner("lob-oid UP_NOTE.BODY").plan(target, source);
+        assertTrue(back.table("UP_NOTE").columns().get(1).pair().target().postgresOidText());
+    }
 }
