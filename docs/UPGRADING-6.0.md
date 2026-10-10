@@ -293,4 +293,4 @@ the wrong type throws `IllegalArgumentException` instead. The view bean names,
 `dataTableCsvView` and `dataTableHtmlView`, are unchanged.
 
 The CSV and HTML downloads format numbers and dates as before. In locales whose default calendar
-isn't Gregorian or Buddhist (for example `ar-SA` and `fa-IR`), dates in them are now Gregorian.
+isn't Gregorian or Buddhist, such as `ar-SA` and `fa-IR`, dates are now Gregorian.

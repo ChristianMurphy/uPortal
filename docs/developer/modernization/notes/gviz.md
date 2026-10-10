@@ -5,8 +5,8 @@ Branch `ccr-43ba0785-hzlrj5-gviz` (uPortal). uPortal-start is unchanged.
 ## Outcome
 
 google-visualization-java (`com.github.ci-rt:google-visualization-java:release-1.1.3`,
-jitpack.io only) is gone. A small uPortal-owned table model replaces it, so there is no jitpack
-repository, no `googleVisualizationVersion`, and no ICU4J or opencsv coming in through it.
+jitpack.io only) is gone. A small uPortal-owned table model replaces it. The build drops the
+jitpack repository, `googleVisualizationVersion`, and the ICU4J and opencsv jars it brought.
 
 * **Plan change.** I first recommended vendoring the library's classes (option b below). The
   project owner decided, via the coordinator, against both (a) and (b), because both keep an
@@ -16,7 +16,7 @@ repository, no `googleVisualizationVersion`, and no ICU4J or opencsv coming in t
   * `ReportTable`: typed columns, and rows of `ReportValue`s. It checks types, and short rows
     and new columns are filled with nulls, as `DataTable` did. Plain getters: `getColumns()`,
     and `getRows()` returning one `List<ReportValue>` per row whose `getValue()` is a `Double`,
-    `String` or `java.time` value. That is the shape a REST/ECharts serialiser would use.
+    `String` or `java.time` value. A REST/ECharts serialiser can read these lists directly.
   * `ReportColumn` (id, type, label), `ReportValueType` (NUMBER, TEXT, DATE, DATETIME,
     TIMEOFDAY), `ReportValue` (static factories and `nullValue(type)`).
   * `ReportTableJsonSerializer`: writes the Google Charts DataTable JSON through Jackson's
@@ -31,7 +31,7 @@ repository, no `googleVisualizationVersion`, and no ICU4J or opencsv coming in t
   * all statistics controllers (`throws TypeMismatchException` dropped);
   * `ReportTitleAndColumnDescriptionStrategy`, `DefaultStatisticsReportLabellingStrategy`;
   * the Activity and PopularPortlets controllers;
-  * `JsonDataTable` and `GoogleDataTableSerializer` deleted, since `ReportTable` carries its
+  * `JsonDataTable` and `GoogleDataTableSerializer` deleted, since `ReportTable` names its
     own serialiser.
 * **Unaffected:** the SqlQuery `googleColumnChart`/`googleLineChart` JSPs and `reportList.jsp`
   use only the `WEB-INF/tags/google-visualization` tag files, not the Java library. The JSPs
@@ -52,10 +52,10 @@ repository, no `googleVisualizationVersion`, and no ICU4J or opencsv coming in t
 | Option | Verdict |
 |---|---|
 | (a) Google `visualization-datasource:1.1.1` on Central | Same public API for all 14 types (`javap` diff) and Guava-32 compatible. But its POM pins ICU4J 4.0.1, the cause of uPortal-start#468 and the 2020 move to the fork (a13a5cd29). It also emits `,,` for null cells. Unmaintained since 2012. |
-| (b) Vendor the 30 files from ci-rt `release-1.1.3` | Identical behaviour, about 5,900 lines of unmaintained code. Analysis done; the build wiring was refused by the session's permission classifier ("Untrusted Code Integration"). |
+| (b) Vendor the 30 files from ci-rt `release-1.1.3` | Identical behaviour, about 5,900 lines of unmaintained code. Analysis done. The session's permission classifier refused the build wiring ("Untrusted Code Integration"). |
 | (c) uPortal-owned model **(chosen by the owner)** | About 600 lines of new main code. No third-party chart library, and Jackson is already a dependency. |
 
-What the ci-rt fork changed after Google's release:
+Changes in the ci-rt fork after Google's release:
 * the `,,`→`,{},` JSON fix (96957fa), which only covered middle columns: a null first cell
   still produced `[,`;
 * JSONP callback sanitising;
@@ -92,10 +92,10 @@ What the ci-rt fork changed after Google's release:
   plus a date-time per locale.
   * Numbers matched in every locale.
   * Dates differ only where ICU's default calendar is Islamic or Persian (`ar-SA`, `fa-IR`,
-    `ps-AF`), or where the tag asks for one explicitly (`-u-ca-japanese`). The JDK has no such
+    `ps-AF`), or where the tag specifies one (`-u-ca-japanese`). The JDK has no such
     calendars, so those dates are now Gregorian. This is documented in UPGRADING-6.0.
 
-### How the tests were run
+### Test environment
 
 * Maven Central rate-limited this sandbox (HTTP 429) for most of the session. Gradle compiled
   `uPortal-web` and `uPortal-portlets` once, through Google's Central mirror, before the
@@ -129,7 +129,7 @@ CI runs: see the bottom of this note.
 * **New decision (MOD-D?):**
   * Own small formats instead of keeping unmaintained libraries, when uPortal uses only a
     sliver of them.
-  * The chart pages move to REST plus an Apache ECharts web component; Google Charts goes then.
+  * The chart pages move to REST plus an Apache ECharts web component, and Google Charts goes with that move.
   * The `WEB-INF/tags/google-visualization` tags and the "Google Visualization" HTML title stay
     until that move.
 * **Follow-ups:**
