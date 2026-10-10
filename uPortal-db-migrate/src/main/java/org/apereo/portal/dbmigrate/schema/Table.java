@@ -29,6 +29,7 @@ public final class Table {
     private final Map<String, Column> columns = new LinkedHashMap<>();
     private final List<String> primaryKey = new ArrayList<>();
     private final List<ForeignKey> foreignKeys = new ArrayList<>();
+    private final List<List<String>> uniqueKeys = new ArrayList<>();
 
     public Table(String catalog, String schema, String name) {
         this.catalog = catalog;
@@ -75,6 +76,17 @@ public final class Table {
     /** Case-insensitive lookup; null when the table has no such column. */
     public Column column(String columnName) {
         return columns.get(Names.key(columnName));
+    }
+
+    /** A unique constraint or unique index, by its columns in key order. */
+    public Table addUniqueKey(List<String> columns) {
+        uniqueKeys.add(Collections.unmodifiableList(new ArrayList<>(columns)));
+        return this;
+    }
+
+    /** Unique constraints and unique indexes, the primary key's own index included. */
+    public List<List<String>> uniqueKeys() {
+        return Collections.unmodifiableList(uniqueKeys);
     }
 
     public List<String> primaryKey() {
