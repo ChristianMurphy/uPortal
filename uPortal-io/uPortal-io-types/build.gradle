@@ -23,5 +23,5 @@ dependencies {
         exclude group: 'javax.script', module: 'script-api'
     }
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
 }

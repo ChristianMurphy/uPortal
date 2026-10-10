@@ -14,10 +14,10 @@ dependencies {
     implementation "org.springframework:spring-web:${springVersion}"
     implementation "org.springframework:spring-webmvc:${springVersion}"
 
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 
-    testImplementation "${portletApiDependency}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
 
     compileOnly "org.projectlombok:lombok:${lombokVersion}"

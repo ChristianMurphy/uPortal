@@ -19,12 +19,12 @@ dependencies {
     // needed for stats portlet
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-joda:${jacksonVersion}"
 
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    testImplementation "${portletApiDependency}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    compileOnly "org.apache.portals.pluto:pluto-container-driver-api:${plutoVersion}"
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-driver-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 }

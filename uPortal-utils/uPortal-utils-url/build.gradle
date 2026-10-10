@@ -5,7 +5,7 @@ dependencies {
     implementation "org.springframework:spring-beans:${springVersion}"
     implementation "org.springframework:spring-core:${springVersion}"
 
-    compileOnly "org.apache.portals.pluto:pluto-container:${plutoVersion}"
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 }

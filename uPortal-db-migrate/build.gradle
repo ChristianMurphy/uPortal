@@ -71,8 +71,8 @@ dependencies {
         ':uPortal-web',
     ].each { entityScan project(it) }
     entityScan "${servletApiDependency}"
-    entityScan "${portletApiDependency}"
-    entityScan "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    entityScan project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    entityScan project(':uPortal-pluto:uPortal-pluto-container-api')
 
     // @SuppressFBWarnings, with the reason, where a finding is checked and safe (class retention:
     // needed to compile only)

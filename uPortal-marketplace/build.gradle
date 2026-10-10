@@ -4,9 +4,9 @@ dependencies {
     implementation project(':uPortal-layout:uPortal-layout-core')
     api project(':uPortal-security:uPortal-security-core')
 
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
 
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
     compileOnly "org.projectlombok:lombok:${lombokVersion}"

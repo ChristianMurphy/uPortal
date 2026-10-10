@@ -9,7 +9,7 @@ dependencies {
         exclude group: 'org.opensaml', module: 'opensaml'
     }
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 }

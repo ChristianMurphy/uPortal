@@ -6,9 +6,9 @@ dependencies {
     implementation "org.apache.lucene:lucene-core:${luceneVersion}"
     implementation "org.jsoup:jsoup:${jsoupVersion}"
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
     compileOnly "${servletApiDependency}"
 
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
     testImplementation "${servletApiDependency}"
 }

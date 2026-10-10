@@ -5,14 +5,14 @@ dependencies {
     api project(':uPortal-groups:uPortal-groups-core')
     api project(':uPortal-security:uPortal-security-core')
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    compileOnly "org.apache.portals.pluto:pluto-container:${plutoVersion}"
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 
     testImplementation "${servletApiDependency}"
-    testImplementation "${portletApiDependency}"
-    testImplementation "org.apache.portals.pluto:pluto-container:${plutoVersion}"
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
 
 }

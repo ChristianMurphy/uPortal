@@ -5,7 +5,7 @@ dependencies {
     implementation project(':uPortal-index')
     implementation project(':uPortal-layout:uPortal-layout-impl')
     api project(':uPortal-security:uPortal-security-permissions')
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
 
     implementation "commons-beanutils:commons-beanutils:${commonsBeanutilsVersion}"
     implementation "io.springfox:springfox-swagger2:${springfoxSwaggerVersion}"
@@ -16,13 +16,13 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 
     testImplementation "${servletApiDependency}"
-    testImplementation "${portletApiDependency}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "org.skyscreamer:jsonassert:${jsonassertVersion}"
     //need to add for SessionRESTControllerTest.java
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
     testImplementation project(':uPortal-security:uPortal-security-permissions')
 }
