@@ -216,6 +216,7 @@ public class EntityManagerCacheImpl
                                 + entityManagerId
                                 + " but there is no currentEntityManagers Map for this Thread",
                         new Throwable());
+                return;
             }
 
             // Get the Deque of current entityManagerIds
@@ -226,6 +227,7 @@ public class EntityManagerCacheImpl
                                 + entityManagerId
                                 + " but there is no entityManagerIds Deque for this Thread",
                         new Throwable());
+                return;
             }
 
             // Get the current EMiD for this PU
