@@ -78,6 +78,15 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
         this.newTransactionTemplate = new TransactionTemplate(platformTransactionManager);
         this.newTransactionTemplate.setPropagationBehavior(
                 TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        /*
+         * Locking is optimistic: read the mutex, then update it where its version is unchanged; an
+         * update that matches no row means another server won. That needs the update to see the
+         * latest committed row, as READ COMMITTED guarantees everywhere. Under snapshot isolation
+         * it fails instead: MariaDB 11.6+ by default rejects it under REPEATABLE READ with "Record
+         * has changed since last read" (MOD-I99).
+         */
+        this.newTransactionTemplate.setIsolationLevel(
+                TransactionDefinition.ISOLATION_READ_COMMITTED);
         this.newTransactionTemplate.afterPropertiesSet();
     }
 
