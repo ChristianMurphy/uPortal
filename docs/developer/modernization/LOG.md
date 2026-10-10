@@ -822,6 +822,83 @@ This supersedes MOD-D24's runtime matrix.
 
   The default is (a), unless the G-index workload shows (b) is better.
   Every other vendor uses native sequences.
+* **Status (2026-10-10): implemented.**
+  * **uPortal `db-integration.yml`:** every push runs the JPA/DAO tests on
+    the five runtime servers. SQL Server and Oracle moved from nightly to
+    push: in run 38068704548 their jobs took 5.3 and 5.4 min, against
+    4.3 to 5.0 for the others. A separate nightly `db-canary` job runs
+    PostgreSQL 19 beta 4, MySQL 26.7 and MariaDB 13.0; its entries set
+    `canary: true`, which drives `continue-on-error`, the only
+    allowed failure in either repo. Failed tests are annotated with their
+    causes.
+  * **uPortal-start `integration.yml`:** every push runs the harness
+    (G-db) on the six runtime databases and the whole Playwright suite on
+    PostgreSQL 18 and MariaDB 12.3. The nightly set adds MySQL 9.7. The
+    scripts start every database from the digest-pinned image in its
+    vendor file.
+    * New 5.17 baselines for PostgreSQL 18.6, MySQL 9.7.2, MariaDB 12.3.3
+      and SQL Server 2025, recorded in run 38078328181 and read back from
+      its annotations (`tests/db/fetch-ci-snapshot.sh`). Apart from their
+      version headers they equal the PostgreSQL 16, MySQL 8.4, MariaDB
+      11.4 and SQL Server 2022 baselines line for line, dialects included.
+      Oracle Free 23.26 and HSQLDB 2.7.4 already had baselines. No
+      existing baseline changed, and `dbRecord` now refuses to overwrite
+      one without `-PdbRecordReplace`.
+  * **G-migrate** (`tests/db/migrate.sh`): the source is filled by
+    `dataInit` on the old server plus a portal start with the API specs;
+    the target gets `dataInit` and one start (MOD-I92); then `dbMigrate`
+    must exit 0. `tests/db/migrate/matrix.json` and `matrix.mjs` give the
+    sets and check their coverage.
+    * Per push: 6 pairs, including MariaDB 11.4 → PostgreSQL 18 and
+      PostgreSQL 15 → MariaDB 12.3 across vendors. The PostgreSQL 15 and
+      PostgreSQL 16 pairs run the whole Playwright suite on the migrated
+      portal afterwards.
+    * Nightly: all 36 (source vendor, target vendor) pairs. The set reads
+      each source version at least once and writes each target 6 times.
+      Playwright runs once per target.
+    * HSQLDB 2.5.1 stays a source: uPortal-start's own server runs at
+      2.5.1 on its own port and directory (new `-PhsqlDatabaseDir`), so
+      2.7.4 never opens, and converts, the files.
+  * **Images:** every database image is pinned as `name:tag@sha256`, with
+    tags and digests checked against Docker Hub and MCR
+    (`gvenzl/oracle-free:23.26` does not exist; `23.26.3-slim` does).
+    Renovate regex managers read workflow matrices and vendor files and
+    update digests and patch versions only. A dry run proposed exactly
+    those.
+  * **Proof:**
+    * uPortal 4c28a7f81: DB integration 38084658479 (5 runtime servers)
+      and CI 38084658432 green. The canaries ran on push once in run
+      38075062798 (07d9d4edb, reverted by f26640b22), and all three
+      passed.
+    * uPortal-start: the nightly sets ran on push once (7d81ec108,
+      reverted by 4b667662d). Run 38080746162 passed 29 of 36 pairs; the
+      7 failures were MOD-I108 and MOD-I109. After the fixes, run
+      38087260340 (5cce78e2d) passed all 48 jobs. Besides the 36 pairs,
+      it ran the harness on the six runtime databases and Playwright on
+      HSQLDB, PostgreSQL 18, MariaDB 12.3 and MySQL 9.7. It also ran Playwright on a
+      migrated SQL Server 2025 portal (from Oracle XE 21). The earlier
+      run 38084663287 failed only that pair: its SQL Server container
+      never accepted a connection. SQL Server is now capped at 2 GB
+      (94287fd6b), and a failed pair reports its containers.
+    * Final heads, per push, with the light profile in place (uPortal
+      4900748e3, uPortal-start 11034ab9c): uPortal 247d76b87 DB
+      integration 38095664677 (all 5 runtime servers) and CI 38095664624
+      green. uPortal-start dde58e2c0 Integration 38095696299 and CI
+      38095696297 green.
+  * **Light CI profile (MOD-D30):** a workstream branch runs DB
+    integration on PostgreSQL 18 and MariaDB 12.3 (2 jobs instead of 5).
+    The integration workflow's light profile runs 6 jobs instead of 17:
+    the build, Playwright on HSQLDB, the harness and Playwright on
+    PostgreSQL 18, and MariaDB 11.4 → PostgreSQL 18. The integration
+    branch keeps 5 and 17 jobs, and the schedule 8 and 48.
+  * **Findings:** MOD-I99 (product), MOD-I107 (uPortal-start), MOD-I108
+    (uPortal-start), MOD-I109 (copy tool), MOD-I110 (CI tooling). One
+    flake: 8 Announcements specs failed once on PostgreSQL 16 (run
+    38078328181, attempt 1) and passed on the re-run.
+  * **Left:** both sides of a G-migrate pair are created by the same
+    build (5.17.10-SNAPSHOT from source). Once the 6.0 schema is merged, the
+    source must come from a released 5.17 (`-PuPortalVersion`). SQL
+    Server and Oracle have no full Playwright run in CI.
 
 ### MOD-D26: P3-1 merged, with Spring Portlet MVC and Web Flow's portlet integration classes vendored
 
@@ -1497,6 +1574,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I96 | Tooling | With externally supplied drivers, a driver also bundled in the jar caused a sealed-package error, and `DriverManager` rejected the class-loader-loaded drivers. | **Fixed:** drivers stay out of the jar and are instantiated directly. |
 | MOD-I97 | Persistence | **Found by the harness on Oracle.** `SQLNextExceptionLoggerAspect` called `initCause` on Oracle's `BatchUpdateException`, whose cause is already set (to null). That threw `IllegalStateException` and hid the ORA-00001 constraint error, so two duplicate-name portlet-list API specs got 500 instead of 400. | **Fixed** (7ded7362d): the aspect logs the next exception instead of chaining it. A unit test reproduces the exact CI error on the old code. Upstream candidate. |
 | MOD-I98 | CI | uPortal CI run 38072243202 (179e11d66) failed on Windows only, because Maven Central returned HTTP 403 for `spring-core-7.0.9.pom` while resolving the copy tool's Spring Boot 4 dependencies. The next run, with the same build files, was green on all 8 jobs. On the prototype branch, setup-gradle's cache is read-only (it writes only on the default branch, which the fork never builds). Every job then downloads everything from Central and is exposed to its rate limits. | The cause is external and doesn't need a code change. If it recurs, let setup-gradle write the cache on push builds of the integration branch (push events only, never PRs, to avoid cache poisoning), and recheck with zizmor. Upstream runs on `master` get a written cache and are unaffected. |
+| MOD-I99 | Concurrency | **Found by the runtime matrix.** MariaDB 11.6+ defaults to `innodb_snapshot_isolation=ON`, so under REPEATABLE READ an update of a row that changed after the transaction read it fails with "Record has changed since last read in table 'UP_MUTEX'". `JpaClusterLockDao` locks optimistically (read, then update where the version is unchanged), so a server that lost the race for a mutex got that error instead of no lock. `testConcurrentLocking` failed on MariaDB 12.3, the 6.0 runtime (runs 38075062798, 38076433637). | **Fixed** (05f40ce45): the DAO's own transactions run under READ COMMITTED. A lost race is then a version mismatch again. `testLockTakenBetweenReadAndUpdate` fails on the old code on MariaDB 12.3 (run 38079129765) and passes on all five servers (run 38079947750). Upstream candidate. Other read-then-update code on MariaDB 11.6+ needs the same review. |
 | MOD-I100 | api-rest | **Found by SpotBugs.** `EntityService.java:221` uses `&&` where `\|\|` is meant, so a null entity type with an ID set throws an NPE at :225. | **Fixed** (8dcab6efd): returns null when the type is unknown or the ID is blank (`\|\|`). `EntityServiceTest`: the unknown-type and null-type cases threw the NPE at :225 on the old code. Upstream candidate. |
 | MOD-I101 | io-types | **Found by SpotBugs.** `ExternalPortletDefinitionUnmarshaller.java:243` compares `Calendar.equals(Date)`, which is always false, so lifecycle entries meant to get the current time keep the placeholder date on import. | **Fixed** (20b19918e): compares the Calendar's instant (`getTime()`) with the placeholder. `ExternalPortletDefinitionUnmarshallerTest` imports a MAINTENANCE entry with the placeholder. On the old code the entry kept 1999-12-31 and sorted before PUBLISHED, and the portlet left maintenance mode. Upstream candidate. |
 | MOD-I102 | rdbm | **Found by SpotBugs.** `EntityManagerCacheImpl.java:213–232` logs that its per-thread map is missing, then dereferences it anyway (NPE). | **Fixed** (5ab591f23): returns after logging (the cache purge still runs first). `EntityManagerCacheImplTest`: all 3 cases threw the NPE on the old code. |
@@ -1504,6 +1582,10 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I104 | core | **Found while tracing MOD-I90.** `BasePersonManager.java:158` reads the `guestUserIds` HashMap without the lock its writer holds. | **Fixed** (f213dcad5): a `ConcurrentHashMap`, and writes are still made under the lock. `BasePersonManagerTest` (8 threads, 40 guests, 25 fresh managers; one lookup per guest; a missing guest account isn't cached) guards the behaviour, but the race needs a read during a resize and can't be forced, so it also passes on the old code. Related to MOD-I90. |
 | MOD-I105 | utils | **Found by SpotBugs.** `ComparableExtractingComparator.java:53` throws an NPE when only the first value is null. `PortletWindowRegistryImpl.java:554`'s error message prints the null entity instead of its ID. | **Fixed** (f90ebac9e). A null comparable sorts first, in both argument orders, and the message prints `portletEntityId`. `ComparableExtractingComparatorTest` (3 of 5 cases threw the NPE on the old code) and `PortletWindowRegistryImplTest` (the old message said "for null"). |
 | MOD-I106 | Build | uPortal-webapp's `npmInstall` still rewrites `package-lock.json`, because c0d9c16ca switched only the root build to `npm ci`. | **Fixed** (bddc4f315). The webapp is an npm workspace of the root, so its npmInstall is disabled and depends on the root's `npm ci`, which installs the webapp's packages too. (`npm ci` in the webapp directory would empty the root's node_modules and install 19 of 805 packages.) Before: `:uPortal-webapp:npmInstall` added 10 lines to package-lock.json. After: a clean `:uPortal-webapp:build -x test :npm_run_lint-js` leaves `git status` clean. uPortal-start's root node block still runs `npm install`, which rewrites its lockfile too (8 `peer` flags under npm 11). It is not changed here. |
+| MOD-I107 | uPortal-start | With `org.gradle.parallel=true` (the default), `dataInit` ran the overlays' data tasks in parallel. On SQL Server, the portlets' concurrent Hibernate schema updates deadlock on the catalog. Calendar and Announcements were "chosen as the deadlock victim" (G-migrate run 38076314198). Any `portalInit` on SQL Server can hit this. Pre-existing. | **Fixed** (uPortal-start 015cbbc2f, comment fixed in 74721a63d): a shared build service with `maxParallelUsages = 1` runs the data tasks one at a time. |
+| MOD-I108 | uPortal-start | On SQL Server the Feedback portlet never starts. It bundles Hibernate 3.2.7, which has `SQLServerDialect` but not the `SQLServer2005Dialect` that `global.properties` names for every portlet, so it never creates `FEEDBACK_STORE`. Every SQL Server database had 113 tables instead of 114, and 5 G-migrate pairs into SQL Server 2025 failed planning (run 38080746162). Pre-existing. | **Fixed** (uPortal-start b06d565f1): vendor files can set `portlet.<file>.<key>`, which `tomcatConfig` writes to `${portal.home}/<file>.properties`. The SQL Server vendors give Feedback `SQLServerDialect`. README tells adopters to do the same. |
+| MOD-I109 | Copy tool | Copies from SQL Server into MySQL or MariaDB failed verification on 5 tables with timestamps (run 38080746162). The copy truncates a `datetime` such as `.997` to the target's whole seconds, but when a side was SQL Server `datetime` the hash put values on SQL Server's 1/300 s grid instead of the pair's lower precision. | **Fixed** (7710f8699): grid first, then the pair's precision. A unit test fails on the old code. |
+| MOD-I110 | CI | GitHub keeps only the first 4096 characters of a workflow-command annotation, and 10 per type per step. Property values also end at `,` and `:`. A re-run attempt copies the jobs it does not repeat, without their annotations. | The harness splits snapshots into 4000-character notices (about 8 per vendor). `fetch-ci-snapshot.sh` reads every attempt, and titles are escaped. |
 | MOD-I120 | Persistence | **Found by P2 on the upgrade path.** Hibernate 4.3 applied `@Type(nullSafeString)` to map keys as well as values, so existing rows store keys such as `_externalId`. 5.2 applies it to values only, so upgraded portals lost their tab externalIds (`/f/welcome` redirected to login). Fresh-install tests didn't notice, and the harness DATA check counts rows, not values (MOD-I126). | **Fixed in P2-2:** `@MapKeyType` on the four affected collections, plus stored-format tests. The dataExport data-equivalence check (MOD-D29 item 1) is the required check that catches this class of bug. |
 | MOD-I121 | Tests | Hibernate 5.2's `BatchFetchQueueHelper` assertion fails at random under `-ea` when `PortletPreferencesImpl` is join-fetched. | Tests run with that assertion disabled, as production does. Recheck on 5.6/6. |
 | MOD-I122 | Persistence | Rollback-only commits fail differently in 5.2. | `JpaClusterLockDao` rolls back explicitly. Keep MOD-I82 and reconcile with MOD-I99 (`05f40ce45`) at rebase. |
