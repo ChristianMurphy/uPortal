@@ -9,8 +9,7 @@ name: DB integration
 #
 # PostgreSQL, MariaDB and MySQL run on every push and pull request; SQL Server and Oracle run
 # nightly and on demand. Credentials are throwaway CI values, the same as uPortal-start's
-# tests/db/vendors/*.properties. No test is skipped on any database: a vendor whose failures
-# are a known product issue is marked known-failure, with the reason, until the code is fixed.
+# tests/db/vendors/*.properties. No test is skipped on any database.
 #
 on:
   push:
@@ -36,7 +35,6 @@ jobs:
     name: "DB integration: ${{ matrix.vendor }}"
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    continue-on-error: ${{ matrix.known-failure }}
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +45,6 @@ jobs:
             health: pg_isready -h 127.0.0.1 -U uportal -d uportal
             driver: org.postgresql.Driver
             url: jdbc:postgresql://localhost:5432/uportal
-            known-failure: false
           - vendor: mariadb-11.4
             image: mariadb:11.4@sha256:1292844148b311e4ed4300022a996d39083f415a963e970cf47cad1b3b18e3a6
             port: 3306
@@ -55,20 +52,12 @@ jobs:
             driver: org.mariadb.jdbc.Driver
             # As in uPortal-start: Hibernate 4.3 has no dialect for the product name "MariaDB"
             url: jdbc:mariadb://localhost:3306/uportal?useMysqlMetadata=true
-            # See mysql-8.4
-            known-failure: true
           - vendor: mysql-8.4
             image: mysql:8.4@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242
             port: 3306
             health: mysqladmin ping -h 127.0.0.1 -u uportal -puportal
             driver: com.mysql.cj.jdbc.Driver
             url: jdbc:mysql://localhost:3306/uportal?useSSL=false&allowPublicKeyRetrieval=true
-            # Known failure, pending a decision (MOD-D16 CI report): five JpaClusterLockDaoTest
-            # tests fail with "Failed to find or create ClusterMutex". getClusterMutex creates a
-            # missing mutex in a REQUIRES_NEW transaction, then looks it up again in the caller's
-            # transaction, whose REPEATABLE READ snapshot (the InnoDB default) cannot see it.
-            # The same MySQL with READ COMMITTED sessions passed (run 38061900729).
-            known-failure: true
     services:
       db:
         image: ${{ matrix.image }}
