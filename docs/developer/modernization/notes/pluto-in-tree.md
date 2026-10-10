@@ -94,7 +94,7 @@ imported, because it is the one that runs.
   None changes behaviour. The script classifies each differing method and
   exits 1 if any difference is outside these rules.
 * **Dependency resolution:** I dumped every resolvable configuration of every
-  project before and after (810 configurations in 62 projects, 27,898
+  project before and after (810 configurations in 62 projects, 27,937
   entries). After mapping each Apache artifact to its in-tree project, **there
   are zero differences**. The WAR's `WEB-INF/lib` swaps `pluto-container` and
   `pluto-portal-driver` for `uPortal-pluto-container` and
@@ -167,15 +167,22 @@ imported, because it is the one that runs.
 | uPortal-start Integration, uPortal from the integration branch (before) | run 38089226181 (workflow_dispatch, `uportal-ref=ccr-43ba0785-hzlrj5`): _pending_ |
 | Pluto testsuite before / after | _pending_ |
 
-**Local unit tests (sandbox):** identical per module before and after: 660
-run, 659 passed, 0 failed, 1 skipped. uPortal-web and the modules that depend on
-it (uPortal-webapp and others) don't compile in the sandbox, because the proxy
-refuses jitpack.io (organisation policy, 403 on CONNECT) for
-`com.github.ci-rt:google-visualization-java`. The same happens on the
-integration branch. CI is the authority for those modules. Also run locally:
+**Local unit tests (sandbox, JDK 21, `./gradlew test --rerun` in both trees):**
+identical per module before and after, in all 32 test tasks: 1,148 run, 1,069
+passed, 0 failed, 79 skipped (78 of the skips are in uPortal-webapp, the same
+on both sides). Also run locally: `build` (green in both trees),
 `spotlessCheck`, `spotbugsMain` on the six new modules plus uPortal-rendering
-and uPortal-url, markdown lint, uPortal-start `npm run lint` (tsc,
+and uPortal-url, markdown lint, and uPortal-start `npm run lint` (tsc,
 type-coverage 100%, eslint on the new spec).
+
+The proxy refuses jitpack.io (organisation policy, MOD-I51), where
+`com.github.ci-rt:google-visualization-java:release-1.1.3` lives, so
+uPortal-web and everything after it don't build in a cloud session as is.
+Following the coordinator's workaround, the official jar was taken from
+uPortal's released 5.17.9 WAR on Central (SHA-256 `eca09172…bad63`) and
+installed into mavenLocal, not committed. Its embedded POM is
+`com.github.ci-rt:visualization-datasource:1.1.3`, so it was installed with
+the coordinates the build asks for.
 
 ## Findings
 
@@ -192,9 +199,10 @@ type-coverage 100%, eslint on the new spec).
   portlet API; uPortal ships the 2.1.0 API jar. Harmless (2.1.0 is a
   superset), but it is why the in-tree container compiles against
   `uPortal-pluto-portlet-api`, not a 2.0 jar.
-* **F4 (sandbox):** jitpack.io is refused by the proxy, so uPortal-web can't
-  compile in cloud sessions. Every workstream needing a full local build or a
-  local portal is affected. It is an environment setting, not a code issue.
+* **F4 (sandbox, known as MOD-I51):** jitpack.io is refused by the proxy, so
+  uPortal-web can't compile in a cloud session until the jar is installed
+  into mavenLocal (see Gates). The embedded POM has different coordinates
+  from the ones uPortal asks for, which the workaround has to correct.
 * **F5 (upstream data):** portlet-api's upstream `META-INF/NOTICE` has a
   corrupted copyright sign (U+FFFD). The imported copy keeps it; uPortal's
   combined `uPortal-pluto/NOTICE` writes "©".
@@ -215,8 +223,9 @@ type-coverage 100%, eslint on the new spec).
   methods** (F1). P6-1 must add `isReady`/`setWriteListener` to three classes.
 * **MOD-I?: Pluto needs `--release 8`** (F2). Fix `getPrefixes` and move to 11
   when the code is first changed.
-* **MOD-I?: jitpack.io is blocked in cloud sessions** (F4); uPortal-web and
-  everything downstream can't build there.
+* Add to **MOD-I51**: the jar in the 5.17.9 WAR carries a
+  `visualization-datasource:1.1.3` POM, so mavenLocal needs one written with
+  `google-visualization-java:release-1.1.3` (F4).
 
 ## What's left
 
