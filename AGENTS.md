@@ -97,6 +97,7 @@ Key config files: `portal.properties` (overridable via `${portal.home}/uPortal.p
 ## Code style
 
 - **Java:** AOSP via google-java-format 1.36.1 (4-space indent, same-line braces). Package root `org.apereo.portal`. Every file needs the Apereo Apache 2.0 license header. `./gradlew spotlessCheck` / `spotlessApply` (the old `verGJF` / `goJF` still work).
+- **Null safety:** JSpecify, as in Spring 7. In a `@NullMarked` package or class (`org.jspecify.annotations`) everything is non-null unless annotated `@Nullable` (type-use: `public @Nullable String find()`); NullAway fails the compile on violations there. Mark new packages `@NullMarked`; fix findings with `@Nullable` or null handling, never suppress. See `docs/developer/other/STATIC_ANALYSIS.md`.
 - **Tests:** JUnit 4 + Mockito — `@Before`/`@Test`, `@Mock`/`@InjectMocks`, `MockitoAnnotations.initMocks(this)`. Static-import `org.junit.Assert.*` and `org.mockito.Mockito.*`.
 - **JavaScript:** Prettier (single quotes, 4-space indent, ES5 trailing commas). Globals: `jQuery`, `$`, `_`, `up`, `fluid`.
 - **LESS:** 2-space indent, Prettier via stylelint-prettier.

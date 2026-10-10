@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.pluto.container.driver.PortletInvocationEvent;
 import org.apache.pluto.container.driver.PortletInvocationListener;
 import org.apereo.portal.url.IPortalRequestUtils;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.security.web.session.HttpSessionDestroyedEvent;
@@ -218,7 +219,7 @@ public class PortletSessionExpirationManager
         }
 
         @Override
-        public V get(Object key) {
+        public @Nullable V get(Object key) {
             return delegate.get(key);
         }
 
@@ -238,7 +239,7 @@ public class PortletSessionExpirationManager
         }
 
         @Override
-        public V put(K key, V value) {
+        public @Nullable V put(K key, V value) {
             return delegate.put(key, value);
         }
 
@@ -248,7 +249,7 @@ public class PortletSessionExpirationManager
         }
 
         @Override
-        public V remove(Object key) {
+        public @Nullable V remove(Object key) {
             return delegate.remove(key);
         }
 
