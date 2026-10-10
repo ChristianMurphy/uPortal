@@ -411,6 +411,63 @@ research report.
   * Servlet Web Flow 4 with server-side views. That keeps a second UI
     stack.
 
+### MOD-D19: per-portlet choice between REST + web components and server-rendered Spring pages
+
+This refines MOD-D18 at the project owner's direction: replacements may be
+either REST + web components or native Spring MVC pages with Thymeleaf,
+chosen per portlet.
+
+* **Rule of thumb:**
+  * **Web component + REST** when the thing lives *inside* portal pages
+    next to other content: a widget in a layout region, used by end users,
+    benefits from client-side interactivity, or is reused by other clients
+    such as mobile or uPortal-home.
+  * **Spring MVC + Thymeleaf page** when it is a *full-page tool or form
+    flow*: an admin console, a multi-step wizard, or a security-sensitive
+    form (login, password, account). Spring Security's CSRF and auth
+    integrate directly, it needs no JS build, it is accessible by default
+    (progressive enhancement, optionally with htmx), and JSP → Thymeleaf
+    conversion is mostly mechanical. Multi-step wizards use plain
+    controllers with session-scoped wizard state. Servlet-mode Spring Web
+    Flow 4 is allowed where a flow is genuinely complex.
+* **Versions:**
+  * Thymeleaf 3.1.5 with `thymeleaf-spring5` while on Spring 5.3 (javax).
+  * Switch to `thymeleaf-spring6` 3.1.5 at P6; Spring Boot 4.2 manages
+    exactly this for Spring 7.
+  * Templates don't change across the Jakarta switch.
+  * Layout dialect 4.0.1 shares the Respondr header and footer, so admin
+    pages keep the portal chrome.
+* **Default mapping** (to be confirmed per portlet by the reference
+  conversions):
+  * **Thymeleaf admin console under `/uPortal/admin/...`:**
+    * Portlet / Groups / Permissions / User / Portal / Fragment
+      Administration, Exit Fragment Administration, Import/Export.
+    * Cache Manager, Attribute Swapper, Fragment Audit, Statistics and
+      Portal Activity, SQL Query.
+    * Tenant Manager, Toggle Resources Aggregation, Translator,
+      Dynamic Respondr Skin.
+  * **Thymeleaf full-page user flows:** Login, Forgot Password,
+    Self-Edit Account (with update-password / reset-password), Reset My
+    Layout.
+  * **Web components + REST, placeable in layouts:** Favorites, Portlet
+    Marketplace, Search, Directory, Popular Portlets, User Locale,
+    background preference, Session Timeout.
+  * **Built-in channel types or dropped:** IFrame, Image, Error,
+    Snooper, JspInvoker, Google Analytics (becomes skin/config).
+  * **Soffit Connector:** becomes a pipeline component (MOD-Q9).
+* **Reference conversions** (WS14 step 2): one of each kind, so both
+  patterns get their effort measured.
+  * Groups Manager → Thymeleaf admin page.
+  * Favorites → web component + REST.
+* **Alternatives considered:**
+  * Web components everywhere: one UI stack, but a heavier rewrite for
+    form-heavy admin wizards, more client-side security surface, and a JS
+    build for every tool.
+  * Thymeleaf everywhere: widgets couldn't sit inside portal page regions
+    without a server-fragment channel.
+  * Keep JSP: works on Tomcat 11, but it's the legacy stack this work is
+    retiring (111 JSPs).
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
