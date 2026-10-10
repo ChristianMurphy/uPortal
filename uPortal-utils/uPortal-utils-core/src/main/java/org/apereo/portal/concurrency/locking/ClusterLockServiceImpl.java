@@ -18,6 +18,7 @@ import com.google.common.base.Function;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -27,8 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apereo.portal.IPortalInfoProvider;
-import org.joda.time.Duration;
-import org.joda.time.ReadableDuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,9 +54,9 @@ public class ClusterLockServiceImpl implements IClusterLockService {
     private IPortalInfoProvider portalInfoProvider;
     private ExecutorService lockMonitorExecutorService;
     private IClusterLockDao clusterLockDao;
-    private ReadableDuration updateLockRate = Duration.standardSeconds(1);
-    private ReadableDuration maximumLockDuration = Duration.standardMinutes(60);
-    private ReadableDuration dbLockTimeout = Duration.standardSeconds(30);
+    private Duration updateLockRate = Duration.ofSeconds(1);
+    private Duration maximumLockDuration = Duration.ofMinutes(60);
+    private Duration dbLockTimeout = Duration.ofSeconds(30);
 
     @Autowired
     public void setPortalInfoProvider(IPortalInfoProvider portalInfoProvider) {
@@ -80,7 +79,7 @@ public class ClusterLockServiceImpl implements IClusterLockService {
      * defaults to 500ms
      */
     @Value("${org.apereo.portal.concurrency.locking.ClusterLockDao.updateLockRate:PT1S}")
-    public void setUpdateLockRate(ReadableDuration updateLockRate) {
+    public void setUpdateLockRate(Duration updateLockRate) {
         this.updateLockRate = updateLockRate;
     }
 
@@ -89,12 +88,12 @@ public class ClusterLockServiceImpl implements IClusterLockService {
      * can take to execute. Defaults to 15 minutes
      */
     @Value("${org.apereo.portal.concurrency.locking.ClusterLockDao.maximumLockDuration:PT3600S}")
-    public void setMaximumLockDuration(ReadableDuration maximumLockDuration) {
+    public void setMaximumLockDuration(Duration maximumLockDuration) {
         this.maximumLockDuration = maximumLockDuration;
     }
 
     @Value("${org.apereo.portal.concurrency.locking.ClusterLockDao.dbLockAcquireTimeout:PT30S}")
-    public void setDbLockTimeout(ReadableDuration dbLockTimeout) {
+    public void setDbLockTimeout(Duration dbLockTimeout) {
         this.dbLockTimeout = dbLockTimeout;
     }
 
@@ -185,7 +184,7 @@ public class ClusterLockServiceImpl implements IClusterLockService {
 
             // Wait for DB lock acquisition
             final boolean dbLocked =
-                    dbLockLatch.await(dbLockTimeout.getMillis(), TimeUnit.MILLISECONDS);
+                    dbLockLatch.await(dbLockTimeout.toMillis(), TimeUnit.MILLISECONDS);
             if (!dbLocked) {
                 // Worker never started or got to db level mutex acquisition
 
@@ -294,7 +293,7 @@ public class ClusterLockServiceImpl implements IClusterLockService {
             try {
                 currentThread.setName(currentName + "-" + mutexName);
                 final long lockTimeout =
-                        System.currentTimeMillis() + maximumLockDuration.getMillis();
+                        System.currentTimeMillis() + maximumLockDuration.toMillis();
                 try {
                     // Try to acquire the lock, set the success to the dbLocked holder
                     final ClusterMutex mutex = clusterLockDao.getLock(this.mutexName);
@@ -320,7 +319,7 @@ public class ClusterLockServiceImpl implements IClusterLockService {
                 // still have the lock)
                 // and wait again
                 while (!this.workCompleteLatch.await(
-                        updateLockRate.getMillis(), TimeUnit.MILLISECONDS)) {
+                        updateLockRate.toMillis(), TimeUnit.MILLISECONDS)) {
                     clusterLockDao.updateLock(this.mutexName);
 
                     if (lockTimeout < System.currentTimeMillis()) {
