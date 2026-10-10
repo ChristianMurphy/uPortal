@@ -51,6 +51,19 @@ configurations {
     webjars
 }
 
+// The Groovy/Spock tests compile and run on Groovy 4 (groovyTestVersion), while the war
+// keeps the Groovy 3 runtime (groovyVersion) that uPortal-tools and groovy-jsr223 bring in.
+// Both declare the org.codehaus.groovy:groovy capability, so align the test classpaths on
+// Groovy 4; the runtime classpath (and therefore the war) is untouched.
+configurations.matching { it.name.startsWith('test') }.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        ['groovy', 'groovy-jsr223'].each { name ->
+            substitute(module("org.codehaus.groovy:${name}"))
+                    .using(module("org.apache.groovy:${name}:${groovyTestVersion}"))
+        }
+    }
+}
+
 dependencies {
     api project(':uPortal-groups:uPortal-groups-filesystem')
     api project(':uPortal-groups:uPortal-groups-grouper')
@@ -73,7 +86,7 @@ dependencies {
     testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
     testImplementation "org.apache.portals.pluto:pluto-container-driver-api:${plutoVersion}"
     testImplementation "org.skyscreamer:jsonassert:${jsonassertVersion}"
-    testImplementation "org.codehaus.groovy:groovy-test:${groovyVersion}"
+    testImplementation "org.apache.groovy:groovy-test:${groovyTestVersion}"
     testImplementation "org.spockframework:spock-core:${spockVersion}"
     testImplementation "${portletApiDependency}"
     testImplementation "${servletApiDependency}"

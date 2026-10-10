@@ -19,6 +19,7 @@
 
 package org.apereo.portal.security.provider;
 
+import java.lang.reflect.Method;
 import java.util.Date;
 
 import org.apereo.portal.security.IPermission;
@@ -61,6 +62,24 @@ class AnyUnblockedGrantPermissionPolicyTest extends AnyUnblockedGrantPermissionP
         return result;
     }();
 
+    /*
+     * Groovy 4 no longer dispatches super.x() (or this.x()) to a private method of a Java
+     * superclass, so these delegate to the private methods under test reflectively.
+     */
+    private boolean containsType(Set<IPermission> permissions, String soughtType) {
+        return (boolean) superMethod('containsType', Set, String).invoke(this, permissions, soughtType);
+    }
+
+    private Set<IPermission> removeInactivePermissions(IPermission[] perms) {
+        return (Set<IPermission>) superMethod('removeInactivePermissions', IPermission[]).invoke(this, [perms] as Object[]);
+    }
+
+    private static Method superMethod(String name, Class<?>... parameterTypes) {
+        Method method = AnyUnblockedGrantPermissionPolicy.getDeclaredMethod(name, parameterTypes);
+        method.setAccessible(true);
+        return method;
+    }
+
     @Test
     void testContainsType() {
         Set<IPermission> onlyGrant = new HashSet([
@@ -75,18 +94,18 @@ class AnyUnblockedGrantPermissionPolicyTest extends AnyUnblockedGrantPermissionP
         ]);
 
         assertEquals('Incorrect output from containsType() -- ',
-            super.containsType(onlyGrant, 'GRANT'), true);
+            containsType(onlyGrant, 'GRANT'), true);
         assertEquals('Incorrect output from containsType() -- ',
-            super.containsType(onlyDeny, 'GRANT'), false);
+            containsType(onlyDeny, 'GRANT'), false);
         assertEquals('Incorrect output from containsType() -- ',
-            super.containsType(bothGrantAndDeny, 'GRANT'), true);
+            containsType(bothGrantAndDeny, 'GRANT'), true);
 
         assertEquals('Incorrect output from containsType() -- ',
-            super.containsType(onlyGrant, 'DENY'), false);
+            containsType(onlyGrant, 'DENY'), false);
         assertEquals('Incorrect output from containsType() -- ',
-            super.containsType(onlyDeny, 'DENY'), true);
+            containsType(onlyDeny, 'DENY'), true);
         assertEquals('Incorrect output from containsType() -- ',
-            super.containsType(bothGrantAndDeny, 'DENY'), true);
+            containsType(bothGrantAndDeny, 'DENY'), true);
     }
 
     @Test
@@ -100,7 +119,7 @@ class AnyUnblockedGrantPermissionPolicyTest extends AnyUnblockedGrantPermissionP
         ];
 
         IPermission[] inpt = activePermissions + inactivePermissions;
-        Set<IPermission> filteredPermissions = super.removeInactivePermissions(inpt);
+        Set<IPermission> filteredPermissions = removeInactivePermissions(inpt);
         assertEquals('Incorrect output from removeInactivePermissions() -- ',
             activePermissions, filteredPermissions.toArray(new IPermission[0]));
     }

@@ -18,6 +18,7 @@
  */
 package org.apereo.portal.security.mvc
 
+import groovy.test.GroovyTestCase
 import javax.servlet.http.HttpServletRequest
 
 import org.junit.Test;
