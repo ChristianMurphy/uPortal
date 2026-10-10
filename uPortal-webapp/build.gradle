@@ -159,7 +159,7 @@ tasks.named('npmInstall') {
 // Support for filtering properties files
 import org.apache.tools.ant.filters.ReplaceTokens
 processResources {
-    filter(ReplaceTokens, tokens:['projectVersion': project.version])
+    filter(ReplaceTokens, tokens:['projectVersion': project.version, 'plutoVersion': plutoVersion])
 }
 
 // Bootstrap path variables
