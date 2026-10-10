@@ -194,6 +194,21 @@ gradle.buildFinished { buildResult ->
     println "=== Aggregate Test Summary: ${total.e} executed, ${total.p} passed, ${total.f} failed, ${total.s} skipped (sum durations ${total.d} ms) ==="
 }
 
+/** Passes a Java agent jar to a forked JVM, tracking the jar as a task input. */
+class JavaAgentArgumentProvider implements CommandLineArgumentProvider {
+    @Classpath
+    final FileCollection agent
+
+    JavaAgentArgumentProvider(FileCollection agent) {
+        this.agent = agent
+    }
+
+    @Override
+    Iterable<String> asArguments() {
+        ["-javaagent:${agent.singleFile.absolutePath}".toString()]
+    }
+}
+
 /*======== Child Projects ========*/
 subprojects {
 
@@ -208,6 +223,10 @@ subprojects {
         maven { url = "https://jitpack.io" }
     }
 
+    configurations {
+        mockitoAgent
+    }
+
     dependencies {
         testImplementation "junit:junit:${junitVersion}"
         testImplementation "org.easymock:easymock:${easymockVersion}"
@@ -216,6 +235,15 @@ subprojects {
         testImplementation "org.springframework:spring-test:${springVersion}"
         testImplementation "org.xmlunit:xmlunit-legacy:${xmlunitVersion}"
         spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
+        mockitoAgent("org.mockito:mockito-core:${mockitoVersion}") {
+            transitive = false
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        // Mockito 5's inline mock maker otherwise self-attaches as a Java agent at runtime,
+        // which JDK 21+ warns about and a future JDK will refuse (JEP 451). Load it explicitly.
+        jvmArgumentProviders.add(new JavaAgentArgumentProvider(configurations.mockitoAgent))
     }
 
     /* Release Management
