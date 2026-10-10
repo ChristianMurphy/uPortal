@@ -1056,6 +1056,24 @@ This supersedes MOD-D24's runtime matrix.
     a model.
   * Lit's template compiler (`@lit-labs/compiler` 1.1.2) stays out; it is
     still a Labs prototype.
+* **Clean integration (owner: "it should be able to integrate cleanly").**
+  The adapter's acceptance criteria, each covered by a test:
+  * Lit's public `ReactiveController` API only, used by composition: no
+    base class, mixin or patching.
+  * Types inferred from the machine, so components need no `any` or
+    casts and an unknown event is a type error.
+  * Moving an element in the DOM keeps its state: the persisted snapshot
+    is restored on reconnect. In-flight invocations are defined and
+    tested. There are no updates after disconnect and no leaks.
+  * Host properties set the actor's input at first connect, and later
+    changes become explicit events. Machine `emit`s become DOM
+    `CustomEvent`s.
+  * A selector plus equality check, so `requestUpdate()` runs only on
+    real changes.
+  * Generic: no uPortal code, only `lit` and `xstate` as dependencies,
+    so it can be published on its own or proposed upstream later.
+* **Also rejected:** the community `xstate-lit` 2.0.5. It was last
+  published in January 2024 and lists no repository or licence.
 * **Status:** the WS14 foundation agent adds the adapter, converts
   `<up-favorites>` and adds the model-based tests before its merge.
 
