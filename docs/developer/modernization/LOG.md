@@ -158,6 +158,18 @@ databases upgrading in place.
   [research/spike-jakarta/README.md](research/spike-jakarta/README.md)
   and its scripts.
 
+### MOD-D10: DB upgrade harness is the G-db gate
+
+* uPortal-start `45b7e4812` and `4765db8e8` add `tests/db/harness.sh`,
+  `-PdbVendor`, the `dbSetup`/`dbSnapshot`/`dbVerify`/`dbRecord` tasks, and
+  a GitHub Actions workflow.
+* 5.17 snapshots are recorded on seven databases: HSQLDB 2.5.1, PostgreSQL
+  16, MySQL 8.4, MariaDB 10.6, MariaDB 11.4, SQL Server 2022 and Oracle Free
+  23. Each reproduced with zero drift on a fresh database.
+* The report separates STRUCTURE, DATA, NAMES and GENERATORS drift.
+* **Still to build:** the one-insert-per-entity check, and coverage of
+  portlet tables.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -184,8 +196,8 @@ databases upgrading in place.
 | MOD-I20 | Upstream | The published roadmap defines uP6 as Java 21 + Tomcat upgrade + converting external portlets to web components, and uP7 as dropping portlets. It also lists "Maven" (2025) and "Replace Gradle" (2028). An April 2025 uportal-dev thread (seen only via search snippets) revised uP6 to Java 17 on Tomcat 9 / javax. Renovate pins Spring < 5 and blocks Hibernate majors. A Spring 7 / Jakarta / Tomcat 11 6.0 merges uP6 and uP7 scope. | Needs an RFC in `uPortal-Project/community` Discussions before large PRs land (MOD-Q6). |
 | MOD-I21 | Upstream | The owner has open upstream PRs that overlap phase 1: uPortal #2921 (Gradle 6.9.4 → 8.5, branch `build/gradle-8`), #2988 (sherter → Spotless, branch `refactor/spotless-migration`), and uPortal-start #681. | Phase 1 reuses their decisions. Then either update those PRs or replace them with the finer-grained series. |
 | MOD-I22 | Upstream | `docs/architecture/subsystem-analysis.md` (PR #2917) already recommends: decomposing `uPortal-utils-core`; splitting `core-api` / `core-portlet`; extracting the rendering pipeline from Pluto; adopting Liquibase or Flyway; turning the Soffit connector into a servlet filter. It estimates about 21k portlet-specific LOC. | Align workstreams with these "first moves" so the work reads as executing the agreed analysis. |
-| MOD-I23 | Persistence | IDs on SQL Server / MariaDB: `PortalDialectResolver` forces `SQLServer2005Dialect`, and MariaDB is detected as MySQL, so neither supports sequences. The `@SequenceGenerator`-named generators therefore probably fall back to tables there (inferred from dialect behaviour, not yet checked on a real database). Hibernate 7.4's `SQLServerDialect` / `MariaDBDialect` always use native sequences. | Data-compat risk. Either add a dialect subclass that turns sequence support off, or convert those tables to sequences once and run `SchemaManager.resynchronizeGenerators()` (7.2+). Verify on real databases with Testcontainers (WS3). |
-| MOD-I24 | Persistence | PostgreSQL `@Lob`: Hibernate 4.3 stored large-object OIDs in `text` columns, while 5.6.2+ generates `oid` columns. `vacuumlo` can delete large objects referenced only from `text` columns, which is data loss. | Pin explicit column types for `@Lob` on PostgreSQL. Document this for adopters. |
+| MOD-I23 | Persistence | IDs on SQL Server / MariaDB: `PortalDialectResolver` forces `SQLServer2005Dialect`, and MariaDB is detected as MySQL, so neither supports sequences. The `@SequenceGenerator`-named generators therefore probably fall back to tables there (inferred from dialect behaviour, not yet checked on a real database). Hibernate 7.4's `SQLServerDialect` / `MariaDBDialect` always use native sequences. | **Confirmed by the P0-4 harness.** On SQL Server 2022, MySQL 8.4 and MariaDB 10.6/11.4, all 49 IDs are backed by one-row `UP_*_SEQ(next_val)` tables. HSQLDB, PostgreSQL and Oracle use 49 real sequences. All 49 `@TableGenerator`s are dead (no vendor has `hibernate_sequences`), and every sequence's increment equals its allocationSize. Fix: no-sequence dialect subclasses for SQL Server and MariaDB in P2/P6. |
+| MOD-I24 | Persistence | PostgreSQL `@Lob`: Hibernate 4.3 stored large-object OIDs in `text` columns, while 5.6.2+ generates `oid` columns. `vacuumlo` can delete large objects referenced only from `text` columns, which is data loss. | **Confirmed by the P0-4 harness.** `UP_RAW_EVENTS.EVENT_DATA` and `UP_ANALYTICS_EVENTS.EVENT_DATA` are `text` columns that hold LOB OIDs. After one portal run, `vacuumlo -n` reported it would remove 720 large objects that are still in use. `PREF_VALUE` is `varchar(100000)`, so it is unaffected today. Pin explicit column types, and warn adopters now (this already affects 5.17). |
 | MOD-I25 | Persistence | `PortletPreferenceImpl.PREF_VALUE` is mapped as `@Lob` plus `@Type(StringType)`. Hibernate 6 removes that override, so the column would be treated as a CLOB. | Map it explicitly (`@JdbcTypeCode` / `columnDefinition`) so the existing column type stays the same. |
 | MOD-I26 | Persistence | Hibernate 6.x/7.x change several defaults: native timezone storage (6.2), native booleans on Oracle 23, sequence naming (6.0), and the increment-size check (5.4). Each has a legacy setting. | Ship a "freeze 5.x behaviour" settings block in `hibernate.cfg.xml`, then remove settings one at a time behind tests. |
 | MOD-I27 | uPortal-start | HSQLDB 2.5.1 (uPortal-start) is too old for Hibernate 6.2+, which needs 2.6.1+. uPortal itself uses 2.7.4. | Upgrade the uPortal-start HSQLDB with the toolchain work (WS2). |
@@ -233,6 +245,8 @@ databases upgrading in place.
 | MOD-I69 | Runtime | `DatabaseHealthChecker` creates a new thread pool on every health check and never shuts it down. | Small upstream fix. |
 | MOD-I70 | Tests | Six uPortal-webapp tests create their own TransformerFactory (e.g. `XsltPortalUrlProviderTest`, `PortletDataUpgradeTest`), so they still fail on a JDK 25 test JVM. | Route them through `TemplatesBuilder` or enable the feature in test setup when the CI test JDK moves to 25. |
 | MOD-I71 | Runtime | The person lookup workers never clear the request data they are handed, so idle threads keep a reference to the last request. | Minor leak. Upstream fix later. |
+| MOD-I72 | Persistence | **Found by the P0-4 harness.** Master (Hibernate 4.3, unreleased 5.17.10) already differs from released 5.17.9 (Hibernate 4.2) on the same schema. The structure and constraint names are the same, but `UP_SEQUENCE` counters come out at 110 vs 60 (POOLED became POOLED_LO in #3012), `UP_PORTLET_PREF_SEQ` at 131 vs 121, and the PostgreSQL dialect changed from 82 to 81. | Check that 5.17.9 → 5.17.10 is safe for existing counters before 5.17.10 ships. Re-record the baselines from 5.17.9 if the harness should gate the upgrade from the last release. |
+| MOD-I73 | Persistence | On MySQL and MariaDB, 5.17 needs `lower_case_table_names=1` (the import scripts use `up_group`). MariaDB Connector/J needs `useMysqlMetadata=true`. On MariaDB, the dialect depends on the driver: through MySQL Connector/J, 10.6 gets `MySQL5InnoDBCompressedDialect` and `ROW_FORMAT=COMPRESSED` tables, while 11.4 doesn't. | Document this as adopter configuration. Hibernate 6/7's MariaDB dialect detection changes it again, so the harness has to cover both drivers. |
 
 ## Open questions
 
