@@ -74,6 +74,28 @@ databases upgrading in place.
   Rejected for the PR series, because it gives no green checkpoints. It is
   still used as the exploratory spike to surface blockers early.
 
+### MOD-D6: adopt the research report's phase plan as the working plan
+
+* **Decision:** Work through phases P0–P8 as laid out in the research report,
+  with four atomic steps:
+  * P2-2: Hibernate 5.2.
+  * P4-1: the Spring 5.3 bloc.
+  * P6-1 + P6-2: the cross-repo Jakarta checkpoint on Spring 6.2 / Hibernate
+    6.6 / Tomcat 10.1. It is merged but never tagged.
+  * P7-1: Spring 7 / Hibernate 7.4 / Tomcat 11.
+* **Gates:** G-unit, G-portal, G-db (all vendors via Testcontainers) and
+  G-flows.
+* **Runtime JDK path:** 11 → 21 (P4) → 25 (P6). Spring 4.3/5.3 are not
+  supported on JDK 25, so JDK 25 test legs stay informational until P6.
+* **Release on Tomcat 11 only.** Tomcat 10.1 is used only at the P6
+  checkpoint.
+* **A non-merging spike** runs straight to the end state to surface blockers
+  early.
+* **Alternatives considered:**
+  * Collapse P6 and P7-1 into one switch. This stays possible if the spike
+    shows the 6.2→7.0 delta is small.
+  * Release a javax 6.0. Rejected under MOD-D1.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -118,6 +140,15 @@ databases upgrading in place.
 | MOD-I38 | Libraries | person-directory 3.0.1 (Spring 6, Java 17) has been dormant since 2022. jasypt has been unmaintained since 2019. commons-fileupload2 is still milestone-only. | Watch list. Plan Apereo-side releases or replacements. |
 | MOD-I39 | Caching | Ehcache 3 has no JGroups/RMI replication; it clusters only via Terracotta. Infinispan (`infinispan-hibernate-cache-v66`, which covers Hibernate 6.6 and 7.1+) uses JGroups with invalidation, so it is the closest match to Ehcache 2 + JGroups. Caffeine is local-only. | Proposed: Hibernate L2 on Infinispan in clustered mode (Caffeine or JCache for single-node), and Spring cache through JCache. Needs a spike. |
 | MOD-I40 | Web Flow | Spring Web Flow 4.0.x (Spring 7) is maintained, but has had no portlet integration since 2.5. Liferay PortletMVC4Spring has a `webflow` module for Spring 6.2 only. | The 26 admin portlet flows need a forked portlet integration or a rewrite. Write Playwright specs for them first (WS3). |
+| MOD-I41 | Tests | uPortal-start PR #692 (May 2026) reported "99 passed / 7 failed" for Playwright. | P0 has to make the baseline green before it can serve as a gate. This session's baseline run is checking it. |
+| MOD-I42 | Spring | Jackson 3 changes default property ordering and date output. | Use a mapper configured with Jackson 2 defaults for `JacksonType` columns and the REST payloads. Add golden-file tests. |
+| MOD-I43 | Persistence | Hibernate 7.4 needs at least PostgreSQL 14, MariaDB 10.6 and SQL Server 2014. | Adopter prerequisite. State it in the RFC and in UPGRADING-6.0. |
+| MOD-I44 | Security | cas-client 4.1 needs Java 21 and Servlet 6.1. | Use 4.0 at the Spring 6.2 checkpoint and 4.1 with Spring 7. |
+| MOD-I45 | Logging | Spring 7 replaces `spring-jcl` with commons-logging 1.3, and uPortal bans commons-logging. | Revisit the exclusions and `jcl-over-slf4j` in the Spring 7 PR. |
+| MOD-I46 | Runtime | Tomcat's newer defaults are lower: `maxParameterCount` is 1000 and `maxPartCount` is 50. | Set the connector values explicitly in uPortal-start. Add a large-form permissions spec. |
+| MOD-I47 | Correction | The inventory said `XStreamMarshaller` and `PropertyPlaceholderConfigurer` were removed in Spring 6. That is wrong: both still exist in Spring 7.0. | Not blockers. Still handle the placeholder escaping in 6.2 and the XStream `--add-opens`. |
+| MOD-I48 | Portlets | PortletMVC4Spring 5.2.0 already runs on Pluto 2.1 in uPortal-start (SimpleContentPortlet PR #550). So "Spring 5 + Portlet MVC replacement" splits into two steps: first vendor Spring Portlet MVC 4.3.30 on Spring 4.3, then adapt it inside the Spring 5.3 bloc. | Supersedes the second atomic step in WORKSTREAMS.md. |
+| MOD-I49 | Portlets | The javax→jakarta switch is atomic across repos. It covers uPortal, uPortal-start `shared/lib`, and every deployed portlet WAR, because a mixed shared classloader cannot work. | The WAR transform pipeline (WS9) is on the critical path before the switch. |
 
 ## Open questions
 
