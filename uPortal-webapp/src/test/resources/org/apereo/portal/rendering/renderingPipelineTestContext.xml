@@ -179,7 +179,14 @@
     <bean class="org.apereo.portal.url.PortalRequestUtilsImpl" />
 
     <bean id="org.apereo.portal.utils.cache.resource.CachingResourceLoader" class="org.springframework.cache.ehcache.EhCacheFactoryBean" />
-    <bean id="SpELExpressionCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean" />
+    <!-- Spring CacheManager for the services that look their caches up through CacheLookup -->
+    <bean id="ehCacheManager" class="org.springframework.cache.concurrent.ConcurrentMapCacheManager">
+        <constructor-arg>
+            <list>
+                <value>SpELExpressionCache</value>
+            </list>
+        </constructor-arg>
+    </bean>
 
     <bean id="xslPortalUrlProvider" class="org.apereo.portal.url.xml.XsltPortalUrlProvider" />
 

@@ -15,8 +15,6 @@
 package org.apereo.portal.spring.spel;
 
 import javax.servlet.http.HttpServletRequest;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,11 +22,13 @@ import org.apereo.portal.security.IPerson;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.apereo.portal.user.IUserInstance;
 import org.apereo.portal.user.IUserInstanceManager;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.expression.BeanResolver;
 import org.springframework.expression.EvaluationContext;
@@ -44,10 +44,12 @@ import org.springframework.web.context.request.WebRequest;
 /** PortalSpELServiceImpl provides the default implementation of IPortalSpELService. */
 @Service
 public class PortalSpELServiceImpl implements IPortalSpELService, BeanFactoryAware {
+    static final String EXPRESSION_CACHE_NAME = "SpELExpressionCache";
+
     protected final Log logger = LogFactory.getLog(this.getClass());
 
     private ExpressionParser expressionParser = new SpelExpressionParser();
-    private Ehcache expressionCache;
+    private Cache expressionCache;
     private BeanResolver beanResolver;
     private IPortalRequestUtils portalRequestUtils;
     private IUserInstanceManager userInstanceManager;
@@ -68,7 +70,11 @@ public class PortalSpELServiceImpl implements IPortalSpELService, BeanFactoryAwa
     }
 
     @Autowired
-    public void setExpressionCache(@Qualifier("SpELExpressionCache") Ehcache expressionCache) {
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setExpressionCache(CacheLookup.requireCache(cacheManager, EXPRESSION_CACHE_NAME));
+    }
+
+    public void setExpressionCache(Cache expressionCache) {
         this.expressionCache = expressionCache;
     }
 
@@ -98,15 +104,14 @@ public class PortalSpELServiceImpl implements IPortalSpELService, BeanFactoryAwa
             return parseExpression(expressionString, parserContext);
         }
 
-        Element element = this.expressionCache.get(expressionString);
-        if (element != null) {
-            return (Expression) element.getObjectValue();
+        final Cache.ValueWrapper cached = this.expressionCache.get(expressionString);
+        if (cached != null) {
+            return (Expression) cached.get();
         }
 
         final Expression expression = parseExpression(expressionString, parserContext);
 
-        element = new Element(expressionString, expression);
-        this.expressionCache.put(element);
+        this.expressionCache.put(expressionString, expression);
 
         return expression;
     }

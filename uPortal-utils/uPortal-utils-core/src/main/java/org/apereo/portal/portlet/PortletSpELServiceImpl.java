@@ -16,17 +16,17 @@ package org.apereo.portal.portlet;
 
 import java.util.Map;
 import javax.portlet.PortletRequest;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apereo.portal.spring.web.portlet.context.PortletWebRequest;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.expression.BeanResolver;
 import org.springframework.expression.EvaluationContext;
@@ -46,10 +46,12 @@ import org.springframework.web.context.request.WebRequest;
  */
 @Service
 public class PortletSpELServiceImpl implements BeanFactoryAware, IPortletSpELService {
+    static final String EXPRESSION_CACHE_NAME = "portletSpELExpressionCache";
+
     protected final Log logger = LogFactory.getLog(this.getClass());
 
     private ExpressionParser expressionParser = new SpelExpressionParser();
-    private Ehcache expressionCache;
+    private Cache expressionCache;
     private BeanResolver beanResolver;
 
     public void setExpressionParser(ExpressionParser expressionParser) {
@@ -58,8 +60,11 @@ public class PortletSpELServiceImpl implements BeanFactoryAware, IPortletSpELSer
     }
 
     @Autowired
-    public void setExpressionCache(
-            @Qualifier("portletSpELExpressionCache") Ehcache expressionCache) {
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setExpressionCache(CacheLookup.requireCache(cacheManager, EXPRESSION_CACHE_NAME));
+    }
+
+    public void setExpressionCache(Cache expressionCache) {
         this.expressionCache = expressionCache;
     }
 
@@ -88,16 +93,15 @@ public class PortletSpELServiceImpl implements BeanFactoryAware, IPortletSpELSer
             return parseExpression(expressionString, TemplateParserContext.INSTANCE);
         }
 
-        Element element = this.expressionCache.get(expressionString);
-        if (element != null) {
-            return (Expression) element.getObjectValue();
+        final Cache.ValueWrapper cached = this.expressionCache.get(expressionString);
+        if (cached != null) {
+            return (Expression) cached.get();
         }
 
         final Expression expression =
                 parseExpression(expressionString, TemplateParserContext.INSTANCE);
 
-        element = new Element(expressionString, expression);
-        this.expressionCache.put(element);
+        this.expressionCache.put(expressionString, expression);
 
         return expression;
     }

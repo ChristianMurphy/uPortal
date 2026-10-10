@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.spring.spel;
 
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
@@ -26,6 +27,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
+import org.springframework.expression.Expression;
 import org.springframework.web.context.request.WebRequest;
 
 /** */
@@ -63,5 +66,28 @@ public class PortalSpELServiceImplTest {
 
         replaced = provider.parseString("${1+1}/${3+4}/path", request);
         assertTrue("2/7/path".equals(replaced));
+    }
+
+    @Test
+    public void testParsedExpressionsAreCached() {
+        final ConcurrentMapCacheManager cacheManager =
+                new ConcurrentMapCacheManager(PortalSpELServiceImpl.EXPRESSION_CACHE_NAME);
+        provider.setCacheManager(cacheManager);
+
+        final Expression first = provider.parseExpression("1 + 1");
+        final Expression second = provider.parseExpression("1 + 1");
+
+        assertSame(first, second);
+        assertSame(
+                first,
+                cacheManager
+                        .getCache(PortalSpELServiceImpl.EXPRESSION_CACHE_NAME)
+                        .get("1 + 1")
+                        .get());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testMissingExpressionCacheFailsFast() {
+        provider.setCacheManager(new ConcurrentMapCacheManager("someOtherCache"));
     }
 }
