@@ -362,8 +362,10 @@ placements):
 * the type to `Web Component`, and the descriptor to the framework portlet `WebComponent`;
 * parameters: add `webComponent.tagName=up-favorites` and `webComponent.moduleUrl=up-favorites`,
   remove `editable` (the component edits in place);
-* if the definition or users set `FavoritesController.maxHeightPixels`, add
-  `webComponent.preferenceAttributes=max-height-pixels=FavoritesController.maxHeightPixels`.
+* add `webComponent.preferenceAttributes=max-height-pixels=FavoritesController.maxHeightPixels`,
+  so that a `FavoritesController.maxHeightPixels` preference set on the definition or by users
+  still applies. uPortal-start's definition always has it: without the preference the element
+  gets no attribute and lists every favorite.
 
 For a deployment that upgrades now, the simplest way is to import the Web Component portlet
 type, then the converted definition, with uPortal-start:
