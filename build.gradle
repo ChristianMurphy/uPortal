@@ -102,6 +102,7 @@ allprojects {
 
     dependencies {
         errorprone "com.google.errorprone:error_prone_core:${errorproneVersion}"
+        errorprone "com.uber.nullaway:nullaway:${nullawayVersion}"
     }
 
     jacoco {
@@ -147,7 +148,25 @@ allprojects {
             // Disabled so the toolchain upgrade needs no production change; each finding
             // should be fixed (and its check re-enabled) separately.
             disable('BanJNDI', 'BoxedPrimitiveEquality', 'DoubleBraceInitialization', 'SelfAssertion')
+            // NullAway (MOD-D27) checks only code that is @NullMarked (JSpecify), so packages
+            // adopt it one at a time: annotate the package-info.java with @NullMarked, and
+            // anything in it that may be null with @Nullable. JSpecify mode follows the
+            // JSpecify spec, as Spring Framework 7 does.
+            option('NullAway:OnlyNullMarked', 'true')
+            option('NullAway:JSpecifyMode', 'true')
+            // Honour an explicit @Nullable on a return value in code that isn't null-marked yet
+            option('NullAway:AcknowledgeRestrictiveAnnotations', 'true')
+            // The servlet container calls init before any other method of a filter
+            option('NullAway:KnownInitializers', 'javax.servlet.Filter.init')
+            disable('NullAway')
         }
+    }
+    // Production code only; tests pass nulls on purpose.
+    tasks.named('compileJava', JavaCompile) {
+        options.errorprone.error('NullAway')
+        // Lets JDK 21 javac read type-use annotations (@Nullable) from class files, which
+        // JSpecify mode needs; JDK 22+ always does.
+        options.compilerArgs.add('-XDaddTypeAnnotationsToSymbol=true')
     }
 
     // 'duplicate-dependency-class' was dropped with Gradle 9: it resolves every project's
@@ -405,6 +424,9 @@ subprojects {
         testImplementation "org.springframework:spring-test:${springVersion}"
         testImplementation "org.xmlunit:xmlunit-legacy:${xmlunitVersion}"
         spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:${findsecbugsVersion}"
+        // JSpecify nullness annotations (@NullMarked, @Nullable). An api dependency, as in
+        // Spring Framework 7, so code compiled against uPortal sees them too.
+        api "org.jspecify:jspecify:${jspecifyVersion}"
         mockitoAgent("org.mockito:mockito-core:${mockitoVersion}") {
             transitive = false
         }

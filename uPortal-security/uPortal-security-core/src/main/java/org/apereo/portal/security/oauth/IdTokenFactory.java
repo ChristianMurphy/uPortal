@@ -41,6 +41,7 @@ import org.apereo.portal.soffit.service.JwtSignatureAlgorithmFactory;
 import org.apereo.portal.url.IAuthUrlCustomizer;
 import org.apereo.services.persondir.IPersonAttributeDao;
 import org.apereo.services.persondir.IPersonAttributes;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -270,8 +271,8 @@ public class IdTokenFactory {
     public String createUserInfo(
             HttpServletRequest request,
             String username,
-            Set<String> claimsToInclude,
-            Set<String> groupsToInclude) {
+            @Nullable Set<String> claimsToInclude,
+            @Nullable Set<String> groupsToInclude) {
 
         final Date now = new Date();
         final Date expires = new Date(now.getTime() + (timeoutSeconds * 1000L));
@@ -344,12 +345,12 @@ public class IdTokenFactory {
      * @return A fully-parsed JWT if a valid bearer token is present in the <code>Authorization
      *     </code> header, otherwise <code>null</code>
      */
-    public Jws<Claims> getUserInfo(HttpServletRequest request) {
+    public @Nullable Jws<Claims> getUserInfo(HttpServletRequest request) {
         final String bearerToken = getBearerToken(request);
         return StringUtils.isNotBlank(bearerToken) ? parseBearerToken(bearerToken) : null;
     }
 
-    public String getBearerToken(HttpServletRequest request) {
+    public @Nullable String getBearerToken(HttpServletRequest request) {
         final String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         logger.debug("{} header value:  {}", HttpHeaders.AUTHORIZATION, authorization);
         return StringUtils.isNotBlank(authorization)
@@ -358,7 +359,7 @@ public class IdTokenFactory {
                 : null;
     }
 
-    public Jws<Claims> parseBearerToken(String bearerToken) {
+    public @Nullable Jws<Claims> parseBearerToken(String bearerToken) {
         try {
             final String jwt = jwtEncryptor.decryptIfInvalidFormat(bearerToken);
             return Jwts.parser().setSigningKey(signatureKey).parseClaimsJws(jwt);
@@ -369,7 +370,7 @@ public class IdTokenFactory {
         return null;
     }
 
-    private boolean includeClaim(String claimName, Set<String> claimsToInclude) {
+    private boolean includeClaim(String claimName, @Nullable Set<String> claimsToInclude) {
         boolean result = true; // default
         if (claimsToInclude != null && !claimsToInclude.contains(claimName)) {
             /*
@@ -381,7 +382,7 @@ public class IdTokenFactory {
         return result;
     }
 
-    private boolean includeGroup(IEntityGroup group, Set<String> groupsToInclude) {
+    private boolean includeGroup(IEntityGroup group, @Nullable Set<String> groupsToInclude) {
         boolean result = groupsWhitelist.contains(group.getName()); // default
         if (result && groupsToInclude != null && !groupsToInclude.contains(group.getName())) {
             /*

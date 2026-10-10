@@ -23,6 +23,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 /**
  * This is a Java Servlet Filter that examines specified Request Parameters as to whether they
@@ -290,7 +291,7 @@ public final class RequestParameterPolicyEnforcementFilter implements Filter {
      * @return true or false
      * @throws IllegalArgumentException if the String is not true, false, or null.
      */
-    static boolean parseStringToBooleanDefaultingToFalse(final String stringToParse) {
+    static boolean parseStringToBooleanDefaultingToFalse(final @Nullable String stringToParse) {
 
         if ("true".equals(stringToParse)) {
             return true;
@@ -325,7 +326,7 @@ public final class RequestParameterPolicyEnforcementFilter implements Filter {
      *     check-them-all.
      * @throws IllegalArgumentException when the init param value is out of spec
      */
-    static Set<String> parseParametersToCheck(final String initParamValue) {
+    static Set<String> parseParametersToCheck(final @Nullable String initParamValue) {
 
         final Set<String> parameterNames = new HashSet<String>();
 
@@ -371,7 +372,7 @@ public final class RequestParameterPolicyEnforcementFilter implements Filter {
      * @param paramValue value of the init param to parse
      * @return non-null Set of zero or more Characters to block
      */
-    static Set<Character> parseCharactersToForbid(String paramValue) {
+    static Set<Character> parseCharactersToForbid(@Nullable String paramValue) {
 
         final Set<Character> charactersToForbid = new HashSet<Character>();
 

@@ -75,6 +75,13 @@
   on any finding that isn't in the module's baseline under
   `config/spotbugs/baseline/`; `build` doesn't run SpotBugs. See
   [Static Analysis](developer/other/STATIC_ANALYSIS.md).
+- **JSpecify nullness annotations, checked by NullAway.** Every module
+  now has an `api` dependency on `org.jspecify:jspecify`. Packages marked
+  `@NullMarked` are checked by NullAway (JSpecify mode) when production
+  code compiles, and a violation fails the build. The first are
+  `org.apereo.portal.security.oauth`, `org.apereo.portal.security.firewall`
+  and `org.apereo.portal.portlet.session`; their methods that return or
+  accept null are now annotated `@Nullable`.
 
 ## v5.17.3
 
