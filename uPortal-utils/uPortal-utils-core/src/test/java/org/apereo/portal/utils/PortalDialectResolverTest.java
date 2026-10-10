@@ -16,6 +16,7 @@ package org.apereo.portal.utils;
 
 import static org.junit.Assert.assertEquals;
 
+import java.sql.Types;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
@@ -36,8 +37,18 @@ public class PortalDialectResolverTest {
 
     @Test
     public void postgresql() {
-        assertDialect("org.hibernate.dialect.PostgreSQL81Dialect", "PostgreSQL", 16, 15, null);
-        assertDialect("org.hibernate.dialect.PostgreSQL81Dialect", "PostgreSQL", 10, 0, null);
+        assertDialect(
+                "org.apereo.portal.utils.hibernate4.dialects.PostgreSQL81TextClobDialect",
+                "PostgreSQL",
+                16,
+                15,
+                null);
+        assertDialect(
+                "org.apereo.portal.utils.hibernate4.dialects.PostgreSQL81TextClobDialect",
+                "PostgreSQL",
+                10,
+                0,
+                null);
         assertDialect("org.hibernate.dialect.PostgreSQL9Dialect", "PostgreSQL", 9, 6, null);
         assertDialect("org.hibernate.dialect.PostgreSQL82Dialect", "PostgreSQL", 8, 4, null);
         assertDialect(
@@ -94,8 +105,27 @@ public class PortalDialectResolverTest {
         assertDialect("org.hibernate.dialect.Oracle10gDialect", "Oracle", 11, 2, null);
     }
 
+    /**
+     * The large-object strings (UP_RAW_EVENTS.EVENT_DATA, UP_ANALYTICS_EVENTS.EVENT_DATA) stay text
+     * columns on PostgreSQL, as in every existing uPortal database (Hibernate 5.6.2+ would declare
+     * them oid).
+     */
+    @Test
+    public void postgresqlClobColumnsAreText() {
+        final Dialect dialect = resolve("PostgreSQL", 16, 15, null);
+        assertEquals("text", dialect.getTypeName(Types.CLOB));
+    }
+
     private static void assertDialect(
             String expected, String databaseName, int major, int minor, String driverName) {
+        final Dialect dialect = resolve(databaseName, major, minor, driverName);
+        assertEquals(
+                databaseName + " " + major + "." + minor,
+                expected,
+                dialect == null ? null : dialect.getClass().getName());
+    }
+
+    private static Dialect resolve(String databaseName, int major, int minor, String driverName) {
         final DialectResolutionInfo info =
                 new DialectResolutionInfo() {
                     @Override
@@ -128,13 +158,7 @@ public class PortalDialectResolverTest {
                         return NO_VERSION;
                     }
                 };
-        Dialect dialect = new PortalDialectResolver().resolveDialect(info);
-        if (dialect == null) {
-            dialect = new StandardDialectResolver().resolveDialect(info);
-        }
-        assertEquals(
-                databaseName + " " + major + "." + minor,
-                expected,
-                dialect == null ? null : dialect.getClass().getName());
+        final Dialect dialect = new PortalDialectResolver().resolveDialect(info);
+        return dialect != null ? dialect : new StandardDialectResolver().resolveDialect(info);
     }
 }

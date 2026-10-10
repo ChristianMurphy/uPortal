@@ -17,6 +17,7 @@ package org.apereo.portal.utils;
 import org.apereo.portal.utils.hibernate4.dialects.MySQL5InnoDBCompressedDialect;
 import org.apereo.portal.utils.hibernate4.dialects.Oracle12ForceClobDialect;
 import org.apereo.portal.utils.hibernate4.dialects.PostgreSQL81Dialect;
+import org.apereo.portal.utils.hibernate4.dialects.PostgreSQL81TextClobDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQL55Dialect;
 import org.hibernate.dialect.PostgreSQL9Dialect;
@@ -74,12 +75,13 @@ public class PortalDialectResolver implements DialectResolver {
             return new PostgreSQL81Dialect();
         }
 
-        // Hibernate 4.3 knew PostgreSQL 8 and 9 only; it used PostgreSQL81Dialect for 10+
+        // Hibernate 4.3 knew PostgreSQL 8 and 9 only; it used PostgreSQL81Dialect for 10+.
+        // PostgreSQL81TextClobDialect is that dialect with CLOB columns pinned to text.
         if ("PostgreSQL".equals(databaseName) && 9 == databaseMajorVersion) {
             return new PostgreSQL9Dialect();
         }
         if ("PostgreSQL".equals(databaseName) && databaseMajorVersion >= 10) {
-            return new org.hibernate.dialect.PostgreSQL81Dialect();
+            return new PostgreSQL81TextClobDialect();
         }
 
         // Ensure long varchar columns are forced to clob instead of long.
