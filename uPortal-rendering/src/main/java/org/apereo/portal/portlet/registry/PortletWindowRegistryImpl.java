@@ -553,7 +553,7 @@ public class PortletWindowRegistryImpl implements IPortletWindowRegistry {
             if (portletEntity == null) {
                 throw new IllegalArgumentException(
                         "No IPortletEntity could be found for "
-                                + portletEntity
+                                + portletEntityId
                                 + " while creating stateless portlet window for "
                                 + basePortletWindowId);
             }
