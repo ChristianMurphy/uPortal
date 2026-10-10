@@ -24,15 +24,22 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apereo.services.persondir.IPersonAttributeDao;
 import org.apereo.services.persondir.support.IUsernameAttributeProvider;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springmodules.cache.key.CacheKeyGenerator;
+import org.springframework.cache.interceptor.KeyGenerator;
 
-public class PersonDirectoryCacheKeyGenerator implements CacheKeyGenerator {
+/**
+ * Generates the user attribute cache keys for {@link IPersonAttributeDao} queries, tagging each key
+ * with the username so {@link UsernameTaggedCacheEntryPurger} can evict a user's cached attributes.
+ *
+ * <p>Implements Spring's {@link KeyGenerator}; it replaced the spring-modules-cache {@code
+ * CacheKeyGenerator} in 6.0 and generates the same keys.
+ */
+public class PersonDirectoryCacheKeyGenerator implements KeyGenerator {
     protected final Log logger = LogFactory.getLog(this.getClass());
 
     private final LoadingCache<Method, CachableMethod> resolvedMethodCache =
@@ -61,15 +68,24 @@ public class PersonDirectoryCacheKeyGenerator implements CacheKeyGenerator {
         this.ignoreEmptyAttributes = ignoreEmptyAttributes;
     }
 
+    /**
+     * @return the cache key, or {@code null} if the call should not be cached
+     */
     @Override
-    public Serializable generateKey(MethodInvocation methodInvocation) {
+    public Serializable generate(Object target, Method method, Object... methodArguments) {
+        return generateKey(method, methodArguments);
+    }
+
+    /**
+     * @return the cache key for a call to {@code method} with {@code methodArguments}, or {@code
+     *     null} if the call should not be cached
+     */
+    public Serializable generateKey(Method method, Object... methodArguments) {
         // Determine the targeted CachableMethod
-        final CachableMethod cachableMethod =
-                this.resolvedMethodCache.getUnchecked(methodInvocation.getMethod());
+        final CachableMethod cachableMethod = this.resolvedMethodCache.getUnchecked(method);
 
         // Use the resolved cachableMethod to determine the seed Map and then get the hash of the
         // key elements
-        final Object[] methodArguments = methodInvocation.getArguments();
 
         final CacheKey.CacheKeyBuilder<String, Serializable> cacheKeyBuilder =
                 CacheKey.builder(cachableMethod.getName());
@@ -172,7 +188,10 @@ public class PersonDirectoryCacheKeyGenerator implements CacheKeyGenerator {
         if (cacheKeyBuilder.size() == 0) {
             if (this.logger.isDebugEnabled()) {
                 this.logger.debug(
-                        "No cache key generated for MethodInvocation='" + methodInvocation + "'");
+                        "No cache key generated for method='"
+                                + method
+                                + "', arguments="
+                                + Arrays.toString(methodArguments));
             }
 
             return null;
@@ -183,16 +202,17 @@ public class PersonDirectoryCacheKeyGenerator implements CacheKeyGenerator {
             this.logger.debug(
                     "Generated cache key '"
                             + cacheKey
-                            + "' for MethodInvocation='"
-                            + methodInvocation
-                            + "'");
+                            + "' for method='"
+                            + method
+                            + "', arguments="
+                            + Arrays.toString(methodArguments));
         }
         return cacheKey;
     }
 
     /**
      * Iterates over the {@link CachableMethod} instances to determine which instance the passed
-     * {@link MethodInvocation} applies to.
+     * {@link Method} applies to.
      */
     protected CachableMethod resolveCacheableMethod(Method targetMethod) {
         final Class<?> targetClass = targetMethod.getDeclaringClass();
