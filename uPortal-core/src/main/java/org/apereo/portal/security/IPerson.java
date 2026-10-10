@@ -19,6 +19,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import org.apereo.portal.IBasicEntity;
+import org.jspecify.annotations.Nullable;
 
 public interface IPerson extends Principal, IAdditionalDescriptor, IBasicEntity, Serializable {
 
@@ -117,9 +118,10 @@ public interface IPerson extends Principal, IAdditionalDescriptor, IBasicEntity,
     /**
      * Gets the security context object associated with the user
      *
-     * @return security context object associated with the user
+     * @return security context object associated with the user, or null if none was set (as for a
+     *     person created from an OIDC ID token)
      */
-    ISecurityContext getSecurityContext();
+    @Nullable ISecurityContext getSecurityContext();
 
     /**
      * Checks to see if this user is considered a guest

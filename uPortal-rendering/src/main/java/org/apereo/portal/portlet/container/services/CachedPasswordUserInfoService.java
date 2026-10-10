@@ -180,8 +180,9 @@ public class CachedPasswordUserInfoService implements UserInfoService {
             final IPerson person = userInstance.getPerson();
             final ISecurityContext context = person.getSecurityContext();
 
-            // if it is, attempt to request a password
-            String password = getPassword(context);
+            // if it is, attempt to request a password (a person without a security context, such
+            // as one created from an OIDC ID token, has none)
+            String password = context != null ? getPassword(context) : null;
             log.debug(password != null ? "Have a non-null password" : "password was null");
             if (this.decryptPassword && password != null) {
                 log.debug("Attempting to decrypt password");

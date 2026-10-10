@@ -30,6 +30,7 @@ import org.apereo.portal.portlet.rendering.IPortletRenderer;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
 import org.apereo.portal.security.ISecurityContext;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,7 @@ import org.springframework.transaction.support.TransactionOperations;
 
 /** Creates {@link PortletPreferences} objects */
 @Service("portletPreferencesFactory")
+@NullMarked
 public class PortletPreferencesFactoryImpl implements PortletPreferencesFactory {
     private IPersonManager personManager;
     private IPortletWindowRegistry portletWindowRegistry;
@@ -157,7 +159,10 @@ public class PortletPreferencesFactoryImpl implements PortletPreferencesFactory 
         // Checking for isAuth instead of isGuest to allow for authenticated guest customization of
         // prefs
         final IPerson person = this.personManager.getPerson(containerRequest);
-        final ISecurityContext securityContext = person.getSecurityContext();
-        return !securityContext.isAuthenticated();
+        // Without a person (the person manager couldn't create one, as when a re-login swaps the
+        // session mid-render) or a security context, the user isn't authenticated
+        final ISecurityContext securityContext =
+                person != null ? person.getSecurityContext() : null;
+        return securityContext == null || !securityContext.isAuthenticated();
     }
 }
