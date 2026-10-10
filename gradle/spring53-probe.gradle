@@ -95,7 +95,7 @@ subprojects {
                 canBeResolved = true
                 // The declarable configurations (implementation, compileOnly, ...) behind the
                 // regular compile classpath
-                extendsFrom(*regular.extendsFrom)
+                extendsFrom(regular.extendsFrom as Configuration[])
                 regular.attributes.keySet().each { key ->
                     attributes.attribute(key, regular.attributes.getAttribute(key))
                 }
