@@ -281,4 +281,19 @@ public class ValueCodecTest {
         assertEquals(6, type(Vendor.MYSQL, Types.TIMESTAMP, "DATETIME", 26, null).fractionDigits());
         assertEquals(0, type(Vendor.MYSQL, Types.TIME, "TIME", 8, null).fractionDigits());
     }
+
+    @Test
+    public void fractionalDigitsOfColumnsWithoutDecimalDigits() {
+        // HSQLDB reports no DECIMAL_DIGITS for TIMESTAMP(0): its display size tells
+        assertEquals(
+                0, type(Vendor.HSQLDB, Types.TIMESTAMP, "TIMESTAMP", 19, null).fractionDigits());
+        assertEquals(
+                3, type(Vendor.HSQLDB, Types.TIMESTAMP, "TIMESTAMP", 23, null).fractionDigits());
+        // MariaDB Connector/J sizes TIME(0) as 10 ("-838:59:59"); the schema reader passes the
+        // precision from information_schema, which wins over the size
+        assertEquals(0, type(Vendor.MARIADB, Types.TIME, "TIME", 10, 0).fractionDigits());
+        assertEquals(3, type(Vendor.MARIADB, Types.TIME, "TIME", 14, 3).fractionDigits());
+        assertEquals(6, type(Vendor.MARIADB, Types.TIMESTAMP, "DATETIME", 26, 6).fractionDigits());
+    }
+
 }

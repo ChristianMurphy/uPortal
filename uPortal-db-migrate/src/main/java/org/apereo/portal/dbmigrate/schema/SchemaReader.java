@@ -110,6 +110,13 @@ public final class SchemaReader {
             }
         }
 
+        // MySQL-family drivers report no DECIMAL_DIGITS for temporal columns, and their display
+        // sizes differ (MariaDB Connector/J: TIME(0) is 10 characters, MySQL Connector/J: 8)
+        Map<String, Integer> temporalDigits =
+                dialect.vendor().isMySqlFamily()
+                        ? mysqlDatetimePrecision(c, catalog)
+                        : new HashMap<>();
+
         // One call for every column of the schema; the table name pattern would treat '_' as a
         // wildcard anyway, so results are matched by exact name.
         Map<String, List<Column>> columns = new HashMap<>();
@@ -125,6 +132,11 @@ public final class SchemaReader {
                 }
                 int digits = rs.getInt("DECIMAL_DIGITS");
                 Integer decimalDigits = rs.wasNull() ? null : digits;
+                Integer precision =
+                        temporalDigits.get(Names.key(table + "." + rs.getString("COLUMN_NAME")));
+                if (precision != null) {
+                    decimalDigits = precision;
+                }
                 String def = rs.getString("COLUMN_DEF");
                 String autoInc = rs.getString("IS_AUTOINCREMENT");
                 columns.computeIfAbsent(t.key(), k -> new ArrayList<>())
@@ -153,6 +165,25 @@ public final class SchemaReader {
             model.addTable(t);
         }
         return model;
+    }
+
+    /** Fractional-second digits of the TIME, DATETIME and TIMESTAMP columns, by TABLE.COLUMN. */
+    private static Map<String, Integer> mysqlDatetimePrecision(Connection c, String catalog)
+            throws SQLException {
+        Map<String, Integer> out = new HashMap<>();
+        try (PreparedStatement ps =
+                c.prepareStatement(
+                        "SELECT TABLE_NAME, COLUMN_NAME, DATETIME_PRECISION"
+                                + " FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ?"
+                                + " AND DATETIME_PRECISION IS NOT NULL")) {
+            ps.setString(1, catalog);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.put(Names.key(rs.getString(1) + "." + rs.getString(2)), rs.getInt(3));
+                }
+            }
+        }
+        return out;
     }
 
     private static Set<String> postgresPartitions(Connection c, String schema) throws SQLException {
