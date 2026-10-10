@@ -207,7 +207,7 @@ The Joda-Time JSP tag library (`joda-time-jsptags`) is no longer in the web appl
 
 ## spring-modules-cache is gone; the user attribute cache uses Spring's cache API
 
-uPortal no longer ships spring-modules-cache 0.8. Person Directory's
+The uPortal web application no longer includes spring-modules-cache 0.8. Person Directory's
 `CachingPersonAttributeDaoImpl` needs that library, so uPortal's `cachingPersonAttributeDao`
 bean is now an `org.apereo.portal.utils.cache.CachingPersonAttributeDao`. It caches the same
 results under the same keys in the same cache, `org.apereo.services.persondir.USER_INFO.merged`,
@@ -218,7 +218,7 @@ If your overlay defines its own caching person attribute DAO:
 * Replace `org.apereo.services.persondir.support.CachingPersonAttributeDaoImpl` with
   `org.apereo.portal.utils.cache.CachingPersonAttributeDao`.
 * Its `userInfoCache` property now takes a Spring `org.springframework.cache.Cache`, not a `Map`.
-  Look it up from the `ehCacheManager` bean, for example
+  Look it up from the `ehCacheManager` bean, as in
   `<property name="userInfoCache" value="#{ehCacheManager.getCache('your.cache.name')}" />`,
   and make sure the cache is defined in `ehcache.xml`.
 * The `userAttributeCacheKeyGenerator` bean is now a Spring
@@ -235,9 +235,9 @@ switch the cache provider without changing code. The provider is still Ehcache 2
 cache. Cache names, sizes, expiry and JGroups replication are unchanged.
 
 What is different is how some classes find their caches. They no longer inject an Ehcache bean
-named after the cache. Instead they look the cache up by name in the `ehCacheManager` bean, the
-`EhCacheCacheManager` in `cacheContext.xml`, and startup fails if `ehcache.xml` has no cache of
-that name. This applies to these classes and caches:
+named after the cache. Instead they look the cache up by name in the `ehCacheManager` bean (the
+`EhCacheCacheManager` in `cacheContext.xml`). If `ehcache.xml` has no cache of that name, the
+portal fails to start. This applies to these classes and caches:
 
 | Class | Cache |
 | --- | --- |
@@ -256,7 +256,7 @@ that name. This applies to these classes and caches:
 If your overlay has its own `ehcache.xml`, keep these cache names in it. If it replaced one of
 these caches by defining a bean with the cache's name, that bean is no longer used: configure
 the cache in `ehcache.xml` instead. In Java code, the `setXCache` setters of these classes now
-take an `org.springframework.cache.Cache`. The dynamic skin services'
+take an `org.springframework.cache.Cache`. The skin services'
 constructors take the Spring `CacheManager` instead of the failure cache.
 
 `CacheHealthReporterService.reportCacheSizeNotLargeEnough` now takes the cache name instead of
