@@ -51,6 +51,36 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
     @Autowired private IPortalInfoProvider portalInfoProvider;
     @Autowired private AutowireCapableBeanFactory beanFactory;
 
+    /** Misses the mutex on its first lookup, as if another server created it a moment later. */
+    static class LateJpaClusterLockDao extends JpaClusterLockDao {
+        private final AtomicBoolean missNextLookup = new AtomicBoolean(true);
+
+        @Override
+        protected ClusterMutex getClusterMutexInternal(String mutexName) {
+            if (missNextLookup.getAndSet(false)) {
+                return null;
+            }
+            return super.getClusterMutexInternal(mutexName);
+        }
+    }
+
+    @Test
+    public void testLostCreationRace() {
+        final String mutexName = "testLostCreationRace";
+        final ClusterMutex otherServersMutex =
+                execute(() -> clusterLockDao.getClusterMutex(mutexName));
+
+        // This server's insert fails on the unique name; it must find the other mutex instead
+        final IClusterLockDao lateDao =
+                (IClusterLockDao)
+                        beanFactory.createBean(
+                                LateJpaClusterLockDao.class,
+                                AutowireCapableBeanFactory.AUTOWIRE_NO,
+                                false);
+        final ClusterMutex mutex = execute(() -> lateDao.getClusterMutex(mutexName));
+        assertEquals(otherServersMutex.getId(), mutex.getId());
+    }
+
     @Test
     public void testConcurrentCreation() throws InterruptedException {
         reset(portalInfoProvider);

@@ -86,37 +86,35 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
         this.entityManagerCache = entityManagerCache;
     }
 
+    /**
+     * Finds the mutex, creating it if needed. Each step runs in a new transaction, so the result
+     * does not depend on what a transaction of the caller has already read.
+     */
     @Override
     public ClusterMutex getClusterMutex(final String mutexName) {
-        // Do a get first
-        ClusterMutex clusterMutex = this.getClusterMutexInternal(mutexName);
-        if (clusterMutex != null) {
-            logger.trace("Retrieved {}", clusterMutex);
-            return clusterMutex;
+        ClusterMutex clusterMutex = this.findOrCreateClusterMutex(mutexName);
+        if (clusterMutex == null) {
+            // Another thread or server created it first; look again in a new transaction
+            clusterMutex = this.findOrCreateClusterMutex(mutexName);
         }
-
-        // No mutex found, try to create it
-        createClusterMutex(mutexName);
-
-        // Must have been a concurrent create, do another get
-        clusterMutex = this.getClusterMutexInternal(mutexName);
-        if (clusterMutex != null) {
-            logger.trace("Retrieved {}", clusterMutex);
-            return clusterMutex;
+        if (clusterMutex == null) {
+            throw new IllegalStateException("Failed to find or create ClusterMutex " + mutexName);
         }
-
-        throw new IllegalStateException("Failed to find or create ClusterMutex " + mutexName);
+        logger.trace("Retrieved {}", clusterMutex);
+        return clusterMutex;
     }
 
     @Override
     public ClusterMutex getLock(final String mutexName) {
+        // Create the mutex before the transaction below starts; see findClusterMutex
+        getClusterMutex(mutexName);
         return this.executeIgnoreRollback(
                 new TransactionCallback<ClusterMutex>() {
                     @Override
                     public ClusterMutex doInTransaction(TransactionStatus status) {
                         final EntityManager entityManager = getEntityManager();
 
-                        final ClusterMutex clusterMutex = getClusterMutex(mutexName);
+                        final ClusterMutex clusterMutex = findClusterMutex(mutexName);
 
                         // Check if the mutex is already locked
                         if (clusterMutex.isLocked()) {
@@ -155,13 +153,15 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
 
     @Override
     public void updateLock(final String mutexName) {
+        // Create the mutex before the transaction below starts; see findClusterMutex
+        getClusterMutex(mutexName);
         this.executeIgnoreRollback(
                 new TransactionCallbackWithoutResult() {
                     @Override
                     protected void doInTransactionWithoutResult(TransactionStatus status) {
                         final EntityManager entityManager = getEntityManager();
 
-                        final ClusterMutex clusterMutex = getClusterMutex(mutexName);
+                        final ClusterMutex clusterMutex = findClusterMutex(mutexName);
 
                         validateLockedMutex(clusterMutex);
 
@@ -185,13 +185,15 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
 
     @Override
     public void releaseLock(final String mutexName) {
+        // Create the mutex before the transaction below starts; see findClusterMutex
+        getClusterMutex(mutexName);
         this.executeIgnoreRollback(
                 new TransactionCallbackWithoutResult() {
                     @Override
                     protected void doInTransactionWithoutResult(TransactionStatus status) {
                         final EntityManager entityManager = getEntityManager();
 
-                        final ClusterMutex clusterMutex = getClusterMutex(mutexName);
+                        final ClusterMutex clusterMutex = findClusterMutex(mutexName);
 
                         validateLockedMutex(clusterMutex);
 
@@ -213,7 +215,22 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
                 });
     }
 
-    /** Retrieves a ClusterMutex in a new TX */
+    /**
+     * Reads the mutex in the current transaction. It must exist before that transaction makes its
+     * first read: on a database that reads from a snapshot, such as MySQL and MariaDB under
+     * InnoDB's default REPEATABLE READ, a transaction never sees rows that other transactions
+     * commit after that. Callers therefore run {@link #getClusterMutex(String)} before they start
+     * the transaction.
+     */
+    protected ClusterMutex findClusterMutex(final String mutexName) {
+        final ClusterMutex clusterMutex = this.getClusterMutexInternal(mutexName);
+        if (clusterMutex == null) {
+            throw new IllegalStateException("Failed to find or create ClusterMutex " + mutexName);
+        }
+        return clusterMutex;
+    }
+
+    /** Retrieves a ClusterMutex in the current TX, or in a new one if there is none */
     protected ClusterMutex getClusterMutexInternal(final String mutexName) {
         final TransactionOperations transactionOperations = this.getTransactionOperations();
         return transactionOperations.execute(
@@ -241,14 +258,21 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
     }
 
     /**
-     * Creates a new ClusterMutex with the specified name. Returns the created mutex or null if the
-     * mutex already exists.
+     * Finds the ClusterMutex with the specified name, or creates it, in a new transaction that has
+     * committed when this returns. Returns null if another thread or server created the mutex at
+     * the same time: this insert then fails on the unique mutex name, and a new transaction finds
+     * the other one's mutex.
      */
-    protected void createClusterMutex(final String mutexName) {
-        this.executeIgnoreRollback(
-                new TransactionCallbackWithoutResult() {
+    protected ClusterMutex findOrCreateClusterMutex(final String mutexName) {
+        return this.executeIgnoreRollback(
+                new TransactionCallback<ClusterMutex>() {
                     @Override
-                    protected void doInTransactionWithoutResult(TransactionStatus status) {
+                    public ClusterMutex doInTransaction(TransactionStatus status) {
+                        final ClusterMutex existing = getClusterMutexInternal(mutexName);
+                        if (existing != null) {
+                            return existing;
+                        }
+
                         final EntityManager entityManager = getEntityManager();
                         final ClusterMutex clusterMutex = new ClusterMutex(mutexName);
                         entityManager.persist(clusterMutex);
@@ -262,14 +286,19 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
                                         "Failed to create mutex, it was likely created concurrently by another thread: "
                                                 + clusterMutex,
                                         e);
-                                return;
+                                // Roll back quietly; committing a transaction that Hibernate
+                                // marked rollback-only throws UnexpectedRollbackException
+                                status.setRollbackOnly();
+                                return null;
                             }
 
                             // re-throw exception with unhandled cause
                             throw e;
                         }
+                        return clusterMutex;
                     }
-                });
+                },
+                null);
     }
 
     /**
@@ -298,7 +327,7 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
                     @Override
                     protected void doInTransactionWithoutResult(TransactionStatus status) {
                         final EntityManager entityManager = getEntityManager();
-                        final ClusterMutex clusterMutex = getClusterMutex(mutexName);
+                        final ClusterMutex clusterMutex = findClusterMutex(mutexName);
 
                         if (!isLockAbandoned(clusterMutex)) {
                             // No longer abandoned
