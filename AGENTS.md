@@ -55,6 +55,7 @@ End-to-end Playwright tests (TypeScript) also live in uPortal-start under `tests
 npx eslint . --report-unused-disable-directives --max-warnings 0   # lint JS; npm run format-js to fix
 npm run lint-less                             # lint LESS
 npx remark -f *.md docs/**                    # lint Markdown
+.github/scripts/check-commit-messages.sh origin/master..HEAD  # check commit subjects (CI runs it)
 ```
 
 ## Project structure
