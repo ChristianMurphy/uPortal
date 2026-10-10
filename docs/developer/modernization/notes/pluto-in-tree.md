@@ -26,6 +26,8 @@ Branches: `ccr-43ba0785-hzlrj5-pluto` in uPortal and in uPortal-start.
 | Commit | What |
 | --- | --- |
 | `521c61b` `test: run the pluto 2.0 test suite through uportal` | `tests/ux/portlets/pluto-testsuite.spec.ts`: drives test-portlet-1 and test-portlet-2 like the spike's `pluto-testsuite.sh` and pins the 5.17 result. |
+| `2921f0a` | Merge of the integration branch. |
+| `f0cfc1a` `test: accept either result of the order-dependent pluto check` | `checkEnumerateAttributes` depends on reflection order (see the test-suite section). |
 
 No other uPortal-start change: `shared/lib` keeps Apache's jars (see below).
 
@@ -171,7 +173,7 @@ imported, because it is the one that runs.
 | uPortal-start CI | run 38089219745: _pending_ |
 | uPortal-start Integration, uPortal from this branch (after) | run 38089219769: _pending_ |
 | uPortal-start Integration, uPortal from the integration branch (before) | run 38089226181 (workflow_dispatch, `uportal-ref=ccr-43ba0785-hzlrj5`): _pending_ |
-| Pluto testsuite before / after | _pending_ |
+| Pluto testsuite before / after (local, HSQLDB, Tomcat 9, JDK 11) | identical for all 32 tests: 12 PASSED, 10 FAILED, 8 MANUAL, 2 WARNING; 144/16 checks (see below) |
 
 **Local unit tests (sandbox, JDK 21, `./gradlew test --rerun` in both trees):**
 identical per module before and after, in all 32 test tasks: 1,148 run, 1,069
@@ -225,8 +227,18 @@ Why each check fails, from the result pages ("got … expected …"):
 | `checkContextServerInfo` | got `Pluto/${pluto.version}`, expected `Pluto/2.1.0-M3` | uPortal ships its own `uPortal-webapp/src/main/resources/org/apache/pluto/driver/container/pluto-configuration.properties` (it overrides the jar's, and adds the `javax.portlet.renderHeaders` runtime option); its `${pluto.version}` is never filled in | uPortal bug (cosmetic) |
 | `checkGetNoValuePreference` (×2) | got `{}`, expected `{Default}` | a preference declared with no value returns no values instead of the default the portlet passes (PLT.14.1) | uPortal deviation from JSR-286 (preferences implementation) |
 | `checkPreferenceValidator` | "Illegal value not caught by validator" | `PortletPreferences.store()` doesn't run the portlet's `PreferencesValidator` (PLT.14.4) | uPortal deviation from JSR-286 |
-| `checkEnumerateAttributes` | got 6 attribute names with the test's prefix, expected 5 | one extra `org.apache.pluto.testsuite.BOGUS_KEY*` request attribute is visible: probably left by an earlier attribute test of the same suite; not traced | undiagnosed (likely test interaction) |
+| `checkEnumerateAttributes` | got 6 attribute names with the test's prefix, expected 5 | the suite finds its `check*` methods by reflection, in an order that can change at each JVM start. When `checkSetAttribute` runs first, its `BOGUS_KEY` attribute is still set and gets counted. It passed in 1 of 5 restarts of one portal, with the same jars | test-suite order dependence |
 | `checkInvalidParameters` | got parameter `""`, expected `null` | a dispatch query string with a key and no `=` (`?includedTestKeyA&…`) reaches the included servlet as an empty value instead of being dropped | container behaviour (Pluto/Tomcat query merging) |
+
+**Before and after.** With uPortal built from this branch (`e10520b`, the
+WAR carrying `uPortal-pluto-container` and `uPortal-pluto-portal-driver`), the
+same portal gives the identical result for all 32 tests (144 passed, 16
+failed). One "after" deployment first gave 146/14 because
+`checkEnumerateAttributes` passed. Swapping the container jars back and forth,
+and restarting with the same jar, traced that to the check order above, not
+to the jars (Apache's jar and the in-tree one each give either result,
+depending on the JVM start). The spec now accepts either result for that one
+check (uPortal-start `f0cfc1a`).
 
 The three test-suite and config issues are one-line fixes (the overlay's
 `expectedResults.properties`, and `${pluto.version}` → `2.1.0-M3` in
