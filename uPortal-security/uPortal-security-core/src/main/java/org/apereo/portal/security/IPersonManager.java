@@ -15,6 +15,7 @@
 package org.apereo.portal.security;
 
 import javax.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 /** Manages the storage of an IPerson object in a user's session. */
 public interface IPersonManager {
@@ -26,7 +27,8 @@ public interface IPersonManager {
      * Returns an IPerson associated with the incoming request
      *
      * @param request
-     * @return IPerson associated with the incoming request
+     * @return IPerson associated with the incoming request, or null if none could be created (the
+     *     implementations log why)
      */
-    IPerson getPerson(HttpServletRequest request) throws PortalSecurityException;
+    @Nullable IPerson getPerson(HttpServletRequest request) throws PortalSecurityException;
 }
