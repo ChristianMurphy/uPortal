@@ -26,6 +26,7 @@ def probeVersions = [
         'org.springframework.webflow' : probeSpringWebflowVersion,
         'org.springframework.session' : probeSpringSessionVersion,
         'org.springframework.ldap'    : probeSpringLdapVersion,
+        'org.springframework.ws'      : probeSpringWsVersion,
 ]
 def probeReportDir = rootProject.layout.buildDirectory.dir('reports/spring53-probe')
 def probeBaseline = rootProject.file('config/spring53-probe/baseline.properties')
