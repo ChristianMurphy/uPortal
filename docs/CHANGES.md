@@ -1,5 +1,28 @@
 ## Next Release
 
+- **Gradle wrapper bumped from 6.9.4 to 8.14.6.** Contributors using a
+  system Gradle install (instead of the bundled wrapper) must move to
+  Gradle 8.14 or newer; the wrapper remains the recommended entry point
+  and now verifies the distribution's SHA-256. The build no longer
+  declares `jcenter()`; only `mavenCentral()` is consulted. The
+  unmaintained `org.openrepose` JAXB plugin was replaced with an
+  Ant-based XJC task in `uPortal-io-jaxb` and `uPortal-api-search`
+  (generated sources are unchanged). Plugins bumped alongside the
+  wrapper: `nebula.lint` 17.8.0 → 20.6.2, `net.ltgt.errorprone` 4.4.0 →
+  5.1.1, `com.github.spotbugs` 4.8.0 → 6.5.12, `net.researchgate.release`
+  3.1.0 → 3.2.0.
+- **Artifacts are published with `maven-publish`** instead of the
+  legacy `maven` plugin (removed in Gradle 7). `./gradlew install` and
+  `./gradlew release` work as before, and the `ossrhUsername`,
+  `ossrhPassword`, `ossrhUrl` and `ossrhUrlSnapshot` properties keep
+  their names. Same coordinates and files (POM, jar or war, sources,
+  javadoc, signatures). POM changes: test-scoped dependencies are no
+  longer listed; `runtimeOnly` dependencies (for example `jjwt-impl` in
+  `uPortal-security-core` and `uPortal-soffit-core`) are now listed with
+  `runtime` scope instead of being dropped; `uPortal-security-filters`
+  lists `slf4j-api` as `runtime`; the developer organization is written
+  correctly.
+
 ## v5.17.3
 
 - substantial frontend modernization landed in [#2915](https://github.com/uPortal-Project/uPortal/pull/2915):
