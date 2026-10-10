@@ -293,6 +293,37 @@ research report.
 * Any workflow change gets checked with zizmor (regular and pedantic
   personas) and actionlint locally before it is pushed.
 
+### MOD-D16: run multiple databases in GitHub Actions
+
+* **Today:**
+  * uPortal CI runs its JPA/DAO tests only on in-memory HSQLDB.
+  * uPortal-start CI runs on HSQLDB.
+  * `db-harness.yml` (uPortal-start) can run 7 databases. Postgres 16,
+    SQL Server 2022 and Oracle Free 23 run as service containers; MySQL 8.4
+    and MariaDB 10.6/11.4 are started with `docker run`. It covers
+    `dataInit`, a schema snapshot diff and the API specs. It is not
+    triggered on the integration branches yet, because of MOD-I72.
+* **Plan:**
+  1. Add a 5.17.9 baseline, so CI (which builds against the released
+     uPortal) can compare. The baseline is picked automatically from
+     `uPortalVersion`. Enable `db-harness.yml` on `ccr-*` pushes and PRs.
+  2. uPortal: make the JPA test context's JDBC URL and dialect
+     configurable, and add a `db-integration` CI job. It runs the DAO/JPA
+     tests on PostgreSQL, MariaDB and MySQL on every push, and on SQL
+     Server and Oracle nightly and on demand. Dialect and query problems
+     then show up in uPortal itself rather than only in uPortal-start.
+  3. uPortal-start: run the full Playwright suite on PostgreSQL and
+     MariaDB on every push. SQL Server and Oracle run nightly.
+  4. G-migrate (MOD-D11): a source × target matrix, with every vendor →
+     PostgreSQL and every vendor → itself, nightly.
+  5. G-index (MOD-D12): a 1/100-scale dataset on every push (Postgres),
+     and the full large-campus dataset on demand. Full scale is about 150M
+     raw events, which is too heavy for standard runners.
+* **Prototype constraint:** this container only has room to run SQL Server
+  and Oracle one at a time (disk/RAM). Recording baselines for those
+  vendors happens in CI, with the snapshots uploaded as artifacts and then
+  committed.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -372,6 +403,7 @@ research report.
 | MOD-I73 | Persistence | On MySQL and MariaDB, 5.17 needs `lower_case_table_names=1` (the import scripts use `up_group`). MariaDB Connector/J needs `useMysqlMetadata=true`. On MariaDB, the dialect depends on the driver: through MySQL Connector/J, 10.6 gets `MySQL5InnoDBCompressedDialect` and `ROW_FORMAT=COMPRESSED` tables, while 11.4 doesn't. | Document this as adopter configuration. Hibernate 6/7's MariaDB dialect detection changes it again, so the harness has to cover both drivers. |
 | MOD-I74 | CI | No GitHub Actions run has validated any modernization change yet. Both repos' `CI.yml` only trigger on `push`/`pull_request` to `master`, so pushes to the `ccr-*` branches don't run CI. Local gates and static checks (actionlint and a YAML parse for `db-harness.yml`) are all that has run. | **Addressed:** commits `2a2289c3e` (uPortal) and `77d75ab28` (uPortal-start) add a prototype-only `ccr-*` push trigger. Both commits are marked to be dropped before upstreaming. CI now runs on every integration push. The DB harness workflow is left out until MOD-I72's baseline question is settled. |
 | MOD-I75 | CI security | zizmor 1.30.1 (offline) flags every workflow in both repos: `unpinned-uses` (high) on every action, `artipacked` (checkout persists credentials), and `excessive-permissions` (top-level `contents: write` in uPortal-start `CI.yml`). The new `db-harness.yml` has the same findings. | CI-hardening commit per repo: pin actions to commit SHAs with version comments (Renovate keeps digests current), `persist-credentials: false`, least-privilege `permissions:` (top-level `contents: read`; `contents: write` only on the dependency-submission job), and a zizmor + actionlint workflow so findings stay at zero. **Done:** `ebb11e0e2` (uPortal) and `ba38035e9` (uPortal-start). zizmor reports zero findings with the regular and pedantic personas (service images pinned by digest too). The new Workflow lint run on GitHub passed for uPortal. Also found: gradle/actions v6 defaults to a commercial cache provider, so both repos now set `cache-provider: basic`. Upstream candidate. |
+| MOD-I76 | Environment | The prototype container has about 40 GB of writable allowance. Each uPortal-start worktree with a deployed portal takes 2–6 GB (Tomcat with ~16 exploded webapps, overlay WAR builds, HSQLDB, node_modules), and the shared Gradle home with four Gradle versions about 4.6 GB. The disk hit 99% twice. | Worktrees are removed right after merge. Unused Gradle distributions, DB images and volumes, and spike copies get pruned. Agents remove the containers and images they started, and `scratchpad/disk-guard.sh` must pass (≥ 6 GB free) before heavy steps. At most two portal-running agents at a time. |
 
 ## Open questions
 
