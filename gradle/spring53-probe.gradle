@@ -201,7 +201,7 @@ tasks.register('spring53Probe') {
             md << "\n</details>\n"
         }
         new File(dir, 'summary.md').text = md.toString()
-        new File(dir, 'errors.txt').text = errorLines.collect { m, lines -> lines.join('\n') }.join('\n') + '\n'
+        new File(dir, 'errors.txt').text = errorLines.values().flatten().collect { it + '\n' }.join('')
         if (summaryPath) {
             new File(summaryPath).append(md.toString())
         }
