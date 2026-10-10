@@ -21,6 +21,9 @@ description = "Apereo uPortal Spring Portlet MVC"
  *     HandlerMethodResolver and HandlerMethodInvocationException (spring-web) moved from
  *     org.springframework.web.bind.annotation.support to
  *     org.apereo.portal.spring.web.bind.annotation.support.
+ *     PortletSessionScope comes from PortletMVC4Spring 5.3.4 (Apache License 2.0, see NOTICE),
+ *     with the package changed from com.liferay.portletmvc4spring.context, and with it the
+ *     SCOPE_GLOBAL_SESSION constants that Spring 5 removed.
  *   - src/main: uPortal's own extensions of the vendored classes.
  */
 dependencies {

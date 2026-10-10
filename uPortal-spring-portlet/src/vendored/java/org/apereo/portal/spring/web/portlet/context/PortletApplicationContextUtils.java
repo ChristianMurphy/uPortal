@@ -37,7 +37,6 @@ import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.RequestScope;
-import org.springframework.web.context.request.SessionScope;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -114,8 +113,8 @@ public abstract class PortletApplicationContextUtils {
 	 */
 	static void registerPortletApplicationScopes(ConfigurableListableBeanFactory bf, PortletContext pc) {
 		bf.registerScope(WebApplicationContext.SCOPE_REQUEST, new RequestScope());
-		bf.registerScope(WebApplicationContext.SCOPE_SESSION, new SessionScope(false));
-		bf.registerScope(WebApplicationContext.SCOPE_GLOBAL_SESSION, new SessionScope(true));
+		bf.registerScope(WebApplicationContext.SCOPE_SESSION, new PortletSessionScope(false));
+		bf.registerScope(ConfigurablePortletApplicationContext.SCOPE_GLOBAL_SESSION, new PortletSessionScope(true));
 		if (pc != null) {
 			PortletContextScope appScope = new PortletContextScope(pc);
 			bf.registerScope(WebApplicationContext.SCOPE_APPLICATION, appScope);
