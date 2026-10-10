@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Compares the classes of an upstream jar with a jar built from its imported source.
+"""Compares an upstream jar with a jar built from its imported source.
 
 usage: python3 -I compare-classes.py <upstream.jar> <built.jar>
 
-Prints, for the classes of the upstream jar:
+Prints, for the resources of the upstream jar (everything but classes and Maven's META-INF
+files): those missing from the built jar or with different content (a difference only in the
+final newline is reported as such).
+
+Then, for the classes of the upstream jar:
   * classes only in one jar;
   * lines that differ in `javap -protected -s` (the public and protected API) and in
     `javap -private -s` (every member);
@@ -80,7 +84,28 @@ def explained(method, upstream, built):
             and any("Method $values:" in l for l in built) and not any("$values" in l for l in upstream))
 
 
+def compare_resources(upstream_jar, built_jar):
+    skip = re.compile(r"(\.class$|/$|^META-INF/(maven/|MANIFEST\.MF$|DEPENDENCIES$))")
+    with zipfile.ZipFile(upstream_jar) as u, zipfile.ZipFile(built_jar) as b:
+        names = [n for n in u.namelist() if not skip.search(n)]
+        built = set(b.namelist())
+        differing = 0
+        for name in names:
+            if name not in built:
+                print(f"  resource missing from built jar: {name}")
+                differing += 1
+                continue
+            a, z = u.read(name), b.read(name)
+            if a != z:
+                kind = "final newline only" if a.rstrip(b"\r\n") == z.rstrip(b"\r\n") else "content"
+                print(f"  resource differs ({kind}): {name}")
+                differing += kind == "content"
+        print(f"resources: {len(names)}, differing in content {differing}")
+        return differing
+
+
 def main(upstream_jar, built_jar):
+    resource_differences = compare_resources(upstream_jar, built_jar)
     with tempfile.TemporaryDirectory() as tmp:
         u, b = Path(tmp, "upstream"), Path(tmp, "built")
         u_classes, b_classes = extract(upstream_jar, u), extract(built_jar, b)
@@ -109,7 +134,7 @@ def main(upstream_jar, built_jar):
             print(f"  only in {'upstream' if m in um else 'built'}: {m}")
         for m in unexplained:
             print(f"  unexplained: {m}")
-        return 1 if unexplained else 0
+        return 1 if unexplained or resource_differences else 0
 
 
 if __name__ == "__main__":
