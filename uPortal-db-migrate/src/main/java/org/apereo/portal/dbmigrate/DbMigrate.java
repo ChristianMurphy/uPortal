@@ -34,6 +34,7 @@ import org.apereo.portal.dbmigrate.plan.MigrationPlan;
 import org.apereo.portal.dbmigrate.plan.Planner;
 import org.apereo.portal.dbmigrate.plan.SchemaProfile;
 import org.apereo.portal.dbmigrate.plan.TableMapping;
+import org.apereo.portal.dbmigrate.plan.TargetConstraintChecks;
 import org.apereo.portal.dbmigrate.report.MigrationReport;
 import org.apereo.portal.dbmigrate.rules.RuleSet;
 import org.apereo.portal.dbmigrate.schema.Dialect;
@@ -258,6 +259,10 @@ public final class DbMigrate {
                                 + m.targetRows()
                                 + " rows; the target must be empty (or pass --clear-target)");
             }
+        }
+        if (options.mode() != MigrationOptions.Mode.VERIFY_ONLY) {
+            // A target constraint the source rows violate fails here, not half-way through
+            TargetConstraintChecks.check(plan, s);
         }
     }
 

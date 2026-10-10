@@ -162,6 +162,9 @@ public final class SchemaReader {
             for (ForeignKey fk : importedKeys(md, catalog, schema, t.name())) {
                 t.addForeignKey(fk);
             }
+            for (List<String> uk : uniqueKeys(md, catalog, schema, t.name())) {
+                t.addUniqueKey(uk);
+            }
             model.addTable(t);
         }
         return model;
@@ -224,6 +227,34 @@ public final class SchemaReader {
             }
         }
         return new ArrayList<>(cols.values());
+    }
+
+    /**
+     * Unique indexes (unique constraints are backed by one), by name. Approximate statistics: an
+     * exact request makes Oracle analyze the table.
+     */
+    private static List<List<String>> uniqueKeys(
+            DatabaseMetaData md, String catalog, String schema, String table) throws SQLException {
+        Map<String, TreeMap<Integer, String>> indexes = new TreeMap<>();
+        try (ResultSet rs = md.getIndexInfo(catalog, schema, table, true, true)) {
+            while (rs.next()) {
+                String name = rs.getString("INDEX_NAME");
+                String column = rs.getString("COLUMN_NAME");
+                if (rs.getShort("TYPE") == DatabaseMetaData.tableIndexStatistic
+                        || name == null
+                        || column == null
+                        || rs.getBoolean("NON_UNIQUE")) {
+                    continue;
+                }
+                indexes.computeIfAbsent(name, k -> new TreeMap<>())
+                        .put((int) rs.getShort("ORDINAL_POSITION"), column);
+            }
+        }
+        List<List<String>> out = new ArrayList<>();
+        for (TreeMap<Integer, String> cols : indexes.values()) {
+            out.add(new ArrayList<>(cols.values()));
+        }
+        return out;
     }
 
     private static List<ForeignKey> importedKeys(
