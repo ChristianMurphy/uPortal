@@ -81,6 +81,15 @@ allprojects {
     java {
         sourceCompatibility = JavaVersion.VERSION_11
     }
+    // Compile against the Java 11 platform API and emit Java 11 bytecode whichever JDK runs
+    // the build (javac --release), so building with a newer JDK cannot leak Java 12+
+    // language features or APIs into the published classes.
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 11
+    }
+    tasks.withType(GroovyCompile).configureEach {
+        options.release = 11
+    }
 
     gradleLint.criticalRules = [
       'overridden-dependency-version',
