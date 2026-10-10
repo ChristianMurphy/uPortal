@@ -32,7 +32,6 @@ import javax.persistence.MapKey;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.dao.usertype.FunctionalNameType;
@@ -54,7 +53,6 @@ import org.hibernate.annotations.Type;
 @Entity
 @Table(name = "UP_SS_DESC")
 @SequenceGenerator(name = "UP_SS_DESC_GEN", sequenceName = "UP_SS_DESC_SEQ", allocationSize = 5)
-@TableGenerator(name = "UP_SS_DESC_GEN", pkColumnValue = "UP_SS_DESC", allocationSize = 5)
 @NaturalIdCache(region = "org.apereo.portal.layout.dao.jpa.StylesheetDescriptorImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

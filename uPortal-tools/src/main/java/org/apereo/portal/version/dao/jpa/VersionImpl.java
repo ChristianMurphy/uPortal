@@ -20,7 +20,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import org.apereo.portal.version.AbstractVersion;
 import org.apereo.portal.version.om.Version;
 import org.hibernate.annotations.NaturalId;
@@ -30,7 +29,6 @@ import org.hibernate.annotations.Type;
 @Entity
 @Table(name = "UP_VERSION")
 @SequenceGenerator(name = "UP_VERSION_GEN", sequenceName = "UP_VERSION_SEQ", allocationSize = 1)
-@TableGenerator(name = "UP_VERSION_GEN", pkColumnValue = "UP_VERSION", allocationSize = 1)
 @NaturalIdCache(region = "org.apereo.portal.version.dao.jpa.VersionImpl-NaturalId")
 class VersionImpl extends AbstractVersion {
     private static final long serialVersionUID = 1L;

@@ -24,7 +24,6 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.security.IPerson;
 import org.dom4j.Element;
@@ -39,10 +38,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @SequenceGenerator(
         name = "UP_DLM_EVALUATOR_GEN",
         sequenceName = "UP_DLM_EVALUATOR_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_DLM_EVALUATOR_GEN",
-        pkColumnValue = "UP_DLM_EVALUATOR",
         allocationSize = 1)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

@@ -26,15 +26,14 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
+import javax.persistence.OrderColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.IndexColumn;
 import org.hibernate.annotations.Type;
 
 @Entity
@@ -43,7 +42,6 @@ import org.hibernate.annotations.Type;
         name = "UP_PERSON_ATTR_GEN",
         sequenceName = "UP_PERSON_ATTR_SEQ",
         allocationSize = 10)
-@TableGenerator(name = "UP_PERSON_ATTR_GEN", pkColumnValue = "UP_PERSON_ATTR", allocationSize = 10)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 class LocalAccountPersonAttributeImpl implements Serializable {
@@ -62,7 +60,7 @@ class LocalAccountPersonAttributeImpl implements Serializable {
 
     @ElementCollection(fetch = FetchType.EAGER)
     @JoinTable(name = "UP_PERSON_ATTR_VALUES", joinColumns = @JoinColumn(name = "ATTR_ID"))
-    @IndexColumn(name = "VALUE_ORDER")
+    @OrderColumn(name = "VALUE_ORDER")
     @Type(type = "nullSafeString")
     @Column(name = "ATTR_VALUE")
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

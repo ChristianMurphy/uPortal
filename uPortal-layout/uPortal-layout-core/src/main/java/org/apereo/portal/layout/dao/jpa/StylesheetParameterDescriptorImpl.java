@@ -21,7 +21,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.layout.om.IStylesheetParameterDescriptor;
 import org.hibernate.annotations.Cache;
@@ -33,10 +32,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @SequenceGenerator(
         name = "UP_SS_DESC_PARAM_GEN",
         sequenceName = "UP_SS_DESC_PARAM_SEQ",
-        allocationSize = 5)
-@TableGenerator(
-        name = "UP_SS_DESC_PARAM_GEN",
-        pkColumnValue = "UP_SS_DESC_PARAM",
         allocationSize = 5)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

@@ -22,7 +22,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apereo.portal.portlet.om.IPortletLifecycleEntry;
 import org.apereo.portal.portlet.om.PortletLifecycleState;
@@ -35,10 +34,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @SequenceGenerator(
         name = "UP_PORTLET_LIFECYCLE_GEN",
         sequenceName = "UP_PORTLET_LIFECYCLE_SEQ",
-        allocationSize = 5)
-@TableGenerator(
-        name = "UP_PORTLET_LIFECYCLE_GEN",
-        pkColumnValue = "UP_PORTLET_LIFECYCLE",
         allocationSize = 5)
 @Cacheable
 @Cache(

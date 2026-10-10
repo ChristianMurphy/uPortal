@@ -22,16 +22,15 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.apereo.portal.events.aggr.DateDimension;
 import org.apereo.portal.events.aggr.login.LoginAggregationImpl;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
 import org.hibernate.annotations.Type;
@@ -40,14 +39,19 @@ import org.joda.time.LocalDate;
 
 /** */
 @Entity
-@Table(name = "UP_DATE_DIMENSION")
+@Table(
+        name = "UP_DATE_DIMENSION",
+        indexes = {
+            @Index(name = "IDX_UP_DD_YEAR", columnList = "DD_YEAR"),
+            @Index(name = "IDX_UP_DD_MONTH", columnList = "DD_MONTH"),
+            @Index(name = "IDX_UP_DD_DAY", columnList = "DD_DAY"),
+            @Index(name = "IDX_UP_DD_WEEK", columnList = "DD_WEEK"),
+            @Index(name = "IDX_UP_DD_QUARTER", columnList = "DD_QUARTER"),
+            @Index(name = "IDX_UP_DD_TERM", columnList = "DD_TERM")
+        })
 @SequenceGenerator(
         name = "UP_DATE_DIMENSION_GEN",
         sequenceName = "UP_DATE_DIMENSION_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_DATE_DIMENSION_GEN",
-        pkColumnValue = "UP_DATE_DIMENSION_PROP",
         allocationSize = 1)
 @NaturalIdCache(region = "org.apereo.portal.events.aggr.dao.jpa.DateDimensionImpl-NaturalId")
 @Cacheable
@@ -65,27 +69,21 @@ public class DateDimensionImpl implements DateDimension, Serializable {
     @Type(type = "localDate")
     private final LocalDate date;
 
-    @Index(name = "IDX_UP_DD_YEAR")
     @Column(name = "DD_YEAR", nullable = false, updatable = false)
     private final int year;
 
-    @Index(name = "IDX_UP_DD_MONTH")
     @Column(name = "DD_MONTH", nullable = false, updatable = false)
     private final int month;
 
-    @Index(name = "IDX_UP_DD_DAY")
     @Column(name = "DD_DAY", nullable = false, updatable = false)
     private final int day;
 
-    @Index(name = "IDX_UP_DD_WEEK")
     @Column(name = "DD_WEEK", nullable = false, updatable = false)
     private final int week;
 
-    @Index(name = "IDX_UP_DD_QUARTER")
     @Column(name = "DD_QUARTER", nullable = false)
     private int quarter;
 
-    @Index(name = "IDX_UP_DD_TERM")
     @Column(name = "DD_TERM", length = 200)
     private String term;
 

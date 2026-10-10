@@ -39,7 +39,6 @@ import javax.persistence.OneToMany;
 import javax.persistence.PrePersist;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.layout.om.IStylesheetDescriptor;
@@ -60,7 +59,6 @@ import org.hibernate.annotations.Type;
         name = "UP_SS_USER_PREF_GEN",
         sequenceName = "UP_SS_USER_PREF_SEQ",
         allocationSize = 5)
-@TableGenerator(name = "UP_SS_USER_PREF_GEN", pkColumnValue = "UP_SS_USER_PREF", allocationSize = 5)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 class StylesheetUserPreferencesImpl implements IStylesheetUserPreferences {

@@ -24,12 +24,13 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.Lob;
+import javax.persistence.OrderColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -42,23 +43,16 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
-import org.hibernate.annotations.IndexColumn;
 import org.hibernate.annotations.Type;
 
 /** */
 @Entity
-@Table(name = "UP_PORTLET_PREF")
-@org.hibernate.annotations.Table(
-        appliesTo = "UP_PORTLET_PREF",
-        indexes = @Index(name = "IDX_UPP_PREFS_ID", columnNames = "PORTLET_PREFS_ID"))
+@Table(
+        name = "UP_PORTLET_PREF",
+        indexes = {@Index(name = "IDX_UPP_PREFS_ID", columnList = "PORTLET_PREFS_ID")})
 @SequenceGenerator(
         name = "UP_PORTLET_PREF_GEN",
         sequenceName = "UP_PORTLET_PREF_SEQ",
-        allocationSize = 10)
-@TableGenerator(
-        name = "UP_PORTLET_PREF_GEN",
-        pkColumnValue = "UP_PORTLET_PREF",
         allocationSize = 10)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
@@ -84,7 +78,7 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
 
     @ElementCollection(fetch = FetchType.EAGER, targetClass = String.class)
     @JoinTable(name = "UP_PORTLET_PREF_VALUES", joinColumns = @JoinColumn(name = "PORTLET_PREF_ID"))
-    @IndexColumn(name = "VALUE_ORDER")
+    @OrderColumn(name = "VALUE_ORDER")
     @Lob
     @Column(name = "PREF_VALUE", length = 100000)
     @Type(type = "org.hibernate.type.StringType")

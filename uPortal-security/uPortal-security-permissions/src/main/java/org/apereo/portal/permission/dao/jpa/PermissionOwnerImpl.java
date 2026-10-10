@@ -28,7 +28,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.permission.IPermissionActivity;
 import org.apereo.portal.permission.IPermissionOwner;
@@ -50,10 +49,6 @@ import org.hibernate.annotations.Type;
 @SequenceGenerator(
         name = "UP_PERMISSION_OWNER_GEN",
         sequenceName = "UP_PERMISSION_OWNER_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_PERMISSION_OWNER_GEN",
-        pkColumnValue = "UP_PERMISSION_OWNER",
         allocationSize = 1)
 @NaturalIdCache(region = "org.apereo.portal.permission.dao.jpa.PermissionOwnerImpl-NaturalId")
 @Cacheable

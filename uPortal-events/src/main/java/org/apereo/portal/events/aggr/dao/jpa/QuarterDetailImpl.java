@@ -22,7 +22,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.EventDateTimeUtils;
 import org.apereo.portal.events.aggr.QuarterDetail;
@@ -42,10 +41,6 @@ import org.joda.time.ReadableInstant;
 @SequenceGenerator(
         name = "UP_QUARTER_DETAIL_GEN",
         sequenceName = "UP_QUARTER_DETAIL_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_QUARTER_DETAIL_GEN",
-        pkColumnValue = "UP_QUARTER_DETAIL_PROP",
         allocationSize = 1)
 @Immutable
 @Cacheable

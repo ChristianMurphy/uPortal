@@ -22,7 +22,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.layout.profile.IProfileSelection;
 import org.hibernate.annotations.Cache;
@@ -40,10 +39,6 @@ import org.hibernate.annotations.NaturalIdCache;
 @SequenceGenerator(
         name = "UP_PROFILE_SELECTION_GEN",
         sequenceName = "UP_PROFILE_SELECTION_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_PROFILE_SELECTION_GEN",
-        pkColumnValue = "UP_PROFILE_SELECTION",
         allocationSize = 1)
 @NaturalIdCache
 @Cacheable

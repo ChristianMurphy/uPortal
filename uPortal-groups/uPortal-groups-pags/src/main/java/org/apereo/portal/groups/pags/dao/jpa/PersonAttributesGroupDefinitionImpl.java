@@ -25,6 +25,7 @@ import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
@@ -33,7 +34,6 @@ import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -46,8 +46,8 @@ import org.dom4j.DocumentHelper;
 import org.dom4j.QName;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.LazyCollection;
-import org.hibernate.annotations.LazyCollectionOption;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.NaturalIdCache;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
@@ -59,7 +59,6 @@ import org.hibernate.annotations.NaturalIdCache;
         name = "UP_PAGS_GROUP_GEN",
         sequenceName = "UP_PAGS_GROUP_SEQ",
         allocationSize = 5)
-@TableGenerator(name = "UP_PAGS_GROUP_GEN", pkColumnValue = "UP_PAGS_GROUP", allocationSize = 5)
 @NaturalIdCache(
         region =
                 "org.apereo.portal.groups.pags.dao.jpa.PersonAttributesGroupDefinitionImpl-NaturalId")
@@ -96,8 +95,11 @@ public class PersonAttributesGroupDefinitionImpl implements IPersonAttributesGro
     @Column(name = "DESCRIPTION", length = 500)
     private String description;
 
-    @ManyToMany(cascade = CascadeType.ALL, targetEntity = PersonAttributesGroupDefinitionImpl.class)
-    @LazyCollection(LazyCollectionOption.FALSE)
+    @ManyToMany(
+            cascade = CascadeType.ALL,
+            targetEntity = PersonAttributesGroupDefinitionImpl.class,
+            fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SELECT)
     @JoinTable(
             name = "UP_PAGS_GROUP_MEMBERS",
             joinColumns = {@JoinColumn(name = "PAGS_GROUP_ID")},
@@ -112,8 +114,9 @@ public class PersonAttributesGroupDefinitionImpl implements IPersonAttributesGro
             cascade = CascadeType.ALL,
             mappedBy = "group",
             targetEntity = PersonAttributesGroupTestGroupDefinitionImpl.class,
-            orphanRemoval = true)
-    @LazyCollection(LazyCollectionOption.FALSE)
+            orphanRemoval = true,
+            fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SELECT)
     @JsonDeserialize(
             using =
                     PagsDefinitionJsonUtils.TestGroupJsonDeserializer

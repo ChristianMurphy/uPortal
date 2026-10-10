@@ -35,7 +35,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.persondir.ILocalAccountPerson;
 import org.hibernate.annotations.Cache;
@@ -51,7 +50,6 @@ import org.springframework.util.Assert;
         name = "UP_PERSON_DIR_GEN",
         sequenceName = "UP_PERSON_DIR_SEQ",
         allocationSize = 5)
-@TableGenerator(name = "UP_PERSON_DIR_GEN", pkColumnValue = "UP_PERSON_DIR", allocationSize = 5)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {

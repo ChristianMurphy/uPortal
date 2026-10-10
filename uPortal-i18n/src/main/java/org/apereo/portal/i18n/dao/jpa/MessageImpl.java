@@ -21,20 +21,23 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import org.apereo.portal.i18n.Message;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.springframework.util.Assert;
 
 @Entity
-@Table(name = "UP_MESSAGE")
+@Table(
+        name = "UP_MESSAGE",
+        indexes = {
+            @Index(name = "IDX_MESSAGE__CODE", columnList = "CODE"),
+            @Index(name = "IDX_MESSAGE__LOCALE", columnList = "LOCALE")
+        })
 @SequenceGenerator(name = "UP_MESSAGE_GEN", sequenceName = "UP_MESSAGE_SEQ", allocationSize = 5)
-@TableGenerator(name = "UP_MESSAGE_GEN", pkColumnValue = "UP_MESSAGE", allocationSize = 5)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 class MessageImpl implements Message, Serializable {
@@ -48,12 +51,10 @@ class MessageImpl implements Message, Serializable {
 
     @NaturalId
     @Column(name = "CODE", length = 128, nullable = false)
-    @Index(name = "IDX_MESSAGE__CODE")
     private final String code;
 
     @NaturalId
     @Column(name = "LOCALE", length = 64, nullable = false)
-    @Index(name = "IDX_MESSAGE__LOCALE")
     private final Locale locale;
 
     @Column(name = "VALUE", length = 1024, nullable = false)

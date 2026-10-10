@@ -31,7 +31,6 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -51,10 +50,6 @@ import org.hibernate.annotations.NaturalIdCache;
 @SequenceGenerator(
         name = "UP_PAGS_TEST_GROUP_GEN",
         sequenceName = "UP_PAGS_TEST_GROUP_SEQ",
-        allocationSize = 5)
-@TableGenerator(
-        name = "UP_PAGS_TEST_GROUP_GEN",
-        pkColumnValue = "UP_PAGS_TEST_GROUP",
         allocationSize = 5)
 @NaturalIdCache(
         region =

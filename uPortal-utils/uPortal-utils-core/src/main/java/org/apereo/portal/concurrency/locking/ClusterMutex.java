@@ -22,7 +22,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apache.commons.lang.Validate;
 import org.hibernate.annotations.NaturalId;
@@ -36,7 +35,6 @@ import org.springframework.util.Assert;
 @Entity
 @Table(name = "UP_MUTEX")
 @SequenceGenerator(name = "UP_MUTEX_GEN", sequenceName = "UP_MUTEX_SEQ", allocationSize = 1)
-@TableGenerator(name = "UP_MUTEX_GEN", pkColumnValue = "UP_MUTEX_PROP", allocationSize = 1)
 // THIS CLASS CANNOT BE CACHED
 @NaturalIdCache(region = "org.apereo.portal.concurrency.locking.ClusterMutex-NaturalId")
 public class ClusterMutex implements Serializable {

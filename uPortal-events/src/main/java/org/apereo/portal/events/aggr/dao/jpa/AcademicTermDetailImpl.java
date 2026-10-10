@@ -26,7 +26,6 @@ import javax.persistence.PostPersist;
 import javax.persistence.PostUpdate;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.AcademicTermDetail;
@@ -45,10 +44,6 @@ import org.joda.time.ReadableInstant;
 @SequenceGenerator(
         name = "UP_ACADEMIC_TERM_DETAIL_GEN",
         sequenceName = "UP_ACADEMIC_TERM_DETAIL_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_ACADEMIC_TERM_DETAIL_GEN",
-        pkColumnValue = "UP_ACADEMIC_TERM_DETAIL_PROP",
         allocationSize = 1)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
