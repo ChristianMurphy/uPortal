@@ -34,7 +34,9 @@ public abstract class FilteringApplicationListener<E extends ApplicationEvent>
 
     private List<ApplicationEventFilter<E>> applicationEventFilters = Collections.emptyList();
 
-    /** @param applicationEventFilters The list of filters to test each event with */
+    /**
+     * @param applicationEventFilters The list of filters to test each event with
+     */
     public final void setApplicationEventFilters(
             List<ApplicationEventFilter<E>> applicationEventFilters) {
         applicationEventFilters = new ArrayList<ApplicationEventFilter<E>>(applicationEventFilters);
@@ -61,6 +63,8 @@ public abstract class FilteringApplicationListener<E extends ApplicationEvent>
         this.onFilteredApplicationEvent(event);
     }
 
-    /** @param event Event that has passed all configured {@link ApplicationEventFilter}s */
+    /**
+     * @param event Event that has passed all configured {@link ApplicationEventFilter}s
+     */
     protected abstract void onFilteredApplicationEvent(E event);
 }

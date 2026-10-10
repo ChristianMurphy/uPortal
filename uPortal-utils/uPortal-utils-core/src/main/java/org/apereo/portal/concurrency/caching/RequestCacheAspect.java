@@ -163,7 +163,8 @@ public class RequestCacheAspect implements InitializingBean {
     }
 
     protected void registerMbean(Object object, ObjectName name)
-            throws InstanceAlreadyExistsException, MBeanRegistrationException,
+            throws InstanceAlreadyExistsException,
+                    MBeanRegistrationException,
                     NotCompliantMBeanException {
         this.mBeanExportOperations.registerManagedResource(object, name);
     }

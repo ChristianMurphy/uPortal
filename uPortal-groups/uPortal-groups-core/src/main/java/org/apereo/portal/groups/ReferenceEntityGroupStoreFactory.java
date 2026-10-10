@@ -26,6 +26,7 @@ public class ReferenceEntityGroupStoreFactory implements IEntityGroupStoreFactor
     public ReferenceEntityGroupStoreFactory() {
         super();
     }
+
     /**
      * Return an instance of the group store implementation.
      *
@@ -36,6 +37,7 @@ public class ReferenceEntityGroupStoreFactory implements IEntityGroupStoreFactor
     public IEntityGroupStore newGroupStore() throws GroupsException {
         return newGroupStore(null);
     }
+
     /**
      * Return an instance of the group store implementation.
      *
@@ -47,6 +49,7 @@ public class ReferenceEntityGroupStoreFactory implements IEntityGroupStoreFactor
             throws GroupsException {
         return newInstance();
     }
+
     /**
      * Return an instance of the group store implementation.
      *

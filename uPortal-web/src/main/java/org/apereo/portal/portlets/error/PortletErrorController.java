@@ -63,27 +63,41 @@ public class PortletErrorController {
     private IPortletRenderer portletRenderer;
     private IPortalUrlProvider portalUrlProvider;
 
-    /** @param userInstanceManager the userInstanceManager to set */
+    /**
+     * @param userInstanceManager the userInstanceManager to set
+     */
     @Autowired
     public void setUserInstanceManager(IUserInstanceManager userInstanceManager) {
         this.userInstanceManager = userInstanceManager;
     }
-    /** @param portalRequestUtils the portalRequestUtils to set */
+
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         this.portalRequestUtils = portalRequestUtils;
     }
-    /** @param portletWindowRegistry the portletWindowRegistry to set */
+
+    /**
+     * @param portletWindowRegistry the portletWindowRegistry to set
+     */
     @Autowired
     public void setPortletWindowRegistry(IPortletWindowRegistry portletWindowRegistry) {
         this.portletWindowRegistry = portletWindowRegistry;
     }
-    /** @param portletRenderer the portletRenderer to set */
+
+    /**
+     * @param portletRenderer the portletRenderer to set
+     */
     @Autowired
     public void setPortletRenderer(IPortletRenderer portletRenderer) {
         this.portletRenderer = portletRenderer;
     }
-    /** @param portalUrlProvider the portalUrlProvider to set */
+
+    /**
+     * @param portalUrlProvider the portalUrlProvider to set
+     */
     @Autowired
     public void setPortalUrlProvider(IPortalUrlProvider portalUrlProvider) {
         this.portalUrlProvider = portalUrlProvider;

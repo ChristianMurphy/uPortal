@@ -19,10 +19,14 @@ import java.util.Map;
 /** JMX stats for HungWorkerAnalyzer */
 public interface HungWorkerAnalyzerMXBean {
 
-    /** @return Total number of hung workers */
+    /**
+     * @return Total number of hung workers
+     */
     int getHungPortletCountTotal();
 
-    /** @return Hung worker counts by portlet */
+    /**
+     * @return Hung worker counts by portlet
+     */
     Map<String, Integer> getHungPortletCounts();
 
     /**
@@ -31,6 +35,8 @@ public interface HungWorkerAnalyzerMXBean {
      */
     void setPercentPermittedErrantByFname(double percentPermittedErrantByFname);
 
-    /** @return The allowed ratio of hung portlets to available workers per fname */
+    /**
+     * @return The allowed ratio of hung portlets to available workers per fname
+     */
     double getPercentPermittedErrantByFname();
 }

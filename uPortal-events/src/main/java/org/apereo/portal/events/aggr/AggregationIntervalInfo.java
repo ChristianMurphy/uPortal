@@ -56,19 +56,27 @@ public class AggregationIntervalInfo implements Serializable {
         this.timeDimension = timeDimension;
     }
 
-    /** @return The type of interval the info is about */
+    /**
+     * @return The type of interval the info is about
+     */
     public AggregationInterval getAggregationInterval() {
         return aggregationInterval;
     }
 
-    /** @return The first date in the interval, inclusive */
+    /**
+     * @return The first date in the interval, inclusive
+     */
     public DateTime getStart() {
         return this.start;
     }
-    /** @return The last date in the interval, exclusive */
+
+    /**
+     * @return The last date in the interval, exclusive
+     */
     public DateTime getEnd() {
         return this.end;
     }
+
     /**
      * @return The date dimension that corresponds with the {@link #getStart()} value, null if no
      *     date dimension exists yet for the start {@link DateTime}
@@ -76,6 +84,7 @@ public class AggregationIntervalInfo implements Serializable {
     public DateDimension getDateDimension() {
         return dateDimension;
     }
+
     /**
      * @return The time dimension that corresponds with the {@link #getStart()} value, null if no
      *     time dimension exists yet for the start {@link DateTime}
@@ -84,7 +93,9 @@ public class AggregationIntervalInfo implements Serializable {
         return timeDimension;
     }
 
-    /** @return Minutes between {@link #getStart()} and {@link #getEnd()} */
+    /**
+     * @return Minutes between {@link #getStart()} and {@link #getEnd()}
+     */
     public int getTotalDuration() {
         int d = this.duration;
         if (d < 0) {

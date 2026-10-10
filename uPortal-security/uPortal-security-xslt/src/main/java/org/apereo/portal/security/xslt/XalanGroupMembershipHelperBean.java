@@ -34,7 +34,9 @@ public class XalanGroupMembershipHelperBean implements IXalanGroupMembershipHelp
 
     private IPortletDefinitionRegistry portletDefinitionRegistry;
 
-    /** @param portletDefinitionRegistry the portletDefinitionRegistry to set */
+    /**
+     * @param portletDefinitionRegistry the portletDefinitionRegistry to set
+     */
     @Autowired
     public void setPortletDefinitionRegistry(IPortletDefinitionRegistry portletDefinitionRegistry) {
         this.portletDefinitionRegistry = portletDefinitionRegistry;

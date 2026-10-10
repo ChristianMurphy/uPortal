@@ -39,7 +39,9 @@ public class ResourcesAggregationHelper {
         this.resourcesElementsProvider = resourcesElementsProvider;
     }
 
-    /** @return true if aggregation is currently enabled. */
+    /**
+     * @return true if aggregation is currently enabled.
+     */
     public boolean isAggregationEnabled() {
         return Included.AGGREGATED == this.resourcesElementsProvider.getIncludedType(null);
     }

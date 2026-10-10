@@ -114,6 +114,8 @@ public interface IStylesheetUserPreferences {
     <P extends Populator<String, String>> P populateLayoutAttributes(
             String nodeId, P layoutAttributes);
 
-    /** @return Read-only view of all layout nodeIds stored in these preferences */
+    /**
+     * @return Read-only view of all layout nodeIds stored in these preferences
+     */
     Collection<String> getAllLayoutAttributeNodeIds();
 }

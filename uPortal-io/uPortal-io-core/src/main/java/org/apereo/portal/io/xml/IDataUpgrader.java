@@ -24,7 +24,9 @@ import javax.xml.transform.Source;
  */
 public interface IDataUpgrader {
 
-    /** @return The {@link PortalDataKey}s this upgrader can operate on */
+    /**
+     * @return The {@link PortalDataKey}s this upgrader can operate on
+     */
     Set<PortalDataKey> getSourceDataTypes();
 
     /**

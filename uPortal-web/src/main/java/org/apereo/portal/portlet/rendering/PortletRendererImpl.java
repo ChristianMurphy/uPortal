@@ -105,7 +105,10 @@ public class PortletRendererImpl implements IPortletRenderer {
     public void setPortletDelegationLocator(PortletDelegationLocator portletDelegationLocator) {
         this.portletDelegationLocator = portletDelegationLocator;
     }
-    /** @param portletCacheControlService the portletCacheControlService to set */
+
+    /**
+     * @param portletCacheControlService the portletCacheControlService to set
+     */
     @Autowired
     public void setPortletCacheControlService(
             IPortletCacheControlService portletCacheControlService) {
@@ -388,7 +391,9 @@ public class PortletRendererImpl implements IPortletRenderer {
                 boolean targeted,
                 boolean cached);
 
-        /** @return The {@link PortletRequest#RENDER_PART} name */
+        /**
+         * @return The {@link PortletRequest#RENDER_PART} name
+         */
         public final String getRenderPart() {
             return renderPart;
         }

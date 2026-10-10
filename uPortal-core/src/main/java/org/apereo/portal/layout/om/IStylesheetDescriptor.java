@@ -22,7 +22,9 @@ import org.apereo.portal.io.xml.IPortalData;
 /** Describes a XSL Stylesheet used in the rendering pipeline */
 public interface IStylesheetDescriptor extends IPortalData {
 
-    /** @return Unique ID of the descriptor */
+    /**
+     * @return Unique ID of the descriptor
+     */
     public long getId();
 
     /** Unique, human readable name of the stylesheet */
@@ -30,6 +32,7 @@ public interface IStylesheetDescriptor extends IPortalData {
 
     /** Optional description of the stylesheet */
     public void setDescription(String description);
+
     /** Optional description of the stylesheet */
     public String getDescription();
 
@@ -38,6 +41,7 @@ public interface IStylesheetDescriptor extends IPortalData {
      * http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/html/resources.html#resources-resource-strings
      */
     public void setStylesheetResource(String stylesheetResource);
+
     /** Resource string used to locate the XSLT Stylesheet */
     public String getStylesheetResource();
 
@@ -47,6 +51,7 @@ public interface IStylesheetDescriptor extends IPortalData {
      * with this stylesheet.
      */
     public void setUrlNodeSyntaxHelperName(String urlNodeSyntaxHelperName);
+
     /**
      * @return The name of the <code>IUrlNodeSyntaxHelper</code> as it is registered in the {@link
      *     <code>IUrlNodeSyntaxHelperRegistry</code>, can be null if no <code>IUrlNodeSyntaxHelper</code> is
@@ -62,7 +67,10 @@ public interface IStylesheetDescriptor extends IPortalData {
 
     public void setOutputPropertyDescriptors(
             Collection<IOutputPropertyDescriptor> outputPropertyDescriptors);
-    /** @see Map#get(Object) */
+
+    /**
+     * @see Map#get(Object)
+     */
     public IOutputPropertyDescriptor getOutputPropertyDescriptor(String name);
 
     /**
@@ -73,7 +81,10 @@ public interface IStylesheetDescriptor extends IPortalData {
 
     public void setStylesheetParameterDescriptors(
             Collection<IStylesheetParameterDescriptor> stylesheetParameterDescriptors);
-    /** @see Map#get(Object) */
+
+    /**
+     * @see Map#get(Object)
+     */
     public IStylesheetParameterDescriptor getStylesheetParameterDescriptor(String name);
 
     /**
@@ -84,6 +95,9 @@ public interface IStylesheetDescriptor extends IPortalData {
 
     public void setLayoutAttributeDescriptors(
             Collection<ILayoutAttributeDescriptor> layoutAttributeDescriptors);
-    /** @see Map#get(Object) */
+
+    /**
+     * @see Map#get(Object)
+     */
     public ILayoutAttributeDescriptor getLayoutAttributeDescriptor(String name);
 }

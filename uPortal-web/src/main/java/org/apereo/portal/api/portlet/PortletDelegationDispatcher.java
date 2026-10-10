@@ -37,7 +37,9 @@ public interface PortletDelegationDispatcher {
      */
     public IPortletWindowId getPortletWindowId();
 
-    /** @return The current sate of the delegate window */
+    /**
+     * @return The current sate of the delegate window
+     */
     public DelegateState getDelegateState();
 
     /**

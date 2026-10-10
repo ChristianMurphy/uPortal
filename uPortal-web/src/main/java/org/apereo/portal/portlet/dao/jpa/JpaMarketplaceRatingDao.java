@@ -123,7 +123,9 @@ public class JpaMarketplaceRatingDao extends BasePortalJpaDao implements IMarket
         return this.createOrUpdateRating(temp);
     }
 
-    /** @return List of all ratings */
+    /**
+     * @return List of all ratings
+     */
     @Override
     @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)

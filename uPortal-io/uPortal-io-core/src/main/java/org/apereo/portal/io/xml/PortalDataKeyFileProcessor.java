@@ -69,12 +69,16 @@ public final class PortalDataKeyFileProcessor implements Function<Resource, Obje
                 XMLInputFactory.SUPPORT_DTD, false); // Don't load referenced DTDs here
     }
 
-    /** @return total number of resources to import */
+    /**
+     * @return total number of resources to import
+     */
     public long getResourceCount() {
         return count.get();
     }
 
-    /** @return Map of the data to import */
+    /**
+     * @return Map of the data to import
+     */
     public ConcurrentMap<PortalDataKey, Queue<Resource>> getDataToImport() {
         return dataToImport;
     }

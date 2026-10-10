@@ -70,10 +70,13 @@ public class LocalAccountPersonAttributeDao extends AbstractDefaultAttributePers
         this.queryAttributeMapping = parsedQueryAttributeMapping;
     }
 
-    /** @return the resultAttributeMapping */
+    /**
+     * @return the resultAttributeMapping
+     */
     public Map<String, Set<String>> getResultAttributeMapping() {
         return resultAttributeMapping;
     }
+
     /**
      * Set the {@link Map} to use for mapping from a data layer name to an attribute name or {@link
      * Set} of attribute names. Data layer names that are specified but have null mappings will use
@@ -106,10 +109,13 @@ public class LocalAccountPersonAttributeDao extends AbstractDefaultAttributePers
                 Collections.unmodifiableSet(new LinkedHashSet<String>(userAttributes));
     }
 
-    /** @return the userNameAttribute */
+    /**
+     * @return the userNameAttribute
+     */
     public String getUnmappedUsernameAttribute() {
         return unmappedUsernameAttribute;
     }
+
     /**
      * The returned attribute to use as the userName for the mapped IPersons. If null the {@link
      * #setDefaultAttributeName(String)} value will be used and if that is null the {@link

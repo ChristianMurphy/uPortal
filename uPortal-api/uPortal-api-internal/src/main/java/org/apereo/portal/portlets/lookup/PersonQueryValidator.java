@@ -32,6 +32,7 @@ public class PersonQueryValidator {
     public IPersonLookupHelper getPersonLookupHelper() {
         return personLookupHelper;
     }
+
     /**
      * {@link IPersonLookupHelper} to use for getting configuration and query information from for
      * validation.

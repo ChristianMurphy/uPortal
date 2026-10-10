@@ -28,9 +28,13 @@ public interface EventSession extends Serializable {
 
     void recordAccess(DateTime eventDate);
 
-    /** @see PortalEvent#getEventSessionId() */
+    /**
+     * @see PortalEvent#getEventSessionId()
+     */
     String getEventSessionId();
 
-    /** @return The event store resolved group mappings for the event session, immutable */
+    /**
+     * @return The event store resolved group mappings for the event session, immutable
+     */
     Set<AggregatedGroupMapping> getGroupMappings();
 }

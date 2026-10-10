@@ -24,9 +24,13 @@ import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
  */
 public interface PortletExecutionAggregationDiscriminator
         extends BaseGroupedAggregationDiscriminator {
-    /** @return The name of the tab */
+    /**
+     * @return The name of the tab
+     */
     AggregatedPortletMapping getPortletMapping();
 
-    /** @return The type of portlet execution */
+    /**
+     * @return The type of portlet execution
+     */
     ExecutionType getExecutionType();
 }

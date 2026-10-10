@@ -87,7 +87,9 @@ public abstract class BasePortletLayoutStatisticsController<F extends BasePortle
         }
     }
 
-    /** @return List of Portlets that exist for the aggregation */
+    /**
+     * @return List of Portlets that exist for the aggregation
+     */
     @ModelAttribute("portlets")
     public Set<AggregatedPortletMapping> getPortlets() {
         final Set<AggregatedPortletMapping> groupMappings =

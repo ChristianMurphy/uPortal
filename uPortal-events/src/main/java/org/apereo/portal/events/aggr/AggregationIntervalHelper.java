@@ -40,7 +40,9 @@ public interface AggregationIntervalHelper {
      */
     int intervalsBetween(AggregationInterval interval, DateTime start, DateTime end);
 
-    /** @see #getIntervalStartDateTimesBetween(AggregationInterval, DateTime, DateTime, int) */
+    /**
+     * @see #getIntervalStartDateTimesBetween(AggregationInterval, DateTime, DateTime, int)
+     */
     List<DateTime> getIntervalStartDateTimesBetween(
             AggregationInterval interval, DateTime start, DateTime end);
 

@@ -71,16 +71,24 @@ public class PortalRequest extends AbstractTokenizable {
          */
         PORTAL_INFO("portalInfo"),
 
-        /** @since 5.0 */
+        /**
+         * @since 5.0
+         */
         SCHEME("scheme"),
 
-        /** @since 5.0 */
+        /**
+         * @since 5.0
+         */
         SERVER_NAME("serverName"),
 
-        /** @since 5.0 */
+        /**
+         * @since 5.0
+         */
         SERVER_PORT("serverPort"),
 
-        /** @since 5.0 */
+        /**
+         * @since 5.0
+         */
         SECURE("secure");
 
         /*

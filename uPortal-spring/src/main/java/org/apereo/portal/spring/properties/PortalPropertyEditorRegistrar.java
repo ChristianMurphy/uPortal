@@ -27,11 +27,16 @@ public class PortalPropertyEditorRegistrar implements PropertyEditorRegistrar {
 
     private Map<Class<?>, PropertyEditor> propertyEditors;
 
-    /** @return the propertyEditors */
+    /**
+     * @return the propertyEditors
+     */
     public Map<Class<?>, PropertyEditor> getPropertyEditors() {
         return propertyEditors;
     }
-    /** @param propertyEditors the propertyEditors to set */
+
+    /**
+     * @param propertyEditors the propertyEditors to set
+     */
     public void setPropertyEditors(Map<Class<?>, PropertyEditor> propertyEditors) {
         this.propertyEditors = propertyEditors;
     }

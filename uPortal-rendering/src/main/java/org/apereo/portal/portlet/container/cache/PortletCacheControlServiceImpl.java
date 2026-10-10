@@ -127,7 +127,9 @@ public class PortletCacheControlServiceImpl implements IPortletCacheControlServi
         this.publicScopePortletResourceOutputCache = publicScopePortletResourceOutputCache;
     }
 
-    /** @param cacheSizeThreshold the cacheSizeThreshold to set in bytes */
+    /**
+     * @param cacheSizeThreshold the cacheSizeThreshold to set in bytes
+     */
     @Value(
             "${org.apereo.portal.portlet.container.cache.PortletCacheControlServiceImpl.cacheSizeThreshold:102400}")
     public void setCacheSizeThreshold(int cacheSizeThreshold) {

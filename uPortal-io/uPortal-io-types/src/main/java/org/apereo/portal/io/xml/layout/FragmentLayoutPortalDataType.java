@@ -37,7 +37,9 @@ public class FragmentLayoutPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-layout_v3-2.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_30_DATA_KEY =
             new PortalDataKey(
@@ -45,7 +47,9 @@ public class FragmentLayoutPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-layout_v3-0.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_26_DATA_KEY =
             new PortalDataKey(

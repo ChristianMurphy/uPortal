@@ -39,7 +39,9 @@ public interface XmlUtilities {
     Transformer getTransformer(Resource stylesheet)
             throws TransformerConfigurationException, IOException;
 
-    /** @return The identity transformer */
+    /**
+     * @return The identity transformer
+     */
     Transformer getIdentityTransformer() throws TransformerConfigurationException, IOException;
 
     /**

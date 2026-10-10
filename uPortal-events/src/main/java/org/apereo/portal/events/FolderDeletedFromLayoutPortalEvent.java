@@ -48,17 +48,23 @@ public final class FolderDeletedFromLayoutPortalEvent extends LayoutPortalEvent 
         this.deletedFolderName = deletedFolderName;
     }
 
-    /** @return the deletedFolderName */
+    /**
+     * @return the deletedFolderName
+     */
     public String getDeletedFolderName() {
         return this.deletedFolderName;
     }
 
-    /** @return the oldParentFolderId */
+    /**
+     * @return the oldParentFolderId
+     */
     public String getOldParentFolderId() {
         return this.oldParentFolderId;
     }
 
-    /** @return the deletedFolderId */
+    /**
+     * @return the deletedFolderId
+     */
     public String getDeletedFolderId() {
         return this.deletedFolderId;
     }

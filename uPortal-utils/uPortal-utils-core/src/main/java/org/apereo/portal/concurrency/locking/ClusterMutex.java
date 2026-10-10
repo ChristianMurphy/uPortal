@@ -88,22 +88,30 @@ public class ClusterMutex implements Serializable {
         this.name = name;
     }
 
-    /** @return the id */
+    /**
+     * @return the id
+     */
     public long getId() {
         return this.id;
     }
 
-    /** @return the name */
+    /**
+     * @return the name
+     */
     public String getName() {
         return this.name;
     }
 
-    /** @return If the lock is currently held */
+    /**
+     * @return If the lock is currently held
+     */
     public boolean isLocked() {
         return this.locked;
     }
 
-    /** @return the serverId that currently owns the lock, null if the mutex is not locked */
+    /**
+     * @return the serverId that currently owns the lock, null if the mutex is not locked
+     */
     public String getServerId() {
         return this.serverId;
     }
@@ -116,17 +124,23 @@ public class ClusterMutex implements Serializable {
         return this.previousServerId;
     }
 
-    /** @return the lockStart */
+    /**
+     * @return the lockStart
+     */
     public long getLockStart() {
         return this.lockStart.getTime();
     }
 
-    /** @return the lastUpdate */
+    /**
+     * @return the lastUpdate
+     */
     public long getLastUpdate() {
         return this.lastUpdate.getTime();
     }
 
-    /** @return the lockEnd */
+    /**
+     * @return the lockEnd
+     */
     public long getLockEnd() {
         return this.lockEnd.getTime();
     }
@@ -153,7 +167,9 @@ public class ClusterMutex implements Serializable {
         this.serverId = null;
     }
 
-    /** @param lastUpdate the lastUpdate to set */
+    /**
+     * @param lastUpdate the lastUpdate to set
+     */
     void updateLock() {
         this.lastUpdate = new Date();
     }

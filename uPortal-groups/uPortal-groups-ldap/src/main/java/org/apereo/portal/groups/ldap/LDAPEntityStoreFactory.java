@@ -24,6 +24,7 @@ public class LDAPEntityStoreFactory implements IEntityStoreFactory {
     public LDAPEntityStoreFactory() {
         super();
     }
+
     /**
      * Return an instance of the entity store implementation.
      *
@@ -34,6 +35,7 @@ public class LDAPEntityStoreFactory implements IEntityStoreFactory {
     public IEntityStore newEntityStore() throws GroupsException {
         return newInstance();
     }
+
     /**
      * Return an instance of the entity store implementation.
      *

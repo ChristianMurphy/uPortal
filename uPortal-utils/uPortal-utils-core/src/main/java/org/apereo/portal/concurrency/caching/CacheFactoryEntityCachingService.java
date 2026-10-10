@@ -34,7 +34,9 @@ public class CacheFactoryEntityCachingService extends AbstractEntityCachingServi
     private final EntityCacheCreator entityCacheCreator = new EntityCacheCreator();
     private CacheFactory cacheFactory;
 
-    /** @param cacheFactory the cacheFactory to set */
+    /**
+     * @param cacheFactory the cacheFactory to set
+     */
     @Autowired
     public void setCacheFactory(CacheFactory cacheFactory) {
         this.cacheFactory = cacheFactory;

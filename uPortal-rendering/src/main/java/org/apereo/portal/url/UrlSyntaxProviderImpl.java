@@ -182,12 +182,16 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
             this.validUrlTypes = Sets.immutableEnumSet(validUrlType, validUrlTypes);
         }
 
-        /** @return The {@link UrlType}s this parameter is valid on */
+        /**
+         * @return The {@link UrlType}s this parameter is valid on
+         */
         public Set<UrlType> getValidUrlTypes() {
             return this.validUrlTypes;
         }
 
-        /** @return The parameter prefix */
+        /**
+         * @return The parameter prefix
+         */
         public String getParameterPrefix() {
             return this.parameterPrefix;
         }
@@ -249,18 +253,24 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
         this.portalUrlProvider = portalUrlProvider;
     }
 
-    /** @param defaultEncoding the defaultEncoding to set */
+    /**
+     * @param defaultEncoding the defaultEncoding to set
+     */
     public void setDefaultEncoding(String defaultEncoding) {
         this.defaultEncoding = defaultEncoding;
     }
 
-    /** @param portletWindowRegistry the portletWindowRegistry to set */
+    /**
+     * @param portletWindowRegistry the portletWindowRegistry to set
+     */
     @Autowired
     public void setPortletWindowRegistry(IPortletWindowRegistry portletWindowRegistry) {
         this.portletWindowRegistry = portletWindowRegistry;
     }
 
-    /** @param portalRequestUtils the portalRequestUtils to set */
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         this.portalRequestUtils = portalRequestUtils;
@@ -399,7 +409,7 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
                                 break;
                             }
                         }
-                        // fall through
+                    // fall through
                     case PORTLET:
                         {
                             parseStep = ParseStep.STATE;
@@ -431,7 +441,7 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
                                                 targetedPortletString);
                             }
                         }
-                        // fall through
+                    // fall through
                     case STATE:
                         {
                             parseStep = ParseStep.TYPE;
@@ -496,7 +506,7 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
                                 break;
                             }
                         }
-                        // fall through
+                    // fall through
                     case TYPE:
                         {
                             parseStep = ParseStep.COMPLETE;
@@ -533,7 +543,7 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
                                 }
                             }
                         }
-                        // fall through
+                    // fall through
                     default:
                         // Nothing to do -- some cases don't need treatment
                 }
@@ -1035,7 +1045,7 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
                         portletUrlBuilder.setResourceId(portletRequestInfo.getResourceId());
                     }
 
-                    // fall through
+                // fall through
                 case RENDER:
                 case ACTION:
                     {

@@ -27,19 +27,25 @@ public abstract class BaseAttributeTester implements IPersonTester {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public BaseAttributeTester(IPersonAttributesGroupTestDefinition definition) {
         super();
         attributeName = definition.getAttributeName();
         testValue = definition.getTestValue();
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     public String getAttributeName() {
         return attributeName;
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     public String getTestValue() {
         return testValue;
     }

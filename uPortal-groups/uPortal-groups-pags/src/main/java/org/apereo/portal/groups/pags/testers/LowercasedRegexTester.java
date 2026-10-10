@@ -54,7 +54,9 @@ import org.apereo.portal.groups.pags.dao.IPersonAttributesGroupTestDefinition;
 public class LowercasedRegexTester extends AbstractStringTester {
     protected Pattern pattern;
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public LowercasedRegexTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
         this.pattern = Pattern.compile(definition.getTestValue());

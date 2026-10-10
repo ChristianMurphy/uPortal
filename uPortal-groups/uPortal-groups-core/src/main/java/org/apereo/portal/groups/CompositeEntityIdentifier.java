@@ -86,11 +86,17 @@ public class CompositeEntityIdentifier extends EntityIdentifier implements IGrou
             throw new GroupsException("Error in group key", ne);
         }
     }
-    /** @return javax.naming.Name */
+
+    /**
+     * @return javax.naming.Name
+     */
     protected synchronized Name getCompositeKey() {
         return compositeKey;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     @Override
     public synchronized String getKey() {
         if (cachedCompositeKey == null) {
@@ -98,7 +104,10 @@ public class CompositeEntityIdentifier extends EntityIdentifier implements IGrou
         }
         return cachedCompositeKey;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     public synchronized String getLocalKey() {
         if (cachedLocalKey == null) {
             cachedLocalKey = getCompositeKey().get(size() - 1);
@@ -120,27 +129,38 @@ public class CompositeEntityIdentifier extends EntityIdentifier implements IGrou
         }
         return cachedServiceName;
     }
+
     /** Returns a new empty Name */
     public Name newName() throws InvalidNameException {
         return new NameImpl();
     }
-    /** @param newCompositeKey javax.naming.Name */
+
+    /**
+     * @param newCompositeKey javax.naming.Name
+     */
     public synchronized void setCompositeKey(Name newCompositeKey) {
         compositeKey = newCompositeKey;
         cachedCompositeKey = null;
         cachedLocalKey = null;
         cachedServiceName = null;
     }
-    /** @param newServiceName javax.naming.Name */
+
+    /**
+     * @param newServiceName javax.naming.Name
+     */
     public void setServiceName(Name newServiceName) throws InvalidNameException {
         Name newKey = newName().addAll(newServiceName).add(getLocalKey());
         setCompositeKey(newKey);
         cachedServiceName = newServiceName;
     }
-    /** @return int */
+
+    /**
+     * @return int
+     */
     protected int size() {
         return getCompositeKey().size();
     }
+
     /**
      * Returns a String that represents the value of this object.
      *
@@ -150,6 +170,7 @@ public class CompositeEntityIdentifier extends EntityIdentifier implements IGrou
     public String toString() {
         return "CompositeEntityIdentifier (" + type + "(" + getKey() + "))";
     }
+
     /** Returns a CompoundName parsed from key */
     public Name parseCompoundKey(String key) throws NamingException {
         return NAME_PARSE_CACHE.getUnchecked(key);

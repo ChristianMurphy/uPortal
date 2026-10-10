@@ -28,25 +28,35 @@ public interface IEventAggregatorStatus {
         CLEAN_UNCLOSED;
     }
 
-    /** @return Type of processing that was done */
+    /**
+     * @return Type of processing that was done
+     */
     ProcessingType getProcessingType();
 
-    /** @return Server name that last ran the processing */
+    /**
+     * @return Server name that last ran the processing
+     */
     String getServerName();
 
     void setServerName(String serverName);
 
-    /** @return Processing start DateTime */
+    /**
+     * @return Processing start DateTime
+     */
     DateTime getLastStart();
 
     void setLastStart(DateTime lastStart);
 
-    /** @return Processing complete DateTime */
+    /**
+     * @return Processing complete DateTime
+     */
     DateTime getLastEnd();
 
     void setLastEnd(DateTime lastEnd);
 
-    /** @return Timestamp of the last event processed */
+    /**
+     * @return Timestamp of the last event processed
+     */
     DateTime getLastEventDate();
 
     void setLastEventDate(DateTime lastEventDateTime);

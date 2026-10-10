@@ -33,10 +33,13 @@ public class RequestParameterProcessorInterceptor extends HandlerInterceptorAdap
             Collections.emptyList();
     private int maxNumberOfProcessingCycles = 10;
 
-    /** @return the dynamicRequestParameterProcessors */
+    /**
+     * @return the dynamicRequestParameterProcessors
+     */
     public List<IRequestParameterProcessor> getDynamicRequestParameterProcessors() {
         return dynamicRequestParameterProcessors;
     }
+
     /**
      * @param dynamicRequestParameterProcessors the dynamicRequestParameterProcessors to set
      * @throws IllegalArgumentException if the List is null or contains null elements
@@ -52,10 +55,14 @@ public class RequestParameterProcessorInterceptor extends HandlerInterceptorAdap
 
         this.dynamicRequestParameterProcessors = dynamicRequestParameterProcessors;
     }
-    /** @return the maxNumberOfProcessingCycles */
+
+    /**
+     * @return the maxNumberOfProcessingCycles
+     */
     public int getMaxNumberOfProcessingCycles() {
         return maxNumberOfProcessingCycles;
     }
+
     /**
      * Set the max number of round-robin cycles on the controller list after which, if there are
      * still unfinished controllers the procedure is interrupted and a warning is logged, execution

@@ -26,11 +26,15 @@ import org.apereo.portal.groups.IEntitySearcherFactory;
  */
 public class FileSystemEntitySearcherFactory implements IEntitySearcherFactory {
     private static final Log log = LogFactory.getLog(FileSystemEntitySearcherFactory.class);
+
     /** FileSytemEntitySearcherFactory constructor. */
     public FileSystemEntitySearcherFactory() {
         super();
     }
-    /** @return org.apereo.portal.groups.filesystem.FileSystemGroupStore */
+
+    /**
+     * @return org.apereo.portal.groups.filesystem.FileSystemGroupStore
+     */
     protected static FileSystemGroupStore getGroupStore() throws GroupsException {
         return new FileSystemGroupStore();
     }

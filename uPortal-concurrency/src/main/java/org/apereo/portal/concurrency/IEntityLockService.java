@@ -60,6 +60,7 @@ public interface IEntityLockService {
      * @exception LockingException
      */
     public void convert(IEntityLock lock, int newType) throws LockingException;
+
     /**
      * Attempts to change the lock's <code>lockType</code> to <code>newType</code>.
      *
@@ -69,6 +70,7 @@ public interface IEntityLockService {
      * @exception org.apereo.portal.concurrency.LockingException
      */
     public void convert(IEntityLock lock, int newType, int newDuration) throws LockingException;
+
     /**
      * Answer if this <code>IEntityLock</code> exists in the store.
      *
@@ -76,6 +78,7 @@ public interface IEntityLockService {
      * @param lock
      */
     public boolean existsInStore(IEntityLock lock) throws LockingException;
+
     /**
      * Answers if this <code>IEntityLock</code> represents a lock that is still good. To be valid, a
      * lock must exist in the underlying store and be unexpired and unreleased.
@@ -84,6 +87,7 @@ public interface IEntityLockService {
      * @exception org.apereo.portal.concurrency.LockingException
      */
     public boolean isValid(IEntityLock lock) throws LockingException;
+
     /**
      * Returns a lock for the entity, lock type and owner.
      *
@@ -96,6 +100,7 @@ public interface IEntityLockService {
      */
     public IEntityLock newLock(Class entityType, String entityKey, int lockType, String owner)
             throws LockingException;
+
     /**
      * Returns a lock for the entity, lock type and owner.
      *
@@ -110,6 +115,7 @@ public interface IEntityLockService {
     public IEntityLock newLock(
             Class entityType, String entityKey, int lockType, String owner, int durationSecs)
             throws LockingException;
+
     /**
      * Returns a lock for the entity, lock type and owner.
      *
@@ -121,6 +127,7 @@ public interface IEntityLockService {
      */
     public IEntityLock newLock(EntityIdentifier entityID, int lockType, String owner)
             throws LockingException;
+
     /**
      * Returns a lock for the entity, lock type and owner.
      *

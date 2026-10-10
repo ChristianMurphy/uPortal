@@ -39,6 +39,7 @@ public class PermissionImpl implements IPermission, Serializable {
         super();
         m_owner = owner;
     }
+
     /**
      * Returns the token that represents the activity associated with this <code>IPermission</code>.
      *
@@ -48,6 +49,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public String getActivity() {
         return (m_activity);
     }
+
     /**
      * Returns the effective date that was set for this Permission.
      *
@@ -57,6 +59,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public Date getEffective() {
         return (m_effective);
     }
+
     /**
      * Returns the expires date that was set for this Permission.
      *
@@ -66,6 +69,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public Date getExpires() {
         return (m_expires);
     }
+
     /**
      * Returns the owner of this Permission
      *
@@ -75,6 +79,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public String getOwner() {
         return (m_owner);
     }
+
     /**
      * Returns the token that represents the <code>IAuthorizationPrincipal</code> associated with
      * this <code>IPermission</code>.
@@ -85,6 +90,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public String getPrincipal() {
         return (m_principal);
     }
+
     /**
      * Returns the token that represents the target associated with this <code>IPermission</code>.
      */
@@ -92,6 +98,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public String getTarget() {
         return (m_target);
     }
+
     /**
      * Returns the type of permission that this is, generally GRANT or DENY
      *
@@ -101,6 +108,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public String getType() {
         return (m_type);
     }
+
     /**
      * Specifies the token that represents the activity associated with this <code>IPermission
      * </code>.
@@ -111,6 +119,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public void setActivity(String activity) {
         m_activity = activity;
     }
+
     /**
      * Specifies the date that this <code>IPermission</code> will become effective.
      *
@@ -120,6 +129,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public void setEffective(Date effective) {
         m_effective = effective;
     }
+
     /**
      * Specifies the date that this <code>IPermission</code> will expire.
      *
@@ -129,6 +139,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public void setExpires(Date expires) {
         m_expires = expires;
     }
+
     /**
      * Specifies the token that represents the <code>IAuthorizationPrincipal</code> associated with
      * this <code>IPermission</code>.
@@ -139,6 +150,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public void setPrincipal(String newPrincipal) {
         m_principal = newPrincipal;
     }
+
     /**
      * Specifies the token that represents the target associated with this <code>IPermission</code>.
      *
@@ -148,6 +160,7 @@ public class PermissionImpl implements IPermission, Serializable {
     public void setTarget(String target) {
         m_target = target;
     }
+
     /**
      * Sets the <code>IPermission</code> type.
      *
@@ -157,7 +170,10 @@ public class PermissionImpl implements IPermission, Serializable {
     public void setType(String type) {
         m_type = type;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     @Override
     public String toString() {
         StringBuffer buff = new StringBuffer("Permission on ");

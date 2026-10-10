@@ -53,13 +53,17 @@ public final class PortletRenderExecutionEvent extends PortletExecutionEvent {
         return this.targeted;
     }
 
-    /** @deprecated use {@link #isUsedPortalCache()} */
+    /**
+     * @deprecated use {@link #isUsedPortalCache()}
+     */
     @Deprecated
     public boolean isCached() {
         return this.isUsedPortalCache();
     }
 
-    /** @return true If the rendering was from the portal's cache */
+    /**
+     * @return true If the rendering was from the portal's cache
+     */
     public boolean isUsedPortalCache() {
         if (usedPortalCache == null) {
             usedPortalCache = cached != null ? cached : false;

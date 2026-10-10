@@ -22,15 +22,23 @@ import java.io.Serializable;
  * @param <T>
  */
 public interface CachedPortletResultHolder<T extends Serializable> {
-    /** @return The portlet result */
+    /**
+     * @return The portlet result
+     */
     T getPortletResult();
 
-    /** @return The time-since-epoch timestamp when the cached data will expire */
+    /**
+     * @return The time-since-epoch timestamp when the cached data will expire
+     */
     long getExpirationTime();
 
-    /** @return The ETag if set by the portlet */
+    /**
+     * @return The ETag if set by the portlet
+     */
     String getEtag();
 
-    /** @return The time the result was cached */
+    /**
+     * @return The time the result was cached
+     */
     long getTimeStored();
 }

@@ -24,6 +24,7 @@ public class LDAPEntitySearcherFactory implements IEntitySearcherFactory {
     public LDAPEntitySearcherFactory() {
         super();
     }
+
     /**
      * Return an instance of the entity searcher implementation.
      *
@@ -34,6 +35,7 @@ public class LDAPEntitySearcherFactory implements IEntitySearcherFactory {
     public IEntitySearcher newEntitySearcher() throws GroupsException {
         return newInstance();
     }
+
     /**
      * Return an instance of the entity searcher implementation.
      *

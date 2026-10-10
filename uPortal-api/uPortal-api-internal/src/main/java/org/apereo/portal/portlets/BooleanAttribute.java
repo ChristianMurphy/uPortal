@@ -26,12 +26,16 @@ public class BooleanAttribute implements Serializable {
         this.value = value;
     }
 
-    /** @return the value */
+    /**
+     * @return the value
+     */
     public boolean getValue() {
         return value;
     }
 
-    /** @param value the value to set */
+    /**
+     * @param value the value to set
+     */
     public void setValue(boolean value) {
         this.value = value;
     }

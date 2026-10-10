@@ -22,7 +22,9 @@ import org.apereo.portal.groups.pags.dao.IPersonAttributesGroupTestDefinition;
  */
 public class ValueExistsTester extends AbstractStringTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public ValueExistsTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
     }

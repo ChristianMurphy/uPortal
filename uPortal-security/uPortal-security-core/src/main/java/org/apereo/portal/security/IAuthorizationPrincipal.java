@@ -126,7 +126,9 @@ public interface IAuthorizationPrincipal {
     IPermission[] getPermissions(String owner, String activity, String target)
             throws AuthorizationException;
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     String getPrincipalString();
 
     /**

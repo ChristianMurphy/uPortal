@@ -25,10 +25,14 @@ import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
 
 /** Primary Key for a {@link PortletExecutionAggregation} */
 public interface PortletExecutionAggregationKey extends BaseAggregationKey {
-    /** @return The name of the tab */
+    /**
+     * @return The name of the tab
+     */
     AggregatedPortletMapping getPortletMapping();
 
-    /** @return The type of portlet execution */
+    /**
+     * @return The type of portlet execution
+     */
     ExecutionType getExecutionType();
 
     /** The type of execution being tracked */

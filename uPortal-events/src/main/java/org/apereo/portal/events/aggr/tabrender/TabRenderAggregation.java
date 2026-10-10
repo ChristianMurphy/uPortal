@@ -23,9 +23,13 @@ public interface TabRenderAggregation
         extends BaseAggregation<TabRenderAggregationKey, TabRenderAggregationDiscriminator>,
                 TimedAggregationStatistics {
 
-    /** @return Number of times the tab was rendered */
+    /**
+     * @return Number of times the tab was rendered
+     */
     int getRenderCount();
 
-    /** @return The name of the tab */
+    /**
+     * @return The name of the tab
+     */
     AggregatedTabMapping getTabMapping();
 }

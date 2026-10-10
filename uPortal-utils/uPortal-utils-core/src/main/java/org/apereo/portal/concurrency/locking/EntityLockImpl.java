@@ -64,6 +64,7 @@ public class EntityLockImpl implements IEntityLock {
         setLockOwner(newLockOwner);
         setService(newService);
     }
+
     /**
      * Delegate to the service.
      *
@@ -74,6 +75,7 @@ public class EntityLockImpl implements IEntityLock {
     public void convert(int newType) throws LockingException {
         getService().convert(this, newType);
     }
+
     /**
      * Delegate to the service.
      *
@@ -85,6 +87,7 @@ public class EntityLockImpl implements IEntityLock {
     public void convert(int newType, int duration) throws LockingException {
         getService().convert(this, newType);
     }
+
     /**
      * @param obj the Object to compare with
      * @return true if these Objects are equal; false otherwise.
@@ -107,11 +110,15 @@ public class EntityLockImpl implements IEntityLock {
     protected void expire() {
         setExpirationTime(new Date(0));
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     @Override
     public String getEntityKey() {
         return entityKey;
     }
+
     /**
      * @see EntityTypes for known types.
      * @return java.lang.Class
@@ -120,11 +127,15 @@ public class EntityLockImpl implements IEntityLock {
     public Class getEntityType() {
         return entityType;
     }
-    /** @return java.util.Date */
+
+    /**
+     * @return java.util.Date
+     */
     @Override
     public Date getExpirationTime() {
         return expirationTime;
     }
+
     /**
      * Could be the portal user or the framework or ...?
      *
@@ -134,6 +145,7 @@ public class EntityLockImpl implements IEntityLock {
     public String getLockOwner() {
         return lockOwner;
     }
+
     /**
      * See IEntityLockingService for a description of lock types.
      *
@@ -143,10 +155,14 @@ public class EntityLockImpl implements IEntityLock {
     public int getLockType() {
         return lockType;
     }
-    /** @return org.apereo.portal.concurrency.locking.IEntityLockService */
+
+    /**
+     * @return org.apereo.portal.concurrency.locking.IEntityLockService
+     */
     protected IEntityLockService getService() {
         return service;
     }
+
     /**
      * This method is supported primarily for hash tables, such as those provided in java.util.
      *
@@ -157,6 +173,7 @@ public class EntityLockImpl implements IEntityLock {
     public int hashCode() {
         return getEntityType().hashCode() + getEntityKey().hashCode() + getLockOwner().hashCode();
     }
+
     /**
      * Answer if the lock is unexpired.
      *
@@ -165,6 +182,7 @@ public class EntityLockImpl implements IEntityLock {
     public boolean isLocked() {
         return getExpirationTime().after(new Date());
     }
+
     /**
      * Delegate to the service.
      *
@@ -174,45 +192,67 @@ public class EntityLockImpl implements IEntityLock {
     public boolean isValid() throws LockingException {
         return getService().isValid(this);
     }
+
     /** Delegate to the service. */
     @Override
     public void release() throws LockingException {
         getService().release(this);
     }
+
     /** Delegate to the service. */
     @Override
     public void renew() throws LockingException {
         getService().renew(this);
     }
+
     /** Delegate to the service. */
     @Override
     public void renew(int duration) throws LockingException {
         getService().renew(this, duration);
     }
-    /** @param newEntityKey */
+
+    /**
+     * @param newEntityKey
+     */
     private void setEntityKey(String newEntityKey) {
         entityKey = newEntityKey;
     }
-    /** @param newEntityType */
+
+    /**
+     * @param newEntityType
+     */
     private void setEntityType(Class newEntityType) {
         entityType = newEntityType;
     }
-    /** @param newExpirationTime */
+
+    /**
+     * @param newExpirationTime
+     */
     void setExpirationTime(Date newExpirationTime) {
         expirationTime = newExpirationTime;
     }
-    /** @param newLockOwner */
+
+    /**
+     * @param newLockOwner
+     */
     private void setLockOwner(String newLockOwner) {
         lockOwner = newLockOwner;
     }
-    /** @param newLockType */
+
+    /**
+     * @param newLockType
+     */
     void setLockType(int newLockType) {
         lockType = newLockType;
     }
-    /** @param newService org.apereo.portal.concurrency.locking.IEntityLockService */
+
+    /**
+     * @param newService org.apereo.portal.concurrency.locking.IEntityLockService
+     */
     private void setService(IEntityLockService newService) {
         service = newService;
     }
+
     /**
      * Returns a String that represents the value of this object.
      *

@@ -27,6 +27,7 @@ public interface IUpdatingPermissionManager extends IPermissionManager {
      * @param permissions IPermission[]
      */
     public void addPermissions(IPermission[] permissions) throws AuthorizationException;
+
     /**
      * Creates a new <code>IPermission</code> for the <code>principal</code> on behalf of the owner
      * of this <code>IPermissionManager</code>.
@@ -35,6 +36,7 @@ public interface IUpdatingPermissionManager extends IPermissionManager {
      */
     public IPermission newPermission(IAuthorizationPrincipal principal)
             throws AuthorizationException;
+
     /**
      * Removes <code>IPermissions</code> from the store for the owner of this <code>
      * IPermissionManager</code>.
@@ -42,6 +44,7 @@ public interface IUpdatingPermissionManager extends IPermissionManager {
      * @param permissions IPermission[]
      */
     public void removePermissions(IPermission[] permissions) throws AuthorizationException;
+
     /**
      * Updates <code>IPermissions</code> in the store for the owner of this <code>IPermissionManager
      * </code>.

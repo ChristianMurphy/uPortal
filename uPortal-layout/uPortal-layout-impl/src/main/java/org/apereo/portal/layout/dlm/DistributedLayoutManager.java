@@ -719,6 +719,7 @@ public class DistributedLayoutManager implements IUserLayoutManager, Initializin
             }
         }
     }
+
     /**
      * Compares the new channel description object with the old channel description object to
      * determine what items were changed and if those changes are allowed. Once all changes are
@@ -883,6 +884,7 @@ public class DistributedLayoutManager implements IUserLayoutManager, Initializin
             action.perform();
         }
     }
+
     /**
      * Return a map parameter names to channel parameter objects representing the parameters
      * specified at publish time for the channel with the passed-in publish id.

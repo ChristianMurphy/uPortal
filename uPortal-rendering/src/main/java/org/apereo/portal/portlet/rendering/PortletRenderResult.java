@@ -40,17 +40,23 @@ public class PortletRenderResult implements Serializable {
         this.renderTime = renderTime;
     }
 
-    /** @return The title set by the portlet, null if none was set */
+    /**
+     * @return The title set by the portlet, null if none was set
+     */
     public String getTitle() {
         return title;
     }
 
-    /** @return The time it took the portlet to render. */
+    /**
+     * @return The time it took the portlet to render.
+     */
     public long getRenderTime() {
         return this.renderTime;
     }
 
-    /** @return The number of new items reported by the portlet for the current user */
+    /**
+     * @return The number of new items reported by the portlet for the current user
+     */
     public int getNewItemCount() {
         return this.newItemCount;
     }

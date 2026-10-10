@@ -36,7 +36,9 @@ public class SQLNextExceptionLoggerAspect implements Ordered {
         return this.order;
     }
 
-    /** @param order the order to set */
+    /**
+     * @param order the order to set
+     */
     public void setOrder(int order) {
         this.order = order;
     }

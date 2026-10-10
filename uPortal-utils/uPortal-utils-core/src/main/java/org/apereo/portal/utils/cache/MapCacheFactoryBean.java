@@ -27,21 +27,31 @@ public class MapCacheFactoryBean extends AbstractFactoryBean<Map> {
     private CacheFactory cacheFactory;
     private String cacheName;
 
-    /** @return the cacheFactory */
+    /**
+     * @return the cacheFactory
+     */
     public CacheFactory getCacheFactory() {
         return cacheFactory;
     }
-    /** @param cacheFactory the cacheFactory to set */
+
+    /**
+     * @param cacheFactory the cacheFactory to set
+     */
     @Autowired
     public void setCacheFactory(CacheFactory cacheFactory) {
         this.cacheFactory = cacheFactory;
     }
 
-    /** @return the cacheName */
+    /**
+     * @return the cacheName
+     */
     public String getCacheName() {
         return cacheName;
     }
-    /** @param cacheName the cacheName to set */
+
+    /**
+     * @param cacheName the cacheName to set
+     */
     public void setCacheName(String cacheName) {
         this.cacheName = cacheName;
     }

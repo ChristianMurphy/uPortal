@@ -37,13 +37,17 @@ public class RenderPortletOutputHandler implements PortletOutputHandler {
         this.characterEncoding = characterEncoding;
     }
 
-    /** @return The output the portlet has written, calls {@link #flushBuffer()} first */
+    /**
+     * @return The output the portlet has written, calls {@link #flushBuffer()} first
+     */
     public String getOutput() {
         this.flushBuffer();
         return writer.getBuilder().toString();
     }
 
-    /** @return The content-type the portlet set */
+    /**
+     * @return The content-type the portlet set
+     */
     @Override
     public String getContentType() {
         return contentType;

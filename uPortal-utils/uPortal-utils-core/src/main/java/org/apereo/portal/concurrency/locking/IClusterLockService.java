@@ -28,7 +28,9 @@ public interface IClusterLockService {
         @Deprecated
         boolean isExecuted();
 
-        /** @return The status of the lock at time of execution */
+        /**
+         * @return The status of the lock at time of execution
+         */
         LockStatus getLockStatus();
 
         /**
@@ -56,7 +58,9 @@ public interface IClusterLockService {
         SKIPPED_LOCKED;
     }
 
-    /** @see IClusterLockDao#getClusterMutex(String) */
+    /**
+     * @see IClusterLockDao#getClusterMutex(String)
+     */
     ClusterMutex getClusterMutex(String mutexName);
 
     /** Calls {@link #doInTryLockIfNotRunSince(String, long, Function)} with time set to 0 */

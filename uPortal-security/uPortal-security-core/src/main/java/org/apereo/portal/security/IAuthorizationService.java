@@ -32,6 +32,7 @@ public interface IAuthorizationService {
      * @exception AuthorizationException
      */
     void addPermissions(IPermission[] permissions) throws AuthorizationException;
+
     /**
      * Answers if the principal has permission to use the CONFIG PortletMode on this Channel.
      *
@@ -42,6 +43,7 @@ public interface IAuthorizationService {
      */
     boolean canPrincipalConfigure(IAuthorizationPrincipal principal, String channelPublishId)
             throws AuthorizationException;
+
     /**
      * Answers if the principal has permission to manage this Channel.
      *
@@ -52,6 +54,7 @@ public interface IAuthorizationService {
      */
     boolean canPrincipalManage(IAuthorizationPrincipal principal, String channelPublishId)
             throws AuthorizationException;
+
     /**
      * I'm not sure what this means (Dan). Publish what?
      *
@@ -62,6 +65,7 @@ public interface IAuthorizationService {
     boolean canPrincipalManage(
             IAuthorizationPrincipal principal, PortletLifecycleState state, String categoryId)
             throws AuthorizationException;
+
     /**
      * Answers if the principal has permission to render this Channel.
      *
@@ -101,6 +105,7 @@ public interface IAuthorizationService {
      */
     boolean canPrincipalSubscribe(IAuthorizationPrincipal principal, String channelPublishId)
             throws AuthorizationException;
+
     /**
      * Answers if the owner has given the principal permission to perform the activity on the
      * target. Params <code>owner</code> and <code>activity</code> must be non-null. If <code>target
@@ -118,6 +123,7 @@ public interface IAuthorizationService {
     boolean doesPrincipalHavePermission(
             IAuthorizationPrincipal principal, String owner, String activity, String target)
             throws AuthorizationException;
+
     /**
      * Returns the <code>IPermissions</code> owner has granted this <code>Principal</code> for the
      * specified activity and target. This includes inherited <code>IPermissions</code>. Null
@@ -155,6 +161,7 @@ public interface IAuthorizationService {
      */
     IPermission[] getPermissionsForOwner(String owner, String activity, String target)
             throws AuthorizationException;
+
     /**
      * Returns the <code>IPermissions</code> owner has granted this <code>Principal</code> for the
      * specified activity and target. Null parameters will be ignored, that is, all <code>
@@ -172,6 +179,7 @@ public interface IAuthorizationService {
     IPermission[] getPermissionsForPrincipal(
             IAuthorizationPrincipal principal, String owner, String activity, String target)
             throws AuthorizationException;
+
     /**
      * Creates a new <code>IPermission</code> for the <code>principal</code> on behalf of the <code>
      * owner</code>.
@@ -181,12 +189,14 @@ public interface IAuthorizationService {
      */
     IPermission newPermission(String owner, IAuthorizationPrincipal principal)
             throws AuthorizationException;
+
     /**
      * @param key java.lang.String
      * @return org.apereo.portal.security.IPermissionManager
      * @exception AuthorizationException
      */
     IPermissionManager newPermissionManager(String key) throws AuthorizationException;
+
     /**
      * Factory method for an <code>IAuthorizationPrincipal</code>. This type wraps an underlying
      * entity so that the authorization system can treat all principals alike.
@@ -204,6 +214,7 @@ public interface IAuthorizationService {
      * @param groupMember org.apereo.portal.groups.IGroupMember
      */
     IAuthorizationPrincipal newPrincipal(IGroupMember groupMember) throws GroupsException;
+
     /**
      * @return org.apereo.portal.security.IUpdatingPermissionManager
      * @param key java.lang.String
@@ -211,6 +222,7 @@ public interface IAuthorizationService {
      */
     IUpdatingPermissionManager newUpdatingPermissionManager(String key)
             throws AuthorizationException;
+
     /**
      * Removes <code>IPermissions</code> from the service.
      *

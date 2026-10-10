@@ -120,6 +120,7 @@ public class RequestAttributeServiceImpl implements RequestAttributeService {
 
         return Collections.unmodifiableMap(resultUserInfoMap);
     }
+
     /**
      * Get the list of user attributes the portlet expects.
      *

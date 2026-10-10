@@ -40,7 +40,9 @@ public class LayoutPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-layout_v3-2.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_30_DATA_KEY =
             new PortalDataKey(
@@ -48,7 +50,9 @@ public class LayoutPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-layout_v3-0.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_26_DATA_KEY =
             new PortalDataKey(
@@ -56,7 +60,9 @@ public class LayoutPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-layout_v2-6.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final QName LEGACY_LAYOUT_DEFAULT_USER_QNAME = new QName("default-user-layout");
 

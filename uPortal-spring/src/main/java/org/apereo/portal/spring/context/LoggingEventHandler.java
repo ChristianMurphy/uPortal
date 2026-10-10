@@ -28,7 +28,9 @@ import org.springframework.util.Assert;
 public final class LoggingEventHandler extends FilteringApplicationListener<ApplicationEvent> {
     private Logger eventLogger = LoggerFactory.getLogger(getClass());
 
-    /** @param logCategory A custom log category to use */
+    /**
+     * @param logCategory A custom log category to use
+     */
     public void setLogCategory(String logCategory) {
         Assert.notNull(logCategory);
         this.eventLogger = LoggerFactory.getLogger(logCategory);

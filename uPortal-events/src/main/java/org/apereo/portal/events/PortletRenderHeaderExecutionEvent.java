@@ -41,7 +41,9 @@ public final class PortletRenderHeaderExecutionEvent extends PortletExecutionEve
         return this.targeted;
     }
 
-    /** @return If the rendering was from cache */
+    /**
+     * @return If the rendering was from cache
+     */
     public boolean isCached() {
         return this.cached;
     }

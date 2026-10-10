@@ -43,7 +43,9 @@ public class BufferedXMLEventReader extends BaseXMLEventReader {
         this.eventLimit = eventLimit;
     }
 
-    /** @return A copy of the current buffer */
+    /**
+     * @return A copy of the current buffer
+     */
     public List<XMLEvent> getBuffer() {
         return new ArrayList<>(this.eventBuffer);
     }

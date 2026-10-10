@@ -29,16 +29,19 @@ public interface IPermission {
      * </code> lifecycle state.
      */
     String PORTLET_SUBSCRIBER_CREATED_ACTIVITY = "SUBSCRIBE_CREATED";
+
     /**
      * Allows the user to view or add to his or her layout a portlet that is in the <code>APPROVED
      * </code> lifecycle state.
      */
     String PORTLET_SUBSCRIBER_APPROVED_ACTIVITY = "SUBSCRIBE_APPROVED";
+
     /**
      * The standard <code>SUBSCRIBE</code> activity. Allows the user to view or add to his or her
      * layout a portlet that is in the <code>PUBLISHED</code> lifecycle state.
      */
     String PORTLET_SUBSCRIBER_ACTIVITY = "SUBSCRIBE";
+
     /**
      * Allows the user to view or add to his or her layout a portlet that is in the <code>EXPIRED
      * </code> lifecycle state.
@@ -56,12 +59,14 @@ public interface IPermission {
      * @since 5.0
      */
     String PORTLET_BROWSE_CREATED_ACTIVITY = "BROWSE_CREATED";
+
     /**
      * Allows the user to browse for a portlet that is in the <code>APPROVED</code> lifecycle state.
      *
      * @since 5.0
      */
     String PORTLET_BROWSE_APPROVED_ACTIVITY = "BROWSE_APPROVED";
+
     /**
      * The standard <code>BROWSE</code> activity. Allows the user to browse marketplace entries and
      * search for a portlet in the <code>PUBLISHED</code> lifecycle state.
@@ -69,6 +74,7 @@ public interface IPermission {
      * @since 4.1
      */
     String PORTLET_BROWSE_ACTIVITY = "BROWSE";
+
     /**
      * Allows the user to browse for a portlet that is in the <code>EXPIRED</code> lifecycle state.
      *
@@ -98,21 +104,25 @@ public interface IPermission {
      * </code> lifecycle state.
      */
     String PORTLET_MANAGER_CREATED_ACTIVITY = "MANAGE_CREATED";
+
     /**
      * Allows the user to edit the publication metadata of a portlet that is in the <code>APPROVED
      * </code> lifecycle state.
      */
     String PORTLET_MANAGER_APPROVED_ACTIVITY = "MANAGE_APPROVED";
+
     /**
      * The standard <code>MANAGE</code> activity. Allows the user to edit the publication metadata
      * of a portlet that is in the <code>PUBLISHED</code> lifecycle state.
      */
     String PORTLET_MANAGER_ACTIVITY = "MANAGE";
+
     /**
      * Allows the user to edit the publication metadata of a portlet that is in the <code>EXPIRED
      * </code> lifecycle state.
      */
     String PORTLET_MANAGER_EXPIRED_ACTIVITY = "MANAGE_EXPIRED";
+
     /**
      * Allows the user to edit the publication metadata of a portlet that is in the <code>
      * MAINTENANCE</code> lifecycle state.

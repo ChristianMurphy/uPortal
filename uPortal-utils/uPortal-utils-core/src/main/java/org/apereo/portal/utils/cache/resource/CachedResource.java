@@ -24,16 +24,24 @@ import org.springframework.core.io.Resource;
  */
 public interface CachedResource<T> {
 
-    /** @return The Resource that was loaded */
+    /**
+     * @return The Resource that was loaded
+     */
     public Resource getResource();
 
-    /** @return Additional resource files involved with loading */
+    /**
+     * @return Additional resource files involved with loading
+     */
     public Map<Resource, Long> getAdditionalResources();
 
-    /** @return The cached resource */
+    /**
+     * @return The cached resource
+     */
     public T getCachedResource();
 
-    /** @return The timestamp for when the resource was last loaded. */
+    /**
+     * @return The timestamp for when the resource was last loaded.
+     */
     public long getLastLoadTime();
 
     /**

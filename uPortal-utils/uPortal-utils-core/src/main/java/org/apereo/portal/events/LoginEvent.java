@@ -25,7 +25,9 @@ import java.util.Set;
 import org.apache.commons.lang.Validate;
 import org.springframework.beans.factory.annotation.Value;
 
-/** @since 2.6 */
+/**
+ * @since 2.6
+ */
 public final class LoginEvent extends PortalEvent {
     private static final long serialVersionUID = 2L;
 
@@ -69,17 +71,23 @@ public final class LoginEvent extends PortalEvent {
                         : "0.0.0.0";
     }
 
-    /** @return The groups the user was in at login */
+    /**
+     * @return The groups the user was in at login
+     */
     public Set<String> getGroups() {
         return this.groups;
     }
 
-    /** @return The attributes the user had at login */
+    /**
+     * @return The attributes the user had at login
+     */
     public Map<String, List<String>> getAttributes() {
         return this.attributes;
     }
 
-    /** @return The IP Address for the user */
+    /**
+     * @return The IP Address for the user
+     */
     public String getIpAddress() {
         return this.ipAddress;
     }

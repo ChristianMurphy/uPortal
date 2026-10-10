@@ -217,12 +217,16 @@ public class UserInstanceManagerImpl implements IUserInstanceManager {
 
         private transient IUserInstance ui = null;
 
-        /** @return Returns the userInstance. */
+        /**
+         * @return Returns the userInstance.
+         */
         protected IUserInstance getUserInstance() {
             return this.ui;
         }
 
-        /** @param userInstance The userInstance to set. */
+        /**
+         * @param userInstance The userInstance to set.
+         */
         protected void setUserInstance(IUserInstance userInstance) {
             this.ui = userInstance;
         }

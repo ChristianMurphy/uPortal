@@ -98,7 +98,9 @@ public class ChannelListController {
 
     @Autowired private IMarketplaceService marketplaceService;
 
-    /** @param portletDefinitionRegistry The portlet registry bean */
+    /**
+     * @param portletDefinitionRegistry The portlet registry bean
+     */
     @Autowired
     public void setPortletDefinitionRegistry(IPortletDefinitionRegistry portletDefinitionRegistry) {
         this.portletDefinitionRegistry = portletDefinitionRegistry;

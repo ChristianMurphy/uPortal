@@ -49,42 +49,66 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
 
         setMaxAge(cookie.getMaxAge());
     }
-    /** @return the name */
+
+    /**
+     * @return the name
+     */
     @Override
     public String getName() {
         return name;
     }
-    /** @return the value */
+
+    /**
+     * @return the value
+     */
     @Override
     public String getValue() {
         return value;
     }
-    /** @param value the value to set */
+
+    /**
+     * @param value the value to set
+     */
     @Override
     public void setValue(String value) {
         this.value = value;
     }
-    /** @return the comment */
+
+    /**
+     * @return the comment
+     */
     @Override
     public String getComment() {
         return comment;
     }
-    /** @param comment the comment to set */
+
+    /**
+     * @param comment the comment to set
+     */
     @Override
     public void setComment(String comment) {
         this.comment = comment;
     }
-    /** @return the domain */
+
+    /**
+     * @return the domain
+     */
     @Override
     public String getDomain() {
         return domain;
     }
-    /** @param domain the domain to set */
+
+    /**
+     * @param domain the domain to set
+     */
     @Override
     public void setDomain(String domain) {
         this.domain = domain;
     }
-    /** @return the maxAge */
+
+    /**
+     * @return the maxAge
+     */
     public int getMaxAge() {
         if (this.expires == null) {
             return -1;
@@ -94,7 +118,10 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
                             System.currentTimeMillis() - this.expires.getMillis());
         }
     }
-    /** @param maxAge the maxAge to set */
+
+    /**
+     * @param maxAge the maxAge to set
+     */
     public void setMaxAge(int maxAge) {
         if (maxAge < 0) {
             this.expires = null;
@@ -102,42 +129,66 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
             this.expires = DateTime.now().plusSeconds(maxAge);
         }
     }
-    /** @return the path */
+
+    /**
+     * @return the path
+     */
     @Override
     public String getPath() {
         return path;
     }
-    /** @param path the path to set */
+
+    /**
+     * @param path the path to set
+     */
     @Override
     public void setPath(String path) {
         this.path = path;
     }
-    /** @return the version */
+
+    /**
+     * @return the version
+     */
     @Override
     public int getVersion() {
         return version;
     }
-    /** @param version the version to set */
+
+    /**
+     * @param version the version to set
+     */
     @Override
     public void setVersion(int version) {
         this.version = version;
     }
-    /** @return the secure */
+
+    /**
+     * @return the secure
+     */
     @Override
     public boolean isSecure() {
         return secure;
     }
-    /** @param secure the secure to set */
+
+    /**
+     * @param secure the secure to set
+     */
     @Override
     public void setSecure(boolean secure) {
         this.secure = secure;
     }
-    /** @return the expires */
+
+    /**
+     * @return the expires
+     */
     @Override
     public DateTime getExpires() {
         return expires;
     }
-    /** @param expires the expires to set */
+
+    /**
+     * @param expires the expires to set
+     */
     @Override
     public void setExpires(DateTime expires) {
         this.expires = expires;
@@ -159,6 +210,7 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
         cookie.setVersion(version);
         return cookie;
     }
+
     /* (non-Javadoc)
      * @see org.apereo.portal.portlet.om.IPortletCookie#updateFromCookie(javax.servlet.http.Cookie)
      */

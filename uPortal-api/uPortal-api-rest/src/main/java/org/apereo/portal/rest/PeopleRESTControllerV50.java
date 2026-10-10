@@ -35,7 +35,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
-/** @since 5.0 */
+/**
+ * @since 5.0
+ */
 @Controller
 @RequestMapping("/v5-0/people")
 public final class PeopleRESTControllerV50 {

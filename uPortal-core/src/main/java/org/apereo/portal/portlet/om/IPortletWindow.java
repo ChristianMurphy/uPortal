@@ -33,7 +33,9 @@ public interface IPortletWindow extends IPortletWindowDescriptor {
     @Override
     public IPortletWindowId getPortletWindowId();
 
-    /** @return The parent portlet entity. */
+    /**
+     * @return The parent portlet entity.
+     */
     public IPortletEntity getPortletEntity();
 
     /**
@@ -42,7 +44,9 @@ public interface IPortletWindow extends IPortletWindowDescriptor {
      */
     public IPortletWindowId getDelegationParentId();
 
-    /** @return The current WindowState of the portlet */
+    /**
+     * @return The current WindowState of the portlet
+     */
     public WindowState getWindowState();
 
     /**
@@ -51,7 +55,9 @@ public interface IPortletWindow extends IPortletWindowDescriptor {
      */
     public void setWindowState(WindowState state);
 
-    /** @return The current PortletMode of the portlet. */
+    /**
+     * @return The current PortletMode of the portlet.
+     */
     public PortletMode getPortletMode();
 
     /**
@@ -102,7 +108,9 @@ public interface IPortletWindow extends IPortletWindowDescriptor {
      */
     public Integer getExpirationCache();
 
-    /** @return The Pluto SPI implementation of a portlet window */
+    /**
+     * @return The Pluto SPI implementation of a portlet window
+     */
     public PortletWindow getPlutoPortletWindow();
 
     /**

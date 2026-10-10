@@ -20,7 +20,9 @@ import org.apereo.portal.IBasicEntity;
 /** Defines the api for a cache that caches <code>IBasicEntities</code> of a single type. */
 public interface IEntityCache {
 
-    /** @param entity - the entity to be cached. */
+    /**
+     * @param entity - the entity to be cached.
+     */
     public void add(IBasicEntity entity) throws CachingException;
 
     /**
@@ -46,7 +48,9 @@ public interface IEntityCache {
      */
     public Class<? extends IBasicEntity> getEntityType();
 
-    /** @param entityKey - the key of the entity to be un-cached. */
+    /**
+     * @param entityKey - the key of the entity to be un-cached.
+     */
     public void remove(String entityKey) throws CachingException;
 
     /**
@@ -55,6 +59,8 @@ public interface IEntityCache {
      */
     public int size();
 
-    /** @param entity - the entity to be updated in the cache. */
+    /**
+     * @param entity - the entity to be updated in the cache.
+     */
     public void update(IBasicEntity entity) throws CachingException;
 }

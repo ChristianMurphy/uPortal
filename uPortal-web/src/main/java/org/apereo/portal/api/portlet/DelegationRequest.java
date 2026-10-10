@@ -57,6 +57,7 @@ public class DelegationRequest {
     public void setParentParameters(Map<String, List<String>> parentParameters) {
         this.parentParameters = parentParameters;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
@@ -81,6 +82,7 @@ public class DelegationRequest {
                                 : this.parentWindowState.hashCode());
         return result;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#equals(java.lang.Object)
      */
@@ -104,6 +106,7 @@ public class DelegationRequest {
         } else if (!this.parentWindowState.equals(other.parentWindowState)) return false;
         return true;
     }
+
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
      */

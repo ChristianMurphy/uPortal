@@ -35,10 +35,12 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
 
     // See CompositeGroupService.xml:
     protected IIndividualGroupService defaultService;
+
     /** ReferenceCompositeGroupService constructor comment. */
     public ReferenceCompositeGroupService() throws GroupsException {
         super();
     }
+
     /**
      * Returns groups that contain the <code>IGroupMember</code>. Delegates to the component
      * services, but only after checking that they might actually contain a membership for this
@@ -64,6 +66,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         }
         return allGroups.iterator();
     }
+
     /**
      * Returns a pre-existing <code>IEntityGroup</code> or null if the <code>IGroupMember</code>
      * does not exist.
@@ -74,6 +77,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         IIndividualGroupService service = getComponentService(ent);
         return (service == null) ? null : service.findGroup(ent);
     }
+
     /**
      * Returns a pre-existing <code>IEntityGroup</code> or null if the <code>IGroupMember</code>
      * does not exist.
@@ -85,14 +89,21 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         IIndividualGroupService service = getComponentService(ent);
         return (service == null) ? null : service.findGroupWithLock(ent.getLocalKey(), lockOwner);
     }
-    /** @return IIndividualGroupService */
+
+    /**
+     * @return IIndividualGroupService
+     */
     protected IIndividualGroupService getComponentService(Name serviceName) {
         return (IIndividualGroupService) getComponentServices().get(serviceName);
     }
-    /** @return IIndividualGroupService */
+
+    /**
+     * @return IIndividualGroupService
+     */
     protected IIndividualGroupService getComponentService(CompositeEntityIdentifier entId) {
         return getComponentService(entId.getServiceName());
     }
+
     /**
      * Returns the <code>IIndividualGroupService</code> designated as the default service in the
      * configuration document.
@@ -100,6 +111,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
     protected IIndividualGroupService getDefaultService() {
         return defaultService;
     }
+
     /**
      * Returns an <code>IEntity</code> representing a portal entity. This does not guarantee that
      * the entity actually exists.
@@ -108,6 +120,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
     public IEntity getEntity(String key, Class type) throws GroupsException {
         return getEntity(key, type, null);
     }
+
     /**
      * Returns an <code>IEntity</code> representing a portal entity. This does not guarantee that
      * the entity actually exists.
@@ -127,6 +140,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         }
         return (svc == null) ? null : svc.getEntity(key, type);
     }
+
     /**
      * Returns an <code>IGroupMember</code> representing either a group or a portal entity. If the
      * parm <code>type</code> is the group type, the <code>IGroupMember</code> is an <code>
@@ -192,6 +206,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
             throw new GroupsException("Problem initializing component services", ex);
         }
     }
+
     /**
      * Returns a <code>CompositeEntityIdentifier</code> for the group identified by <code>key</code>
      * .
@@ -200,11 +215,13 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
             throws GroupsException {
         return new CompositeEntityIdentifier(key, ICompositeGroupService.GROUP_ENTITY_TYPE);
     }
+
     /** Returns a new <code>IEntityGroup</code> from the named service. */
     @Override
     public IEntityGroup newGroup(Class type, Name serviceName) throws GroupsException {
         return getComponentService(serviceName).newGroup(type);
     }
+
     /**
      * Returns a pre-existing <code>IEntityGroup</code> or null if the <code>IGroupMember</code>
      * does not exist.
@@ -214,6 +231,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         IIndividualGroupService service = getComponentService(ent);
         return (service == null) ? null : service.findGroup(ent);
     }
+
     /**
      * Find EntityIdentifiers for entities whose name matches the query string according to the
      * specified method and is of the specified type
@@ -232,6 +250,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         }
         return (EntityIdentifier[]) allIds.toArray(new EntityIdentifier[allIds.size()]);
     }
+
     /**
      * Find EntityIdentifiers for entities whose name matches the query string according to the
      * specified method, is of the specified type and descends from the specified group
@@ -251,6 +270,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         }
         return (EntityIdentifier[]) allIds.toArray(new EntityIdentifier[allIds.size()]);
     }
+
     /**
      * Find EntityIdentifiers for groups whose name matches the query string according to the
      * specified method and matches the provided leaf type
@@ -276,6 +296,7 @@ public class ReferenceCompositeGroupService extends ReferenceComponentGroupServi
         }
         return (EntityIdentifier[]) allIds.toArray(new EntityIdentifier[allIds.size()]);
     }
+
     /**
      * Find EntityIdentifiers for groups whose name matches the query string according to the
      * specified method, has the provided leaf type and descends from the specified group

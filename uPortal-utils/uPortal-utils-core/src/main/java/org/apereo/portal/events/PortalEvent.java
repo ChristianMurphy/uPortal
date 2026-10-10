@@ -71,7 +71,9 @@ public abstract class PortalEvent extends ApplicationEvent {
         this.portalRequest = eventBuilder.portalRequest;
     }
 
-    /** @return Get the {@link #getTimestamp()} as a {@link Date} */
+    /**
+     * @return Get the {@link #getTimestamp()} as a {@link Date}
+     */
     public final DateTime getTimestampAsDate() {
         DateTime d = this.timestampAsDate;
         if (d == null) {
@@ -82,17 +84,23 @@ public abstract class PortalEvent extends ApplicationEvent {
         return d;
     }
 
-    /** @return the serverId that created the event */
+    /**
+     * @return the serverId that created the event
+     */
     public final String getServerId() {
         return this.serverId;
     }
 
-    /** @return The unique id that groups a set of events. */
+    /**
+     * @return The unique id that groups a set of events.
+     */
     public final String getEventSessionId() {
         return this.eventSessionId;
     }
 
-    /** @return The user name for the event */
+    /**
+     * @return The user name for the event
+     */
     public final String getUserName() {
         return this.userName;
     }

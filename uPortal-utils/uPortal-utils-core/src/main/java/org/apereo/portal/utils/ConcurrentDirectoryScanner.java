@@ -52,7 +52,9 @@ public final class ConcurrentDirectoryScanner implements DirectoryScanner {
     private long maxWait = -1;
     private TimeUnit maxWaitTimeUnit = TimeUnit.MILLISECONDS;
 
-    /** @param executorService Used to submit the file processing and directory recursion tasks */
+    /**
+     * @param executorService Used to submit the file processing and directory recursion tasks
+     */
     public ConcurrentDirectoryScanner(ExecutorService executorService) {
         this.executorService = executorService;
     }
@@ -65,7 +67,9 @@ public final class ConcurrentDirectoryScanner implements DirectoryScanner {
         this.processDirectories = processDirectories;
     }
 
-    /** @param recursive If processing should recurse on directories, defaults to true. */
+    /**
+     * @param recursive If processing should recurse on directories, defaults to true.
+     */
     public void setRecursive(boolean recursive) {
         this.recursive = recursive;
     }

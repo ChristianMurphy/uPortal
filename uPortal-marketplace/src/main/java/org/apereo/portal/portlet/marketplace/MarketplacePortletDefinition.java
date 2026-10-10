@@ -266,7 +266,9 @@ public class MarketplacePortletDefinition implements IPortletDefinition {
         this.screenShots = screenShots;
     }
 
-    /** @return the screenShotList. Will not be null. */
+    /**
+     * @return the screenShotList. Will not be null.
+     */
     public List<ScreenShot> getScreenShots() {
         if (screenShots == null) {
             this.initScreenShots();
@@ -278,7 +280,9 @@ public class MarketplacePortletDefinition implements IPortletDefinition {
         this.releaseNotes = portletReleaseNotes;
     }
 
-    /** @return the releaseNotes. Will not be null. */
+    /**
+     * @return the releaseNotes. Will not be null.
+     */
     public PortletReleaseNotes getPortletReleaseNotes() {
         if (releaseNotes == null) {
             this.initPortletReleaseNotes();

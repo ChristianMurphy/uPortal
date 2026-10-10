@@ -38,7 +38,9 @@ public abstract class AbstractObjectId implements IObjectId {
         return this.objectId;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object object) {
         if (object == this) {
@@ -51,13 +53,17 @@ public abstract class AbstractObjectId implements IObjectId {
         return new EqualsBuilder().append(this.objectId, rhs.getStringId()).isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(-917388291, 674832463).append(this.objectId).toHashCode();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return this.getStringId();

@@ -24,34 +24,41 @@ public interface IIndividualGroupService extends ICompositeGroupService {
 
     /** Removes the <code>IEntityGroup</code> from the store. */
     public void deleteGroup(IEntityGroup group) throws GroupsException;
+
     /**
      * Returns a preexisting <code>IEntityGroup</code> from the store.
      *
      * @param ent CompositeEntityIdentifier
      */
     public IEntityGroup findGroup(CompositeEntityIdentifier ent) throws GroupsException;
+
     /**
      * Returns an <code>Iterator</code> over the members of <code>group</code>.
      *
      * @param group IEntityGroup
      */
     public Iterator findMembers(IEntityGroup group) throws GroupsException;
+
     /**
      * Answers if the group can be updated or deleted in the store.
      *
      * @param group IEntityGroup
      */
     public boolean isEditable(IEntityGroup group) throws GroupsException;
+
     /** Answers if the service can be updated by the portal. */
     public boolean isEditable();
+
     /** Returns a new <code>IEntityGroup</code> for the given Class with an unused key. */
     public IEntityGroup newGroup(Class type) throws GroupsException;
+
     /**
      * Commits the updated <code>IEntityGroup</code> and its memberships to the store.
      *
      * @param group IEntityGroup
      */
     public void updateGroup(IEntityGroup group) throws GroupsException;
+
     /**
      * Commits the updated group memberships to the store.
      *

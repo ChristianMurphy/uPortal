@@ -310,7 +310,9 @@ public class PortletDefinitionImpl implements IPortletDefinition {
 
     // ** APIs for portlet definitions **//
 
-    /** @return the rating */
+    /**
+     * @return the rating
+     */
     @Override
     public Double getRating() {
         return rating;
@@ -330,13 +332,17 @@ public class PortletDefinitionImpl implements IPortletDefinition {
         this.rating = rating;
     }
 
-    /** @return the count of users that rated this portlet. Will not return null */
+    /**
+     * @return the count of users that rated this portlet. Will not return null
+     */
     @Override
     public Long getUsersRated() {
         return usersRated == null ? 0 : usersRated;
     }
 
-    /** @param usersRated - Number of users that rated this portlet. */
+    /**
+     * @param usersRated - Number of users that rated this portlet.
+     */
     @Override
     public void setUsersRated(Long usersRated) {
         Validate.isTrue(usersRated > -1L, "Number of Users that rated shouldn't be under zero");

@@ -22,15 +22,23 @@ public interface PortletLayoutAggregation
         extends BaseAggregation<
                 PortletLayoutAggregationKey, PortletLayoutAggregationDiscriminator> {
 
-    /** @return Number of times the portlet was added to a layout */
+    /**
+     * @return Number of times the portlet was added to a layout
+     */
     int getAddCount();
 
-    /** @return Number of times the portlet was removed from a layout */
+    /**
+     * @return Number of times the portlet was removed from a layout
+     */
     int getDeleteCount();
 
-    /** @return Number of times the portlet was moved to a layout */
+    /**
+     * @return Number of times the portlet was moved to a layout
+     */
     int getMoveCount();
 
-    /** @return The name of the portlet */
+    /**
+     * @return The name of the portlet
+     */
     AggregatedPortletMapping getPortletMapping();
 }

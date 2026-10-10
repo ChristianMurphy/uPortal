@@ -53,7 +53,9 @@ import org.apereo.portal.groups.pags.dao.IPersonAttributesGroupTestDefinition;
 public class RegexTester extends AbstractStringTester {
     protected Pattern pattern;
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public RegexTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
         this.pattern = Pattern.compile(definition.getTestValue());

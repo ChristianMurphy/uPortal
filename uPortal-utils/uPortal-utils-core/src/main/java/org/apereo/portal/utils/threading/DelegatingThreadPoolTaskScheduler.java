@@ -67,7 +67,9 @@ public class DelegatingThreadPoolTaskScheduler extends ThreadPoolTaskScheduler
         super.afterPropertiesSet();
     }
 
-    /** @return the additional start delay to add to any scheduled task */
+    /**
+     * @return the additional start delay to add to any scheduled task
+     */
     protected long getAdditionalStartDelay() {
         // Only bother recalculating the start delay if the last time it was resulted in a delay
         if (this.lastStartDelay != 0) {

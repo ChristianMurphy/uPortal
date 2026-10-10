@@ -53,7 +53,9 @@ public enum LrsVerb {
         this.uri = BASE_URI + this.name().toLowerCase();
     }
 
-    /** @return The URI for this verb */
+    /**
+     * @return The URI for this verb
+     */
     public String getUri() {
         return uri;
     }

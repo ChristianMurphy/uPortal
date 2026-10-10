@@ -17,21 +17,33 @@ package org.apereo.portal.tools.dbloader;
 /** */
 public interface DbLoaderConfig {
 
-    /** @return the tablesFile */
+    /**
+     * @return the tablesFile
+     */
     public String getTablesFile();
 
-    /** @return the dataFile */
+    /**
+     * @return the dataFile
+     */
     public String getDataFile();
 
-    /** @return the scriptFile */
+    /**
+     * @return the scriptFile
+     */
     public String getScriptFile();
 
-    /** @return the dropTables */
+    /**
+     * @return the dropTables
+     */
     public boolean isDropTables();
 
-    /** @return the createTables */
+    /**
+     * @return the createTables
+     */
     public boolean isCreateTables();
 
-    /** @return the populateTables */
+    /**
+     * @return the populateTables
+     */
     public boolean isPopulateTables();
 }

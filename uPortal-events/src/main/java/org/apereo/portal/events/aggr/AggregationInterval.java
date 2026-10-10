@@ -75,13 +75,17 @@ public enum AggregationInterval {
     private final DateTimeFieldType dateTimeFieldType;
     private final boolean hasTimePart;
 
-    /** @param dateTimeFieldType */
+    /**
+     * @param dateTimeFieldType
+     */
     private AggregationInterval(DateTimeFieldType dateTimeFieldType, boolean hasTimePart) {
         this.dateTimeFieldType = dateTimeFieldType;
         this.hasTimePart = hasTimePart;
     }
 
-    /** @return true if the interval has a time part, false if the interval is date only */
+    /**
+     * @return true if the interval has a time part, false if the interval is date only
+     */
     public boolean isHasTimePart() {
         return hasTimePart;
     }

@@ -418,7 +418,9 @@ public class ReferenceIndividualGroupService extends ReferenceCompositeGroupServ
         return serviceDescriptor;
     }
 
-    /** @exception GroupsException */
+    /**
+     * @exception GroupsException
+     */
     private void initialize() throws GroupsException {
         String eMsg = null;
         String svcName = getServiceDescriptor().getName();

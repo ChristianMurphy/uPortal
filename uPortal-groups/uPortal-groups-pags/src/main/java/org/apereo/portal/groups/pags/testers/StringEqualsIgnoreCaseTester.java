@@ -25,7 +25,9 @@ import org.apereo.portal.groups.pags.dao.IPersonAttributesGroupTestDefinition;
  */
 public class StringEqualsIgnoreCaseTester extends AbstractStringTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public StringEqualsIgnoreCaseTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
     }

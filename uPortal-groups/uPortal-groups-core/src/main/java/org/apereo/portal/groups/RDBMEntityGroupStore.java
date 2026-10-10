@@ -611,6 +611,7 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
 
         return (String[]) groupKeys.toArray(new String[groupKeys.size()]);
     }
+
     /**
      * Find the IUserGroups that are members of the group.
      *
@@ -662,7 +663,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
 
         return groups.iterator();
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getAllGroupColumns() {
 
         if (allGroupColumns == null) {
@@ -681,7 +685,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return allGroupColumns;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getAllGroupColumnsWithTableAlias() {
 
         if (allGroupColumnsWithTableAlias == null) {
@@ -700,7 +707,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return allGroupColumnsWithTableAlias;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getAllMemberColumns() {
         if (allMemberColumns == null) {
             StringBuffer buff = new StringBuffer(100);
@@ -717,7 +727,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return allMemberColumns;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getCountAMemberEntitySql() {
         if (countAMemberEntitySql == null) {
             StringBuffer buff = new StringBuffer(100);
@@ -729,7 +742,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return countAMemberEntitySql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getCountAMemberGroupSql() {
         if (countAMemberGroupSql == null) {
             StringBuffer buff = new StringBuffer(100);
@@ -743,7 +759,9 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         return countAMemberGroupSql;
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     private static String getDeleteGroupSql(IEntityGroup group) {
         StringBuffer buff = new StringBuffer(100);
         buff.append("DELETE FROM ");
@@ -752,7 +770,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         buff.append(GROUP_ID_COLUMN + EQ + sqlQuote(group.getLocalKey()));
         return buff.toString();
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getDeleteMemberEntitySql() {
         if (deleteMemberEntitySql == null) {
             StringBuffer buff = new StringBuffer(100);
@@ -769,7 +790,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return deleteMemberEntitySql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getDeleteMemberGroupSql() {
         if (deleteMemberGroupSql == null) {
             StringBuffer buff = new StringBuffer(100);
@@ -787,7 +811,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return deleteMemberGroupSql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getDeleteMembersInGroupSql() {
         if (deleteMembersInGroupSql == null) {
             StringBuffer buff = new StringBuffer(100);
@@ -800,11 +827,17 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return deleteMembersInGroupSql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getDeleteMembersInGroupSql(IEntityGroup group) {
         return getDeleteMembersInGroupSql() + sqlQuote(group.getLocalKey());
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getFindParentGroupsForEntitySql() {
         if (findParentGroupsForEntitySql == null) {
             StringBuffer buff = new StringBuffer(500);
@@ -825,7 +858,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return findParentGroupsForEntitySql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getFindParentGroupsForGroupSql() {
         if (findParentGroupsForGroupSql == null) {
             StringBuffer buff = new StringBuffer(500);
@@ -852,7 +888,9 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         return findParentGroupsForGroupSql;
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     private static String getFindGroupSql() {
 
         if (findGroupSql == null) {
@@ -868,7 +906,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return findGroupSql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getFindMemberGroupKeysSql() {
         if (findMemberGroupKeysSql == null) {
             StringBuffer buff = new StringBuffer(200);
@@ -887,7 +928,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
 
         return findMemberGroupKeysSql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getFindMemberGroupsSql() {
         if (findMemberGroupsSql == null) {
             StringBuffer buff = new StringBuffer(500);
@@ -913,7 +957,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
 
         return findMemberGroupsSql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getInsertGroupSql() {
         if (insertGroupSql == null) {
             StringBuffer buff = new StringBuffer(200);
@@ -927,7 +974,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return insertGroupSql;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getInsertMemberSql() {
         if (insertMemberSql == null) {
             StringBuffer buff = new StringBuffer(200);
@@ -941,6 +991,7 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         }
         return insertMemberSql;
     }
+
     /**
      * @return String
      * @exception java.lang.Exception
@@ -948,7 +999,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
     private String getNextKey() throws java.lang.Exception {
         return Integer.toString(CounterStoreLocator.getCounterStore().getNextId(GROUP_TABLE));
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String getUpdateGroupSql() {
         if (updateGroupSql == null) {
             StringBuffer buff = new StringBuffer(200);
@@ -1017,14 +1071,19 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         return eg;
     }
 
-    /** @return IEntity */
+    /**
+     * @return IEntity
+     */
     public IEntity newEntity(Class type, String key) throws GroupsException {
         if (EntityTypesLocator.getEntityTypes().getEntityIDFromType(type) == null) {
             throw new GroupsException("Invalid group type: " + type);
         }
         return GroupService.getEntity(key, type);
     }
-    /** @return IEntityGroup */
+
+    /**
+     * @return IEntityGroup
+     */
     @Override
     public IEntityGroup newInstance(Class type) throws GroupsException {
         if (EntityTypesLocator.getEntityTypes().getEntityIDFromType(type) == null) {
@@ -1036,7 +1095,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
             throw new GroupsException("Could not create new group", ex);
         }
     }
-    /** @return IEntityGroup */
+
+    /**
+     * @return IEntityGroup
+     */
     private IEntityGroup newInstance(
             String newKey,
             Class newType,
@@ -1050,7 +1112,10 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         egi.setDescription(newDescription);
         return egi;
     }
-    /** @return ILockableEntityGroup */
+
+    /**
+     * @return ILockableEntityGroup
+     */
     private ILockableEntityGroup newLockableInstance(
             String newKey,
             Class newType,
@@ -1064,12 +1129,17 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         group.setDescription(newDescription);
         return group;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String groupAlias(String column) {
         return GROUP_TABLE_ALIAS + "." + column;
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     private static String memberAlias(String column) {
         return MEMBER_TABLE_ALIAS + "." + column;
     }
@@ -1124,6 +1194,7 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
             throw sqle;
         }
     }
+
     /**
      * Delete this entity from the database after first deleting its memberships. Exception
      * SQLException - if we catch a SQLException, we rollback and re-throw it.
@@ -1165,6 +1236,7 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
             }
         }
     }
+
     /**
      * Find and return an instance of the group.
      *
@@ -1512,17 +1584,23 @@ public class RDBMEntityGroupStore implements IEntityGroupStore, IGroupConstants 
         SqlTransaction.setAutoCommit(conn, newValue);
     }
 
-    /** @return RDBMEntityGroupStore */
+    /**
+     * @return RDBMEntityGroupStore
+     */
     public static synchronized RDBMEntityGroupStore singleton() throws GroupsException {
         if (singleton == null) {
             singleton = new RDBMEntityGroupStore();
         }
         return singleton;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     private static String sqlQuote(Object o) {
         return QUOTE + o + QUOTE;
     }
+
     /**
      * Commit this entity AND ITS MEMBERSHIPS to the underlying store.
      *

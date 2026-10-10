@@ -25,7 +25,9 @@ public class RDBMConfigurationLoader implements ConfigurationLoader {
     // Instance Members.
     private IFragmentDefinitionDao fragmentDao = null;
 
-    /** @param fragmentDao the fragmentDao to set */
+    /**
+     * @param fragmentDao the fragmentDao to set
+     */
     public void setFragmentDao(IFragmentDefinitionDao fragmentDao) {
         this.fragmentDao = fragmentDao;
     }

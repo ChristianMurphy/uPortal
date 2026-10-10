@@ -66,6 +66,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
      */
     private HashMap<String, IGroupMember> addedMembers;
     private HashMap<String, IGroupMember> removedMembers;
+
     /** EntityGroupImpl */
     public EntityGroupImpl(String groupKey, Class<? extends IBasicEntity> entityType)
             throws GroupsException {
@@ -80,6 +81,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
         this.childrenCache =
                 cacheManager.getCache("org.apereo.portal.groups.EntityGroupImpl.children");
     }
+
     /**
      * Adds <code>IGroupMember</code> gm to our member <code>Map</code> and conversely, adds <code>
      * this</code> to gm's group <code>Map</code>, after checking that the addition does not violate
@@ -133,6 +135,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
                     "Adding " + gm + " to " + this + " creates a circular reference.");
         }
     }
+
     /** Clear out caches for pending adds and deletes of group members. */
     protected void clearPendingUpdates() {
         addedMembers = null;
@@ -196,13 +199,16 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
 
         return found;
     }
+
     /** Delegates to the factory. */
     @Override
     public void delete() throws GroupsException {
         getLocalGroupService().deleteGroup(this);
     }
 
-    /** @return HashMap */
+    /**
+     * @return HashMap
+     */
     public HashMap<String, IGroupMember> getAddedMembers() {
         if (this.addedMembers == null) this.addedMembers = new HashMap<>();
         return addedMembers;
@@ -218,6 +224,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public Set<IGroupMember> getDescendants() throws GroupsException {
         return primGetAllMembers(new HashSet<IGroupMember>());
     }
+
     /**
      * Returns the <code>EntityIdentifier</code> cast to a <code>CompositeEntityIdentifier</code> so
      * that its service nodes can be pushed and popped.
@@ -227,18 +234,26 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     private CompositeEntityIdentifier getCompositeEntityIdentifier() {
         return (CompositeEntityIdentifier) getEntityIdentifier();
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     @Override
     public String getCreatorID() {
         return creatorID;
     }
-    /** @return String */
+
+    /**
+     * @return String
+     */
     @Override
     public String getDescription() {
         return description;
     }
 
-    /** @return EntityIdentifier */
+    /**
+     * @return EntityIdentifier
+     */
     @Override
     public EntityIdentifier getEntityIdentifier() {
         return getUnderlyingEntityIdentifier();
@@ -254,10 +269,14 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public Class<? extends IBasicEntity> getLeafType() {
         return leafEntityType;
     }
-    /** @return IIndividualGroupService */
+
+    /**
+     * @return IIndividualGroupService
+     */
     protected IIndividualGroupService getLocalGroupService() {
         return localGroupService;
     }
+
     /**
      * Returns the key from the group service of origin.
      *
@@ -309,16 +328,22 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
         return result;
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     @Override
     public String getName() {
         return name;
     }
-    /** @return HashMap */
+
+    /**
+     * @return HashMap
+     */
     public HashMap<String, IGroupMember> getRemovedMembers() {
         if (this.removedMembers == null) this.removedMembers = new HashMap<>();
         return removedMembers;
     }
+
     /**
      * Returns the Name of the group service of origin.
      *
@@ -328,6 +353,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public Name getServiceName() {
         return getCompositeEntityIdentifier().getServiceName();
     }
+
     /**
      * Returns this object's type for purposes of caching and locking, as opposed to the underlying
      * entity type.
@@ -338,6 +364,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public Class<?> getType() {
         return ICompositeGroupService.GROUP_ENTITY_TYPE;
     }
+
     /**
      * Answers if there are any added memberships not yet committed to the database.
      *
@@ -346,6 +373,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     /* package-private */ boolean hasAdds() {
         return (addedMembers != null) && (addedMembers.size() > 0);
     }
+
     /**
      * Answers if there are any deleted memberships not yet committed to the database.
      *
@@ -355,7 +383,9 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
         return (removedMembers != null) && (removedMembers.size() > 0);
     }
 
-    /** @return boolean */
+    /**
+     * @return boolean
+     */
     @Override
     public boolean hasMembers() throws GroupsException {
         return !getChildren().isEmpty();
@@ -369,6 +399,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public boolean isDirty() {
         return hasAdds() || hasDeletes();
     }
+
     /**
      * Answers if this <code>IEntityGroup</code> can be changed or deleted.
      *
@@ -379,7 +410,10 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public boolean isEditable() throws GroupsException {
         return getLocalGroupService().isEditable(this);
     }
-    /** @return boolean */
+
+    /**
+     * @return boolean
+     */
     @Override
     public boolean isGroup() {
         return true;
@@ -444,10 +478,13 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
         childrenCache.put(new Element(cacheKey, children));
     }
 
-    /** @param newName String */
+    /**
+     * @param newName String
+     */
     public void primSetName(String newName) {
         name = newName;
     }
+
     /**
      * Removes <code>IGroupMember</code> gm from our member <code>Map</code> and, conversely, remove
      * this from gm's group <code>Map</code>. Remember that we have removed it so we can update the
@@ -467,17 +504,26 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
 
         primRemoveMember(gm);
     }
-    /** @param newCreatorID String */
+
+    /**
+     * @param newCreatorID String
+     */
     @Override
     public void setCreatorID(String newCreatorID) {
         creatorID = newCreatorID;
     }
-    /** @param newDescription String */
+
+    /**
+     * @param newDescription String
+     */
     @Override
     public void setDescription(String newDescription) {
         description = newDescription;
     }
-    /** @param newIndividualGroupService IIndividualGroupService */
+
+    /**
+     * @param newIndividualGroupService IIndividualGroupService
+     */
     @Override
     public void setLocalGroupService(IIndividualGroupService newIndividualGroupService)
             throws GroupsException {
@@ -494,6 +540,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public void setName(String newName) throws GroupsException {
         primSetName(newName);
     }
+
     /** Sets the service Name of the group service of origin. */
     public void setServiceName(Name newServiceName) throws GroupsException {
         try {
@@ -502,6 +549,7 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
             throw new GroupsException("Problem setting service name", ine);
         }
     }
+
     /**
      * Returns a String that represents the value of this object.
      *
@@ -511,12 +559,14 @@ public class EntityGroupImpl extends GroupMemberImpl implements IEntityGroup {
     public String toString() {
         return "EntityGroupImpl (" + getKey() + ") " + getName();
     }
+
     /** Delegate to the factory. */
     @Override
     public void update() throws GroupsException {
         getLocalGroupService().updateGroup(this);
         clearPendingUpdates();
     }
+
     /** Delegate to the factory. */
     @Override
     public void updateMembers() throws GroupsException {

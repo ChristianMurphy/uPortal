@@ -32,7 +32,9 @@ public class PropertyInvertedRegexTester extends InvertedRegexTester {
 
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public PropertyInvertedRegexTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
         setPattern(definition.getAttributeName(), definition.getTestValue());

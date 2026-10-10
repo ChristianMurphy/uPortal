@@ -60,6 +60,7 @@ public class RDBMEntityLockStore implements IEntityLockStore {
         Timestamp testTimestamp = new Timestamp(testDate.getTime());
         timestampHasMillis = (testDate.getTime() == testTimestamp.getTime());
     }
+
     /** RDBMEntityGroupStore constructor. */
     public RDBMEntityLockStore() throws LockingException {
         super();
@@ -206,7 +207,9 @@ public class RDBMEntityLockStore implements IEntityLockStore {
         return addSql;
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     private static java.lang.String getAllLockColumns() {
         if (allLockColumns == null) {
             StringBuilder buff = new StringBuilder(100);
@@ -255,7 +258,9 @@ public class RDBMEntityLockStore implements IEntityLockStore {
         return deleteLockSql;
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     private static java.lang.String getSelectSql() {
         return ("SELECT " + getAllLockColumns() + " FROM " + LOCK_TABLE);
     }
@@ -321,7 +326,9 @@ public class RDBMEntityLockStore implements IEntityLockStore {
         return newInstance(entityType, key, lockType, ts, lockOwner);
     }
 
-    /** @return org.apereo.portal.concurrency.locking.IEntityLock */
+    /**
+     * @return org.apereo.portal.concurrency.locking.IEntityLock
+     */
     private IEntityLock newInstance(
             Class entityType, String entityKey, int lockType, Date expirationTime, String lockOwner)
             throws LockingException {
@@ -450,6 +457,7 @@ public class RDBMEntityLockStore implements IEntityLockStore {
             if (stmnt != null) stmnt.close();
         }
     }
+
     /**
      * Retrieve IEntityLocks from the underlying store.
      *
@@ -488,6 +496,7 @@ public class RDBMEntityLockStore implements IEntityLockStore {
 
         return ((IEntityLock[]) locks.toArray(new IEntityLock[locks.size()]));
     }
+
     /**
      * Updates the lock's <code>expiration</code> and <code>lockType</code> in the underlying store.
      * The SQL is over-qualified to make sure the row has not been updated since the lock was last
@@ -536,6 +545,7 @@ public class RDBMEntityLockStore implements IEntityLockStore {
             throw sqle;
         }
     }
+
     /**
      * Retrieve IEntityLocks from the underlying store. Any or all of the parameters may be null.
      *
@@ -575,6 +585,7 @@ public class RDBMEntityLockStore implements IEntityLockStore {
 
         return primSelect(sqlQuery.toString());
     }
+
     /**
      * Retrieve IEntityLocks from the underlying store. Expiration must not be null.
      *
@@ -610,17 +621,24 @@ public class RDBMEntityLockStore implements IEntityLockStore {
 
         return primSelect(sqlQuery.toString());
     }
-    /** @return org.apereo.portal.concurrency.locking.RDBMEntityLockStore */
+
+    /**
+     * @return org.apereo.portal.concurrency.locking.RDBMEntityLockStore
+     */
     public static synchronized IEntityLockStore singleton() throws LockingException {
         if (singleton == null) {
             singleton = new RDBMEntityLockStore();
         }
         return singleton;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     private static java.lang.String sqlQuote(Object o) {
         return QUOTE + o + QUOTE;
     }
+
     /**
      * @param lock org.apereo.portal.groups.IEntityLock
      * @param newExpiration java.util.Date
@@ -629,6 +647,7 @@ public class RDBMEntityLockStore implements IEntityLockStore {
     public void update(IEntityLock lock, java.util.Date newExpiration) throws LockingException {
         update(lock, newExpiration, null);
     }
+
     /**
      * Updates the lock's <code>expiration</code> and <code>lockType</code> in the underlying store.
      * Param <code>lockType</code> may be null.
@@ -652,7 +671,10 @@ public class RDBMEntityLockStore implements IEntityLockStore {
             RDBMServices.releaseConnection(conn);
         }
     }
-    /** @return long */
+
+    /**
+     * @return long
+     */
     private static long getTimestampMillis(Timestamp ts) {
         if (timestampHasMillis) {
             return ts.getTime();
@@ -661,7 +683,9 @@ public class RDBMEntityLockStore implements IEntityLockStore {
         }
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     private static java.lang.String printTimestamp(Timestamp ts) {
         return RDBMServices.getDbMetaData().sqlTimeStamp(getTimestampMillis(ts));
     }

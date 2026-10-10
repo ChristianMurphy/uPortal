@@ -30,14 +30,20 @@ public class CacheState<D extends CachedPortletResultHolder<T>, T extends Serial
 
     protected CacheState() {}
 
-    /** @return The {@link CacheControl} object to use for the portlet, never null */
+    /**
+     * @return The {@link CacheControl} object to use for the portlet, never null
+     */
     public CacheControl getCacheControl() {
         return cacheControl;
     }
-    /** @return The cached portlet data, if it was found */
+
+    /**
+     * @return The cached portlet data, if it was found
+     */
     public D getCachedPortletData() {
         return cachedPortletData;
     }
+
     /**
      * @return true If the cached portlet data should be replayed. If true {@link
      *     #getCachedPortletData()} will not be false
@@ -45,10 +51,14 @@ public class CacheState<D extends CachedPortletResultHolder<T>, T extends Serial
     public boolean isUseCachedData() {
         return useCachedData;
     }
-    /** @return true If the browser has the data cached and a 304 should be sent */
+
+    /**
+     * @return true If the browser has the data cached and a 304 should be sent
+     */
     public boolean isUseBrowserData() {
         return useBrowserData;
     }
+
     /**
      * @return true If the browser's If-None-Match or If-Modified-Since header values mean the
      *     browser's cache matches the portal's cache
@@ -56,6 +66,7 @@ public class CacheState<D extends CachedPortletResultHolder<T>, T extends Serial
     public boolean isBrowserDataMatches() {
         return browserDataMatches;
     }
+
     /**
      * @return true If the browser set an ETag. If true {@link CacheControl#getETag()} will return
      *     the browser set ETag
@@ -63,10 +74,14 @@ public class CacheState<D extends CachedPortletResultHolder<T>, T extends Serial
     public boolean isBrowserSetEtag() {
         return browserSetEtag;
     }
-    /** @return The public cache key for the portlet, will not be null */
+
+    /**
+     * @return The public cache key for the portlet, will not be null
+     */
     public PublicPortletCacheKey getPublicPortletCacheKey() {
         return publicPortletCacheKey;
     }
+
     /**
      * @return The private cahe key for the portlet, may be null if publicly scoped cache data was
      *     found

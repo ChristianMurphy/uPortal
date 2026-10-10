@@ -70,7 +70,9 @@ public interface Version extends Comparable<Version> {
             return values()[o - 1];
         }
 
-        /** @return The next field in importance order, null if this is the most important field */
+        /**
+         * @return The next field in importance order, null if this is the most important field
+         */
         public Field getMoreImportant() {
             final int o = this.ordinal();
             final Field[] v = values();
@@ -82,21 +84,33 @@ public interface Version extends Comparable<Version> {
         }
     }
 
-    /** @return The major part */
+    /**
+     * @return The major part
+     */
     int getMajor();
 
-    /** @return The minor part */
+    /**
+     * @return The minor part
+     */
     int getMinor();
 
-    /** @return The patch part */
+    /**
+     * @return The patch part
+     */
     int getPatch();
 
-    /** @return The optional local part */
+    /**
+     * @return The optional local part
+     */
     Integer getLocal();
 
-    /** @return true if this version comes before the other version */
+    /**
+     * @return true if this version comes before the other version
+     */
     boolean isBefore(Version other);
 
-    /** @return true if this version comes after the other version */
+    /**
+     * @return true if this version comes after the other version
+     */
     boolean isAfter(Version other);
 }

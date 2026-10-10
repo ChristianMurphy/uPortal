@@ -24,10 +24,14 @@ import org.apereo.portal.portlet.om.IPortletWindowId;
 /** Builds a URL for a specific portlet. */
 public interface IPortletUrlBuilder extends IUrlBuilder {
 
-    /** @return The portlet window this url builder is for */
+    /**
+     * @return The portlet window this url builder is for
+     */
     IPortletWindowId getPortletWindowId();
 
-    /** @return The parent {@link IPortalUrlBuilder} of this {@link IPortletUrlBuilder} */
+    /**
+     * @return The parent {@link IPortalUrlBuilder} of this {@link IPortletUrlBuilder}
+     */
     IPortalUrlBuilder getPortalUrlBuilder();
 
     /**
@@ -36,6 +40,7 @@ public interface IPortletUrlBuilder extends IUrlBuilder {
      *     UrlType#RESOURCE}
      */
     void setWindowState(WindowState windowState);
+
     /**
      * @see PortletURL#getWindowState()
      * @throws IllegalStateException If parent {@link IPortalUrlBuilder#getUrlType()} returns {@link
@@ -49,6 +54,7 @@ public interface IPortletUrlBuilder extends IUrlBuilder {
      *     UrlType#RESOURCE}
      */
     void setPortletMode(PortletMode portletMode);
+
     /**
      * @see PortletURL#getPortletMode()
      * @throws IllegalStateException If parent {@link IPortalUrlBuilder#getUrlType()} returns {@link
@@ -62,6 +68,7 @@ public interface IPortletUrlBuilder extends IUrlBuilder {
      *     return {@link UrlType#RESOURCE}
      */
     void setResourceId(String resourceId);
+
     /**
      * @see ResourceURL#setResourceID(String)
      * @throws IllegalStateException If parent {@link IPortalUrlBuilder#getUrlType()} does not
@@ -75,6 +82,7 @@ public interface IPortletUrlBuilder extends IUrlBuilder {
      *     return {@link UrlType#RESOURCE}
      */
     void setCacheability(String cacheability);
+
     /**
      * @see ResourceURL#getCacheability()
      * @throws IllegalStateException If parent {@link IPortalUrlBuilder#getUrlType()} does not
@@ -96,6 +104,8 @@ public interface IPortletUrlBuilder extends IUrlBuilder {
      */
     void setCopyCurrentRenderParameters(boolean copyCurrentRenderParameters);
 
-    /** @return If the current private render parameters should be copied to the generared URL */
+    /**
+     * @return If the current private render parameters should be copied to the generared URL
+     */
     boolean getCopyCurrentRenderParameters();
 }

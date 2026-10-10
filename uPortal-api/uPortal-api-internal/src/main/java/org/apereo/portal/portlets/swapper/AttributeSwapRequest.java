@@ -35,11 +35,16 @@ public class AttributeSwapRequest implements Serializable {
     private Map<String, Attribute> attributesToCopy =
             LazyMap.decorate(new HashMap<String, Attribute>(), new AttributeFactory());
 
-    /** @return the currentAttributes */
+    /**
+     * @return the currentAttributes
+     */
     public Map<String, Attribute> getCurrentAttributes() {
         return this.currentAttributes;
     }
-    /** @param currentAttributes the currentAttributes to set */
+
+    /**
+     * @param currentAttributes the currentAttributes to set
+     */
     public void setCurrentAttributes(Map<String, Attribute> attributes) {
         if (attributes == null) {
             this.currentAttributes = new HashMap<String, Attribute>();
@@ -48,11 +53,16 @@ public class AttributeSwapRequest implements Serializable {
         }
     }
 
-    /** @return the attributesToCopy */
+    /**
+     * @return the attributesToCopy
+     */
     public Map<String, Attribute> getAttributesToCopy() {
         return this.attributesToCopy;
     }
-    /** @param attributesToCopy the attributesToCopy to set */
+
+    /**
+     * @param attributesToCopy the attributesToCopy to set
+     */
     public void setAttributesToCopy(Map<String, Attribute> attributesToCopy) {
         if (attributesToCopy == null) {
             this.attributesToCopy = new HashMap<String, Attribute>();
@@ -60,7 +70,10 @@ public class AttributeSwapRequest implements Serializable {
             this.attributesToCopy = attributesToCopy;
         }
     }
-    /** @see java.lang.Object#toString() */
+
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)

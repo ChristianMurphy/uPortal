@@ -36,7 +36,9 @@ public class PermissionManagerImpl implements IPermissionManager {
         authorizationService = authService;
     }
 
-    /** @return org.apereo.portal.security.provider.AuthorizationImpl */
+    /**
+     * @return org.apereo.portal.security.provider.AuthorizationImpl
+     */
     AuthorizationImpl getAuthorizationService() {
         return authorizationService;
     }
@@ -56,7 +58,9 @@ public class PermissionManagerImpl implements IPermissionManager {
         return getAuthorizationService().getAuthorizedPrincipals(getOwner(), activity, target);
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     @Override
     public java.lang.String getOwner() {
         return owner;

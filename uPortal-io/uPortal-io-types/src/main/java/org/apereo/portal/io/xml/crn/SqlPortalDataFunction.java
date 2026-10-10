@@ -38,18 +38,24 @@ public class SqlPortalDataFunction
     private String nameColumn;
     private String descColumn;
 
-    /** @param query Query to run */
+    /**
+     * @param query Query to run
+     */
     @Required
     public void setQuery(String query) {
         this.query = query;
     }
 
-    /** @param id Column column name that contains the id, if null the first column is used */
+    /**
+     * @param id Column column name that contains the id, if null the first column is used
+     */
     public void setIdColumn(String idColumn) {
         this.idColumn = idColumn;
     }
 
-    /** @param nameColumn Column column name that contains the name, if null no name is set */
+    /**
+     * @param nameColumn Column column name that contains the name, if null no name is set
+     */
     public void setNameColumn(String nameColumn) {
         this.nameColumn = nameColumn;
     }
