@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Bug categories the SpotBugs ratchet reports (MOD-D27). SECURITY holds the FindSecBugs
+  detectors. Left out: MALICIOUS_CODE (mostly EI_EXPOSE_REP on getters and setters),
+  I18N (default-charset use) and EXPERIMENTAL.
+-->
+<FindBugsFilter>
+    <Match>
+        <Bug category="CORRECTNESS,MT_CORRECTNESS,SECURITY,BAD_PRACTICE,PERFORMANCE,STYLE"/>
+    </Match>
+</FindBugsFilter>

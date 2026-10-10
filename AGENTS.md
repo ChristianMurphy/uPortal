@@ -51,6 +51,7 @@ End-to-end Playwright tests (TypeScript) also live in uPortal-start under `tests
 ./gradlew install                             # publish to ~/.m2
 ./gradlew spotlessCheck                       # check Java format (AOSP); spotlessApply to auto-fix
 ./gradlew codenarcMain codenarcTest           # Groovy static analysis
+./gradlew spotbugsMain                        # SpotBugs + FindSecBugs; fails on findings not in config/spotbugs/baseline/
 npx eslint . --report-unused-disable-directives --max-warnings 0   # lint JS; npm run format-js to fix
 npm run lint-less                             # lint LESS
 npx remark -f *.md docs/**                    # lint Markdown

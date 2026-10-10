@@ -161,20 +161,52 @@ allprojects {
     ]
 
     /*======== Static Analysis ========*/
+    // SpotBugs + FindSecBugs as a ratchet (MOD-D27): `./gradlew spotbugsMain` fails on any
+    // finding that is not in the module's committed baseline,
+    // config/spotbugs/baseline/<module>.xml. `build` and `check` leave SpotBugs out (it is
+    // slow at effort max); CI runs it in its own job. `./gradlew spotbugsBaseline` rewrites the
+    // baselines; see docs/developer/other/STATIC_ANALYSIS.md.
     spotbugs {
-        toolVersion = '4.10.4'
-        // allow build to continue to other sub projects
-        ignoreFailures = true
+        toolVersion = spotbugsVersion
+        effort = com.github.spotbugs.snom.Effort.valueOf('MAX')
+        reportLevel = com.github.spotbugs.snom.Confidence.valueOf('MEDIUM')
+        includeFilter = rootProject.file('config/spotbugs/include.xml')
+        runOnCheck = false
     }
-    tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
-        enabled = gradle.startParameter.taskNames.contains(it.name)
+    def spotbugsBaselineFile = rootProject.file("config/spotbugs/baseline/${project.name}.xml")
+    def rewritingSpotbugsBaseline = gradle.startParameter.taskNames.any {
+        it == 'spotbugsBaseline' || it.endsWith(':spotbugsBaseline')
+    }
+    tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
         reports {
             html {
                 required = true
-                outputLocation = file("$buildDir/reports/spotbugs/main/spotbugs.html")
                 stylesheet = 'fancy-hist.xsl'
             }
+            xml {
+                required = true
+            }
+            text {
+                required = true
+            }
         }
+    }
+    tasks.named('spotbugsMain', com.github.spotbugs.snom.SpotBugsTask) {
+        if (rewritingSpotbugsBaseline) {
+            // Record every current finding
+            ignoreFailures = true
+        } else if (spotbugsBaselineFile.exists()) {
+            excludeFilter = spotbugsBaselineFile
+        }
+    }
+    tasks.register('spotbugsBaseline', SpotBugsBaselineTask) {
+        group = 'verification'
+        description = "Rewrites config/spotbugs/baseline/${project.name}.xml from the current SpotBugs findings."
+        def spotbugsMain = tasks.named('spotbugsMain', com.github.spotbugs.snom.SpotBugsTask)
+        dependsOn spotbugsMain
+        report = spotbugsMain.flatMap { it.reports.getByName('xml').outputLocation }
+        baselineApplied = spotbugsMain.flatMap { it.excludeFilter.map { true } }.orElse(false)
+        baselineFile = spotbugsBaselineFile
     }
     spotless {
         java {
@@ -252,6 +284,101 @@ class JavaAgentArgumentProvider implements CommandLineArgumentProvider {
     }
 }
 
+/**
+ * Writes a SpotBugs exclude filter that matches every finding in a module's SpotBugs XML report.
+ * Applied to spotbugsMain, it makes SpotBugs fail only on findings that are new (MOD-D27).
+ * Entries match on class, method (or field) and bug pattern. Numbers of anonymous classes and
+ * lambdas become wildcards, so adding a lambda or anonymous class doesn't break the baseline.
+ */
+abstract class SpotBugsBaselineTask extends DefaultTask {
+    /** The XML report of a spotbugsMain run without the baseline (absent for a module without classes). */
+    @Internal
+    abstract RegularFileProperty getReport()
+
+    /** Whether spotbugsMain ran with the baseline applied, so its report holds only new findings. */
+    @Internal
+    abstract Property<Boolean> getBaselineApplied()
+
+    @Internal
+    abstract RegularFileProperty getBaselineFile()
+
+    SpotBugsBaselineTask() {
+        outputs.upToDateWhen { false }
+    }
+
+    /** Escapes a class or member name for a filter, as a regex when it holds a compiler-assigned number. */
+    static String filterName(String name) {
+        if (!name.matches('.*[$][0-9].*')) {
+            return groovy.xml.XmlUtil.escapeXml(name)
+        }
+        def regex = new StringBuilder('~')
+        int i = 0
+        while (i < name.length()) {
+            char c = name.charAt(i)
+            if (c == ('$' as char) && i + 1 < name.length() && Character.isDigit(name.charAt(i + 1))) {
+                regex << '\\$\\d+'
+                i++
+                while (i < name.length() && Character.isDigit(name.charAt(i))) {
+                    i++
+                }
+                continue
+            }
+            if (c == ('.' as char) || c == ('$' as char)) {
+                regex << '\\'
+            }
+            regex << c
+            i++
+        }
+        return groovy.xml.XmlUtil.escapeXml(regex.toString())
+    }
+
+    @TaskAction
+    void write() {
+        if (baselineApplied.get()) {
+            throw new GradleException('spotbugsMain ran with the baseline applied. Run the task by its full name: ./gradlew spotbugsBaseline')
+        }
+        def reportFile = report.get().asFile
+        def out = baselineFile.get().asFile
+        def entries = new TreeSet<String>()
+        if (reportFile.exists()) {
+            def collection = new groovy.xml.XmlSlurper().parse(reportFile)
+            collection.BugInstance.each { bug ->
+                def primary = { kind -> bug."$kind".find { it.@primary == 'true' } ?: bug."$kind"[0] }
+                def cls = primary('Class')
+                def method = primary('Method')
+                def field = primary('Field')
+                def entry = new StringBuilder("<Match><Class name=\"${filterName(cls.@classname.text())}\"/>")
+                if (!method.isEmpty()) {
+                    entry << "<Method name=\"${filterName(method.@name.text())}\"/>"
+                } else if (!field.isEmpty()) {
+                    entry << "<Field name=\"${filterName(field.@name.text())}\"/>"
+                }
+                entry << "<Bug pattern=\"${bug.@type}\"/></Match>"
+                entries << entry.toString()
+            }
+        }
+        if (entries.isEmpty()) {
+            if (out.delete()) {
+                logger.lifecycle("No SpotBugs findings; deleted ${out}")
+            }
+            return
+        }
+        out.parentFile.mkdirs()
+        out.text = """<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs baseline for ${project.name}: findings that predate the SpotBugs ratchet (MOD-D27).
+  spotbugsMain ignores these and fails on anything else. Generated by
+  `./gradlew ${project.path == ':' ? '' : project.path}:spotbugsBaseline`; don't add entries by hand.
+  Shrink it by fixing findings and rerunning that task (or deleting their entries).
+-->
+<FindBugsFilter>
+${entries.collect { '    ' + it }.join('\n')}
+</FindBugsFilter>
+"""
+        logger.lifecycle("Wrote ${entries.size()} SpotBugs baseline entries to ${out}")
+    }
+}
+
 /*======== Child Projects ========*/
 subprojects {
 
@@ -277,7 +404,7 @@ subprojects {
         testImplementation "org.mockito:mockito-core:${mockitoVersion}"
         testImplementation "org.springframework:spring-test:${springVersion}"
         testImplementation "org.xmlunit:xmlunit-legacy:${xmlunitVersion}"
-        spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
+        spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:${findsecbugsVersion}"
         mockitoAgent("org.mockito:mockito-core:${mockitoVersion}") {
             transitive = false
         }

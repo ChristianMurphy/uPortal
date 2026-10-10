@@ -70,6 +70,11 @@
   JaCoCo report with the Coveralls GitHub Action. Jars are now built
   reproducibly (fixed entry dates); the war keeps real file dates so
   servlet containers still notice changed JSPs.
+- **SpotBugs and FindSecBugs are a CI gate.** A `Static analysis` CI job
+  runs `./gradlew spotbugsMain` (effort max, medium threshold) and fails
+  on any finding that isn't in the module's baseline under
+  `config/spotbugs/baseline/`; `build` doesn't run SpotBugs. See
+  [Static Analysis](developer/other/STATIC_ANALYSIS.md).
 
 ## v5.17.3
 
