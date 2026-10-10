@@ -892,7 +892,16 @@ This supersedes MOD-D24's runtime matrix.
   itself (179e11d66) had one red Windows job, caused by a Maven Central
   403 (MOD-I98), not by the merge.
 
-### MOD-D29 (proposed): test expansion that uses 5.17 as the oracle
+### MOD-D29: test expansion that uses 5.17 as the oracle
+
+* **Status (2026-10-10):** approved by the project owner ("Please do
+  improve the tests to give more confidence in the migration"). Items 3,
+  7 and the ArchUnit rules (uPortal), and items 1, 4, 5 and the
+  flaky-test gate (uPortal-start) are in progress. Items 2 and 8, the
+  copy-tool strength tests, and item 9 with the non-functional checks
+  are queued until memory frees up. P2 (Hibernate 5.2) merges only after
+  it passes the new goldens unchanged, or with each difference explained
+  here.
 
 * **Gap:** today's suites (124 Playwright tests in 24 specs, 244 unit-test
   classes, the DB harness on 7 databases, copy-tool row hashes) show the
