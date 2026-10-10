@@ -34,7 +34,7 @@ Each module's reports are in `build/reports/spotbugs/`: `main.html` to
 browse, `main.txt` lists the findings that failed the build, and
 `main.xml` is the input for the baseline.
 
-### When the build finds something new
+### New findings in the build
 
 Fix the code. If the finding is a false positive, suppress that one
 finding where it occurs, rather than adding it to the baseline: annotate
