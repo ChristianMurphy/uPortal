@@ -11,7 +11,6 @@
     <Match><Class name="org.apereo.portal.portlets.account.GroupedPersonAttributeByNameComparator"/><Bug pattern="SE_COMPARATOR_SHOULD_BE_SERIALIZABLE"/></Match>
     <Match><Class name="org.apereo.portal.portlets.account.UserAccountHelper"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.portlets.account.UserAccountHelper"/><Method name="getRandomToken"/><Bug pattern="PREDICTABLE_RANDOM"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.favorites.FavoritesUtils"/><Method name="getDuplicateFavoritesByFNameToDelete"/><Bug pattern="ES_COMPARING_PARAMETER_STRING_WITH_EQ"/></Match>
     <Match><Class name="org.apereo.portal.portlets.groupadmin.GroupAdministrationHelper"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.portlets.swapper.AttributeSwapperHelperImpl"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.portlets.swapper.AttributeSwapperHelperImpl"/><Method name="resetAttributes"/><Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/></Match>
