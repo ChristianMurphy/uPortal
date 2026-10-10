@@ -77,8 +77,36 @@ public class SpringXmlContextsTest {
         root = new DefinitionsOnlyContext(null, resources);
         root.setDisplayName("root");
         root.loadDefinitions();
+        registerEhcaches(root);
         for (final Resource resource : resources) {
             loaded.add(resource.getURL().toString());
+        }
+    }
+
+    /**
+     * EhcacheManagerBeanConfigurer registers each cache in ehcache.xml as a singleton named after
+     * it, and contexts refer to them by those names. It needs a running cache manager, so register
+     * the names the same way.
+     */
+    private static void registerEhcaches(DefinitionsOnlyContext context) {
+        final NodeList caches =
+                parse(new File("src/main/resources/properties/ehcache.xml"))
+                        .getElementsByTagNameNS("*", "cache");
+        for (int i = 0; i < caches.getLength(); i++) {
+            final String name = ((Element) caches.item(i)).getAttribute("name");
+            if (!context.getBeanFactory().containsBean(name)) {
+                context.getBeanFactory().registerSingleton(name, new Object());
+            }
+        }
+    }
+
+    private static Document parse(File file) {
+        try {
+            final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            return factory.newDocumentBuilder().parse(file);
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot parse " + file, e);
         }
     }
 
@@ -106,8 +134,27 @@ public class SpringXmlContextsTest {
     @Test
     public void testContexts() throws Exception {
         final List<String> problems = new ArrayList<>();
-        for (final Path file : springXmlFiles(Path.of("src/test/resources"))) {
+        final List<Path> files = springXmlFiles(Path.of("src/test/resources"));
+        // Files that other test contexts import are checked as part of those
+        final TreeSet<String> imported = new TreeSet<>();
+        for (final Path file : files) {
+            final NodeList imports =
+                    parse(file.toFile())
+                            .getElementsByTagNameNS(
+                                    "http://www.springframework.org/schema/beans", "import");
+            for (int i = 0; i < imports.getLength(); i++) {
+                final String resource = ((Element) imports.item(i)).getAttribute("resource");
+                imported.add(
+                        resource.substring(
+                                Math.max(resource.lastIndexOf('/'), resource.lastIndexOf(':'))
+                                        + 1));
+            }
+        }
+        for (final Path file : files) {
             final String name = file.toString();
+            if (imported.contains(file.getFileName().toString())) {
+                continue;
+            }
             try {
                 final DefinitionsOnlyContext context =
                         new DefinitionsOnlyContext(null, new FileSystemResource(file.toFile()));
@@ -128,7 +175,7 @@ public class SpringXmlContextsTest {
         final TreeSet<String> covered = new TreeSet<>();
         for (final List<String> locations : groups.values()) {
             for (final String location : locations) {
-                covered.add(toResource(location).getFile().getName());
+                covered.add(toResource(location).getFilename());
             }
         }
         covered.add("mvcViews.xml");
