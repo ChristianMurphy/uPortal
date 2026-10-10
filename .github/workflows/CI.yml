@@ -167,7 +167,7 @@ jobs:
           cache-provider: basic
       # Writes the error counts by module to the job summary
       - name: Compile against Spring 5.3
-        run: ./gradlew -S --no-daemon spring53Probe
+        run: ./gradlew -S --no-daemon --continue spring53Probe
       - name: Show the errors
         if: always()
         run: cat build/reports/spring53-probe/errors.txt || true
