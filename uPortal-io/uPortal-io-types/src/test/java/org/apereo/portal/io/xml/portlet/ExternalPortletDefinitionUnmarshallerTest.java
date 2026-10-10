@@ -3,6 +3,8 @@ package org.apereo.portal.io.xml.portlet;
 import static org.junit.Assert.*;
 
 import java.util.Calendar;
+import java.util.List;
+import javax.xml.datatype.DatatypeFactory;
 import org.apereo.portal.AuthorizationException;
 import org.apereo.portal.IUserIdentityStore;
 import org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl;
@@ -181,6 +183,74 @@ public class ExternalPortletDefinitionUnmarshallerTest {
 
             assertArrayEquals(pDef.getLifecycle().toArray(), expectedLifecycle);
         }
+    }
+
+    /**
+     * The 4.3 upgrade transform gives a MAINTENANCE entry that had no date the placeholder {@link
+     * ExternalPortletDefinitionUnmarshaller#USE_CURRENT_DATETIME_SIGNAL_DATE}, and the import must
+     * replace it with the current time (MOD-I101). Kept as 1999, the entry sorts before every other
+     * entry, so the portlet is no longer in maintenance after the import.
+     */
+    @Test
+    public void testUnmarshallLifecycleReplacesCurrentDatetimeSignal() throws Exception {
+        // Parse the placeholder the way JAXB parses an xs:dateTime in an imported document
+        final Calendar signal =
+                DatatypeFactory.newInstance()
+                        .newXMLGregorianCalendar(
+                                ExternalPortletDefinitionUnmarshaller
+                                        .USE_CURRENT_DATETIME_SIGNAL_DATE)
+                        .toGregorianCalendar();
+
+        final LifecycleEntry published = new LifecycleEntry();
+        published.setName("PUBLISHED");
+        published.setUser("publishedUser");
+        published.setValue(
+                getCalendarForMillis(System.currentTimeMillis() - (3L * MILLIS_IN_ONE_DAY)));
+
+        final LifecycleEntry maintenance = new LifecycleEntry();
+        maintenance.setName("MAINTENANCE");
+        maintenance.setUser("system");
+        maintenance.setValue(signal);
+
+        final Lifecycle lifecycle = new Lifecycle();
+        lifecycle.getEntries().add(published);
+        lifecycle.getEntries().add(maintenance);
+
+        final ExternalPortletDefinitionUnmarshaller unmarshaller =
+                new ExternalPortletDefinitionUnmarshaller();
+        unmarshaller.setUserIdentityStore(new MockUserIdentityStore());
+        final IPortletDefinition pDef =
+                new PortletDefinitionImpl(
+                        new PortletTypeImpl("FakePortletType", "http://not/a/real/uri"),
+                        "fake-portlet",
+                        "Fake Portlet",
+                        "Fake Portlet",
+                        "FakePortletApp",
+                        "fake-portlet-def",
+                        false);
+
+        final long before = System.currentTimeMillis();
+        unmarshaller.unmarshallLifecycle(lifecycle, pDef);
+        final long after = System.currentTimeMillis();
+
+        final List<IPortletLifecycleEntry> entries = pDef.getLifecycle();
+        assertEquals(2, entries.size());
+        final IPortletLifecycleEntry maintenanceEntry =
+                entries.stream()
+                        .filter(e -> e.getLifecycleState() == PortletLifecycleState.MAINTENANCE)
+                        .findFirst()
+                        .orElseThrow(AssertionError::new);
+        final long maintenanceMillis = maintenanceEntry.getDate().getTime();
+        assertTrue(
+                "MAINTENANCE should get the import time, but got " + maintenanceEntry.getDate(),
+                maintenanceMillis >= before && maintenanceMillis <= after);
+        assertSame(maintenanceEntry, entries.get(1));
+
+        // getLifecycleState() only counts entries strictly before now
+        while (System.currentTimeMillis() <= after) {
+            Thread.sleep(1L);
+        }
+        assertEquals(PortletLifecycleState.MAINTENANCE, pDef.getLifecycleState());
     }
 
     private Calendar getCalendarForMillis(long millis) {

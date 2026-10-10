@@ -240,7 +240,7 @@ import org.springframework.stereotype.Component;
                         PortletLifecycleState.valueOf(entry.getName().toUpperCase());
                 // Entries added by an upgrade transform will not have a date
                 final Date date =
-                        entry.getValue().equals(useCurrentDatetimeSignal)
+                        entry.getValue().getTime().equals(useCurrentDatetimeSignal)
                                 ? new Date()
                                 : entry.getValue().getTime();
                 convertedEntries.put(
