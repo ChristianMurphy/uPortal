@@ -107,8 +107,12 @@ public final class LoadOrder {
             }
         }
 
-        // Break multi-table cycles at nullable edges inside each strongly connected component
+        // Break multi-table cycles at nullable edges inside each strongly connected component.
+        // Every round removes at least one edge or ends the loop, so it takes at most as many
+        // rounds as there are edges (parallel keys between two tables can need more rounds than
+        // there are tables)
         List<String> unbreakable = new ArrayList<>();
+        int maxRounds = active.size();
         for (int round = 0; ; round++) {
             List<Set<String>> cyclic = new ArrayList<>();
             for (Set<String> scc : stronglyConnected(nodes, active)) {
@@ -116,7 +120,7 @@ public final class LoadOrder {
                     cyclic.add(scc);
                 }
             }
-            if (cyclic.isEmpty() || round > nodes.size()) {
+            if (cyclic.isEmpty() || round > maxRounds) {
                 for (Set<String> scc : cyclic) {
                     unbreakable.add(String.join(", ", scc));
                 }
