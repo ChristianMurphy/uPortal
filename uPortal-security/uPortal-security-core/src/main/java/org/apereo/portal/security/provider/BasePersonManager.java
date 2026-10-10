@@ -17,9 +17,9 @@ package org.apereo.portal.security.provider;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import org.apereo.portal.IUserIdentityStore;
@@ -38,7 +38,11 @@ import org.springframework.context.event.EventListener;
 
 public class BasePersonManager implements IPersonManager {
 
-    private final Map<String, Integer> guestUserIds = new HashMap<>();
+    /**
+     * Guest usernames to their user IDs. Requests read it without a lock, while {@link
+     * #loadGuestUserId} adds to it under one, so it must be safe for concurrent use (MOD-I104).
+     */
+    private final Map<String, Integer> guestUserIds = new ConcurrentHashMap<>();
 
     @Autowired private ApplicationContext context;
 

@@ -146,6 +146,16 @@ node {
     download = true
 }
 
+// This project is a workspace of the root npm project (see the root package.json), so npm
+// run here acts on the root's package-lock.json and node_modules: `npm install` rewrote the
+// lockfile, and `npm ci` would empty the root's node_modules and install only this
+// workspace's packages. The root's npmInstall (`npm ci`) installs this workspace's
+// dependencies too, so the npm tasks here use that install instead of their own.
+tasks.named('npmInstall') {
+    enabled = false
+    dependsOn ':npmInstall'
+}
+
 // Support for filtering properties files
 import org.apache.tools.ant.filters.ReplaceTokens
 processResources {

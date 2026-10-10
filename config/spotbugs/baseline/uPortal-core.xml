@@ -8,7 +8,6 @@
 <FindBugsFilter>
     <Match><Class name="org.apereo.portal.portlet.om.PortletParameterUtility"/><Method name="parameterMapToStringStringMap"/><Bug pattern="WMI_WRONG_MAP_ITERATOR"/></Match>
     <Match><Class name="org.apereo.portal.properties.PropertiesManager"/><Method name="getPropertyAsBoolean"/><Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/></Match>
-    <Match><Class name="org.apereo.portal.properties.PropertiesManager"/><Method name="setProperties"/><Bug pattern="USO_UNSAFE_STATIC_METHOD_SYNCHRONIZATION"/></Match>
     <Match><Class name="org.apereo.portal.security.PersonFactory"/><Method name="init"/><Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/></Match>
     <Match><Class name="org.apereo.portal.utils.DocumentFactory"/><Method name="getDocumentFromStream"/><Bug pattern="XXE_DOCUMENT"/></Match>
     <Match><Class name="org.apereo.portal.utils.threading.DoubleCheckedCreator"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
