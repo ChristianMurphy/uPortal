@@ -15,6 +15,9 @@
 package org.apereo.portal.portlets.activity;
 
 import com.google.visualization.datasource.base.TypeMismatchException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,8 +44,7 @@ import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.services.GroupService;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
+import org.apereo.portal.utils.time.JodaTimeBridge;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -122,35 +124,35 @@ public class ActivityController {
 
     private PortalActivity buildPortalActivity(PortletRequest request, int timeframe) {
         PortletPreferences prefs = request.getPreferences();
-        DateTime begin, end;
+        ZonedDateTime begin, end;
         final AggregationInterval interval;
         final List<PortalGroupActivity> groupActivities = new ArrayList<PortalGroupActivity>();
 
         switch (timeframe) {
             case NOW:
                 {
-                    end = new DateTime();
+                    end = ZonedDateTime.now();
                     begin = end.minusHours(1);
                     interval = AggregationInterval.FIVE_MINUTE;
                     break;
                 }
             case TODAY:
                 {
-                    begin = new DateMidnight().toDateTime();
+                    begin = LocalDate.now().atStartOfDay(ZoneId.systemDefault());
                     end = begin.plusDays(1);
                     interval = AggregationInterval.DAY;
                     break;
                 }
             case YESTERDAY:
                 {
-                    end = new DateMidnight().toDateTime().minusSeconds(1);
+                    end = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).minusSeconds(1);
                     begin = end.minusDays(1);
                     interval = AggregationInterval.DAY;
                     break;
                 }
             default:
                 {
-                    end = new DateTime();
+                    end = ZonedDateTime.now();
                     begin = end.minusHours(1);
                     interval = AggregationInterval.HOUR;
                     break;
@@ -178,7 +180,10 @@ public class ActivityController {
                     ConcurrentUserAggregationKey key =
                             new ConcurrentUserAggregationKeyImpl(interval, group);
                     final List<ConcurrentUserAggregation> aggregations =
-                            concurrentUserAggregationDao.getAggregations(begin, end, key);
+                            concurrentUserAggregationDao.getAggregations(
+                                    JodaTimeBridge.toDateTime(begin),
+                                    JodaTimeBridge.toDateTime(end),
+                                    key);
 
                     // NB:  We only care about the most recent entry (??)
                     if (aggregations.size() != 0) {
@@ -212,7 +217,10 @@ public class ActivityController {
 
                     final LoginAggregationKey key = new LoginAggregationKeyImpl(interval, group);
                     final List<LoginAggregation> aggregations =
-                            loginAggregationDao.getAggregations(begin, end, key);
+                            loginAggregationDao.getAggregations(
+                                    JodaTimeBridge.toDateTime(begin),
+                                    JodaTimeBridge.toDateTime(end),
+                                    key);
 
                     // NB:  We only care about the most recent entry (??)
                     if (aggregations.size() != 0) {
@@ -254,14 +262,17 @@ public class ActivityController {
     }
 
     private List<SearchInfo> getPopularSearchTerms() {
-        DateTime end = new DateTime();
-        DateTime begin = end.minusDays(1);
+        ZonedDateTime end = ZonedDateTime.now();
+        ZonedDateTime begin = end.minusDays(1);
         final IEntityGroup everyone = GroupService.getRootGroup(IPerson.class);
         final AggregatedGroupMapping group =
                 aggregatedGroupLookupDao.getGroupMapping(everyone.getKey());
         List<SearchRequestAggregationImpl> aggregations =
                 searchRequestAggregationDao.getAggregations(
-                        begin, end, AggregationInterval.FIVE_MINUTE, group);
+                        JodaTimeBridge.toDateTime(begin),
+                        JodaTimeBridge.toDateTime(end),
+                        AggregationInterval.FIVE_MINUTE,
+                        group);
         Map<String, SearchInfo> resultBuilder = new HashMap<String, SearchInfo>();
         for (SearchRequestAggregationImpl aggregation : aggregations) {
             SearchInfo info = resultBuilder.get(aggregation.getSearchTerm());
