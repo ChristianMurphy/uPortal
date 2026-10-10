@@ -837,6 +837,27 @@ This supersedes MOD-D24's runtime matrix.
 * **Limits:** static analysis flags missing null checks, but races like
   MOD-I90 (a session swapped mid-render) also need a code fix and a
   regression test. SpotBugs' MT detectors catch only some of them.
+* **Status (2026-10-10): delivered.** Commits 5615a7973 (SpotBugs ratchet),
+  e395b1ccb (NullAway), 75af908cf (MOD-I90 fix), ff040e1c1
+  (DoubleBraceInitialization re-enabled) and c68c04509 (baselines). CI
+  run 38081288582 is green on all 8 legs plus the new Static analysis
+  job.
+  * SpotBugs runs in its own JDK 21 CI job (effort max, threshold
+    medium), not in `build`. Per-module baselines are in
+    `config/spotbugs/baseline/`, and `./gradlew spotbugsBaseline`
+    regenerates them. A planted null dereference failed the gate.
+  * The baseline holds 1051 findings in 43 modules: STYLE 421, SECURITY
+    306, BAD_PRACTICE 211, MT_CORRECTNESS 52, PERFORMANCE 43, CORRECTNESS
+    18. About 40 of the 48 NP-on-return-value findings are callers of the
+    now-`@Nullable` `getPerson()`/`getSecurityContext()`.
+  * NullAway runs at error level on `@NullMarked` packages:
+    `security.oauth`, `security.firewall` and `portlet.session`.
+  * MOD-I90 is fixed: a missing person or security context counts as a
+    guest. The same null was also fixed in
+    `CachedPasswordUserInfoService`.
+  * Still disabled: BanJNDI (5 findings), SelfAssertion (3, tests) and
+    BoxedPrimitiveEquality (2).
+  * Real bugs found: MOD-I100–I106.
 
 ### MOD-D28: copy tool v0 merged (MOD-D11, 5.17 → 5.17 across vendors)
 
@@ -1059,6 +1080,13 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I96 | Tooling | With externally supplied drivers, a driver also bundled in the jar caused a sealed-package error, and `DriverManager` rejected the class-loader-loaded drivers. | **Fixed:** drivers stay out of the jar and are instantiated directly. |
 | MOD-I97 | Persistence | **Found by the Oracle harness.** `SQLNextExceptionLoggerAspect` called `initCause` on Oracle's `BatchUpdateException`, whose cause is already set (to null). That threw `IllegalStateException` and hid the ORA-00001 constraint error, so two duplicate-name portlet-list API specs got 500 instead of 400. | **Fixed** (7ded7362d): the aspect logs the next exception instead of chaining it. A unit test reproduces the exact CI error on the old code. Upstream candidate. |
 | MOD-I98 | CI | uPortal CI run 38072243202 (179e11d66) failed on Windows only: Maven Central returned HTTP 403 for `spring-core-7.0.9.pom` while resolving the copy tool's Spring Boot 4 dependencies. The next run, with the same build files, was green on all 8 jobs. On the prototype branch, setup-gradle's cache is read-only (it writes only on the default branch, which the fork never builds), so every job downloads everything from Central and is exposed to its rate limits. | External; no code change. If it recurs, let setup-gradle write the cache on push builds of the integration branch (push events only, never PRs, to avoid cache poisoning), and recheck with zizmor. Upstream runs on `master` get a written cache and are unaffected. |
+| MOD-I100 | api-rest | **Found by SpotBugs.** `EntityService.java:221` uses `&&` where `\|\|` is meant, so a null entity type with an ID set throws an NPE at :225. | Fix with a test (queued). Upstream candidate. |
+| MOD-I101 | io-types | **Found by SpotBugs.** `ExternalPortletDefinitionUnmarshaller.java:243` compares `Calendar.equals(Date)`, which is always false, so lifecycle entries meant to get the current time keep the placeholder date on import. | Fix with a test (queued). Upstream candidate. |
+| MOD-I102 | rdbm | **Found by SpotBugs.** `EntityManagerCacheImpl.java:213–232` logs that its per-thread map is missing, then dereferences it anyway (NPE). | Fix with a test (queued). |
+| MOD-I103 | core | **Found by SpotBugs.** `PropertiesManager.java:85–91` publishes an empty `Properties` before loading it, while `getProperty` (:110, :129) initialises lazily without a lock. Concurrent first calls can get a spurious `MissingPropertyException`. | Fix with safe publication and a concurrency test (queued). Upstream candidate. |
+| MOD-I104 | core | **Found while tracing MOD-I90.** `BasePersonManager.java:158` reads the `guestUserIds` HashMap without the lock its writer holds. | Fix (queued). Related to MOD-I90. |
+| MOD-I105 | utils | **Found by SpotBugs.** `ComparableExtractingComparator.java:53` throws an NPE when only the first value is null. `PortletWindowRegistryImpl.java:554`'s error message prints the null entity instead of its ID. | Fix with tests (queued). |
+| MOD-I106 | Build | uPortal-webapp's `npmInstall` still rewrites `package-lock.json`, because c0d9c16ca switched only the root build to `npm ci`. | Fix (queued). |
 
 ## Open questions
 
