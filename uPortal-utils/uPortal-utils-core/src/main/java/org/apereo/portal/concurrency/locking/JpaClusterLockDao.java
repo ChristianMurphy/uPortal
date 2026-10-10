@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.concurrency.locking;
 
+import java.time.Duration;
 import javax.persistence.EntityManager;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
@@ -23,8 +24,6 @@ import org.apereo.portal.jpa.BasePortalJpaDao;
 import org.apereo.portal.jpa.cache.EntityManagerCache;
 import org.apereo.portal.utils.cache.CacheKey;
 import org.hibernate.exception.ConstraintViolationException;
-import org.joda.time.Duration;
-import org.joda.time.ReadableDuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +47,7 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private ReadableDuration abandonedLockAge = Duration.standardSeconds(5);
+    private Duration abandonedLockAge = Duration.ofSeconds(5);
     private IPortalInfoProvider portalInfoProvider;
     private TransactionTemplate newTransactionTemplate;
     private EntityManagerCache entityManagerCache;
@@ -62,7 +61,7 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
      * servers in the cluster.
      */
     @Value("${org.apereo.portal.concurrency.locking.ClusterLockDao.abandonedLockAge:PT60S}")
-    public void setAbandonedLockAge(ReadableDuration abandonedLockAge) {
+    public void setAbandonedLockAge(Duration abandonedLockAge) {
         this.abandonedLockAge = abandonedLockAge;
     }
 
@@ -360,7 +359,7 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
     /** Checks if the specified mutex is abandoned */
     protected boolean isLockAbandoned(final ClusterMutex clusterMutex) {
         return clusterMutex.getLastUpdate()
-                < (System.currentTimeMillis() - abandonedLockAge.getMillis());
+                < (System.currentTimeMillis() - abandonedLockAge.toMillis());
     }
 
     protected <T> T executeIgnoreRollback(TransactionCallback<T> action) {

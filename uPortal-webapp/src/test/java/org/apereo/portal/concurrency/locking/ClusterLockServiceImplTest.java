@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Function;
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,7 +32,6 @@ import java.util.concurrent.Future;
 import org.apereo.portal.IPortalInfoProvider;
 import org.apereo.portal.concurrency.locking.IClusterLockService.LockStatus;
 import org.apereo.portal.concurrency.locking.IClusterLockService.TryLockFunctionResult;
-import org.joda.time.Duration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -328,7 +328,7 @@ public class ClusterLockServiceImplTest {
         when(fakeLockMonitorExecutorService.submit(any(Callable.class)))
                 .thenReturn(dbLockWorkerFuture);
         this.clusterLockService.setLockMonitorExecutorService(fakeLockMonitorExecutorService);
-        this.clusterLockService.setDbLockTimeout(Duration.millis(500));
+        this.clusterLockService.setDbLockTimeout(Duration.ofMillis(500));
 
         final TryLockFunctionResult<Boolean> result =
                 this.clusterLockService.doInTryLock(

@@ -15,6 +15,7 @@
 package org.apereo.portal.utils.threading;
 
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Delayed;
@@ -25,7 +26,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.joda.time.ReadableDuration;
 import org.springframework.scheduling.SchedulingTaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
@@ -56,8 +56,8 @@ public class DelegatingThreadPoolTaskScheduler extends ThreadPoolTaskScheduler
      *
      * @param initialDelay Delay before starting ANY scheduled task
      */
-    public void setInitialDelay(ReadableDuration initialDelay) {
-        this.initialDelay = initialDelay.getMillis();
+    public void setInitialDelay(Duration initialDelay) {
+        this.initialDelay = initialDelay.toMillis();
         this.lastStartDelay = this.initialDelay;
     }
 
