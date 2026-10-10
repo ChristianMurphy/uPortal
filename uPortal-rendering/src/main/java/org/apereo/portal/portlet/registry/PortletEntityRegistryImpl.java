@@ -25,8 +25,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import javax.portlet.WindowState;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.EntityIdentifier;
 import org.apereo.portal.IUserPreferencesManager;
@@ -57,11 +55,14 @@ import org.apereo.portal.url.IPortalRequestUtils;
 import org.apereo.portal.user.IUserInstance;
 import org.apereo.portal.user.IUserInstanceManager;
 import org.apereo.portal.utils.ConcurrentMapUtils;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.apereo.portal.utils.web.PortalWebUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.orm.hibernate3.HibernateOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -93,7 +94,7 @@ public class PortletEntityRegistryImpl implements IPortletEntityRegistry {
     private IPortletDefinitionRegistry portletDefinitionRegistry;
     private IPortalRequestUtils portalRequestUtils;
     private IStylesheetDescriptorDao stylesheetDescriptorDao;
-    private Ehcache entityIdParseCache;
+    private Cache entityIdParseCache;
 
     @Autowired
     public void setStylesheetDescriptorDao(IStylesheetDescriptorDao stylesheetDescriptorDao) {
@@ -101,9 +102,14 @@ public class PortletEntityRegistryImpl implements IPortletEntityRegistry {
     }
 
     @Autowired
-    public void setEntityIdParseCache(
-            @Qualifier("org.apereo.portal.portlet.dao.jpa.PortletEntityImpl.idParseCache")
-                    Ehcache entityIdParseCache) {
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setEntityIdParseCache(
+                CacheLookup.requireCache(
+                        cacheManager,
+                        "org.apereo.portal.portlet.dao.jpa.PortletEntityImpl.idParseCache"));
+    }
+
+    public void setEntityIdParseCache(Cache entityIdParseCache) {
         this.entityIdParseCache = entityIdParseCache;
     }
 
@@ -735,9 +741,9 @@ public class PortletEntityRegistryImpl implements IPortletEntityRegistry {
         Validate.notNull(consistentEntityIdString, "consistentEntityIdString can not be null");
 
         // Check in the cache first
-        final Element element = this.entityIdParseCache.get(consistentEntityIdString);
-        if (element != null) {
-            final Object value = element.getObjectValue();
+        final Cache.ValueWrapper cached = this.entityIdParseCache.get(consistentEntityIdString);
+        if (cached != null) {
+            final Object value = cached.get();
             if (value != null) {
                 return (IPortletEntityId) value;
             }
@@ -815,7 +821,7 @@ public class PortletEntityRegistryImpl implements IPortletEntityRegistry {
                 createConsistentPortletEntityId(portletDefinitionId, layoutNodeId, userId);
 
         // Cache the resolution
-        this.entityIdParseCache.put(new Element(consistentEntityIdString, portletEntityId));
+        this.entityIdParseCache.put(consistentEntityIdString, portletEntityId);
 
         return portletEntityId;
     }
