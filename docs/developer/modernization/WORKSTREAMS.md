@@ -22,6 +22,22 @@ behind it.
   Playwright. Builds and unit tests can run in parallel.
 * **Hot files:** `gradle.properties` and the root `build.gradle` are shared,
   so keep version bumps in small separate commits to keep conflicts cheap.
+* **Workstream CI branches (MOD-D30):** each workstream pushes its branch
+  to the forks as `ccr-43ba0785-hzlrj5-<topic>`. The `ccr-*` trigger runs
+  the full CI there, so work is proven green before the integrator merges
+  it into `ccr-43ba0785-hzlrj5`. The integrator deletes the branch after
+  the merge. Workstreams don't push to the integration branch themselves.
+* **Task size:** one future upstream PR per task, about 1–3 hours. Each
+  task ends with a handoff note in
+  `docs/developer/modernization/notes/<topic>.md`: what changed, gate
+  results with run IDs, findings, and what's left.
+* **Log entries:** workstreams propose LOG.md entries in their handoff
+  note, using placeholders (`MOD-I?`, `MOD-D?`). The integrator assigns
+  the numbers when merging, so parallel branches don't collide.
+* **Heavy work:** portal, Playwright and multi-database runs need about
+  3 GB each. On a shared machine, at most two run at once. Heavier
+  workstreams run as separate cloud sessions on their own machines, at
+  most three at a time, and validate multi-database work on GitHub CI.
 
 ## Workstreams
 
