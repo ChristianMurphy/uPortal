@@ -9,6 +9,8 @@ dependencies {
     api "org.apache.commons:commons-lang3:${commonsLang3Version}"
     api "org.jasypt:jasypt:${jasyptVersion}"
     api "org.slf4j:slf4j-api:${slf4jVersion}"
+    // @Service and @Component; spring-web stopped bringing spring-context in Spring 5
+    api "org.springframework:spring-context:${springVersion}"
     api "org.springframework:spring-web:${springVersion}"
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"

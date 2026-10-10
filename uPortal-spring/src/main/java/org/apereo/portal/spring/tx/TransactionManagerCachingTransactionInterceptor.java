@@ -47,7 +47,7 @@ public class TransactionManagerCachingTransactionInterceptor extends Transaction
     @Override
     protected PlatformTransactionManager determineTransactionManager(TransactionAttribute txAttr) {
         if (txAttr == null) {
-            return super.determineTransactionManager(txAttr);
+            return superDetermineTransactionManager(txAttr);
         }
 
         final String qualifier = txAttr.getQualifier();
@@ -55,13 +55,23 @@ public class TransactionManagerCachingTransactionInterceptor extends Transaction
             PlatformTransactionManager platformTransactionManager =
                     platformTransactionManagerCache.get(qualifier);
             if (platformTransactionManager == null) {
-                platformTransactionManager = super.determineTransactionManager(txAttr);
+                platformTransactionManager = superDetermineTransactionManager(txAttr);
                 platformTransactionManagerCache.put(qualifier, platformTransactionManager);
             }
 
             return platformTransactionManager;
         }
 
-        return super.determineTransactionManager(txAttr);
+        return superDetermineTransactionManager(txAttr);
+    }
+
+    /**
+     * Spring 5.2+ declares the inherited method to return a TransactionManager. uPortal only
+     * configures PlatformTransactionManagers, so the cast holds on Spring 4.3 and 5.3.
+     */
+    @SuppressWarnings("cast")
+    private PlatformTransactionManager superDetermineTransactionManager(
+            TransactionAttribute txAttr) {
+        return (PlatformTransactionManager) super.determineTransactionManager(txAttr);
     }
 }
