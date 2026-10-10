@@ -119,10 +119,13 @@ public final class GroupService implements IGroupConstants {
         return instance().compositeGroupService;
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     private String getDefaultServiceName() throws GroupsException {
         return (String) getServiceConfiguration().getAttributes().get("defaultService");
     }
+
     /**
      * Refers to the PropertiesManager to get the key for the group associated with 'name' and asks
      * the group store implementation for the corresponding <code>IEntityGroup</code>.
@@ -132,7 +135,9 @@ public final class GroupService implements IGroupConstants {
         return instance().igetDistinguishedGroup(name);
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     public String getDistinguishedGroupKey(String name) {
         return PropertiesManager.getProperty(GROUP_SERVICE_KEY + name, "");
     }
@@ -200,7 +205,9 @@ public final class GroupService implements IGroupConstants {
         return instance().igetRootGroup(type);
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     private GroupServiceConfiguration getServiceConfiguration() throws GroupsException {
         try {
             return GroupServiceConfiguration.getConfiguration();
@@ -303,6 +310,7 @@ public final class GroupService implements IGroupConstants {
     private IEntityGroup igetRootGroup(Class<?> type) throws GroupsException {
         return igetDistinguishedGroup(type.getName());
     }
+
     /**
      * Returns a new <code>IEntityGroup</code> for the given Class with an unused key.
      *
@@ -311,6 +319,7 @@ public final class GroupService implements IGroupConstants {
     private IEntityGroup inewGroup(Class<?> type) throws GroupsException {
         return inewGroup(type, getDefaultServiceName());
     }
+
     /**
      * Returns a new <code>IEntityGroup</code> for the given Class with an unused key.
      *
@@ -324,7 +333,9 @@ public final class GroupService implements IGroupConstants {
         }
     }
 
-    /** @exception GroupsException */
+    /**
+     * @exception GroupsException
+     */
     private void initializeCompositeService() throws GroupsException {
         String eMsg = null;
         try {

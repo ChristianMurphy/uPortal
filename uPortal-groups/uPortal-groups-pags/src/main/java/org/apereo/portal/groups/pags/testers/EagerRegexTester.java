@@ -51,7 +51,9 @@ import org.apereo.portal.groups.pags.dao.IPersonAttributesGroupTestDefinition;
  */
 public class EagerRegexTester extends RegexTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public EagerRegexTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
     }

@@ -21,7 +21,9 @@ import org.apereo.portal.groups.pags.dao.IPersonAttributesGroupTestDefinition;
  */
 public class IntegerEQTester extends AbstractIntegerTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public IntegerEQTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
     }

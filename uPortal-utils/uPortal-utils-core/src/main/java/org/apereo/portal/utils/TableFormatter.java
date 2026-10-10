@@ -43,15 +43,23 @@ public class TableFormatter {
             return "%" + this.flags + padding + this.conversion;
         }
 
-        /** @return the value */
+        /**
+         * @return the value
+         */
         public T getValue() {
             return value;
         }
-        /** @return the flags */
+
+        /**
+         * @return the flags
+         */
         public String getFlags() {
             return flags;
         }
-        /** @return the conversion */
+
+        /**
+         * @return the conversion
+         */
         public String getConversion() {
             return conversion;
         }

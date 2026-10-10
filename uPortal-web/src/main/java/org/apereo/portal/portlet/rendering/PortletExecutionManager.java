@@ -1035,6 +1035,7 @@ public class PortletExecutionManager extends HandlerInterceptorAdapter
             return portletRenderingMap;
         }
     }
+
     /**
      * Returns a request attribute scoped Map of portlets that are rendering for the current
      * request.

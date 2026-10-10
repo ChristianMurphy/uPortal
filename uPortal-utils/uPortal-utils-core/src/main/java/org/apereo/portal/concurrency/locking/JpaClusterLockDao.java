@@ -328,6 +328,7 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
     protected <T> T executeIgnoreRollback(TransactionCallback<T> action) {
         return this.executeIgnoreRollback(action, null);
     }
+
     /**
      * Utility for using TransactionTemplate when we know that a rollback might happen and just want
      * to ignore it

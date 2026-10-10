@@ -40,7 +40,9 @@ public final class PortletDeletedFromLayoutPortalEvent extends PortletLayoutPort
         this.oldParentFolderId = oldParentFolderId;
     }
 
-    /** @return the oldParentFolderId */
+    /**
+     * @return the oldParentFolderId
+     */
     public String getOldParentFolderId() {
         return this.oldParentFolderId;
     }

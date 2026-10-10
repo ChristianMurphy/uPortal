@@ -108,7 +108,9 @@ public class TabRenderStatisticsController
         }
     }
 
-    /** @return Tabs that exist for the aggregation */
+    /**
+     * @return Tabs that exist for the aggregation
+     */
     @ModelAttribute("tabs")
     public Set<AggregatedTabMapping> getTabs() {
         final Set<AggregatedTabMapping> groupMappings = aggregatedTabLookupDao.getTabMappings();

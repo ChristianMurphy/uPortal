@@ -28,12 +28,16 @@ public class MockRequestPropertiesManager implements IRequestPropertiesManager, 
     private Map<String, String[]> properties = new ParameterMap();
     private int order;
 
-    /** @return the properties */
+    /**
+     * @return the properties
+     */
     public Map<String, String[]> getProperties() {
         return properties;
     }
 
-    /** @param properties the properties to set */
+    /**
+     * @param properties the properties to set
+     */
     public void setProperties(Map<String, String[]> properties) {
         this.properties = properties;
     }

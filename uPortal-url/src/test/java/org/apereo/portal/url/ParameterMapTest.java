@@ -48,7 +48,9 @@ public class ParameterMapTest {
         return paramMap;
     }
 
-    /** @author snehitroda */
+    /**
+     * @author snehitroda
+     */
     @Test
     public void testConvertListMapWithValues() {
         // Arrange
@@ -61,7 +63,9 @@ public class ParameterMapTest {
         assertArrayEquals(new String[] {"value1", "value2"}, mapResult.get("param1"));
     }
 
-    /** @author snehitroda */
+    /**
+     * @author snehitroda
+     */
     @Test
     public void testConvertListMapWithNoValues() {
         // Arrange

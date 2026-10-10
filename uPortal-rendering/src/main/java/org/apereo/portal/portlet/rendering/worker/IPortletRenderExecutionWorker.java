@@ -20,6 +20,8 @@ import org.apereo.portal.portlet.rendering.PortletRenderResult;
 public interface IPortletRenderExecutionWorker
         extends IPortletExecutionWorker<PortletRenderResult> {
 
-    /** @return The output written by the portlet */
+    /**
+     * @return The output written by the portlet
+     */
     public String getOutput(long timeout) throws Exception;
 }

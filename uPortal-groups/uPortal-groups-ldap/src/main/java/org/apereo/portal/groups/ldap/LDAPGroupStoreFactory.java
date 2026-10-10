@@ -25,17 +25,22 @@ import org.apereo.portal.groups.IEntityGroupStoreFactory;
 public class LDAPGroupStoreFactory implements IEntityGroupStoreFactory {
     private static final Log log = LogFactory.getLog(LDAPGroupStoreFactory.class);
     protected static LDAPGroupStore groupStore;
+
     /** ReferenceGroupServiceFactory constructor. */
     public LDAPGroupStoreFactory() {
         super();
     }
-    /** @return org.apereo.portal.groups.ldap.LDAPGroupStore */
+
+    /**
+     * @return org.apereo.portal.groups.ldap.LDAPGroupStore
+     */
     protected static synchronized LDAPGroupStore getGroupStore() {
         if (groupStore == null) {
             groupStore = new LDAPGroupStore();
         }
         return groupStore;
     }
+
     /**
      * Return an instance of the group store implementation.
      *
@@ -46,6 +51,7 @@ public class LDAPGroupStoreFactory implements IEntityGroupStoreFactory {
     public IEntityGroupStore newGroupStore() throws GroupsException {
         return newGroupStore(null);
     }
+
     /**
      * Return an instance of the group store implementation.
      *
@@ -57,6 +63,7 @@ public class LDAPGroupStoreFactory implements IEntityGroupStoreFactory {
             throws GroupsException {
         return newInstance();
     }
+
     /**
      * Return an instance of the group store implementation.
      *

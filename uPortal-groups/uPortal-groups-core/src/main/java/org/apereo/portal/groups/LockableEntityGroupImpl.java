@@ -24,6 +24,7 @@ import org.apereo.portal.concurrency.IEntityLock;
  */
 public class LockableEntityGroupImpl extends EntityGroupImpl implements ILockableEntityGroup {
     protected IEntityLock lock;
+
     /**
      * LockableEntityGroupImpl constructor.
      *
@@ -41,13 +42,17 @@ public class LockableEntityGroupImpl extends EntityGroupImpl implements ILockabl
         getLockableGroupService().deleteGroup(this);
     }
 
-    /** @return org.apereo.portal.concurrency.IEntityLock */
+    /**
+     * @return org.apereo.portal.concurrency.IEntityLock
+     */
     @Override
     public IEntityLock getLock() {
         return lock;
     }
 
-    /** @return org.apereo.portal.groups.ILockableGroupService */
+    /**
+     * @return org.apereo.portal.groups.ILockableGroupService
+     */
     protected ILockableGroupService getLockableGroupService() throws GroupsException {
         return (ILockableGroupService) super.getLocalGroupService();
     }
@@ -74,7 +79,9 @@ public class LockableEntityGroupImpl extends EntityGroupImpl implements ILockabl
         this.invalidateInParentGroupsCache(Collections.singleton((IGroupMember) this));
     }
 
-    /** @param newLock org.apereo.portal.concurrency.IEntityLock */
+    /**
+     * @param newLock org.apereo.portal.concurrency.IEntityLock
+     */
     @Override
     public void setLock(IEntityLock newLock) {
         lock = newLock;

@@ -20,10 +20,14 @@ import org.joda.time.LocalTime;
 
 /** Describes a dimension in time (hours). Each object represents one minute in a 24 period */
 public interface TimeDimension extends Serializable {
-    /** @return The ID of the dimension */
+    /**
+     * @return The ID of the dimension
+     */
     long getId();
 
-    /** @return The time represented by this dimension */
+    /**
+     * @return The time represented by this dimension
+     */
     LocalTime getTime();
 
     /**
@@ -33,12 +37,14 @@ public interface TimeDimension extends Serializable {
      * @see Calendar#MINUTE
      */
     int getHour();
+
     /**
      * Will only return values between 0 and 11 inclusive
      *
      * @return The five minute block within the hour the minute exists in
      */
     int getFiveMinuteIncrement();
+
     /**
      * Will only return values between 0 and 59 inclusive
      *

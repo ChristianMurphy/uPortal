@@ -35,6 +35,6 @@ sourceSets {
     }
 }
 
-tasks.withType(JavaCompile) {
-    options.annotationProcessorGeneratedSourcesDirectory = file(generatedSourcesDir)
+tasks.named('compileJava') {
+    options.generatedSourceOutputDirectory = file(generatedSourcesDir)
 }

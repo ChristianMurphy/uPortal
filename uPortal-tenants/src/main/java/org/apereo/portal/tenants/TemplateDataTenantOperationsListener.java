@@ -295,11 +295,11 @@ public final class TemplateDataTenantOperationsListener extends AbstractTenantOp
         }
 
         switch (result) {
-                // Did we fail at all?
+            // Did we fail at all?
             case FAIL:
                 response.addMessage(failedEntitiesMessage.toString());
                 break;
-                // Or succeed completely?
+            // Or succeed completely?
             default:
                 // Might add another message here in future...
                 break;

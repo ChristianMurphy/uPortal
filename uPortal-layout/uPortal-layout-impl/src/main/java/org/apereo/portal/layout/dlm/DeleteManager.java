@@ -152,6 +152,7 @@ public class DeleteManager {
         Element delSet = getDeleteSet(plf, person, true);
         addDeleteDirective(compViewNode, elementID, person, plf, delSet);
     }
+
     /**
      * This method does the actual work of adding a delete directive and then recursively calling
      * itself for any incoporated children that need to be deleted as well.

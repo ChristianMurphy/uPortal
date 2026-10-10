@@ -13,16 +13,16 @@ These override any instinct to "be helpful by doing more."
 
 ## Tech stack
 
-- **Java 11** source + runtime (CI matrix: Hotspot/Temurin/Zulu × Linux/Windows/macOS)
-- **Gradle** multi-project build (~45 subprojects), Groovy DSL — all dependency versions in `gradle.properties`
-- **Spring 4.3.30** (XML + annotation DI, no Spring Boot), **Hibernate 4.2.21** with JPA
+- **Java 11** bytecode and platform API (`javac --release 11`), so the portal runs on Java 11+; **built and tested on JDK 21 and 25** (CI matrix: Temurin/Zulu/Corretto × JDK 21/25 on Linux, Temurin 25 on Windows/macOS)
+- **Gradle 9.8** (wrapper; needs JDK 21+ to build) multi-project build (~45 subprojects), Groovy DSL — all dependency versions in `gradle.properties`
+- **Spring 4.3.30** (XML + annotation DI, no Spring Boot), **Hibernate 4.3.11** with JPA
 - **Portlet API 2.1** (JSR-286); **Soffit** REST alternative
-- **JUnit 4.13.2 + Mockito 4.11.0** (NOT JUnit 5); **Groovy 3.0.24** + Spock 2.1 for some tests
+- **JUnit 4.13.2 + Mockito 5.24.0** (NOT JUnit 5); **Groovy 4.0** + Spock 2.4 for the Groovy tests in uPortal-webapp (the runtime Groovy shipped in the war stays 3.0)
 - **JavaScript ES2021 + jQuery** (no React/Vue), **LESS** + **Bootstrap 3.4.1**, **Node 20.15.1** for linting only
-- **XSLT** rendering pipeline; **CAS 3.6.2** SSO, **LDAP/Grouper** groups; **HSQLDB** dev / RDBMS prod
-- **AOSP Java style** via google-java-format 1.7
+- **XSLT** rendering pipeline (calls Java extension functions, so JDK 24+ needs `-Djdk.xml.enableExtensionFunctions=true`); **CAS 3.6.2** SSO, **LDAP/Grouper** groups; **HSQLDB** dev / RDBMS prod
+- **AOSP Java style** via google-java-format 1.36.1 (driven by Spotless 8.10.4); Error Prone 2.50 at compile time
 
-Java versions are managed with [SDKMAN](https://sdkman.io/); each repo's `.sdkmanrc` pins the version — run `sdk env` to activate. uPortal and uPortal-start both need `11.0.30-amzn`.
+Java versions are managed with [SDKMAN](https://sdkman.io/); each repo's `.sdkmanrc` pins the version — run `sdk env` to activate. uPortal builds with `25.0.4-tem` (any JDK 21+ works); uPortal-start pins its own JDK.
 
 ## Running and testing locally
 
@@ -44,12 +44,12 @@ End-to-end Playwright tests (TypeScript) also live in uPortal-start under `tests
 ## Commands
 
 ```bash
-./gradlew -S --no-daemon --no-parallel build jacocoAggregateReport coveralls  # full CI build
+./gradlew -S --no-daemon --no-parallel build jacocoAggregateReport  # full CI build (CI uploads coverage with the Coveralls GitHub Action)
 ./gradlew build -x test                       # compile, skip tests
 ./gradlew :uPortal-core:test                  # test one module
 ./gradlew :uPortal-core:test --tests "org.apereo.portal.PortalExceptionTest"  # single class
 ./gradlew install                             # publish to ~/.m2
-./gradlew verGJF                              # check Java format (AOSP); goJF to auto-fix
+./gradlew spotlessCheck                       # check Java format (AOSP); spotlessApply to auto-fix
 ./gradlew codenarcMain codenarcTest           # Groovy static analysis
 npx eslint . --report-unused-disable-directives --max-warnings 0   # lint JS; npm run format-js to fix
 npm run lint-less                             # lint LESS
@@ -95,7 +95,7 @@ Key config files: `portal.properties` (overridable via `${portal.home}/uPortal.p
 
 ## Code style
 
-- **Java:** AOSP via google-java-format 1.7 (4-space indent, same-line braces). Package root `org.apereo.portal`. Every file needs the Apereo Apache 2.0 license header. `./gradlew verGJF` / `goJF`.
+- **Java:** AOSP via google-java-format 1.36.1 (4-space indent, same-line braces). Package root `org.apereo.portal`. Every file needs the Apereo Apache 2.0 license header. `./gradlew spotlessCheck` / `spotlessApply` (the old `verGJF` / `goJF` still work).
 - **Tests:** JUnit 4 + Mockito — `@Before`/`@Test`, `@Mock`/`@InjectMocks`, `MockitoAnnotations.initMocks(this)`. Static-import `org.junit.Assert.*` and `org.mockito.Mockito.*`.
 - **JavaScript:** Prettier (single quotes, 4-space indent, ES5 trailing commas). Globals: `jQuery`, `$`, `_`, `up`, `fluid`.
 - **LESS:** 2-space indent, Prettier via stylelint-prettier.
@@ -106,7 +106,7 @@ Key config files: `portal.properties` (overridable via `${portal.home}/uPortal.p
 
 **XSLT rendering pipeline (`uPortal-rendering/`)** is complex, stateful, and poorly documented; changes can silently break rendering for all users. Do NOT modify XSL files without first reading the full transformation chain and having a reproducible test that proves the change. If unsure how a stage works, STOP and ask. Prefer adding a new template/mode over editing existing match patterns.
 
-**Banned patterns.** Source compiles under Java 11, so Java 9–11 features (`var`, `List.of()`, `Map.of()`, `Optional.isEmpty()`, `String.isBlank()`) are fine. The ban line is Java 12+:
+**Banned patterns.** Source compiles with `--release 11` (the compiler rejects Java 12+ APIs even on JDK 21/25), so Java 9–11 features (`var`, `List.of()`, `Map.of()`, `Optional.isEmpty()`, `String.isBlank()`) are fine. The ban line is Java 12+:
 
 | Pattern | Why | Instead |
 |---------|-----|---------|
@@ -125,7 +125,7 @@ Key config files: `portal.properties` (overridable via `${portal.home}/uPortal.p
 ```
 [ ] Every changed line traces to the stated task
 [ ] Tests exist (or explained why not) and pass: ./gradlew :module:test
-[ ] Java formatting passes: ./gradlew verGJF
+[ ] Java formatting passes: ./gradlew spotlessCheck
 [ ] No Java 12+ features or APIs; no inline dependency versions
 [ ] License header on new files; no secrets or hardcoded hostnames
 ```

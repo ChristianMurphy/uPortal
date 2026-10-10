@@ -37,7 +37,10 @@ public class RDBMEntityStore implements IEntityStore {
         }
         return new EntityImpl(key, type);
     }
-    /** @return org.apereo.portal.groups.IEntityStore */
+
+    /**
+     * @return org.apereo.portal.groups.IEntityStore
+     */
     public static synchronized IEntityStore singleton() {
         if (singleton == null) {
             singleton = new RDBMEntityStore();

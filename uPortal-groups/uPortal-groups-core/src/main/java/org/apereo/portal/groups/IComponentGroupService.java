@@ -31,16 +31,19 @@ public interface IComponentGroupService {
      * the service WITHIN THIS COMPONENT.
      */
     public Map getComponentServices();
+
     /**
      * Returns the FULLY-QUALIFIED <code>Name</code> of the service, which may not be known until
      * the composite service is assembled.
      */
     public Name getServiceName();
+
     /**
      * Answers if this service is a leaf in the composite; a service that actually operates on
      * groups.
      */
     public boolean isLeafService();
+
     /** Sets the name of the service to the new value. */
     public void setServiceName(Name newServiceName);
 }

@@ -24,6 +24,7 @@ import org.apereo.portal.security.IPerson;
 public interface IStylesheetUserPreferencesDao {
     IStylesheetUserPreferences createStylesheetUserPreferences(
             IStylesheetDescriptor stylesheetDescriptor, IPerson person, IUserProfile profile);
+
     /**
      * @deprecated Use {@link #createStylesheetUserPreferences(IStylesheetDescriptor, IPerson,
      *     IUserProfile)}
@@ -40,6 +41,7 @@ public interface IStylesheetUserPreferencesDao {
 
     IStylesheetUserPreferences getStylesheetUserPreferences(
             IStylesheetDescriptor stylesheetDescriptor, IPerson person, IUserProfile profile);
+
     /**
      * @deprecated Use {@link #getStylesheetUserPreferences(IStylesheetDescriptor, IPerson,
      *     IUserProfile)}

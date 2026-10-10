@@ -51,7 +51,9 @@ import org.apereo.portal.security.IPerson;
  */
 public class InvertedRegexTester extends RegexTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public InvertedRegexTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
     }

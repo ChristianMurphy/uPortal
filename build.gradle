@@ -16,25 +16,23 @@ buildscript {
 
 plugins {
     // Top level plugins
-    id 'com.github.kt3k.coveralls' version '2.12.2'
     id 'com.github.node-gradle.node' version '7.1.0'
-    id 'net.researchgate.release' version '3.1.0'
+    id 'net.researchgate.release' version '3.2.0'
     // Records all tasks in task graph, generates `build/reports/visteg.dot`
     // dot file can be converted to an image using graphviz. `dot -Tsvg -O -v visteg.dot`
     // id 'cz.malohlava.visteg' version '1.0.5'
 
     // Sub project plugins
-    id 'com.github.sherter.google-java-format' version '0.9' apply false
-    id 'nebula.lint' version '17.8.0' apply false
-    id 'net.ltgt.errorprone' version '4.4.0' apply false
-    id 'com.github.spotbugs' version '4.8.0' apply false
+    id 'com.diffplug.spotless' version '8.10.4' apply false
+    id 'nebula.lint' version '21.3.0' apply false
+    id 'net.ltgt.errorprone' version '5.1.1' apply false
+    id 'com.github.spotbugs' version '6.5.12' apply false
 }
 
 description = "Apereo uPortal $version"
 
 /*======== Dependency Management ========**/
 repositories {
-    jcenter()
     mavenCentral()
     mavenLocal()
 }
@@ -44,9 +42,34 @@ node {
     download = true
 }
 
-if (!rootProject.ext.has('testModuleSummaries')) {
-    rootProject.ext.testModuleSummaries = []
+/**
+ * Collects the result of every Test task and prints a per-module summary when the build
+ * finishes (Gradle closes build services at the end of the build).
+ */
+abstract class TestSummaryService implements BuildService<org.gradle.api.services.BuildServiceParameters.None>, AutoCloseable {
+    private final List<Map> summaries = Collections.synchronizedList([])
+
+    void add(Map summary) {
+        summaries << summary
+    }
+
+    @Override
+    void close() {
+        if (summaries.isEmpty()) {
+            return
+        }
+        def failed = summaries.any { it.failed > 0 || it.resultType.toString() == 'FAILURE' }
+        println "=== All Module Test Summaries (${failed ? 'TEST FAILURE' : 'TEST SUCCESS'}) ==="
+        summaries.sort { it.projectPath }.each { s ->
+            println "Module ${s.projectPath} (${s.taskPath}): ${s.resultType} - ${s.executed} executed, ${s.passed} passed, ${s.failed} failed, ${s.skipped} skipped in ${s.durationMs} ms"
+        }
+        def total = summaries.inject([e:0,p:0,f:0,s:0,d:0]) { acc, m ->
+            acc.e += m.executed; acc.p += m.passed; acc.f += m.failed; acc.s += m.skipped; acc.d += m.durationMs; acc
+        }
+        println "=== Aggregate Test Summary: ${total.e} executed, ${total.p} passed, ${total.f} failed, ${total.s} skipped (sum durations ${total.d} ms) ==="
+    }
 }
+def testSummaryService = gradle.sharedServices.registerIfAbsent('testSummary', TestSummaryService) {}
 
 allprojects {
     apply plugin: 'java'
@@ -58,37 +81,78 @@ allprojects {
     apply plugin: 'nebula.lint'
     apply plugin: 'groovy'
     apply plugin: 'codenarc'
-    apply plugin: 'com.github.sherter.google-java-format'
+    apply plugin: 'com.diffplug.spotless'
     apply plugin: 'net.ltgt.errorprone'
 
-    configurations {
-        // Banned dependencies
-        all*.exclude group: 'commons-logging', module: 'commons-logging'
-        all*.exclude group: 'commons-logging', module: 'commons-logging-api'
-        all*.exclude group: 'log4j', module: 'log4j'
-        all*.exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
-        all*.exclude group: 'org.hamcrest', module: 'hamcrest-core'
+    // Banned dependencies. configureEach (rather than all*.exclude, which only reaches the
+    // configurations that exist at this point) also covers configurations that Gradle 9
+    // creates lazily, such as compileClasspath.
+    configurations.configureEach {
+        exclude group: 'commons-logging', module: 'commons-logging'
+        exclude group: 'commons-logging', module: 'commons-logging-api'
+        exclude group: 'log4j', module: 'log4j'
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
+        exclude group: 'org.hamcrest', module: 'hamcrest-core'
     }
 
     dependencies {
-        errorprone 'com.google.errorprone:error_prone_core:2.3.4'
-        errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
+        errorprone "com.google.errorprone:error_prone_core:${errorproneVersion}"
+    }
+
+    jacoco {
+        // JaCoCo 0.8.14+ supports Java 25 runtimes (class file version 69)
+        toolVersion = jacocoVersion
     }
 
     codenarc {
-        toolVersion = '3.7.0'
+        toolVersion = codenarcVersion
         reportFormat = 'console'
     }
+    tasks.withType(CodeNarc).configureEach {
+        // Gradle 9 hands CodeNarc the compile classpath by default, which switches on its
+        // "enhanced" rules (they were skipped before). Keep the previous rule set here; the
+        // enhanced rules currently flag AnyUnblockedGrantPermissionPolicyTest
+        // (JUnitAssertEqualsConstantActualValue) and can be enabled separately.
+        compilationClasspath = files()
+    }
 
-    // Version has to be set directly here, using a variable does not set Java compatability version
-    sourceCompatibility = 11
+    java {
+        sourceCompatibility = JavaVersion.VERSION_11
+    }
+    // Compile against the Java 11 platform API and emit Java 11 bytecode whichever JDK runs
+    // the build (javac --release), so building with a newer JDK cannot leak Java 12+
+    // language features or APIs into the published classes.
+    tasks.withType(JavaCompile).configureEach {
+        options.release = 11
+    }
+    tasks.withType(GroovyCompile).configureEach {
+        options.release = 11
+    }
+    // Record method parameter names in the class files (javac -parameters). Spring 6.1+ no
+    // longer reads them from debug info, and needs them for name-based
+    // <constructor-arg name="..."> wiring and implicit @RequestParam/@PathVariable names.
+    // Spring 4.3 already prefers these names when present and otherwise reads the same
+    // names from the debug info, so its behaviour does not change.
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs.add('-parameters')
+    }
+    tasks.withType(JavaCompile).configureEach {
+        options.errorprone {
+            // ERROR-level checks added to Error Prone after 2.3.4 that flag existing code.
+            // Disabled so the toolchain upgrade needs no production change; each finding
+            // should be fixed (and its check re-enabled) separately.
+            disable('BanJNDI', 'BoxedPrimitiveEquality', 'DoubleBraceInitialization', 'SelfAssertion')
+        }
+    }
 
+    // 'duplicate-dependency-class' was dropped with Gradle 9: it resolves every project's
+    // configurations from the root lint task, which Gradle 9 rejects as unsafe
+    // cross-project resolution.
     gradleLint.criticalRules = [
       'overridden-dependency-version',
       'dependency-parentheses',
       'dependency-tuple',
-      'empty-closure',
-      'duplicate-dependency-class'
+      'empty-closure'
     ]
 
     /*======== Static Analysis ========*/
@@ -101,16 +165,38 @@ allprojects {
         enabled = gradle.startParameter.taskNames.contains(it.name)
         reports {
             html {
-                enabled = true
-                destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+                required = true
+                outputLocation = file("$buildDir/reports/spotbugs/main/spotbugs.html")
                 stylesheet = 'fancy-hist.xsl'
             }
         }
     }
-    googleJavaFormat {
-        toolVersion '1.7'
-        options style: 'AOSP'
-        exclude '**/generated-sources'
+    spotless {
+        java {
+            googleJavaFormat(googleJavaFormatVersion).aosp()
+            targetExclude '**/generated-sources/**', '**/build/**'
+        }
+    }
+    // Keep the task names of the previous google-java-format plugin working, and with
+    // them the documented abbreviations `./gradlew verGJF` and `./gradlew goJF`.
+    tasks.register('verifyGoogleJavaFormat') {
+        group = 'verification'
+        description = 'Alias for spotlessJavaCheck (formerly provided by the sherter google-java-format plugin).'
+        dependsOn 'spotlessJavaCheck'
+    }
+    tasks.register('googleJavaFormat') {
+        group = 'formatting'
+        description = 'Alias for spotlessJavaApply (formerly provided by the sherter google-java-format plugin).'
+        dependsOn 'spotlessJavaApply'
+    }
+    // The root spotlessJavaCheck scans the project tree which overlaps with the
+    // webapp's nodeSetup/npmInstall output directory.  Order the root task to run
+    // after the webapp's node setup to satisfy Gradle 8's implicit-dependency
+    // validation.
+    if (project == rootProject) {
+        tasks.matching { it.name == 'spotlessJavaCheck' || it.name == 'spotlessJavaApply' }.configureEach {
+            mustRunAfter ':uPortal-webapp:nodeSetup', ':uPortal-webapp:npmInstall'
+        }
     }
 
     /*======== Aggregate Dependencies Report ========*/
@@ -120,37 +206,45 @@ allprojects {
     }
 
     tasks.withType(Test).configureEach { testTask ->
-        afterSuite { desc, result ->
-            if (!desc.parent) {
-                // Store summary; do not print now
-                rootProject.ext.testModuleSummaries << [
-                        projectPath: project.path,
-                        taskPath   : testTask.path,
-                        resultType : result.resultType,
-                        executed   : result.testCount,
-                        passed     : result.successfulTestCount,
-                        failed     : result.failedTestCount,
-                        skipped    : result.skippedTestCount,
-                        durationMs : (result.endTime - result.startTime)
-                ]
+        usesService(testSummaryService)
+        def projectPath = project.path
+        def taskPath = testTask.path
+        addTestListener(new TestListener() {
+            void beforeSuite(TestDescriptor suite) {}
+            void beforeTest(TestDescriptor test) {}
+            void afterTest(TestDescriptor test, TestResult result) {}
+            void afterSuite(TestDescriptor suite, TestResult result) {
+                if (!suite.parent) {
+                    // Store summary; it is printed when the build finishes
+                    testSummaryService.get().add([
+                            projectPath: projectPath,
+                            taskPath   : taskPath,
+                            resultType : result.resultType,
+                            executed   : result.testCount,
+                            passed     : result.successfulTestCount,
+                            failed     : result.failedTestCount,
+                            skipped    : result.skippedTestCount,
+                            durationMs : (result.endTime - result.startTime)
+                    ])
+                }
             }
-        }
+        })
     }
 }
 
-gradle.buildFinished { buildResult ->
-    def summaries = rootProject.ext.has('testModuleSummaries') ? rootProject.ext.testModuleSummaries : []
-    if (!summaries || summaries.isEmpty()) {
-        return
+/** Passes a Java agent jar to a forked JVM, tracking the jar as a task input. */
+class JavaAgentArgumentProvider implements CommandLineArgumentProvider {
+    @Classpath
+    final FileCollection agent
+
+    JavaAgentArgumentProvider(FileCollection agent) {
+        this.agent = agent
     }
-    println "=== All Module Test Summaries (${buildResult.failure ? 'BUILD FAILURE' : 'BUILD SUCCESS'}) ==="
-    summaries.sort { it.projectPath }.each { s ->
-        println "Module ${s.projectPath} (${s.taskPath}): ${s.resultType} - ${s.executed} executed, ${s.passed} passed, ${s.failed} failed, ${s.skipped} skipped in ${s.durationMs} ms"
+
+    @Override
+    Iterable<String> asArguments() {
+        ["-javaagent:${agent.singleFile.absolutePath}".toString()]
     }
-    def total = summaries.inject([e:0,p:0,f:0,s:0,d:0]) { acc, m ->
-        acc.e += m.executed; acc.p += m.passed; acc.f += m.failed; acc.s += m.skipped; acc.d += m.durationMs; acc
-    }
-    println "=== Aggregate Test Summary: ${total.e} executed, ${total.p} passed, ${total.f} failed, ${total.s} skipped (sum durations ${total.d} ms) ==="
 }
 
 /*======== Child Projects ========*/
@@ -158,14 +252,17 @@ subprojects {
 
     /*======== Plugins ========*/
     apply plugin: 'maven-publish'
-    apply plugin: 'maven'
     apply plugin: 'signing'
 
     /*======== Dependency Management ========**/
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url "https://jitpack.io" }
+        maven { url = "https://jitpack.io" }
+    }
+
+    configurations {
+        mockitoAgent
     }
 
     dependencies {
@@ -176,6 +273,20 @@ subprojects {
         testImplementation "org.springframework:spring-test:${springVersion}"
         testImplementation "org.xmlunit:xmlunit-legacy:${xmlunitVersion}"
         spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
+        mockitoAgent("org.mockito:mockito-core:${mockitoVersion}") {
+            transitive = false
+        }
+    }
+
+    tasks.withType(Test).configureEach {
+        // Mockito 5's inline mock maker otherwise self-attaches as a Java agent at runtime,
+        // which JDK 21+ warns about and a future JDK will refuse (JEP 451). Load it explicitly.
+        jvmArgumentProviders.add(new JavaAgentArgumentProvider(configurations.mockitoAgent))
+        // Since JDK 24 the default conf/jaxp.properties sets jdk.xml.enableExtensionFunctions=false,
+        // but uPortal's XSLT (rendering pipeline, Xalan helpers, import upgrades) calls Java
+        // extension functions. A portal running on JDK 24+ needs this flag too; on JDK 21 it is
+        // already the default.
+        systemProperty 'jdk.xml.enableExtensionFunctions', 'true'
     }
 
     /* Release Management
@@ -192,23 +303,6 @@ subprojects {
         publishingRepositoryUrl = project.hasProperty('ossrhUrl') ? project.getProperty('ossrhUrl') : "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
         publishingRepositoryUrlSnapshot = project.hasProperty('ossrhUrlSnapshot') ? project.getProperty('ossrhUrlSnapshot') : "https://central.sonatype.com/repository/maven-snapshots/"
     }
-    signing {
-        // Sign via the gpg command + gpg-agent (like the Maven ecosystem components),
-        // rather than reading an in-process secring.gpg. gpg-agent supplies the
-        // passphrase (pinentry), so no signing.password is stored in a properties file,
-        // and the modern GnuPG keystore is used. Select the key with the
-        // `signing.gnupg.keyName` Gradle property (e.g. in ~/.gradle/gradle.properties).
-        useGpgCmd()
-        required { gradle.taskGraph.hasTask('uploadArchives') }
-        sign configurations.archives
-    }
-    // `useGpgCmd()` makes the gpg command an always-present signatory, so the Sign
-    // tasks would otherwise run on CI (gpg is installed) with no key and fail. `required`
-    // only governs enforcement, not execution — gate the tasks themselves so they run
-    // only when a release is actually uploading artifacts.
-    tasks.withType(Sign).configureEach {
-        onlyIf { gradle.taskGraph.hasTask('uploadArchives') }
-    }
     tasks.withType(Javadoc).all {
         // disable JavaDocs until we start using them again in our website
         enabled = false
@@ -220,66 +314,91 @@ subprojects {
         }
     }
     task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier 'sources'
+        archiveClassifier.set('sources')
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from sourceSets.main.allSource
     }
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
+        archiveClassifier.set('javadoc')
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from javadoc.destinationDir
-    }
-    artifacts {
-        archives javadocJar, sourcesJar
     }
     publishing {
         publications {
             maven(MavenPublication) {
+                // uPortal-webapp swaps the jar for its war in its own build script
                 from components.java
-            }
-        }
-    }
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-                repository(url: publishingRepositoryUrl) {
-                    authentication(userName: publishingUsername, password: publishingPassword)
-                }
-
-                snapshotRepository(url: publishingRepositoryUrlSnapshot) {
-                    authentication(userName: publishingUsername, password: publishingPassword)
-                }
-
-                pom.project {
-                    name 'uPortal'
-                    packaging project.plugins.hasPlugin('war') ? 'war' : 'jar'
-                    // optionally artifactId can be defined here
-                    description 'Enterprise open source portal built by and for the higher education community.'
-                    url 'https://github.com/uPortal-Project/uPortal'
-
+                artifact sourcesJar
+                artifact javadocJar
+                pom {
+                    name = 'uPortal'
+                    description = 'Enterprise open source portal built by and for the higher education community.'
+                    url = 'https://github.com/uPortal-Project/uPortal'
                     scm {
-                        connection 'scm:git@github.com:uPortal-Project/uPortal.git'
-                        url 'https://github.com/uPortal-Project/uPortal'
+                        connection = 'scm:git@github.com:uPortal-Project/uPortal.git'
+                        url = 'https://github.com/uPortal-Project/uPortal'
                     }
-
                     licenses {
                         license {
-                            name 'The Apache License, Version 2.0'
-                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            name = 'The Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                         }
                     }
-
                     developers {
                         developer {
-                            organization 'uPortal Developers'
-                            organizationUrl 'https://github.com/uPortal-Project/uPortal/graphs/contributors'
+                            organization = 'uPortal Developers'
+                            organizationUrl = 'https://github.com/uPortal-Project/uPortal/graphs/contributors'
                         }
                     }
                 }
             }
         }
+        repositories {
+            maven {
+                // Releases go to the OSSRH Staging API, snapshots to the Central Portal
+                // snapshot repository (the same split the legacy mavenDeployer made).
+                url = version.toString().endsWith('SNAPSHOT') ? publishingRepositoryUrlSnapshot : publishingRepositoryUrl
+                credentials {
+                    username = publishingUsername
+                    password = publishingPassword
+                }
+            }
+        }
     }
-    afterReleaseBuild.dependsOn uploadArchives
+    // Publish exactly what the legacy `maven` plugin published (POM + jar/war + sources +
+    // javadoc + signatures). Gradle Module Metadata (.module) would change how Gradle
+    // consumers such as uPortal-start resolve these artifacts; leave that for a separate change.
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        enabled = false
+    }
+    // True only when artifacts are being uploaded to a remote repository (a release).
+    def isPublishingToRemote = {
+        gradle.taskGraph.allTasks.any { it instanceof PublishToMavenRepository }
+    }
+    signing {
+        // Sign via the gpg command + gpg-agent (like the Maven ecosystem components),
+        // rather than reading an in-process secring.gpg. gpg-agent supplies the
+        // passphrase (pinentry), so no signing.password is stored in a properties file,
+        // and the modern GnuPG keystore is used. Select the key with the
+        // `signing.gnupg.keyName` Gradle property (e.g. in ~/.gradle/gradle.properties).
+        useGpgCmd()
+        required = { isPublishingToRemote() }
+        sign publishing.publications.maven
+    }
+    // `useGpgCmd()` makes the gpg command an always-present signatory, so the Sign
+    // tasks would otherwise run on CI (gpg is installed) with no key and fail. `required`
+    // only governs enforcement, not execution — gate the tasks themselves so they run
+    // only when a release is actually uploading artifacts.
+    tasks.withType(Sign).configureEach {
+        onlyIf { isPublishingToRemote() }
+    }
+    // Backward-compatible alias: `./gradlew install` (used by uPortal-start's docs and
+    // release-uportal.sh) keeps publishing to the local Maven repository.
+    task install {
+        group = 'publishing'
+        description = 'Alias for publishToMavenLocal (backward compatibility)'
+        dependsOn publishToMavenLocal
+    }
 
     def jacocoExecutionDataFiles = fileTree(buildDir).include("/jacoco/*.exec")
     jacocoTestReport {
@@ -296,6 +415,7 @@ release {
         requireBranch.set('')
     }
 }
+afterReleaseBuild.dependsOn subprojects.collect { "${it.path}:publish" }
 
 
 task jacocoAggregateReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
@@ -303,25 +423,18 @@ task jacocoAggregateReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
     getAdditionalSourceDirs().setFrom(files(subprojects.sourceSets.main.allSource.srcDirs))
     getSourceDirectories().setFrom(files(subprojects.sourceSets.main.allSource.srcDirs))
     getClassDirectories().setFrom(files(subprojects.sourceSets.main.output))
-    getExecutionData().setFrom(files(subprojects.jacocoTestReport.executionData))
+    // Use a filtered file tree that lazily excludes non-existent files
+    getExecutionData().setFrom(files(subprojects.collect {
+        fileTree(dir: "${it.buildDir}/jacoco", include: '*.exec')
+    }))
 
     reports {
-        xml.enabled = true
-        html.enabled = true
+        xml.required = true
+        html.required = true
     }
     onlyIf = {
         true
     }
-    doFirst {
-        getExecutionData().setFrom(files(getExecutionData().findAll {
-            it.exists()
-        }))
-    }
-}
-
-coveralls {
-    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml"
-    sourceDirs = files(allprojects.sourceSets.main.allSource.srcDirs).files.absolutePath
 }
 
 /**
@@ -360,7 +473,7 @@ task crapAnalysis {
         // Load the Jacoco XML as text and remove any DOCTYPE to avoid parser restrictions
         def xmlText = jacocoXml.getText('UTF-8')
         xmlText = xmlText.replaceAll(/(?s)<!DOCTYPE.*?>/, '')
-        def report = new XmlSlurper(false, false).parseText(xmlText)
+        def report = new groovy.xml.XmlSlurper(false, false).parseText(xmlText)
         def methods = []
         def packageStats = [:]
         

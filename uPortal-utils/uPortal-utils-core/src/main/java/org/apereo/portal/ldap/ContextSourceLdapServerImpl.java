@@ -33,37 +33,53 @@ public class ContextSourceLdapServerImpl implements ILdapServer {
     private String uidAttribute;
     private String baseDN;
 
-    /** @return the contextSource */
+    /**
+     * @return the contextSource
+     */
     public ContextSource getContextSource() {
         return this.contextSource;
     }
-    /** @param ldapContextSource the ldapContextSource to set */
+
+    /**
+     * @param ldapContextSource the ldapContextSource to set
+     */
     public void setContextSource(ContextSource ldapContextSource) {
         this.contextSource = ldapContextSource;
     }
-    /** @param uidAttribute the uidAttribute to set */
+
+    /**
+     * @param uidAttribute the uidAttribute to set
+     */
     public void setUidAttribute(String uidAttribute) {
         this.uidAttribute = uidAttribute;
     }
 
-    /** @see org.apereo.portal.ldap.ILdapServer#getBaseDN() */
+    /**
+     * @see org.apereo.portal.ldap.ILdapServer#getBaseDN()
+     */
     @Override
     public String getBaseDN() {
         return this.baseDN;
     }
 
-    /** @see org.apereo.portal.ldap.ILdapServer#setBaseDN() */
+    /**
+     * @see org.apereo.portal.ldap.ILdapServer#setBaseDN()
+     */
     public void setBaseDN(String baseDN) {
         this.baseDN = baseDN;
     }
 
-    /** @see org.apereo.portal.ldap.ILdapServer#getConnection() */
+    /**
+     * @see org.apereo.portal.ldap.ILdapServer#getConnection()
+     */
     @Override
     public DirContext getConnection() throws NamingException {
         return this.contextSource.getReadOnlyContext();
     }
 
-    /** @see org.apereo.portal.ldap.ILdapServer#getUidAttribute() */
+    /**
+     * @see org.apereo.portal.ldap.ILdapServer#getUidAttribute()
+     */
     @Override
     public String getUidAttribute() {
         return this.uidAttribute;

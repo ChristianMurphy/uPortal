@@ -22,7 +22,9 @@ import org.apereo.portal.groups.pags.dao.IPersonAttributesGroupTestDefinition;
  */
 public class IntegerLETester extends AbstractIntegerTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public IntegerLETester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
     }

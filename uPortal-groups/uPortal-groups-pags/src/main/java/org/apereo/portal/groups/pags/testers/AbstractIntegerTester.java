@@ -25,7 +25,9 @@ public abstract class AbstractIntegerTester extends BaseAttributeTester {
 
     private final int testInteger;
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public AbstractIntegerTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
         this.testInteger = Integer.parseInt(definition.getTestValue());

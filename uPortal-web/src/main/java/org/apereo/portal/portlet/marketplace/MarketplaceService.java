@@ -77,6 +77,7 @@ public class MarketplaceService implements IMarketplaceService, ApplicationListe
     public void setPersonalizer(IPersonalizer personalizer) {
         this.personalizer = personalizer;
     }
+
     /** Used to store individual MarketplacePortletDefinition instances. */
     @Autowired
     @Qualifier(

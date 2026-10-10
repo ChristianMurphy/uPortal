@@ -240,7 +240,9 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
         return new PortletPreferenceImpl(this);
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object object) {
         if (object == this) {
@@ -257,7 +259,9 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
                 .isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(-1904185833, -1222355625)

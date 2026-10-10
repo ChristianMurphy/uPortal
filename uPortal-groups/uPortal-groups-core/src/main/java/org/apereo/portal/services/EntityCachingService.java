@@ -66,7 +66,9 @@ public class EntityCachingService implements IEntityCachingService {
                 }
             };
 
-    /** @deprecated Use {@link #getEntityCachingService()} instead. */
+    /**
+     * @deprecated Use {@link #getEntityCachingService()} instead.
+     */
     @Deprecated
     public static EntityCachingService instance() throws CachingException {
         return instanceHolder.get();

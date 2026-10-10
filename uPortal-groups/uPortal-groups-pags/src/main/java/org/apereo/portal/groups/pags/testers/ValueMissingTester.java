@@ -23,7 +23,9 @@ import org.apereo.portal.security.IPerson;
  */
 public class ValueMissingTester extends BaseAttributeTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public ValueMissingTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
     }

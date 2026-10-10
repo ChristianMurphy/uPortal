@@ -30,6 +30,13 @@ apply plugin: 'com.github.node-gradle.node'
 
 description = "Apereo uPortal Webapp (WAR)"
 
+// Spotless scans the project directory which overlaps with the node plugin's
+// nodeSetup/npmInstall output directory.  Declare ordering to satisfy Gradle 8's
+// implicit-dependency validation.
+tasks.matching { it.name == 'spotlessJavaCheck' || it.name == 'spotlessJavaApply' }.configureEach {
+    mustRunAfter tasks.named('nodeSetup'), tasks.named('npmInstall')
+}
+
 // Disable the jar task so the signing plugin does not produce an
 // orphaned .jar.asc (Central Portal rejects deployments that
 // reference a .jar file when only a .war exists)
@@ -42,6 +49,19 @@ jar.enabled = false
 configurations {
     // These get packaged with the war in a special way
     webjars
+}
+
+// The Groovy/Spock tests compile and run on Groovy 4 (groovyTestVersion), while the war
+// keeps the Groovy 3 runtime (groovyVersion) that uPortal-tools and groovy-jsr223 bring in.
+// Both declare the org.codehaus.groovy:groovy capability, so align the test classpaths on
+// Groovy 4; the runtime classpath (and therefore the war) is untouched.
+configurations.matching { it.name.startsWith('test') }.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        ['groovy', 'groovy-jsr223'].each { name ->
+            substitute(module("org.codehaus.groovy:${name}"))
+                    .using(module("org.apache.groovy:${name}:${groovyTestVersion}"))
+        }
+    }
 }
 
 dependencies {
@@ -66,7 +86,7 @@ dependencies {
     testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
     testImplementation "org.apache.portals.pluto:pluto-container-driver-api:${plutoVersion}"
     testImplementation "org.skyscreamer:jsonassert:${jsonassertVersion}"
-    testImplementation "org.codehaus.groovy:groovy-test:${groovyVersion}"
+    testImplementation "org.apache.groovy:groovy-test:${groovyTestVersion}"
     testImplementation "org.spockframework:spock-core:${spockVersion}"
     testImplementation "${portletApiDependency}"
     testImplementation "${servletApiDependency}"
@@ -114,37 +134,33 @@ processResources {
 ext.bootstrapJsPath = "${buildDir}/generated-sources/skin/main/webapp/rs"
 
 task prepareSkinResources {
-    // Unpack WebJars (part of the skin)
-    configurations.webjars.allDependencies.each {
-        String webjarName = it.name
-        String webjarVersion = it.version
-        String webjarFile = configurations.webjars.files(it).getAt(0)
-        // Stage 1:  Exploded WebJar
-        doLast {
+    inputs.files configurations.webjars
+    outputs.dir "${buildDir}/generated-sources/skin/main/webapp"
+    doLast {
+        // Unpack WebJars (part of the skin)
+        configurations.webjars.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+            String webjarName = artifact.moduleVersion.id.name
+            String webjarVersion = artifact.moduleVersion.id.version
+            File webjarFile = artifact.file
+            // Stage 1:  Exploded WebJar
             copy {
                 from zipTree(webjarFile)
                 into "${buildDir}/webjars/${webjarName}-${webjarVersion}"
             }
-        }
-        // Stage 2:  Contents of the WebJar included in the skin
-        doLast {
+            // Stage 2:  Contents of the WebJar included in the skin
             copy {
                 from "${buildDir}/webjars/${webjarName}-${webjarVersion}/META-INF/resources/webjars/${webjarName}/${webjarVersion}"
                 into "${buildDir}/generated-sources/skin/main/webapp/webjars/${webjarName}"
             }
-        }
-        // Stage 3: Copy rs directory from resource-server-content for SCSS compilation
-        if (webjarName == 'resource-server-content') {
-            doLast {
+            // Stage 3: Copy rs directory from resource-server-content for SCSS compilation
+            if (webjarName == 'resource-server-content') {
                 copy {
                     from "${buildDir}/webjars/${webjarName}-${webjarVersion}/rs"
                     into "${buildDir}/generated-sources/skin/main/webapp/rs"
                 }
             }
         }
-    }
-    // Add Respondr LESS sources
-    doLast {
+        // Add Respondr LESS sources
         copy {
             from 'src/main/webapp/media/skins/respondr'
             into "${buildDir}/generated-sources/skin/main/webapp/media/skins/respondr"
@@ -185,6 +201,12 @@ aggregateRespondrSkins.dependsOn('npm_run_compile-scss')
 processResources.dependsOn(aggregateRespondrSkins)
 
 war {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // Gradle 9 makes archives reproducible by default, giving every entry the same fixed
+    // date. Keep the real file dates in the war, as before: servlet containers compare JSP
+    // and compiled-class dates to decide whether to recompile a JSP, so constant dates could
+    // leave stale compiled JSPs in use after a redeploy.
+    preserveFileTimestamps = true
     // Add generated CSS for Respondr skins to the war file
     with {
         from "${buildDir}/generated-sources/skin/main/webapp"
@@ -193,9 +215,24 @@ war {
 }
 
 
-// Override the root maven publication for this WAR project — publish only the WAR artifact.
-// components.java (from root) would fail because jar.enabled = false.
-afterEvaluate {
-    publishing.publications.maven.artifacts.clear()
-    publishing.publications.maven.artifact(war)
+// Publish the WAR in place of the disabled jar, with war packaging. The POM dependencies
+// still come from components.java (configured in the root build.gradle), as they did
+// with the legacy `maven` plugin.
+publishing.publications.maven {
+    artifacts.clear()
+    artifact war
+    artifact sourcesJar
+    artifact javadocJar
+    pom.packaging = 'war'
+    // The war plugin's providedRuntime dependencies leak into the java component's
+    // variants (compile scope on Gradle 6, runtime on later versions), which would make the
+    // container-provided HSQLDB driver a dependency of the war. Keep it out of the POM, as
+    // the legacy `maven` plugin did.
+    pom.withXml {
+        def provided = configurations.providedRuntime.allDependencies.collect { "${it.group}:${it.name}".toString() }
+        asNode().dependencies.dependency.findAll {
+            "${it.groupId.text()}:${it.artifactId.text()}".toString() in provided
+        }.each { it.parent().remove(it) }
+    }
 }
+

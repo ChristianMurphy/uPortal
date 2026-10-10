@@ -202,7 +202,9 @@ public class UserAccountHelperTest {
         assertFalse(canDelete);
     }
 
-    /** @return */
+    /**
+     * @return
+     */
     private List<Preference> generateAccountEditPreferences() {
         List<Preference> accountEditPreferences = new ArrayList<>();
         Preference preference = new Preference();
@@ -216,7 +218,9 @@ public class UserAccountHelperTest {
         return accountEditPreferences;
     }
 
-    /** @return */
+    /**
+     * @return
+     */
     private Map<String, StringListAttribute> getPersonAttributes() {
         Map<String, StringListAttribute> personAttributes = new HashMap<>();
         personAttributes.put("pref_name_1", new StringListAttribute());

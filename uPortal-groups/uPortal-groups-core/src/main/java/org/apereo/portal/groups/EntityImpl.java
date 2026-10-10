@@ -21,10 +21,12 @@ import org.apereo.portal.spring.locator.EntityTypesLocator;
 /** Reference implementation for <code>IEntity</code>. */
 public class EntityImpl extends GroupMemberImpl implements IEntity {
     protected EntityIdentifier entityIdentifier;
+
     /** EntityImpl constructor */
     public EntityImpl(String newEntityKey, Class newEntityType) throws GroupsException {
         this(new EntityIdentifier(newEntityKey, newEntityType));
     }
+
     /** EntityImpl constructor */
     public EntityImpl(EntityIdentifier ei) throws GroupsException {
         super(ei);
@@ -33,7 +35,9 @@ public class EntityImpl extends GroupMemberImpl implements IEntity {
         entityIdentifier = new EntityIdentifier(key, ICompositeGroupService.LEAF_ENTITY_TYPE);
     }
 
-    /** @return org.apereo.portal.EntityIdentifier */
+    /**
+     * @return org.apereo.portal.EntityIdentifier
+     */
     @Override
     public EntityIdentifier getEntityIdentifier() {
         return entityIdentifier;
@@ -48,6 +52,7 @@ public class EntityImpl extends GroupMemberImpl implements IEntity {
     public java.lang.String getKey() {
         return getUnderlyingEntityIdentifier().getKey();
     }
+
     /**
      * Returns the type of the underyling entity.
      *
@@ -57,6 +62,7 @@ public class EntityImpl extends GroupMemberImpl implements IEntity {
     public Class<? extends IBasicEntity> getLeafType() {
         return getUnderlyingEntityIdentifier().getType();
     }
+
     /** Returns this object's type, as opposed to the type of its underlying entity. */
     @Override
     public Class getType() {

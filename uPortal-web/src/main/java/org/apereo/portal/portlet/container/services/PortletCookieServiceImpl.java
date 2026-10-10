@@ -55,6 +55,7 @@ public class PortletCookieServiceImpl implements IPortletCookieService, ServletC
      */
     private static final String SESSION_ATTRIBUTE__SESSION_ONLY_COOKIE_MAP =
             PortletCookieServiceImpl.class.getName() + ".SESSION_ONLY_COOKIE_MAP";
+
     /**
      * Name of the {@link HttpSession} attribute used to track the value of the {@link
      * IPortalCookie} (useful if the client does not accept cookies). Note: Package access for the
@@ -127,7 +128,9 @@ public class PortletCookieServiceImpl implements IPortletCookieService, ServletC
         this.comment = comment;
     }
 
-    /** @param domain The domain to set, it is recommended to leave this null. */
+    /**
+     * @param domain The domain to set, it is recommended to leave this null.
+     */
     public void setDomain(String domain) {
         this.domain = domain;
     }
@@ -349,6 +352,7 @@ public class PortletCookieServiceImpl implements IPortletCookieService, ServletC
             return sessionOnlyPortletCookies;
         }
     }
+
     /**
      * Convert the {@link IPortalCookie} into a servlet {@link Cookie}.
      *

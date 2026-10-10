@@ -19,7 +19,9 @@ import org.joda.time.DateMidnight;
 /** Details about a term of the year */
 public interface AcademicTermDetail
         extends DateRange<DateMidnight>, Comparable<AcademicTermDetail> {
-    /** @return The name of the term, cannot be null */
+    /**
+     * @return The name of the term, cannot be null
+     */
     String getTermName();
 
     /** Set the name of the term */

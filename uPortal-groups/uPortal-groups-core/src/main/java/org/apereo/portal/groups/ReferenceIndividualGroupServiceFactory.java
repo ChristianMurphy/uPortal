@@ -26,6 +26,7 @@ public class ReferenceIndividualGroupServiceFactory implements IComponentGroupSe
     public ReferenceIndividualGroupServiceFactory() {
         super();
     }
+
     /**
      * Return an instance of the service implementation.
      *
@@ -35,6 +36,7 @@ public class ReferenceIndividualGroupServiceFactory implements IComponentGroupSe
     public IComponentGroupService newGroupService() throws GroupsException {
         return newGroupService(new ComponentGroupServiceDescriptor());
     }
+
     /**
      * Return an instance of the service implementation.
      *

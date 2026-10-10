@@ -46,7 +46,9 @@ public class PortalInfoProviderImpl implements IPortalInfoProvider, ReadWriteCal
     private String resolvedServerName;
     private String resolvedUniqueServerName;
 
-    /** @param serverName A specific server name for {@link #getServerName()} to return */
+    /**
+     * @param serverName A specific server name for {@link #getServerName()} to return
+     */
     @Value("${org.apereo.portal.PortalInfoProvider.serverName:}")
     public void setServerName(String serverName) {
         this.serverName = StringUtils.trimToNull(serverName);

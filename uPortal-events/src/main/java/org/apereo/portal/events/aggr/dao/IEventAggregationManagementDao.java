@@ -55,7 +55,9 @@ public interface IEventAggregationManagementDao {
     /** Delete the specified configuration */
     void deleteAggregatedGroupConfig(AggregatedGroupConfig aggregatedGroupConfig);
 
-    /** @return All aggregated interval configurations */
+    /**
+     * @return All aggregated interval configurations
+     */
     Set<AggregatedIntervalConfig> getAggregatedIntervalConfigs();
 
     /**

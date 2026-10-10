@@ -297,6 +297,7 @@ public class PortletRendererImplTest {
 
         verifyNoMoreInteractions(portletContainer, portletCacheControlService);
     }
+
     /**
      * Mimic workflow when data cached portlet data using "validation" method is available.
      *
@@ -407,6 +408,7 @@ public class PortletRendererImplTest {
 
         verifyNoMoreInteractions(portletContainer, portletCacheControlService);
     }
+
     /**
      * Verify invoking portletRenderer#doAction removes cached content.
      *

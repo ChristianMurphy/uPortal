@@ -45,12 +45,16 @@ public final class PortletMovedInLayoutPortalEvent extends PortletLayoutPortalEv
         this.newParentFolderId = newParentFolderId;
     }
 
-    /** @return the oldParentFolderId */
+    /**
+     * @return the oldParentFolderId
+     */
     public String getOldParentFolderId() {
         return this.oldParentFolderId;
     }
 
-    /** @return the newParentFolderId */
+    /**
+     * @return the newParentFolderId
+     */
     public String getNewParentFolderId() {
         return this.newParentFolderId;
     }

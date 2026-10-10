@@ -16,27 +16,45 @@ package org.apereo.portal.character.stream.events;
 
 /** */
 public enum CharacterEventTypes {
-    /** @see CharacterDataEvent */
+    /**
+     * @see CharacterDataEvent
+     */
     CHARACTER,
-    /** @see PortletContentPlaceholderEvent */
+    /**
+     * @see PortletContentPlaceholderEvent
+     */
     PORTLET_CONTENT,
-    /** @see PortletTitlePlaceholderEvent */
+    /**
+     * @see PortletTitlePlaceholderEvent
+     */
     PORTLET_TITLE,
-    /** @see PortletNewItemCountPlaceholderEvent */
+    /**
+     * @see PortletNewItemCountPlaceholderEvent
+     */
     PORTLET_NEW_ITEM_COUNT,
-    /** @see PortletLinkPlaceholderEvent */
+    /**
+     * @see PortletLinkPlaceholderEvent
+     */
     PORTLET_LINK,
     /**
      * @see PortletHelpPlaceholderEvent
      * @deprecated As of Jul 2015 I don't think this is actually used
      */
     PORTLET_HELP,
-    /** @see PortletHeaderPlaceholderEvent */
+    /**
+     * @see PortletHeaderPlaceholderEvent
+     */
     PORTLET_HEADER,
-    /** @see org.apereo.portal.json.rendering.JsonLayoutPlaceholderEvent */
+    /**
+     * @see org.apereo.portal.json.rendering.JsonLayoutPlaceholderEvent
+     */
     JSON_LAYOUT,
-    /** @see PortletAnalyticsDataPlaceholderEvent */
+    /**
+     * @see PortletAnalyticsDataPlaceholderEvent
+     */
     PORTLET_ANALYTICS_DATA,
-    /** @see PageAnalyticsDataPlaceholderEvent */
+    /**
+     * @see PageAnalyticsDataPlaceholderEvent
+     */
     PAGE_ANALYTICS_DATA;
 }

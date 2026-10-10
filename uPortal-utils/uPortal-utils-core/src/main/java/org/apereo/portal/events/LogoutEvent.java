@@ -14,7 +14,9 @@
  */
 package org.apereo.portal.events;
 
-/** @since 2.6 */
+/**
+ * @since 2.6
+ */
 public final class LogoutEvent extends PortalEvent {
     private static final long serialVersionUID = 1L;
 

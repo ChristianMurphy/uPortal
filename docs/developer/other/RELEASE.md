@@ -130,6 +130,9 @@ cd ./uPortal-start
 
 ## Cut Release
 
+Use JDK 21 or newer (the version pinned in `.sdkmanrc`; `sdk env` selects it). The build
+compiles with `--release 11`, so the released classes still run on Java 11.
+
 Run the following command in the uPortal clone's directory:
 
 ```sh
@@ -140,7 +143,7 @@ Run the following command in the uPortal clone's directory:
 
 ## Verify and Publish from Central Publisher Portal
 
-Because uPortal uses Gradle's legacy `uploadArchives` (a Maven-API-like plugin), the OSSRH Staging API does **not** automatically close the staging repository. After the `release` task completes, you must manually trigger the upload to the Central Portal.
+Because uPortal publishes with Gradle's `maven-publish` plugin (a Maven-API-like upload), the OSSRH Staging API does **not** automatically close the staging repository. After the `release` task completes, you must manually trigger the upload to the Central Portal.
 
 ### Push staged artifacts to the portal
 

@@ -29,14 +29,19 @@ import org.apereo.portal.groups.IEntityStoreFactory;
  */
 public class FileSystemGroupStoreFactory implements IEntityGroupStoreFactory, IEntityStoreFactory {
     private static final Log log = LogFactory.getLog(FileSystemGroupStoreFactory.class);
+
     /** ReferenceGroupServiceFactory constructor. */
     public FileSystemGroupStoreFactory() {
         super();
     }
-    /** @return org.apereo.portal.groups.filesystem.FileSystemGroupStore */
+
+    /**
+     * @return org.apereo.portal.groups.filesystem.FileSystemGroupStore
+     */
     protected static FileSystemGroupStore getGroupStore() throws GroupsException {
         return new FileSystemGroupStore();
     }
+
     /**
      * Return an instance of the entity store implementation.
      *

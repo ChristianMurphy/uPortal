@@ -40,17 +40,24 @@ public class MockPortletWindowId implements IPortletWindowId {
     public String getStringId() {
         return this.portletWindowId;
     }
-    /** @return the portletWindowId */
+
+    /**
+     * @return the portletWindowId
+     */
     public String getPortletWindowId() {
         return portletWindowId;
     }
 
-    /** @param portletWindowId the portletWindowId to set */
+    /**
+     * @param portletWindowId the portletWindowId to set
+     */
     public void setPortletWindowId(String portletWindowId) {
         this.portletWindowId = portletWindowId;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object object) {
         if (object == this) {
@@ -63,13 +70,17 @@ public class MockPortletWindowId implements IPortletWindowId {
         return new EqualsBuilder().append(this.portletWindowId, rhs.getStringId()).isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(-917388291, 674832463).append(this.portletWindowId).toHashCode();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return this.getStringId();

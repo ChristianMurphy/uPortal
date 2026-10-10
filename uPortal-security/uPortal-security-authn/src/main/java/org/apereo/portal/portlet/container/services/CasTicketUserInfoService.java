@@ -54,7 +54,9 @@ public class CasTicketUserInfoService implements UserInfoService {
     private IPortalRequestUtils portalRequestUtils;
     protected final Log log = LogFactory.getLog(getClass());
 
-    /** @param portalRequestUtils the portalRequestUtils to set */
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         this.portalRequestUtils = portalRequestUtils;
@@ -63,51 +65,76 @@ public class CasTicketUserInfoService implements UserInfoService {
     /** The default name of the preferences attribute used to pass the PT to the portlet. */
     private String proxyTicketKey = "casProxyTicket";
 
-    /** @return the UserInstanceManager */
+    /**
+     * @return the UserInstanceManager
+     */
     public IUserInstanceManager getUserInstanceManager() {
         return userInstanceManager;
     }
-    /** @param userInstanceManager the UserInstanceManager */
+
+    /**
+     * @param userInstanceManager the UserInstanceManager
+     */
     @Autowired
     public void setUserInstanceManager(IUserInstanceManager userInstanceManager) {
         this.userInstanceManager = userInstanceManager;
     }
 
-    /** @return the portletEntityRegistry */
+    /**
+     * @return the portletEntityRegistry
+     */
     public IPortletEntityRegistry getPortletEntityRegistry() {
         return this.portletEntityRegistry;
     }
-    /** @param portletEntityRegistry the portletEntityRegistry to set */
+
+    /**
+     * @param portletEntityRegistry the portletEntityRegistry to set
+     */
     @Autowired
     public void setPortletEntityRegistry(IPortletEntityRegistry portletEntityRegistry) {
         this.portletEntityRegistry = portletEntityRegistry;
     }
 
-    /** @return the portletWindowRegistry */
+    /**
+     * @return the portletWindowRegistry
+     */
     public IPortletWindowRegistry getPortletWindowRegistry() {
         return this.portletWindowRegistry;
     }
-    /** @param portletWindowRegistry the portletWindowRegistry to set */
+
+    /**
+     * @param portletWindowRegistry the portletWindowRegistry to set
+     */
     @Autowired
     public void setPortletWindowRegistry(IPortletWindowRegistry portletWindowRegistry) {
         this.portletWindowRegistry = portletWindowRegistry;
     }
 
-    /** @return the portletDefinitionRegistry */
+    /**
+     * @return the portletDefinitionRegistry
+     */
     public IPortletDefinitionRegistry getPortletDefinitionRegistry() {
         return this.portletDefinitionRegistry;
     }
-    /** @param portletDefinitionRegistry the portletDefinitionRegistry to set */
+
+    /**
+     * @param portletDefinitionRegistry the portletDefinitionRegistry to set
+     */
     @Autowired
     public void setPortletDefinitionRegistry(IPortletDefinitionRegistry portletDefinitionRegistry) {
         this.portletDefinitionRegistry = portletDefinitionRegistry;
     }
 
-    /** @return name of the key to save the proxy ticket under */
+    /**
+     * @return name of the key to save the proxy ticket under
+     */
     public String getProxyTicketKey() {
         return proxyTicketKey;
     }
-    /** @param proxyTicketKey name of the key to save the proxy ticket under */
+
+    /**
+     * @param proxyTicketKey name of the key to save the proxy ticket under
+     */
     public void setProxyTicketKey(String proxyTicketKey) {
         this.proxyTicketKey = proxyTicketKey;
     }

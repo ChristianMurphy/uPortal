@@ -46,20 +46,31 @@ public class PortletDefinitionRegistryImpl
     private PortalDriverContainerServices portalDriverContainerServices;
     private ServletContext servletContext;
 
-    /** @return the portletDefinitionDao */
+    /**
+     * @return the portletDefinitionDao
+     */
     public IPortletDefinitionDao getPortletDefinitionDao() {
         return this.portletDefinitionDao;
     }
-    /** @param portletDefinitionDao the portletDefinitionDao to set */
+
+    /**
+     * @param portletDefinitionDao the portletDefinitionDao to set
+     */
     @Autowired
     public void setPortletDefinitionDao(IPortletDefinitionDao portletDefinitionDao) {
         this.portletDefinitionDao = portletDefinitionDao;
     }
-    /** @return */
+
+    /**
+     * @return
+     */
     public PortalDriverContainerServices getPortalDriverContainerServices() {
         return portalDriverContainerServices;
     }
-    /** @param portalDriverContainerServices */
+
+    /**
+     * @param portalDriverContainerServices
+     */
     @Autowired
     public void setPortalDriverContainerServices(
             PortalDriverContainerServices portalDriverContainerServices) {

@@ -53,7 +53,9 @@ public class MockPortletDefinitionId implements IPortletDefinitionId {
         this.portletDefinitionId = portletDefinitionId;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object object) {
         if (object == this) {
@@ -66,7 +68,9 @@ public class MockPortletDefinitionId implements IPortletDefinitionId {
         return new EqualsBuilder().append(this.portletDefinitionId, rhs.getStringId()).isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(-917388291, 674832463)
@@ -74,7 +78,9 @@ public class MockPortletDefinitionId implements IPortletDefinitionId {
                 .toHashCode();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return this.getStringId();

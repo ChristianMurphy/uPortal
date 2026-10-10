@@ -31,7 +31,9 @@ import org.slf4j.LoggerFactory;
 public class PropertyRegexTester extends RegexTester {
     private Logger logger = LoggerFactory.getLogger(this.getClass());
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public PropertyRegexTester(IPersonAttributesGroupTestDefinition definition) {
         super(definition);
         setPattern(definition.getAttributeName(), definition.getTestValue());

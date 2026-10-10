@@ -21,12 +21,18 @@ import org.apereo.portal.security.IPerson;
 /** Provides access to the layout and rendering related services for a portal user. */
 public interface IUserInstance {
 
-    /** @return The Person this UserInstance is for */
+    /**
+     * @return The Person this UserInstance is for
+     */
     IPerson getPerson();
 
-    /** @return The user preferences manager for the user instance */
+    /**
+     * @return The user preferences manager for the user instance
+     */
     IUserPreferencesManager getPreferencesManager();
 
-    /** @return the localeManager for the user instance */
+    /**
+     * @return the localeManager for the user instance
+     */
     LocaleManager getLocaleManager();
 }

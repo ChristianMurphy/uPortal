@@ -106,7 +106,9 @@ public class DbLoaderConfigBuilder implements DbLoaderConfig {
         return populateTables;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object object) {
         if (object == this) {
@@ -126,7 +128,9 @@ public class DbLoaderConfigBuilder implements DbLoaderConfig {
                 .isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(-1864980211, 1008139621)
@@ -139,7 +143,9 @@ public class DbLoaderConfigBuilder implements DbLoaderConfig {
                 .toHashCode();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)

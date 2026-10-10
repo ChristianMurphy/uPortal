@@ -48,22 +48,30 @@ public final class LockOptions {
         return this;
     }
 
-    /** @see #lastRunDelay(long) */
+    /**
+     * @see #lastRunDelay(long)
+     */
     public long getLastRunDelay() {
         return lastRunDelay;
     }
 
-    /** @see #lastRunDelay(long) */
+    /**
+     * @see #lastRunDelay(long)
+     */
     public void setLastRunDelay(long lastRunDelay) {
         this.lastRunDelay = lastRunDelay;
     }
 
-    /** @see #serverBiasDelay(long) */
+    /**
+     * @see #serverBiasDelay(long)
+     */
     public long getServerBiasDelay() {
         return serverBiasDelay;
     }
 
-    /** @see #serverBiasDelay(long) */
+    /**
+     * @see #serverBiasDelay(long)
+     */
     public void setServerBiasDelay(long serverBiasDelay) {
         this.serverBiasDelay = serverBiasDelay;
     }

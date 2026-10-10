@@ -43,17 +43,23 @@ public class EntityIdentifier implements Serializable {
         type = entityType;
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     public String getKey() {
         return key;
     }
 
-    /** @return java.lang.Class */
+    /**
+     * @return java.lang.Class
+     */
     public Class<? extends IBasicEntity> getType() {
         return type;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object object) {
         if (object == this) {
@@ -66,7 +72,9 @@ public class EntityIdentifier implements Serializable {
         return new EqualsBuilder().append(this.type, rhs.type).append(this.key, rhs.key).isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(INITIAL_NON_ZERO_ODD_NUMBER, MULTIPLIER_NON_ZERO_ODD_NUMBER)
@@ -75,7 +83,9 @@ public class EntityIdentifier implements Serializable {
                 .toHashCode();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)

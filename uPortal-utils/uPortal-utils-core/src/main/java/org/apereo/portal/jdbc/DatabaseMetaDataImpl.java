@@ -132,26 +132,34 @@ public class DatabaseMetaDataImpl implements IDatabaseMetadata, InitializingBean
         }
     }
 
-    /** @see IDatabaseMetadata#getJoinQuery() */
+    /**
+     * @see IDatabaseMetadata#getJoinQuery()
+     */
     @Override
     public final IJoinQueryString getJoinQuery() {
         return this.joinTest;
     }
 
-    /** @see IDatabaseMetadata#supportsOuterJoins() */
+    /**
+     * @see IDatabaseMetadata#supportsOuterJoins()
+     */
     @Override
     public final boolean supportsOuterJoins() {
         return (this.joinTest != null);
     }
 
-    /** @see IDatabaseMetadata#supportsTransactions() */
+    /**
+     * @see IDatabaseMetadata#supportsTransactions()
+     */
     @Override
     public final boolean supportsTransactions() {
         // We never run on DBs that don't support transactions any more
         return true;
     }
 
-    /** @see IDatabaseMetadata#supportsPreparedStatements() */
+    /**
+     * @see IDatabaseMetadata#supportsPreparedStatements()
+     */
     @Override
     public final boolean supportsPreparedStatements() {
         // We never run on DBs that don't support prepared statements any more
@@ -206,13 +214,17 @@ public class DatabaseMetaDataImpl implements IDatabaseMetadata, InitializingBean
         return this.userName;
     }
 
-    /** @see IDatabaseMetadata#sqlTimeStamp() */
+    /**
+     * @see IDatabaseMetadata#sqlTimeStamp()
+     */
     @Override
     public String sqlTimeStamp() {
         return this.sqlTimeStamp(System.currentTimeMillis());
     }
 
-    /** @see IDatabaseMetadata#sqlTimeStamp(long) */
+    /**
+     * @see IDatabaseMetadata#sqlTimeStamp(long)
+     */
     @Override
     public String sqlTimeStamp(final long date) {
         final StringBuilder sqlTS = new StringBuilder();
@@ -235,7 +247,9 @@ public class DatabaseMetaDataImpl implements IDatabaseMetadata, InitializingBean
         return sqlTS.toString();
     }
 
-    /** @see IDatabaseMetadata#sqlTimeStamp(java.util.Date) */
+    /**
+     * @see IDatabaseMetadata#sqlTimeStamp(java.util.Date)
+     */
     @Override
     public String sqlTimeStamp(final Date date) {
         if (date == null) {

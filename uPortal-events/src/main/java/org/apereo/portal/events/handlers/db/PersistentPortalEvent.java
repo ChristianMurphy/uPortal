@@ -115,7 +115,9 @@ public class PersistentPortalEvent implements Serializable {
         return this.eventType;
     }
 
-    /** @return the eventData */
+    /**
+     * @return the eventData
+     */
     public String getEventData() {
         return this.eventData;
     }

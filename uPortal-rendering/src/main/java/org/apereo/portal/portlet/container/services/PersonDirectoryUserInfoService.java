@@ -44,46 +44,69 @@ public class PersonDirectoryUserInfoService implements UserInfoService {
     private IPortletDefinitionRegistry portletDefinitionRegistry;
     private IPortalRequestUtils portalRequestUtils;
 
-    /** @param portalRequestUtils the portalRequestUtils to set */
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         this.portalRequestUtils = portalRequestUtils;
     }
 
-    /** @return the portletEntityRegistry */
+    /**
+     * @return the portletEntityRegistry
+     */
     public IPortletEntityRegistry getPortletEntityRegistry() {
         return this.portletEntityRegistry;
     }
-    /** @param portletEntityRegistry the portletEntityRegistry to set */
+
+    /**
+     * @param portletEntityRegistry the portletEntityRegistry to set
+     */
     @Autowired
     public void setPortletEntityRegistry(IPortletEntityRegistry portletEntityRegistry) {
         this.portletEntityRegistry = portletEntityRegistry;
     }
-    /** @return the personAttributeDao */
+
+    /**
+     * @return the personAttributeDao
+     */
     public IPersonAttributeDao getPersonAttributeDao() {
         return this.personAttributeDao;
     }
-    /** @param personAttributeDao the personAttributeDao to set */
+
+    /**
+     * @param personAttributeDao the personAttributeDao to set
+     */
     @Autowired
     public void setPersonAttributeDao(IPersonAttributeDao personAttributeDao) {
         this.personAttributeDao = personAttributeDao;
     }
 
-    /** @return the portletWindowRegistry */
+    /**
+     * @return the portletWindowRegistry
+     */
     public IPortletWindowRegistry getPortletWindowRegistry() {
         return this.portletWindowRegistry;
     }
-    /** @param portletWindowRegistry the portletWindowRegistry to set */
+
+    /**
+     * @param portletWindowRegistry the portletWindowRegistry to set
+     */
     @Autowired
     public void setPortletWindowRegistry(IPortletWindowRegistry portletWindowRegistry) {
         this.portletWindowRegistry = portletWindowRegistry;
     }
 
-    /** @return the portletDefinitionRegistry */
+    /**
+     * @return the portletDefinitionRegistry
+     */
     public IPortletDefinitionRegistry getPortletDefinitionRegistry() {
         return this.portletDefinitionRegistry;
     }
-    /** @param portletDefinitionRegistry the portletDefinitionRegistry to set */
+
+    /**
+     * @param portletDefinitionRegistry the portletDefinitionRegistry to set
+     */
     @Autowired
     public void setPortletDefinitionRegistry(IPortletDefinitionRegistry portletDefinitionRegistry) {
         this.portletDefinitionRegistry = portletDefinitionRegistry;

@@ -61,12 +61,16 @@ public class LimitingTeeOutputStream extends TeeOutputStream {
         }
     }
 
-    /** @return Number of bytes seen so far */
+    /**
+     * @return Number of bytes seen so far
+     */
     public long getByteCount() {
         return byteCount;
     }
 
-    /** @return true if the limit has been reached */
+    /**
+     * @return true if the limit has been reached
+     */
     public boolean isLimitReached() {
         return limitReached;
     }

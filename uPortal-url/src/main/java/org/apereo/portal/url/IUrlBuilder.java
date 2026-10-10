@@ -30,7 +30,9 @@ public interface IUrlBuilder {
      */
     void setParameter(String name, String... values);
 
-    /** @see #setParameter(String, String...) */
+    /**
+     * @see #setParameter(String, String...)
+     */
     void setParameter(String name, List<String> values);
 
     /**

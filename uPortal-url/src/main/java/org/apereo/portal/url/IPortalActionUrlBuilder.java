@@ -16,8 +16,11 @@ package org.apereo.portal.url;
 
 /** Builds a portal action URL that can deal with redirects */
 public interface IPortalActionUrlBuilder extends IPortalUrlBuilder {
-    /** @param location The redirect location to generate a URL for. */
+    /**
+     * @param location The redirect location to generate a URL for.
+     */
     public void setRedirectLocation(String location);
+
     /**
      * Generates the portal render URL represented by this url builder and passes it to the redirect
      * location.
@@ -26,8 +29,10 @@ public interface IPortalActionUrlBuilder extends IPortalUrlBuilder {
      * @param renderUrlParamName The parameter name to pass the render url with
      */
     public void setRedirectLocation(String location, String renderUrlParamName);
+
     /** The currently set redirect location, null if not set */
     public String getRedirectLocation();
+
     /** The currently set redirect render parameter name, null if not set */
     public String getRenderUrlParamName();
 }

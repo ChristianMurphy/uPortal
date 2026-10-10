@@ -42,6 +42,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 @RunWith(MockitoJUnitRunner.class)
 public class AnalyticsIncorporationComponentEventSerializationTest {
     @InjectMocks private TestableAnalyticsIncorporationComponent analyticsIncorporationComponent;
+
     //    private ObjectMapper objectMapper;
 
     @Before

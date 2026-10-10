@@ -89,36 +89,42 @@ public interface IEntityGroup extends IGroupMember {
      * @exception GroupsException if the delete cannot be performed.
      */
     void delete() throws GroupsException;
+
     /**
      * Returns the name of the group creator. May be null.
      *
      * @return String
      */
     String getCreatorID();
+
     /**
      * Returns the group description, which may be null.
      *
      * @return String
      */
     String getDescription();
+
     /**
      * Returns the key from the group service of origin.
      *
      * @return String
      */
     String getLocalKey();
+
     /**
      * Returns the group name.
      *
      * @return String
      */
     String getName();
+
     /**
      * Returns the Name of the group service of origin.
      *
      * @return String
      */
     Name getServiceName();
+
     /**
      * Answers if this <code>IEntityGroup</code> can be changed or deleted.
      *
@@ -126,6 +132,7 @@ public interface IEntityGroup extends IGroupMember {
      * @exception GroupsException
      */
     boolean isEditable() throws GroupsException;
+
     /**
      * Removes the <code>IGroupMember</code> from this group, but does not remove the membership
      * from the data store.
@@ -133,10 +140,17 @@ public interface IEntityGroup extends IGroupMember {
      * @param gm org.apereo.portal.groups.IGroupMember
      */
     void removeChild(IGroupMember gm) throws GroupsException;
-    /** @param userID String (required) */
+
+    /**
+     * @param userID String (required)
+     */
     void setCreatorID(String userID);
-    /** @param name String (may be null) */
+
+    /**
+     * @param name String (may be null)
+     */
     void setDescription(String name);
+
     /**
      * Sets the group name which must be unique within any of its containing groups.
      *
@@ -144,12 +158,14 @@ public interface IEntityGroup extends IGroupMember {
      * @exception GroupsException
      */
     void setName(String name) throws GroupsException;
+
     /**
      * Commit the <code>IEntityGroup</code> AND ITS MEMBERSHIPS to the data store.
      *
      * @exception GroupsException if the update cannot be performed.
      */
     void update() throws GroupsException;
+
     /**
      * Commit this <code>IEntityGroup's</code> memberships to the data store.
      *

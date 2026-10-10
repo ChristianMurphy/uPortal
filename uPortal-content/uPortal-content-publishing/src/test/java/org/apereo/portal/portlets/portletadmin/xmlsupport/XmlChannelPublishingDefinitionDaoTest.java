@@ -89,7 +89,9 @@ public class XmlChannelPublishingDefinitionDaoTest {
                 "Use the configuration options after reviewing the portlet publishing information to configure the portlet.");
     }
 
-    /** @return */
+    /**
+     * @return
+     */
     public static Map<Integer, PortletPublishingDefinition> getCpdCache() {
         Map<Integer, PortletPublishingDefinition> cpdCache = new HashMap<>();
         PortletPublishingDefinition portletPublishingDefinition = new PortletPublishingDefinition();

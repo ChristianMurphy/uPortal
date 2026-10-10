@@ -26,18 +26,21 @@ public interface DynamicSkinInstanceData {
      * @return skin name
      */
     String getSkinName();
+
     /**
      * Returns the absolute path root for the portlet.
      *
      * @return portlet absolute path root
      */
     String getPortletAbsolutePathRoot();
+
     /**
      * Returns the {@link PortletRequest} object for the current request.
      *
      * @return the portlet request object
      */
     PortletRequest getPortletRequest();
+
     /**
      * Returns the map of variables that will be used in the LESS compilation for the dynamic skin.
      *

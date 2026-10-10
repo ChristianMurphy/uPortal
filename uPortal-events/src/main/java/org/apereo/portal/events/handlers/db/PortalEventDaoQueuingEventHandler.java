@@ -22,7 +22,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class PortalEventDaoQueuingEventHandler extends QueueingEventHandler<PortalEvent> {
     private IPortalEventDao portalEventDao;
 
-    /** @param portalEventDao the portalEventDao to set */
+    /**
+     * @param portalEventDao the portalEventDao to set
+     */
     @Autowired
     public void setPortalEventDao(IPortalEventDao portalEventDao) {
         this.portalEventDao = portalEventDao;

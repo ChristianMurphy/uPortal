@@ -103,7 +103,9 @@ public class ChannelBean implements Comparable<ChannelBean>, Serializable {
         return new CompareToBuilder().append(this.id, channel.getId()).toComparison();
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object object) {
         if (object == this) {
@@ -116,13 +118,17 @@ public class ChannelBean implements Comparable<ChannelBean>, Serializable {
         return new EqualsBuilder().append(this.id, rhs.getId()).isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(464270933, -1074792143).append(this.id).toHashCode();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return "ID: "

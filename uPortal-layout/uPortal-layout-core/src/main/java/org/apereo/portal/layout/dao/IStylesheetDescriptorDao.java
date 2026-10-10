@@ -22,7 +22,9 @@ public interface IStylesheetDescriptorDao {
     /** Create and persist a new stylesheet descriptor, name and resource are required */
     IStylesheetDescriptor createStylesheetDescriptor(String name, String stylesheetResource);
 
-    /** @return all of the persisted stylesheet descriptors */
+    /**
+     * @return all of the persisted stylesheet descriptors
+     */
     List<? extends IStylesheetDescriptor> getStylesheetDescriptors();
 
     /** Lookup a descriptor by id */

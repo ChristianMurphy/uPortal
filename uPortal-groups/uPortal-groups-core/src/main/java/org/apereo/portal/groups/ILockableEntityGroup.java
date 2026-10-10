@@ -22,9 +22,14 @@ import org.apereo.portal.concurrency.IEntityLock;
  * <p>
  */
 public interface ILockableEntityGroup extends IEntityGroup {
-    /** @return org.apereo.portal.concurrency.IEntityLock */
+    /**
+     * @return org.apereo.portal.concurrency.IEntityLock
+     */
     public IEntityLock getLock();
-    /** @param lock org.apereo.portal.concurrency.IEntityLock */
+
+    /**
+     * @param lock org.apereo.portal.concurrency.IEntityLock
+     */
     public void setLock(IEntityLock lock);
 
     /** Updates the group and its members and renews the lock. */

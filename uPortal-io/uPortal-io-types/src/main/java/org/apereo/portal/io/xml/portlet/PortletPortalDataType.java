@@ -35,24 +35,32 @@ public class PortletPortalDataType extends AbstractPortalDataType
                     "https://source.jasig.org/schemas/uportal/io/portlet-definition",
                     "portlet-definition");
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final QName LEGACY_CHANNEL_DEFINITION_QNAME = new QName("channel-definition");
 
     public static final PortalDataKey IMPORT_50_DATA_KEY =
             new PortalDataKey(PORTLET_DEFINITION_QNAME, null, "5.0");
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_43_DATA_KEY =
             new PortalDataKey(PORTLET_DEFINITION_QNAME, null, "4.3");
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_40_DATA_KEY =
             new PortalDataKey(PORTLET_DEFINITION_QNAME, null, "4.0");
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_26_DATA_KEY =
             new PortalDataKey(
@@ -60,7 +68,9 @@ public class PortletPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-channel_v2-6.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_30_DATA_KEY =
             new PortalDataKey(
@@ -68,7 +78,9 @@ public class PortletPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-channel_v3-0.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_31_DATA_KEY =
             new PortalDataKey(
@@ -76,7 +88,9 @@ public class PortletPortalDataType extends AbstractPortalDataType
                     "classpath://org/jasig/portal/io/import-channel_v3-1.crn",
                     null);
 
-    /** @deprecated used for importing old data files */
+    /**
+     * @deprecated used for importing old data files
+     */
     @Deprecated
     public static final PortalDataKey IMPORT_32_DATA_KEY =
             new PortalDataKey(

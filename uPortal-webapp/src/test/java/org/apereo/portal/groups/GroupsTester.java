@@ -169,18 +169,27 @@ public class GroupsTester extends TestCase {
             RDBMServices.releaseConnection(conn);
         }
     }
-    /** @return org.apereo.portal.groups.IEntityGroup */
+
+    /**
+     * @return org.apereo.portal.groups.IEntityGroup
+     */
     private IEntityGroup findGroup(String key) throws GroupsException {
         IEntityGroup group = GroupService.findGroup(key);
         return group;
     }
-    /** @return org.apereo.portal.groups.ILockableEntityGroup */
+
+    /**
+     * @return org.apereo.portal.groups.ILockableEntityGroup
+     */
     private ILockableEntityGroup findLockableGroup(String key) throws GroupsException {
         String owner = "de3";
         ILockableEntityGroup group = GroupService.findLockableGroup(key, owner);
         return group;
     }
-    /** @return org.apereo.portal.services.GroupService */
+
+    /**
+     * @return org.apereo.portal.services.GroupService
+     */
     private Collection getAllGroupMembers(IGroupMember gm) throws GroupsException {
         Collection list = new ArrayList();
         if (gm.isGroup()) {
@@ -190,11 +199,17 @@ public class GroupsTester extends TestCase {
         }
         return list;
     }
-    /** @return RDBMEntityStore */
+
+    /**
+     * @return RDBMEntityStore
+     */
     private IEntityStore getEntityStore() throws GroupsException {
         return RDBMEntityStore.singleton();
     }
-    /** @return org.apereo.portal.services.GroupService */
+
+    /**
+     * @return org.apereo.portal.services.GroupService
+     */
     private Collection getGroupMembers(IGroupMember gm) throws GroupsException {
         Collection list = new ArrayList();
         if (gm.isGroup()) {
@@ -204,21 +219,31 @@ public class GroupsTester extends TestCase {
         }
         return list;
     }
-    /** @return RDBMEntityGroupStore */
+
+    /**
+     * @return RDBMEntityGroupStore
+     */
     private RDBMEntityGroupStore getGroupStore() throws GroupsException {
         return RDBMEntityGroupStore.singleton();
     }
-    /** @return org.apereo.portal.groups.IEntity */
+
+    /**
+     * @return org.apereo.portal.groups.IEntity
+     */
     private IEntity getNewEntity(String key) throws GroupsException {
         return GroupService.getEntity(key, TEST_ENTITY_CLASS);
     }
-    /** @return org.apereo.portal.groups.IEntityGroup */
+
+    /**
+     * @return org.apereo.portal.groups.IEntityGroup
+     */
     private IEntityGroup getNewGroup() throws GroupsException {
         IEntityGroup group = GroupService.newGroup(TEST_ENTITY_CLASS);
         group.setName("name_" + group.getKey());
         group.setCreatorID("de3");
         return group;
     }
+
     /**
      * @return java.lang.String
      * @param length int
@@ -234,6 +259,7 @@ public class GroupsTester extends TestCase {
         }
         return new String(chars);
     }
+
     /**
      * Starts the application.
      *
@@ -254,7 +280,10 @@ public class GroupsTester extends TestCase {
         }
         print("  Total: " + entities.length);
     }
-    /** @param msg java.lang.String */
+
+    /**
+     * @param msg java.lang.String
+     */
     private static void print(String msg) {
         java.sql.Timestamp ts = new java.sql.Timestamp(System.currentTimeMillis());
         System.out.println(ts + " : " + msg);

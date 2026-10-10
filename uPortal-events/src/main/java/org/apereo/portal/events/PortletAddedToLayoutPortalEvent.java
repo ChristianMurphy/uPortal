@@ -40,7 +40,9 @@ public final class PortletAddedToLayoutPortalEvent extends PortletLayoutPortalEv
         this.parentFolderId = parentFolderId;
     }
 
-    /** @return the parentFolderId */
+    /**
+     * @return the parentFolderId
+     */
     public String getParentFolderId() {
         return this.parentFolderId;
     }

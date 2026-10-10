@@ -35,7 +35,9 @@ public abstract class MapCachingDoubleCheckedCreator<K, T> extends DoubleChecked
         this.objectCache = new HashMap<K, T>();
     }
 
-    /** @param cache The Map to store created instances in */
+    /**
+     * @param cache The Map to store created instances in
+     */
     public MapCachingDoubleCheckedCreator(Map<K, T> cache) {
         Validate.notNull(cache, "cache can not be null");
         this.objectCache = cache;
@@ -52,7 +54,9 @@ public abstract class MapCachingDoubleCheckedCreator<K, T> extends DoubleChecked
         this.objectCache = cache;
     }
 
-    /** @return A read-only view of the underlying Map used to cache created objects */
+    /**
+     * @return A read-only view of the underlying Map used to cache created objects
+     */
     public final Map<K, T> getCacheMap() {
         return Collections.unmodifiableMap(this.objectCache);
     }
@@ -100,7 +104,9 @@ public abstract class MapCachingDoubleCheckedCreator<K, T> extends DoubleChecked
         return this.objectCache.get(key);
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)

@@ -23,9 +23,11 @@ public final class SearchConstants {
 
     /** Local SearchRequest event name */
     public static final String SEARCH_REQUEST_LOCAL_NAME = "SearchRequest";
+
     /** SearchRequest QName */
     public static final QName SEARCH_REQUEST_QNAME =
             new QName(NAMESPACE, SEARCH_REQUEST_LOCAL_NAME);
+
     /**
      * Same as {@link QName#toString()} on {@link #SEARCH_REQUEST_QNAME} but hard coded to allow use
      * in annotations
@@ -35,9 +37,11 @@ public final class SearchConstants {
 
     /** Local SearchRequest event name */
     public static final String SEARCH_RESULTS_LOCAL_NAME = "SearchResults";
+
     /** SearchResponse QName */
     public static final QName SEARCH_RESULTS_QNAME =
             new QName(NAMESPACE, SEARCH_RESULTS_LOCAL_NAME);
+
     /**
      * Same as {@link QName#toString()} on {@link #SEARCH_RESULTS_QNAME} but hard coded to allow use
      * in annotations

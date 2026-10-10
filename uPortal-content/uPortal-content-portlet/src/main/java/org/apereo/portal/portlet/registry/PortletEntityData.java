@@ -46,6 +46,7 @@ class PortletEntityData implements Serializable, IPortletEntityDescriptor {
     public IPortletEntityId getPortletEntityId() {
         return this.portletEntityId;
     }
+
     /* (non-Javadoc)
      * @see org.apereo.portal.portlet.registry.IPortletEntityDescriptor#getPortletDefinitionId()
      */
@@ -53,6 +54,7 @@ class PortletEntityData implements Serializable, IPortletEntityDescriptor {
     public IPortletDefinitionId getPortletDefinitionId() {
         return this.portletDefinitionId;
     }
+
     /* (non-Javadoc)
      * @see org.apereo.portal.portlet.registry.IPortletEntityDescriptor#getLayoutNodeId()
      */
@@ -60,6 +62,7 @@ class PortletEntityData implements Serializable, IPortletEntityDescriptor {
     public String getLayoutNodeId() {
         return this.layoutNodeId;
     }
+
     /* (non-Javadoc)
      * @see org.apereo.portal.portlet.registry.IPortletEntityDescriptor#getUserId()
      */

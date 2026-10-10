@@ -94,10 +94,14 @@ public interface IdentitySwapperManager {
      */
     String getOriginalUsername(HttpSession session);
 
-    /** @return the authentication for the original user */
+    /**
+     * @return the authentication for the original user
+     */
     Authentication getOriginalAuthentication(HttpSession session);
 
-    /** @return The target of impersonation, null if there is no impersonation target */
+    /**
+     * @return The target of impersonation, null if there is no impersonation target
+     */
     String getTargetUsername(HttpSession session);
 
     /**

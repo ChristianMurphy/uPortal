@@ -27,12 +27,16 @@ import org.w3c.dom.Document;
 public interface IUserLayoutManager {
     /** Represents a <folder> layout element */
     public static final String FOLDER = "folder";
+
     /** Represents <channel> layout element */
     public static final String CHANNEL = "channel";
+
     /** Represents <channel-header> layout element */
     public static final String CHANNEL_HEADER = "channel-header";
+
     /** Represents <parameter> layout element */
     public static final String PARAMETER = "parameter";
+
     /** Represents an ID element attribute */
     public static final String ID_ATTR = "ID";
 
@@ -46,7 +50,9 @@ public interface IUserLayoutManager {
      */
     public IUserLayout getUserLayout() throws PortalException;
 
-    /** @return An XMLEventReader for the user's layout structure */
+    /**
+     * @return An XMLEventReader for the user's layout structure
+     */
     public XMLEventReader getUserLayoutReader();
 
     /** Calls {@link #loadUserLayout(boolean)} passing false. */
@@ -67,7 +73,9 @@ public interface IUserLayoutManager {
      */
     public void saveUserLayout() throws PortalException;
 
-    /** @return The set of all channels the user is subscribed to */
+    /**
+     * @return The set of all channels the user is subscribed to
+     */
     public Set<String> getAllSubscribedChannels();
 
     /**

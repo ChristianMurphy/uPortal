@@ -48,7 +48,9 @@ public class ThemeNameEqualsIgnoreCaseTester implements IPersonTester {
     private final IUserLayoutStore userLayoutStore;
     private final IStylesheetDescriptorDao stylesheetDescriptorDao;
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public ThemeNameEqualsIgnoreCaseTester(IPersonAttributesGroupTestDefinition definition) {
         final String themeTestValue = definition.getTestValue();
         assert StringUtils.isNotBlank(themeTestValue);

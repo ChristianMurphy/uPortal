@@ -25,7 +25,9 @@ public class PortletReleaseNotes {
 
     public PortletReleaseNotes() {}
 
-    /** @return releaseDate as DateTime. Can be null if not set via portlet preference. */
+    /**
+     * @return releaseDate as DateTime. Can be null if not set via portlet preference.
+     */
     public DateTime getReleaseDate() {
         return releaseDate;
     }
@@ -34,7 +36,9 @@ public class PortletReleaseNotes {
         this.releaseDate = releaseDate;
     }
 
-    /** @return List of releaseNotes as strings. Can be null if not set via portlet preference. */
+    /**
+     * @return List of releaseNotes as strings. Can be null if not set via portlet preference.
+     */
     public List<String> getReleaseNotes() {
         return releaseNotes;
     }
@@ -43,7 +47,9 @@ public class PortletReleaseNotes {
         this.releaseNotes = releaseNotes;
     }
 
-    /** @return initialReleaseDate as DateTime. Can be null if not set via portlet preference. */
+    /**
+     * @return initialReleaseDate as DateTime. Can be null if not set via portlet preference.
+     */
     public DateTime getInitialReleaseDate() {
         return initialReleaseDate;
     }

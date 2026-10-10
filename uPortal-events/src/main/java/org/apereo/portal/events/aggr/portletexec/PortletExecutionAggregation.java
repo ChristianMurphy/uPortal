@@ -25,12 +25,18 @@ public interface PortletExecutionAggregation
                         PortletExecutionAggregationKey, PortletExecutionAggregationDiscriminator>,
                 TimedAggregationStatistics {
 
-    /** @return The name of the tab */
+    /**
+     * @return The name of the tab
+     */
     AggregatedPortletMapping getPortletMapping();
 
-    /** @return The type of portlet execution */
+    /**
+     * @return The type of portlet execution
+     */
     ExecutionType getExecutionType();
 
-    /** @return Number of times portlet was executed */
+    /**
+     * @return Number of times portlet was executed
+     */
     int getExecutionCount();
 }

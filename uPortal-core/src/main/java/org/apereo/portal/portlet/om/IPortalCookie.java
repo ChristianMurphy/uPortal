@@ -20,13 +20,19 @@ import org.joda.time.DateTime;
 /** Interface describing the parent cookie used to relate all Portlet Cookies to one HTTP Cookie. */
 public interface IPortalCookie {
 
-    /** @return the unique value for this cookie */
+    /**
+     * @return the unique value for this cookie
+     */
     String getValue();
 
-    /** @return the timestamp when this cookie was created */
+    /**
+     * @return the timestamp when this cookie was created
+     */
     DateTime getCreated();
 
-    /** @return the timestamp when this cookie is due to expire */
+    /**
+     * @return the timestamp when this cookie is due to expire
+     */
     DateTime getExpires();
 
     /**
@@ -36,6 +42,8 @@ public interface IPortalCookie {
      */
     void setExpires(DateTime expires);
 
-    /** @return the set of {@link IPortletCookie}s linked to this instance */
+    /**
+     * @return the set of {@link IPortletCookie}s linked to this instance
+     */
     Set<IPortletCookie> getPortletCookies();
 }

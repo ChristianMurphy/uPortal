@@ -29,16 +29,23 @@ public class ParamaterizableFlowHandler extends AbstractFlowHandler {
     private String flowId = "view";
     private String redirectOnEnd = null;
 
-    /** @return the redirectOnEnd */
+    /**
+     * @return the redirectOnEnd
+     */
     public String getRedirectOnEnd() {
         return this.redirectOnEnd;
     }
-    /** @param redirectOnEnd The location to redirect to at the end of the flow */
+
+    /**
+     * @param redirectOnEnd The location to redirect to at the end of the flow
+     */
     public void setRedirectOnEnd(String redirectOnEnd) {
         this.redirectOnEnd = redirectOnEnd;
     }
 
-    /** @param flowId the flowId to set */
+    /**
+     * @param flowId the flowId to set
+     */
     public void setFlowId(String flowId) {
         this.flowId = flowId;
     }

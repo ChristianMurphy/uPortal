@@ -74,7 +74,9 @@ public class HungWorkerAnalyzer
 
     private double percentPermittedErrantByFname = .1;
 
-    /** @deprecated use {@link #setPercentPermittedErrantByFname(double)} */
+    /**
+     * @deprecated use {@link #setPercentPermittedErrantByFname(double)}
+     */
     @Value("${org.apereo.portal.portlet.numberPermittedErrantByFname:}")
     @Deprecated
     public void setNumberPermittedErrantByFname(Integer numberPermittedErrantByFname) {

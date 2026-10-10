@@ -57,7 +57,9 @@ public class PortalSearchResults implements Serializable {
                                 });
     }
 
-    /** @return Map of tabKey -> Tuple<result, url> */
+    /**
+     * @return Map of tabKey -> Tuple<result, url>
+     */
     public ConcurrentMap<String, List<Tuple<SearchResult, String>>> getResults() {
         return this.results.asMap();
     }
