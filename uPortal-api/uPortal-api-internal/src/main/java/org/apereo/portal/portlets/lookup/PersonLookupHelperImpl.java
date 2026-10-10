@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 import org.apereo.portal.EntityIdentifier;
@@ -45,6 +46,7 @@ import org.apereo.services.persondir.IPersonAttributes;
 import org.apereo.services.persondir.support.NamedPersonImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.webflow.context.ExternalContext;
@@ -79,6 +81,8 @@ public class PersonLookupHelperImpl implements IPersonLookupHelper {
     // Default to a high enough value that it doesn't cause issues during a load test
     private long searchThreadTimeoutSeconds = 60;
 
+    private static final long SHUTDOWN_TIMEOUT_SECONDS = 5;
+
     /**
      * Set the number of concurrent threads process person search results in parallel.
      *
@@ -104,7 +108,27 @@ public class PersonLookupHelperImpl implements IPersonLookupHelper {
 
     @PostConstruct
     public void initializeSearchExecutor() {
-        executor = Executors.newFixedThreadPool(searchThreadCount);
+        executor =
+                Executors.newFixedThreadPool(
+                        searchThreadCount, new CustomizableThreadFactory("uP-PersonLookup-"));
+    }
+
+    /**
+     * Stop the search threads when the application context closes. They are not daemon threads, so
+     * a running pool keeps the JVM (and Tomcat) from exiting after the webapp stops.
+     */
+    @PreDestroy
+    public void shutdownSearchExecutor() {
+        executor.shutdownNow();
+        try {
+            if (!executor.awaitTermination(SHUTDOWN_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+                logger.warn(
+                        "Person search threads did not stop within {} seconds",
+                        SHUTDOWN_TIMEOUT_SECONDS);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /* (non-Javadoc)

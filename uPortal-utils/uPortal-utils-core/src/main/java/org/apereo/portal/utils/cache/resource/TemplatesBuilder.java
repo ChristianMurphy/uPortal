@@ -36,6 +36,15 @@ import org.springframework.stereotype.Service;
 /** Parses the provided input stream into a {@link Templates} object. */
 @Service
 public class TemplatesBuilder implements Loader<Templates>, ResourceLoaderAware {
+    /**
+     * JAXP API name of the JDK's {@code jdk.xml.enableExtensionFunctions} feature. uPortal's
+     * stylesheets call Java helpers through the {@code http://xml.apache.org/xalan/java/}
+     * namespace, and JDK 25 turns extension functions off by default. The JDK's built-in XSLTC
+     * accepts this name on JDK 11 and later; it rejects the short {@code jdk.xml.*} name on JDK 11.
+     */
+    private static final String ENABLE_EXTENSION_FUNCTIONS =
+            "http://www.oracle.com/xml/jaxp/properties/enableExtensionFunctions";
+
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     private ResourceLoader resourceLoader;
@@ -56,6 +65,7 @@ public class TemplatesBuilder implements Loader<Templates>, ResourceLoaderAware 
     @Override
     public LoadedResource<Templates> loadResource(Resource resource) throws IOException {
         final TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        enableExtensionFunctions(transformerFactory);
 
         if (this.transformerAttributes != null) {
             for (final Map.Entry<String, Object> attributeEntry :
@@ -85,6 +95,25 @@ public class TemplatesBuilder implements Loader<Templates>, ResourceLoaderAware 
         final Map<Resource, Long> resolvedResources = uriResolver.getResolvedResources();
 
         return new LoadedResourceImpl<Templates>(templates, resolvedResources);
+    }
+
+    /**
+     * Allow the stylesheets this builder compiles to call Java extension functions. Only this
+     * feature is changed: secure processing, the XML limits and the external access settings keep
+     * their defaults.
+     */
+    private void enableExtensionFunctions(TransformerFactory transformerFactory) {
+        try {
+            transformerFactory.setFeature(ENABLE_EXTENSION_FUNCTIONS, true);
+        } catch (TransformerConfigurationException e) {
+            // Not the JDK's XSLTC (for example Apache Xalan on the classpath), so the feature
+            // does not apply and the processor's own extension function policy is used.
+            logger.debug(
+                    "{} does not support {}",
+                    transformerFactory.getClass().getName(),
+                    ENABLE_EXTENSION_FUNCTIONS,
+                    e);
+        }
     }
 
     private static class ResourceTrackingURIResolver extends ResourceLoaderURIResolver {
