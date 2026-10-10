@@ -22,6 +22,13 @@ behind it.
   Playwright. Builds and unit tests can run in parallel.
 * **Hot files:** `gradle.properties` and the root `build.gradle` are shared,
   so keep version bumps in small separate commits to keep conflicts cheap.
+* **Linear history (MOD-D32):** work lands on the integration branch
+  without merge commits. Its non-merge commits are rebased onto the
+  current integration branch and pushed as a fast-forward, like GitHub's
+  "rebase and merge". Every commit stays a Conventional Commit shaped
+  like a future upstream PR. Merging the integration branch *into* a
+  workstream branch while working is fine. The integration branch is
+  never force-pushed.
 * **Workstream CI branches (MOD-D30):** each workstream pushes its branch
   to the forks as `ccr-43ba0785-hzlrj5-<topic>`. The `ccr-*` trigger runs
   the full CI there, so work is proven green before the integrator merges
