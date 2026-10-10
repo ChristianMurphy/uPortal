@@ -23,6 +23,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -79,6 +80,91 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
                                 false);
         final ClusterMutex mutex = execute(() -> lateDao.getClusterMutex(mutexName));
         assertEquals(otherServersMutex.getId(), mutex.getId());
+    }
+
+    /** Pauses getLock after it has read the mutex in its transaction, before it locks it. */
+    static class PausingJpaClusterLockDao extends JpaClusterLockDao {
+        // The bean comes back behind a proxy, so the test hands the latches over statically
+        static volatile CountDownLatch read;
+        static volatile CountDownLatch resume;
+
+        @Override
+        protected ClusterMutex findClusterMutex(String mutexName) {
+            final ClusterMutex clusterMutex = super.findClusterMutex(mutexName);
+            read.countDown();
+            try {
+                if (!resume.await(30, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Not resumed");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+            return clusterMutex;
+        }
+    }
+
+    /**
+     * Two servers lock the same free mutex at once: B reads it, A locks it and commits, then B
+     * tries to lock the copy it read. B has to lose quietly, with no lock and no error. Under
+     * snapshot isolation the update of a row that changed after the transaction read it fails
+     * instead of matching no row: MariaDB 11.6 and later do that by default under REPEATABLE READ
+     * (innodb_snapshot_isolation; "Record has changed since last read in table 'UP_MUTEX'",
+     * MOD-I99). The databases that read the latest committed row pass either way.
+     */
+    @Test
+    public void testLockTakenBetweenReadAndUpdate() throws Exception {
+        reset(portalInfoProvider);
+        when(portalInfoProvider.getUniqueServerName()).thenReturn("ServerA");
+        final String mutexName = "testLockTakenBetweenReadAndUpdate";
+        execute(() -> clusterLockDao.getClusterMutex(mutexName));
+
+        final CountDownLatch read = new CountDownLatch(1);
+        final CountDownLatch resume = new CountDownLatch(1);
+        PausingJpaClusterLockDao.read = read;
+        PausingJpaClusterLockDao.resume = resume;
+        final IClusterLockDao serverB =
+                (IClusterLockDao)
+                        beanFactory.createBean(
+                                PausingJpaClusterLockDao.class,
+                                AutowireCapableBeanFactory.AUTOWIRE_NO,
+                                false);
+        final AtomicReference<ClusterMutex> lockOfB = new AtomicReference<>();
+        final AtomicReference<Throwable> errorOfB = new AtomicReference<>();
+        final Thread threadB =
+                new Thread(
+                        () -> {
+                            try {
+                                lockOfB.set(execute(() -> serverB.getLock(mutexName)));
+                            } catch (Throwable t) {
+                                errorOfB.set(t);
+                            }
+                        },
+                        "JpaClusterLockDaoTest-serverB");
+        threadB.start();
+        assertTrue("B read the mutex", read.await(30, TimeUnit.SECONDS));
+
+        final ClusterMutex lockOfA = execute(() -> clusterLockDao.getLock(mutexName));
+        assertNotNull("A took the free lock", lockOfA);
+
+        resume.countDown();
+        threadB.join(TimeUnit.SECONDS.toMillis(30));
+        assertFalse(threadB.isAlive());
+        if (errorOfB.get() != null) {
+            throw new AssertionError("B failed instead of losing the race", errorOfB.get());
+        }
+        assertNull("B lost the race", lockOfB.get());
+
+        final ClusterMutex mutex = execute(() -> clusterLockDao.getClusterMutex(mutexName));
+        assertTrue(mutex.isLocked());
+        assertEquals(lockOfA.getLockStart(), mutex.getLockStart());
+        execute(
+                new CallableWithoutResult() {
+                    @Override
+                    protected void callWithoutResult() {
+                        clusterLockDao.releaseLock(mutexName);
+                    }
+                });
     }
 
     @Test
