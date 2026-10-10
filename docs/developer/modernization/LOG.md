@@ -978,6 +978,40 @@ This supersedes MOD-D24's runtime matrix.
   G-portal gate, run with `retries: 0` or count retried tests as
   failures.
 
+### MOD-D30: divide work by resource use, with workstream CI branches and cloud sessions
+
+* **Finding:** the single 16 GB prototype machine was the bottleneck.
+  * Seven Gradle daemons held 8.2 GB. The project's
+    `-XX:MaxHeapSize=32g` (from #2960) overrides its own `-Xmx2048M`,
+    and idle daemons lived for 3 hours.
+  * Portal and multi-database runs had no machine-wide limit.
+  * Every agent pushed to the one integration branch, so unfinished
+    work turned CI red for everyone: SpotBugs twice, DB integration
+    three times.
+  * Tasks were phase-sized; the P2 agent has run for about 11 hours.
+* **Changes on the machine (environment only, not committed):**
+  * `~/.gradle/gradle.properties` caps daemons at a 2 GB heap, G1
+    periodic GC, a 15-minute idle timeout and 2 workers. Stopping the
+    idle old daemons raised available memory from 2.0 to 6.9 GB.
+  * A machine-wide `portal-slot.sh` allows at most two portal or
+    multi-database runs at once.
+* **Decisions (project owner, 2026-10-10):**
+  * Workstreams validate on their own branches,
+    `ccr-43ba0785-hzlrj5-<topic>`, in both forks. The integrator merges
+    only green work and deletes merged branches.
+  * Up to three cloud sessions, each on its own machine, take the
+    portal-heavy workstreams.
+* **Working rules:** these are recorded in WORKSTREAMS.md.
+  * Split work by resource use. Light tasks (edit, compile, one module's
+    tests) run in parallel; heavy tasks go through the slots, to cloud
+    sessions, or to CI.
+  * One upstream PR-sized task of about 1–3 hours each, ending with a
+    handoff note.
+  * Workstreams propose log entries with placeholder IDs; the integrator
+    assigns the numbers.
+* **Upstream note:** the `MaxHeapSize=32g` override is worth raising
+  upstream. It makes `-Xmx2048M` meaningless on developer machines.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
