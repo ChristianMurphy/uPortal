@@ -141,6 +141,28 @@ tasks.withType(Test).configureEach {
     }
 }
 
+/*
+ * Mutation testing of JpaClusterLockDao (MOD-I82, MOD-I99), opt-in and not part of `build`:
+ *   ./gradlew :uPortal-webapp:pitest
+ * The class is in uPortal-utils-core; its tests are here, on the in-memory HSQLDB. See
+ * docs/developer/other/DB_COPY_TOOL_TESTING.md for the score and the threshold.
+ */
+apply plugin: 'info.solidsoft.pitest'
+pitest {
+    pitestVersion = project.property('pitestVersion')
+    targetClasses = ['org.apereo.portal.concurrency.locking.JpaClusterLockDao*']
+    targetTests = ['org.apereo.portal.concurrency.locking.JpaClusterLockDao*']
+    additionalMutableCodePaths.add(project(':uPortal-utils:uPortal-utils-core').tasks.named('jar')
+            .flatMap { it.archiveFile }.map { it.asFile })
+    threads = 2
+    outputFormats = ['HTML', 'XML']
+    timestampedReports = false
+    // The concurrency tests wait for locks; give each mutant room before calling it a timeout
+    timeoutConstInMillis = 20000
+    mutationThreshold = providers.gradleProperty('pitestThreshold').map { it as int }.getOrElse(75)
+    jvmArgs = ['-Xmx1g', '-Djdk.xml.enableExtensionFunctions=true']
+}
+
 node {
     version = nodejsVersion
     download = true
