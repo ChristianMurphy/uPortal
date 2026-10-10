@@ -1,0 +1,164 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
+description = "Apereo uPortal Database Copy Migration Tool"
+
+/*
+ * A standalone Spring Boot command-line application (Spring Boot 4, Spring Batch 6, Spring JDBC)
+ * with its own dependency platform: the Spring Boot BOM, not the portal's Spring 4.3 stack. It has
+ * no dependency on any other uPortal module at runtime, so a newer uPortal can run it against an
+ * older database. The executable jar (classifier "exec") takes the JDBC drivers from the classpath
+ * or from -Dloader.path; uPortal-start's dbMigrate task runs it.
+ *
+ * The one thing the tool needs from the portal code is which ID generator serves which table and
+ * column, with its allocationSize. That is read from the entity annotations at build time
+ * (generateGeneratorCatalog) and shipped as a resource, so it cannot drift from the mappings.
+ */
+apply plugin: 'org.springframework.boot'
+
+// Spring Boot 4 needs Java 17+; the tool targets Java 21 (the portal itself stays on --release 11).
+// These run after the root build's `options.release = 11`, so they win for this project only.
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    // The code is written in the portal's Java 11 style for now
+    options.errorprone.disable('StatementSwitchToExpressionSwitch', 'PatternMatchingInstanceof')
+}
+tasks.withType(GroovyCompile).configureEach {
+    options.release = 21
+}
+
+configurations {
+    // The modules that contain JPA entities, with everything their classes need to load.
+    entityScan
+    // The root build adds Spring 4.3's spring-test to every test classpath; the Boot platform
+    // would override it to 7.x. This project's tests do not use it.
+    testImplementation {
+        exclude group: 'org.springframework', module: 'spring-test'
+    }
+}
+
+dependencies {
+    implementation platform(SpringBootPlugin.BOM_COORDINATES)
+    implementation 'org.springframework.boot:spring-boot'
+    implementation 'org.springframework.boot:spring-boot-starter-logging'
+    implementation 'org.springframework:spring-jdbc'
+    implementation 'org.springframework.batch:spring-batch-core'
+    implementation 'com.zaxxer:HikariCP'
+    // Spring Batch's job repository, in memory. H2 is no uPortal database, so it cannot clash with
+    // the JDBC drivers (HSQLDB included) that the caller puts on the class path
+    implementation 'com.h2database:h2'
+    // Spring Framework 7 logs through the commons-logging API, which the uPortal build excludes
+    // everywhere; route it to SLF4J like the portal does
+    implementation 'org.slf4j:jcl-over-slf4j'
+
+    [
+        ':uPortal-api:uPortal-api-rest',
+        ':uPortal-content:uPortal-content-portlet',
+        ':uPortal-events',
+        ':uPortal-groups:uPortal-groups-pags',
+        ':uPortal-i18n',
+        ':uPortal-layout:uPortal-layout-core',
+        ':uPortal-layout:uPortal-layout-impl',
+        ':uPortal-persondir',
+        ':uPortal-security:uPortal-security-permissions',
+        ':uPortal-tenants',
+        ':uPortal-tools',
+        ':uPortal-utils:uPortal-utils-core',
+        ':uPortal-web',
+    ].each { entityScan project(it) }
+    entityScan "${servletApiDependency}"
+    entityScan "${portletApiDependency}"
+    entityScan "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+
+    testImplementation "org.hsqldb:hsqldb:${hsqldbVersion}"
+}
+
+/*
+ * The catalog describes the entity mappings of the code being built, which is the 5.17 schema
+ * today. When the 6.0 schema change lands, freeze this output as a checked-in 5.17 resource and
+ * point the task at the 6.0 profile directory. The scanner (its own source set, Java 11, no Spring)
+ * runs against the entity modules' classes, apart from the tool's own classpath.
+ */
+sourceSets {
+    scanner
+}
+tasks.named('compileScannerJava') {
+    options.release = 11
+}
+def generatedResourcesDir = layout.buildDirectory.dir('generated-resources/generator-catalog')
+def generateGeneratorCatalog = tasks.register('generateGeneratorCatalog', JavaExec) {
+    group = 'build'
+    description = 'Writes the ID generator catalog (generator -> table.column, allocationSize) from the JPA entity annotations'
+    def outputFile = generatedResourcesDir.map { it.file('org/apereo/portal/dbmigrate/profiles/5.17/generators.tsv') }
+    def scanned = configurations.entityScan
+    inputs.files(scanned).withNormalizer(ClasspathNormalizer)
+    outputs.file(outputFile)
+    classpath = sourceSets.scanner.output + scanned
+    mainClass = 'org.apereo.portal.dbmigrate.catalog.EntityGeneratorScanner'
+    argumentProviders.add({
+        // Scan only uPortal's own jars; their dependencies are on the classpath to load them
+        def jars = scanned.resolvedConfiguration.resolvedArtifacts
+                .findAll { it.id.componentIdentifier instanceof ProjectComponentIdentifier }
+                .collect { it.file.absolutePath }
+        [outputFile.get().asFile.absolutePath] + jars.sort()
+    } as CommandLineArgumentProvider)
+}
+sourceSets.main.output.dir(generatedResourcesDir, builtBy: generateGeneratorCatalog)
+
+/*
+ * Cross-vendor integration tests (Testcontainers: PostgreSQL 16 and MariaDB 11.4). They need
+ * Docker, so they are not part of `check`; CI runs `./gradlew :uPortal-db-migrate:integrationTest`.
+ */
+sourceSets {
+    integrationTest {
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+configurations {
+    integrationTestImplementation.extendsFrom testImplementation
+    integrationTestRuntimeOnly.extendsFrom testRuntimeOnly
+}
+dependencies {
+    integrationTestImplementation 'org.testcontainers:testcontainers-postgresql'
+    integrationTestImplementation 'org.testcontainers:testcontainers-mariadb'
+    integrationTestRuntimeOnly 'org.postgresql:postgresql'
+    integrationTestRuntimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+}
+tasks.register('integrationTest', Test) {
+    group = 'verification'
+    description = 'Copies a fixture between PostgreSQL and MariaDB containers and verifies it (needs Docker)'
+    testClassesDirs = sourceSets.integrationTest.output.classesDirs
+    classpath = sourceSets.integrationTest.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+}
+
+tasks.withType(Test).configureEach {
+    // Timestamps must survive a JVM whose zone has DST gaps; the tests use such values
+    systemProperty 'user.timezone', 'America/New_York'
+}
+
+springBoot {
+    mainClass = 'org.apereo.portal.dbmigrate.DbMigrateApplication'
+}
+tasks.named('bootJar') {
+    archiveClassifier = 'exec'
+    // PropertiesLauncher, so JDBC drivers can be added with -Dloader.path=driver.jar,...
+    manifest {
+        attributes('Main-Class': 'org.springframework.boot.loader.launch.PropertiesLauncher',
+                'Implementation-Title': 'uPortal-db-migrate',
+                'Implementation-Version': project.version)
+    }
+}
+tasks.named('jar') {
+    // The plain jar stays the main artifact (the Boot plugin would give it a "plain" classifier)
+    archiveClassifier = ''
+    manifest {
+        attributes('Implementation-Title': 'uPortal-db-migrate',
+                'Implementation-Version': project.version)
+    }
+}
+publishing.publications.maven.artifact(tasks.named('bootJar'))
