@@ -108,6 +108,25 @@ databases upgrading in place.
   environment-blocked tests, in two consecutive runs. CI (with internet) is
   the authority for those 3.
 
+### MOD-D8: P0 safety nets landed in uPortal-start
+
+* **Ports:** commit `2034439` adds `tomcatHttpPort`, `tomcatShutdownPort` and
+  `hsqlPort` (defaults 8080, 8005, 8887), set with `@token@` filtering.
+  Playwright reads `PORTAL_BASE_URL`. Parallel portals now work.
+* **Flake fixes:** commits `09080d8` and `324f91a` add
+  `waitForPortalRequestsToSettle()` after login (see MOD-I56), make the
+  calendar test wait for the events response, and make the portlet-list
+  `updatedOn` check tolerant of the clock ticking over a second.
+* **Web-proxy test:** now asserts on the proxied content.
+* **New specs (G-flows):** commits `ec4c20b`..`d5e0dba` cover Portlet Manager,
+  Groups Manager, Permissions Manager, User Administration and
+  Import/Export, all in `tests/ux/admin/`. They exercise 10+ Web Flow
+  definitions and clean up after themselves.
+* **Results:** 4 consecutive runs; the only failures are the 3
+  sandbox-blocked tests plus the corrected web-proxy JS-errors test.
+* **Still open:** filter CKEditor's version-check request by URL in
+  visual-resource-server, so the gate is fully green offline.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -167,6 +186,10 @@ databases upgrading in place.
 | MOD-I53 | Runtime | `tomcatStop` leaves Tomcat running: two uPortal-owned worker threads (`pool-19-thread-1/2`) are never shut down, and Tomcat logs leak warnings naming the uPortal webapp. CI never notices. | Find the executor and shut it down on context close. Upstream candidate. |
 | MOD-I54 | Tests | The web-proxy "no critical JavaScript errors" test passes by accident. It waits for "Example Domain", which matches the portlet title "Example Domain (test proxy)", not the proxied page. | Tighten the selector (P0-1). |
 | MOD-I55 | Tests | The sandbox blocks three Playwright tests: web-proxy can't reach `example.com`, and two visual-resource-server tests fail because CKEditor 4.22.1's version check calls `cke4.ckeditor.com`. Feedback "renders feedback form" is flaky (post-login navigation race, 1 of 2 runs). | Sandbox gate = all specs except those 3 environment-blocked tests. Consider `versionCheck: false` for CKEditor (it also stops nagging adopters). Fix the feedback race in P0-1. |
+| MOD-I56 | Rendering | **Found by the new specs.** A focused transient portlet (`/p/<fname>`) is kept in session state, and every `*.uP` request resets it (`UserLayoutParameterProcessor` → `TransientUserLayoutManagerWrapper.setFocusedId(null)`). A late AJAX request from the previous page (emergency alert, calendar, file manager) therefore makes the next render come back without the portlet. This caused the feedback/calendar Playwright flakes. | The tests now wait for in-flight `*.uP` requests to settle. The underlying race is a product bug: upstream candidate, fix after 6.0. |
+| MOD-I57 | Admin UI | **Found by the new specs.** User Administration "Create a User" saves, but the next page throws an NPE. A null lookup for the new username is cached for 15 minutes, so the account can't be opened and edited attributes look stale. | The spec flushes that cache through Cache Manager. Upstream bug. |
+| MOD-I58 | Admin UI | **Found by the new specs.** The editPermission breadcrumbs are action URLs used as plain links, so following one returns HTTP 405. Import/Export `delete.jsp` has broken markup that leaves the form covered and unclickable. | The specs work around both (keyboard submit). Upstream bugs. |
+| MOD-I59 | API | `/api/entity` cannot delete groups or local accounts. | Spec cleanup goes through the UI. Possible API gap. |
 
 ## Open questions
 
