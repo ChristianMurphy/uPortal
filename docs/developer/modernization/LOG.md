@@ -1050,6 +1050,15 @@ This supersedes MOD-D24's runtime matrix.
     `google-visualization-java` jar from the 5.17.9 uPortal WAR, checked
     by SHA-256. None of this is committed.
   * The proper MOD-I51 fix, removing the jitpack dependency, is queued.
+* **Maven Central mirror (owner decision, 22:58 UTC):** one cloud
+  session's permission check refused the local-only Google mirror init
+  script as a "package registry bypass", and the session correctly did
+  not work around it. Asked whether to continue, the owner chose to allow
+  it: workers may point Central lookups at Google's public, byte-identical
+  mirror (`maven-central.storage-download.googleapis.com`) to get past
+  Central's 429s. It is never committed. Where a session's permission
+  system still refuses, that session validates through its topic
+  branch's GitHub CI instead.
 
 ### MOD-D31: Lit components model their state explicitly with XState
 
