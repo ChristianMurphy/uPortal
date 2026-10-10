@@ -124,3 +124,10 @@ If your overlay replaces one of these files, make the same change. The old mappi
 your own `@Controller` to one of these servlets and it reads
 `HandlerMapping.PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE`, note that the new mapping sets it to the
 whole path within the servlet, not just the part the pattern's wildcards matched.
+
+## The `/resources/*` servlet is gone
+
+`web.xml` no longer declares Spring Web Flow's `org.springframework.js.resource.ResourceServlet`
+on `/resources/*`. It served static files packaged in jars such as `spring-js`, nothing in uPortal
+requested them, and Web Flow 2.5 removed the class. If your overlay links to files under
+`/uPortal/resources/`, serve them from the web application instead.
