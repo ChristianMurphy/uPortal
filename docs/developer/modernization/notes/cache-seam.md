@@ -289,13 +289,16 @@ production uses (third row).
 
 GATE-RESULTS-PLACEHOLDER
 
-* **Local runs:** `./gradlew :uPortal-utils:uPortal-utils-core:test :uPortal-events:test
-  :uPortal-layout:uPortal-layout-impl:test :uPortal-security:uPortal-security-permissions:test
-  :uPortal-persondir:test` and `spotlessApply` are green on JDK 21.
-* **Not run locally:** `uPortal-web`, `uPortal-portlets` and `uPortal-webapp`, because
-  jitpack.io (`google-visualization-java`) is denied by this session's network policy.
-  `CacheConfigurationCoverageTest` was compiled and run standalone with `javac`/JUnit. Those
-  modules are proven on GitHub CI only.
+* **Local runs (JDK 21):** all green.
+  * Tests and SpotBugs for utils-core, events, layout-impl, security-permissions, persondir,
+    rendering, rdbm, groups-core, groups-pags and core, plus `spotlessCheck`.
+  * Tests for `uPortal-web`, `uPortal-portlets`, `uPortal-soffit-connector` and
+    `uPortal-webapp`, and SpotBugs for web and webapp.
+  * Altogether 1044 tests ran with 0 failures, and no test files were deleted.
+* **jitpack.io workaround:** jitpack.io (`google-visualization-java`) is denied by this
+  environment's network policy. The webapp-side modules ran after the official jar was
+  installed into `~/.m2` from the released uPortal 5.17.9 WAR on Maven Central (sha256
+  `eca09172…bad63`, the coordinator's workaround, not committed).
 
 ## Proposed LOG entries
 
@@ -321,10 +324,8 @@ GATE-RESULTS-PLACEHOLDER
 
   Plan: confirm on a running portal (Cache Manager portlet hit counts), then drop them when the
   provider configuration is generated (P4-3).
-* **MOD-I? (Environment):** jitpack.io is blocked in this cloud environment (CONNECT 403), so
-  `uPortal-web`, and everything that depends on it, cannot compile here. Workaround: GitHub CI.
-  Fix: an allowed-domain entry, or vendoring `google-visualization-java` (a jitpack-only
-  artifact).
+* **MOD-I51 (existing):** jitpack.io is blocked. Nothing new to log: this workstream used the
+  coordinator's workaround, which installs the jar from the 5.17.9 WAR.
 * **MOD-Q11 update:** the Ehcache expired-element eviction job is Ehcache 2-specific and is
   deleted at the provider switch (Ehcache 3 and Caffeine expire entries themselves). The cache
   health report job stays and is fed by provider listeners.
