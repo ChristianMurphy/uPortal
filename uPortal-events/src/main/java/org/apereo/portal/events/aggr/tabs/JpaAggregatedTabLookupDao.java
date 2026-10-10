@@ -24,18 +24,19 @@ import javax.persistence.FlushModeType;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.BasePortalJpaDao;
 import org.apereo.portal.jpa.OpenEntityManager;
 import org.apereo.portal.jpa.cache.EntityManagerCache;
 import org.apereo.portal.utils.Tuple;
 import org.apereo.portal.utils.cache.CacheKey;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.TransactionStatus;
@@ -51,14 +52,20 @@ public class JpaAggregatedTabLookupDao extends BaseAggrEventsJpaDao
 
     private EntityManagerCache entityManagerCache;
     private JdbcOperations portalJdbcOperations;
-    private Ehcache layoutNodeIdNameResolutionCache;
+    static final String LAYOUT_NODE_ID_NAME_RESOLUTION_CACHE_NAME =
+            "org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver";
+
+    private Cache layoutNodeIdNameResolutionCache;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Autowired
-    @Qualifier(
-            "org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver")
-    public void setLayoutNodeIdNameResolutionCache(Ehcache layoutNodeIdNameResolutionCache) {
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setLayoutNodeIdNameResolutionCache(
+                CacheLookup.requireCache(cacheManager, LAYOUT_NODE_ID_NAME_RESOLUTION_CACHE_NAME));
+    }
+
+    public void setLayoutNodeIdNameResolutionCache(Cache layoutNodeIdNameResolutionCache) {
         this.layoutNodeIdNameResolutionCache = layoutNodeIdNameResolutionCache;
     }
 
@@ -149,9 +156,9 @@ public class JpaAggregatedTabLookupDao extends BaseAggrEventsJpaDao
 
     protected final Tuple<String, String> resolveTabName(final String targetedLayoutNodeId) {
         // Check the cache first
-        final Element element = layoutNodeIdNameResolutionCache.get(targetedLayoutNodeId);
-        if (element != null) {
-            return (Tuple<String, String>) element.getObjectValue();
+        final Cache.ValueWrapper cached = layoutNodeIdNameResolutionCache.get(targetedLayoutNodeId);
+        if (cached != null) {
+            return (Tuple<String, String>) cached.get();
         }
 
         final String fragmentName;
@@ -203,7 +210,7 @@ public class JpaAggregatedTabLookupDao extends BaseAggrEventsJpaDao
 
         // cache the resolution
         final Tuple<String, String> tuple = new Tuple<String, String>(fragmentName, tabName);
-        layoutNodeIdNameResolutionCache.put(new Element(targetedLayoutNodeId, tuple));
+        layoutNodeIdNameResolutionCache.put(targetedLayoutNodeId, tuple);
         return tuple;
     }
 
