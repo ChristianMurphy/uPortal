@@ -468,6 +468,51 @@ chosen per portlet.
   * Keep JSP: works on Tomcat 11, but it's the legacy stack this work is
     retiring (111 JSPs).
 
+### MOD-D20: web components are built with Vite+ and tested extensively with Vitest
+
+* **Decision (project owner):** the WS14 web components (MOD-D18/D19)
+  use **Vite+** as the build toolchain and get **extensive Vitest** test
+  suites.
+* **Versions (npm, 2026-10-10):**
+  * `vite-plus` 1.1.0 (MIT, released 2026-10-07; CLI `vp`). It bundles
+    Vite, Vitest, Oxlint, Oxfmt, Rolldown and tsdown.
+  * Vite 8.3.4, Vitest 5.0.3 with `@vitest/browser` 5.0.3, Lit 3.3.3
+    (BSD-3-Clause).
+* **How it is wired in:**
+  * One web-components workspace inside uPortal, so the components
+    version with the REST APIs they call.
+  * `vite-plus` is a pinned devDependency. It is not installed globally
+    with `curl | bash`, to avoid the supply-chain risk and keep CI
+    reproducible.
+  * Node stays managed by the existing node-gradle plugin, not `vp env`,
+    so there is one Node source of truth.
+  * Gradle tasks call the npm scripts: `vp check` (format, lint,
+    types), `vp test` and `vp build`. The built ES modules are packaged
+    into the uPortal webapp (or a webjar) as static resources, served
+    with cache-busting.
+  * Renovate groups the Vite+ / Vite / Vitest updates.
+* **Testing bar for every component:**
+  * Vitest in **browser mode** (Playwright provider, Chromium) for real
+    custom-element and shadow-DOM behaviour, plus fast unit tests for
+    pure logic.
+  * Coverage of rendering states (loading, empty, error, populated),
+    user interactions and emitted events, attribute and property
+    reflection, i18n keys, keyboard navigation and focus, an automated
+    accessibility check (axe-core) per state, and REST calls with mocked
+    responses (MSW or fetch stubs), including 401, 403, 500 and
+    malformed payloads.
+  * Coverage thresholds start at 90% lines/branches per package and are
+    enforced in CI. Snapshot tests are only allowed for small, stable
+    markup.
+  * Playwright end-to-end specs still gate the integrated behaviour in
+    the portal.
+* **Risks:**
+  * Vite+ 1.x is days old. Pin exact versions, and keep the configuration
+    portable (plain `vite.config.ts` + Vitest config) so it can fall back
+    to plain Vite + Vitest if needed.
+  * Browser-mode tests in this sandbox need the Chromium shim; CI uses
+    the Playwright-installed browsers.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
