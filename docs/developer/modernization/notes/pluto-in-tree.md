@@ -16,9 +16,9 @@ Branches: `ccr-43ba0785-hzlrj5-pluto` in uPortal and in uPortal-start.
 | --- | --- |
 | `49e81c5` `build: import apache pluto 2.1.0-M3 and portlet api 2.1.0 sources` | The six `-sources` jars, unchanged, in `uPortal-pluto/*/src/main/{java,resources}`. Upstream files only (330 files). |
 | `0b31bcd` `build: build the in-tree apache pluto modules` | Six subprojects, README, NOTICE, `verify-import.sh`, SpotBugs baselines, root NOTICE credit, STATIC_ANALYSIS note. |
-| `97463b0` `build: build uportal against the in-tree pluto and portlet api` | 24 build scripts switch from the Maven Central artifacts to the projects; `plutoVersion` and `portletApiDependency` go. |
+| `97463b0` `build: build uportal against the in-tree pluto and portlet api` | 24 build scripts switch from the Maven Central artifacts to the projects. `plutoVersion` and `portletApiDependency` are removed. |
 | `a27321a` | Merge of the integration branch (one docs commit). |
-| `e10520b` `fix(build): fill in pluto's container info as its maven build did` | Fills in the placeholders of `pluto-configuration.properties` that Pluto's Maven build filtered (F6); `PlutoContainerInfoTest`. Squash into `0b31bcd` when replaying upstream. |
+| `e10520b` `fix(build): fill in pluto's container info as its maven build did` | Fills in the placeholders of `pluto-configuration.properties` that Pluto's Maven build filtered (F6), with `PlutoContainerInfoTest`. Squash into `0b31bcd` when replaying upstream. |
 | `b5905bf`, `d2b7d13`, and later | `docs:` this note and `compare-classes.py`. |
 
 ### uPortal-start
@@ -64,7 +64,7 @@ imported, because it is the one that runs.
 * **Tree vs jars:** `uPortal-pluto/verify-import.sh` re-downloads the jars,
   checks SHA-256, and diffs them against the tree. It is silent (exit 0); the
   only files not imported are `META-INF/MANIFEST.MF`, `META-INF/DEPENDENCIES`
-  and portlet-api's `META-INF/NOTICE.vm`. All 302 `.java` files carry their
+  and portlet-api's `META-INF/NOTICE.vm`. All 302 `.java` files have their
   ASF header. The portlet API sources are CRLF; `uPortal-pluto/.gitattributes`
   (`* -text`) keeps them byte for byte.
 * **Built classes vs Apache's jars** (`notes/pluto-in-tree/compare-classes.py`,
@@ -87,7 +87,7 @@ imported, because it is the one that runs.
   **The public and protected API is identical.** The only member-level
   difference is a synthetic `private static $values()` in each of the three
   enums (javac 15+). `ToolTips$1`, an anonymous class, is no longer `final`
-  (javac 9+); it isn't API.
+  (javac 9+). It isn't API.
 * **Compiler-related bytecode differences** (the 83 differing methods):
   * Class files are version 52 (Java 8), not 49 (Java 5). See "Findings".
   * Enum static initialisers call `$values()`.
@@ -95,7 +95,7 @@ imported, because it is the one that runs.
     casts at the call site).
   * `toString()`/`getClass()` called through the receiver's static type
     (`invokeinterface X.toString`) instead of `Object`.
-  * Adjacent string literals folded into one constant; `ldc_w` vs `ldc`.
+  * Adjacent string literals folded into one constant, and `ldc_w` vs `ldc`.
   * Branch targets and exception-table offsets that moved because of the
     above.
 
@@ -106,14 +106,14 @@ imported, because it is the one that runs.
   entries). After mapping each Apache artifact to its in-tree project, **there
   are zero differences**. The WAR's `WEB-INF/lib` swaps `pluto-container` and
   `pluto-portal-driver` for `uPortal-pluto-container` and
-  `uPortal-pluto-portal-driver`, and nothing else changes. Getting there took
+  `uPortal-pluto-portal-driver`, and no other jar changes. Getting there took
   mirroring Pluto's parent-POM exclusion of `stax-api` from `stax`, and
   keeping Pluto's `jaxb-api` 2.1 (uPortal's 2.3.1 changed
   uPortal-utils-url's compile classpath).
 * **Published POMs:** uPortal's POMs name
   `org.jasig.portal:uPortal-pluto-container` and `-portal-driver` (compile, with
   the same exclusions on uPortal-rendering) where they named the Apache
-  artifacts. The `uPortal-pluto-*` POMs carry the scopes and exclusions of
+  artifacts. The `uPortal-pluto-*` POMs have the scopes and exclusions of
   Pluto's POMs.
 
 ## Build decisions
@@ -125,13 +125,13 @@ imported, because it is the one that runs.
   uPortal code.
 * **Servlet 2.4 at compile time** (`plutoServletApiDependency`), as Pluto's POMs
   declare: `DummyServletOutputStream`, `PrintWriterServletOutputStream` and
-  an anonymous class in `HttpServletPortletResponseWrapper` don't implement
+  an anonymous class in `HttpServletPortletResponseWrapper` don't define
   the abstract `isReady()`/`setWriteListener()` Servlet 3.1 added. That was
   already true of Apache's jars running on Tomcat 9.
 * **`--release 8`** for these modules only. `PortletAppDescriptorServiceImpl`
-  implements `NamespaceContext.getPrefixes` returning `Iterator<?>`, which no
+  overrides `NamespaceContext.getPrefixes` returning `Iterator<?>`, which no
   longer compiles against the JDK 9+ signature (`Iterator<String>`). JDK 21
-  and 25 javac both accept `--release 8` (`-Xlint:-options` silences the
+  and 25 javac both accept `--release 8` (`-Xlint:-options` turns off the
   obsolescence warning).
 * **Static analysis** (following P3-1, which skipped Spotless for vendored
   code):
@@ -174,7 +174,7 @@ imported, because it is the one that runs.
 | uPortal-start Integration, uPortal from this branch (after) | run 38089219769: _pending_ |
 | uPortal-start Integration, uPortal from the integration branch (before) | run 38089226181 (workflow_dispatch, `uportal-ref=ccr-43ba0785-hzlrj5`): _pending_ |
 | Full Playwright suite, local portal on this branch (HSQLDB, Tomcat 9, JDK 11) | 123 passed, 2 failed: only the two web-proxy tests that need internet access (sandbox, as in MOD-D17) |
-| Pluto testsuite before / after (local, HSQLDB, Tomcat 9, JDK 11) | identical for all 32 tests: 12 PASSED, 10 FAILED, 8 MANUAL, 2 WARNING; 144/16 checks (see below) |
+| Pluto testsuite before / after (local, HSQLDB, Tomcat 9, JDK 11) | identical for all 32 tests (12 passed, 10 failed, 8 manual and 2 warnings), with 144 checks passed and 16 failed (see below) |
 
 **Local unit tests (sandbox, JDK 21, `./gradlew test --rerun` in both trees):**
 identical per module before and after, in all 32 test tasks: 1,148 run, 1,069
@@ -191,7 +191,7 @@ Following the coordinator's workaround, the official jar was taken from
 uPortal's released 5.17.9 WAR on Central (SHA-256 `eca09172…bad63`) and
 installed into mavenLocal, not committed. Its embedded POM is
 `com.github.ci-rt:visualization-datasource:1.1.3`, so it was installed with
-the coordinates the build asks for.
+the coordinates in uPortal-web's dependency.
 
 ## Pluto 2.0 test suite: baseline and the 16 failing checks
 
@@ -214,7 +214,7 @@ same per-test result:
 | 7 | PASSED | 3/0 | |
 | 8 | FAILED | 14/2 | `checkPreferenceValidator`, `checkGetNoValuePreference` |
 | 9 | FAILED | 13/1 | `checkGetNoValuePreference` |
-| 10–12 | MANUAL | 0/0 | |
+| 10, 11, 12 | MANUAL | 0/0 | |
 | 13 | FAILED | 3/3 | `checkPortalInfo`, `checkContextServerInfo`, `checkContextMajorVersion` |
 | 14 | WARNING | 1/0 | (direct URL) |
 | 15 | PASSED | 4/0 | |
@@ -225,8 +225,8 @@ Why each check fails, from the result pages ("got … expected …"):
 | --- | --- | --- | --- |
 | `checkPortalInfo` | got `uPortal/5.17.10-SNAPSHOT`, expected `uPortal/5.0.0-SNAPSHOT` | uPortal-start's `overlays/pluto-testsuite/.../expectedResults.properties` is stale | test-suite data |
 | `checkContextMajorVersion` | got `2`, expected `1` | the same file expects Portlet 1.0 (`expected.version.major = 1`); the WAR's own file says 2 | test-suite data |
-| `checkContextServerInfo` | got `Pluto/${pluto.version}`, expected `Pluto/2.1.0-M3` | uPortal ships its own `uPortal-webapp/src/main/resources/org/apache/pluto/driver/container/pluto-configuration.properties` (it overrides the jar's, and adds the `javax.portlet.renderHeaders` runtime option); its `${pluto.version}` is never filled in | uPortal bug (cosmetic) |
-| `checkGetNoValuePreference` (×2) | got `{}`, expected `{Default}` | a preference declared with no value returns no values instead of the default the portlet passes (PLT.14.1) | uPortal deviation from JSR-286 (preferences implementation) |
+| `checkContextServerInfo` | got `Pluto/${pluto.version}`, expected `Pluto/2.1.0-M3` | uPortal has its own `uPortal-webapp/src/main/resources/org/apache/pluto/driver/container/pluto-configuration.properties` (it overrides the jar's, and adds the `javax.portlet.renderHeaders` runtime option); its `${pluto.version}` is never filled in | uPortal bug (cosmetic) |
+| `checkGetNoValuePreference` (×2) | got `{}`, expected `{Default}` | a preference declared with no value returns no values instead of the default the portlet passes (PLT.14.1) | uPortal deviation from JSR-286 (preferences code) |
 | `checkPreferenceValidator` | "Illegal value not caught by validator" | `PortletPreferences.store()` doesn't run the portlet's `PreferencesValidator` (PLT.14.4) | uPortal deviation from JSR-286 |
 | `checkEnumerateAttributes` | got 6 attribute names with the test's prefix, expected 5 | the suite finds its `check*` methods by reflection, in an order that can change at each JVM start. When `checkSetAttribute` runs first, its `BOGUS_KEY` attribute is still set and gets counted. It passed in 1 of 5 restarts of one portal, with the same jars | test-suite order dependence |
 | `checkInvalidParameters` | got parameter `""`, expected `null` | a dispatch query string with a key and no `=` (`?includedTestKeyA&…`) reaches the included servlet as an empty value instead of being dropped | container behaviour (Pluto/Tomcat query merging) |
@@ -241,16 +241,16 @@ to the jars (Apache's jar and the in-tree one each give either result,
 depending on the JVM start). The spec now accepts either result for that one
 check (uPortal-start `f0cfc1a`).
 
-The three test-suite and config issues are one-line fixes (the overlay's
+The test-suite and config issues each take a one-line fix (the overlay's
 `expectedResults.properties`, and `${pluto.version}` → `2.1.0-M3` in
 uPortal's file); the spec pins today's result, so whoever fixes them updates
-it. The two preference deviations are real uPortal bugs worth their own
+it. The preference deviations are real uPortal bugs that need their own
 issues.
 
 ## Findings
 
-* **F1 (Servlet 3.1 gap):** Pluto's `ServletOutputStream` subclasses don't
-  implement `isReady()`/`setWriteListener()`. They work today because nothing
+* **F1 (Servlet 3.1 gap):** the `ServletOutputStream` subclasses in Pluto don't
+  define `isReady()`/`setWriteListener()`. They work today because nothing
   calls those methods. On `jakarta.servlet` (P6-1) they must be implemented,
   since Servlet 6 compiles them as abstract. That is a real source change to
   Pluto for P6-1 that the bytecode transform hid.
@@ -259,13 +259,13 @@ issues.
   fix it with a one-line `Iterator<String>` change and move the modules to
   `--release 11`, recorded as a uPortal change per the README's policy.
 * **F3 (API version mismatch):** Pluto 2.1.0-M3 was built against the 2.0
-  portlet API; uPortal ships the 2.1.0 API jar. Harmless (2.1.0 is a
+  portlet API, and uPortal deploys the 2.1.0 API jar. Harmless (2.1.0 is a
   superset), but it is why the in-tree container compiles against
   `uPortal-pluto-portlet-api`, not a 2.0 jar.
 * **F4 (sandbox, known as MOD-I51):** jitpack.io is refused by the proxy, so
   uPortal-web can't compile in a cloud session until the jar is installed
   into mavenLocal (see Gates). The embedded POM has different coordinates
-  from the ones uPortal asks for, which the workaround has to correct.
+  from the ones in uPortal-web's dependency, which the workaround has to correct.
 * **F5 (upstream data):** portlet-api's upstream `META-INF/NOTICE` has a
   corrupted copyright sign (U+FFFD). The imported copy keeps it; uPortal's
   combined `uPortal-pluto/NOTICE` writes "©".
@@ -273,9 +273,9 @@ issues.
 * **F6 (filtered resource):** Pluto's Maven build filtered the portal
   driver's resources; the `-sources` jar keeps the placeholders of
   `pluto-configuration.properties` (container name and version, Portlet spec
-  version). The first build shipped them (`0b31bcd`–`a27321a`); `e10520b`
+  version). The first build put them in the jar (`0b31bcd` to `a27321a`), and `e10520b`
   fills them in, and the file is byte-identical to Apache's. Inside uPortal's
-  webapp this never reached portlets, because uPortal's own copy of the file
+  webapp, portlets never saw it, because uPortal's own copy of the file
   in `WEB-INF/classes` takes precedence (so `e10520b`'s message overstates the
   impact). It matters for the jar on its own, and for faithfulness. The
   signature and dependency comparisons couldn't see it; `compare-classes.py`
@@ -286,7 +286,7 @@ issues.
 
 ## Proposed LOG entries
 
-* **MOD-D?: P3-2 delivered — Pluto 2.1.0-M3 and the portlet API in tree.**
+* **MOD-D?: P3-2 delivered, Pluto 2.1.0-M3 and the portlet API in uPortal's source tree.**
   * Six `uPortal-pluto-*` modules, imported unchanged from the signed
     `-sources` jars on Central (`verify-import.sh`).
   * Public/protected API identical. 83 of 3,173 methods differ, all
@@ -296,9 +296,9 @@ issues.
     SpotBugs baselines with 84 findings.
   * `shared/lib` keeps Apache's jars until P5-5.
   * Gates: (run IDs).
-* **MOD-I?: Pluto doesn't implement Servlet 3.1's `ServletOutputStream`
+* **MOD-I?: the Pluto container doesn't define Servlet 3.1's `ServletOutputStream`
   methods** (F1). P6-1 must add `isReady`/`setWriteListener` to three classes.
-* **MOD-I?: Pluto needs `--release 8`** (F2). Fix `getPrefixes` and move to 11
+* **MOD-I?: the Pluto modules need `--release 8`** (F2). Fix `getPrefixes` and move to 11
   when the code is first changed.
 * Add to **MOD-I51**: the jar in the 5.17.9 WAR carries a
   `visualization-datasource:1.1.3` POM, so mavenLocal needs one written with
@@ -318,5 +318,5 @@ issues.
   `uPortal-pluto-portlet-api`), and switching uPortal-start's `shared/lib` to
   `uPortal-pluto-*`.
 * **P6-1:** move `uPortal-pluto-*` to `jakarta.servlet` (F1, F2).
-* If the other workstream's Pluto testsuite spec lands, keep one of the two
+* If the other workstream's Pluto testsuite spec is merged, keep one of the two
   specs.
