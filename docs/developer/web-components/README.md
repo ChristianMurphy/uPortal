@@ -278,6 +278,13 @@ Consequences:
 The browser tests check that the sheet is shared, that tokens and components apply inside the
 shadow root, that the page can theme a component, and that the color scheme follows the page.
 
+### Charts (MOD-D34)
+
+Components that draw charts use Apache ECharts. Import it from `echarts/core` and register only
+the chart types, components and renderer the component needs (`echarts.use([...])`), so a page
+loads only the chart code it shows. Do not use Google Charts or Chart.js. No component draws a
+chart yet; the first one adds `echarts` to `package.json` at an exact version.
+
 ### State machines (MOD-D31)
 
 **Rule:** a component with more than trivial state models it as an
