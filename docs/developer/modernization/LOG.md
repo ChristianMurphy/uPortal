@@ -368,6 +368,49 @@ research report.
   * Rebase `etc/tomcat` customisations onto Tomcat 9.
   * Rename the overlay build-script configurations.
 
+### MOD-D18: replace uPortal's own portlets with REST + web components before Jakarta
+
+* **Decision (project owner):** the copied Spring Portlet MVC / Web Flow
+  portlet glue (P3-1) is a bridge only through the Spring 5.3 step (P4).
+  PortletMVC4Spring 5.3.4 shows the Spring 5 adaptations needed there.
+  All 37 portlets in uPortal's own `portlet.xml`, plus the 26 admin flows,
+  are replaced during P4/P5 by **REST APIs + Lit-based web components**,
+  placed through a native web-component channel type. The copied code is
+  deleted before the Jakarta switch (P6), so it is never ported to Spring
+  6/7 or Jakarta.
+* **What stays:** the Pluto container remains as a compatibility layer
+  for the bundled external portlet WARs (each carries its own Portlet MVC;
+  MOD-D9/D13) and for adopters' portlets. Soffit moves to a pipeline
+  component (MOD-Q9).
+* **New workstream, WS14:**
+  1. **Foundation:** a web-component channel type (renders the custom
+     element and its module script, passes context such as user, locale,
+     window state and preferences, and authenticates REST calls with the
+     existing JWT/OIDC userinfo token); a shared Lit base library (Bootstrap
+     5 tokens, i18n from `Messages.properties`, accessibility); build and
+     packaging in uPortal; a data upgrade that turns portlet definitions
+     referencing the built-in portlets into web-component channel
+     definitions (XML import upgrader plus a copy-tool rule).
+  2. **Reference conversion:** Groups Manager, with its REST API, its web
+     component, and its Playwright spec retargeted.
+  3. **Fan-out per portlet,** in parallel by sub-agents. Admin domains:
+     portlets, groups, permissions, users, fragments, import/export, cache,
+     tenants, analytics. User-facing: login, account, favorites,
+     marketplace, search, directory, locale, layout reset, skin, session
+     timeout. Trivial portlets become built-in channel types or are
+     dropped, documented in UPGRADING-6.0.
+* **Gate:** `tests/ux/admin` and the related specs keep asserting the
+  same behaviour against the new UI. Each converted portlet removes its
+  Portlet MVC / Web Flow dependency, and P6 requires that the copied code
+  has been deleted.
+* **Alternatives considered:**
+  * Replace first, with no bridge. That stalls every framework upgrade on
+    the rewrite.
+  * Bridge through 6.0 and replace in 6.x. That means porting dead code
+    through Spring 6/7 and Jakarta.
+  * Servlet Web Flow 4 with server-side views. That keeps a second UI
+    stack.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
