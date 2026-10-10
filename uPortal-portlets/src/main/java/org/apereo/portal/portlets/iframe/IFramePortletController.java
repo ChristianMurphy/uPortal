@@ -37,57 +37,45 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("VIEW")
 public final class IFramePortletController {
 
-    @SuppressWarnings("serial")
     protected static final Map<String, String> IFRAME_ATTRS =
-            Collections.unmodifiableMap(
-                    new LinkedHashMap<String, String>() {
-                        {
-                            /** document-wide unique id */
-                            put("id", null);
-
-                            /** space-separated list of classes */
-                            put("cssClass", null);
-
-                            /** associated style info */
-                            put("style", null);
-
-                            /** advisory title */
-                            put("title", null);
-
-                            /** link to long description (complements title) */
-                            put("longDescription", null);
-
-                            /** name of frame for targeting */
-                            put("name", null);
-
-                            /** source of frame content */
-                            put("src", null);
-
-                            /** request frame borders? */
-                            put("frameBorder", "0");
-
-                            /** margin widths in pixels */
-                            put("marginWidth", null);
-
-                            /** margin height in pixels */
-                            put("marginHeight", null);
-
-                            /** scrollbar or none */
-                            put("scrolling", null);
-
-                            /** vertical or horizontal alignment */
-                            put("align", null);
-
-                            /** frame height */
-                            put("width", "100%");
-
-                            /** frame width */
-                            put("height", null);
-                        }
-                    });
+            Collections.unmodifiableMap(createIframeAttributes());
 
     private static final String SCROLL_HEIGHT_ONLOAD_FIX =
             "this.style.height = parseInt(document.body.scrollHeight, 10) * 3 + 'px';";
+
+    /** The iframe attributes a portlet preference can set, with their default values. */
+    private static Map<String, String> createIframeAttributes() {
+        final Map<String, String> attrs = new LinkedHashMap<>();
+        // document-wide unique id
+        attrs.put("id", null);
+        // space-separated list of classes
+        attrs.put("cssClass", null);
+        // associated style info
+        attrs.put("style", null);
+        // advisory title
+        attrs.put("title", null);
+        // link to long description (complements title)
+        attrs.put("longDescription", null);
+        // name of frame for targeting
+        attrs.put("name", null);
+        // source of frame content
+        attrs.put("src", null);
+        // request frame borders?
+        attrs.put("frameBorder", "0");
+        // margin widths in pixels
+        attrs.put("marginWidth", null);
+        // margin height in pixels
+        attrs.put("marginHeight", null);
+        // scrollbar or none
+        attrs.put("scrolling", null);
+        // vertical or horizontal alignment
+        attrs.put("align", null);
+        // frame width
+        attrs.put("width", "100%");
+        // frame height
+        attrs.put("height", null);
+        return attrs;
+    }
 
     @RenderMapping
     protected ModelAndView display(RenderRequest req, RenderResponse res) throws Exception {

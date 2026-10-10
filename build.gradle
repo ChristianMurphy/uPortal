@@ -147,7 +147,7 @@ allprojects {
             // ERROR-level checks added to Error Prone after 2.3.4 that flag existing code.
             // Disabled so the toolchain upgrade needs no production change; each finding
             // should be fixed (and its check re-enabled) separately.
-            disable('BanJNDI', 'BoxedPrimitiveEquality', 'DoubleBraceInitialization', 'SelfAssertion')
+            disable('BanJNDI', 'BoxedPrimitiveEquality', 'SelfAssertion')
             // NullAway (MOD-D27) checks only code that is @NullMarked (JSpecify), so packages
             // adopt it one at a time: annotate the package-info.java with @NullMarked, and
             // anything in it that may be null with @Nullable. JSpecify mode follows the
