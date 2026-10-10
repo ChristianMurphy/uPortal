@@ -40,7 +40,11 @@ behind it.
   results with run IDs, findings, and what's left.
 * **Log entries:** workstreams propose LOG.md entries in their handoff
   note, using placeholders (`MOD-I?`, `MOD-D?`). The integrator assigns
-  the numbers when merging, so parallel branches don't collide.
+  the numbers when merging, so parallel branches don't collide. Local agents that started earlier
+  keep reserved blocks: DB matrix MOD-I107–I119, Hibernate 5.2
+  I120–I129, WS14 I130–I139, persistence goldens I140–I149, e2e tests
+  I150–I159, copy-tool tests I160–I169. Integrator-numbered entries start
+  at MOD-I170.
 * **Heavy work:** portal, Playwright and multi-database runs need about
   3 GB each. On a shared machine, at most two run at once. Heavier
   workstreams run as separate cloud sessions on their own machines, at

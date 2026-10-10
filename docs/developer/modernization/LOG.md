@@ -1143,6 +1143,47 @@ This supersedes MOD-D24's runtime matrix.
   * Keep merge commits: commitlint ignores them, but the history doesn't
     read as upstream-shaped PRs.
 
+### MOD-D33: P2 (Hibernate 4.3.11 → 5.2.18) is built and gated; it merges after the goldens
+
+* **Branch:** `ccr-43ba0785-hzlrj5-hibernate52` in uPortal, four commits
+  on ccr `22bdf2b23`. The handoff note is
+  `docs/developer/modernization/notes/hibernate-52.md`.
+  * `892bd4759` refactor(rdbm): hide hibernate schema generation behind a
+    schema tool (P2-1).
+  * `997bb7f6f` build!: upgrade hibernate to 5.2.18 (P2-2).
+  * `054d24727` refactor(persistence): use jpa index, order column and
+    fetch mappings (P2-3).
+  * `3a1c55cbb` fix(persistence): pin the pref value and postgresql lob
+    column types (P2-4).
+  * P2-5 (Flyway) is not started.
+* **Freeze block** (`hibernate.properties`, MOD-D5): 5.2 keeps 4.3's
+  schema.
+  * A `PortalDialectResolver` keeps 4.3's dialect choices: PostgreSQL 10+
+    → `PostgreSQL81TextClobDialect`, MySQL/MariaDB → `MySQL55Dialect`,
+    SQL Server → `SQLServer2005Dialect`.
+  * A `PortalImplicitNamingStrategy` (legacy-jpa plus 4.3's `FK_`/`UK_`
+    hash), the standard physical naming, and the pooled optimizer.
+  * Jadira 6.0.1.GA, which stores Joda values the same way. jpamodelgen
+    stays at 5.6.3.
+* **Gates on the branch:**
+  * G-unit: 1137 → 1152 tests, 0 failures.
+  * G-portal: 119/124 twice; only the sandbox-blocked tests failed.
+  * G-db on hsqldb, postgres-16, mysql-8.4, mariadb-10.6/11.4,
+    sqlserver-2022 and oracle-23: zero STRUCTURE, DATA and NAMES drift.
+    GENERATORS lost only the dead `hibernate_sequences` declarations.
+    Oracle has the known cached-sequence noise (MOD-I84).
+  * Table dumps after 4.3 and after 5.2 `dataInit` are identical on
+    PostgreSQL, MySQL and SQL Server.
+  * Upgrade path on postgres-16: 4.3 data, then the 5.2 portal on the
+    same database, with no drift. The id allocations stay above 4.3's.
+* **Before merging (MOD-D29, MOD-D32):**
+  * Rebase onto ccr. Expect a `CHANGES.md` conflict, and reconcile with
+    `05f40ce45` (read-committed cluster locks, MOD-I99).
+  * Then pass, unchanged, the persistence, query, analytics and ArchUnit
+    goldens and the dataExport data-equivalence check. Rerun G-db on
+    every vendor, the upgrade path and G-portal.
+* **Findings:** MOD-I120 to MOD-I127.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1252,6 +1293,14 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I104 | core | **Found while tracing MOD-I90.** `BasePersonManager.java:158` reads the `guestUserIds` HashMap without the lock its writer holds. | **Fixed** (f213dcad5): a `ConcurrentHashMap`; writes stay under the lock. `BasePersonManagerTest` (8 threads, 40 guests, 25 fresh managers; one lookup per guest; a missing guest account isn't cached) guards the behaviour, but the race needs a read during a resize and can't be forced, so it also passes on the old code. Related to MOD-I90. |
 | MOD-I105 | utils | **Found by SpotBugs.** `ComparableExtractingComparator.java:53` throws an NPE when only the first value is null. `PortletWindowRegistryImpl.java:554`'s error message prints the null entity instead of its ID. | **Fixed** (f90ebac9e): a null comparable sorts first, in both argument orders; the message prints `portletEntityId`. `ComparableExtractingComparatorTest` (3 of 5 cases threw the NPE on the old code) and `PortletWindowRegistryImplTest` (the old message said "for null"). |
 | MOD-I106 | Build | uPortal-webapp's `npmInstall` still rewrites `package-lock.json`, because c0d9c16ca switched only the root build to `npm ci`. | **Fixed** (bddc4f315): the webapp is an npm workspace of the root, so its npmInstall is disabled and depends on the root's `npm ci`, which installs the webapp's packages too. (`npm ci` in the webapp directory would empty the root's node_modules and install 19 of 805 packages.) Before: `:uPortal-webapp:npmInstall` added 10 lines to package-lock.json. After: a clean `:uPortal-webapp:build -x test :npm_run_lint-js` leaves `git status` clean. uPortal-start's root node block still runs `npm install`, which rewrites its lockfile too (8 `peer` flags under npm 11); not changed here. |
+| MOD-I120 | Persistence | **Found by P2 on the upgrade path.** Hibernate 4.3 applied `@Type(nullSafeString)` to map keys as well as values, so existing rows store keys such as `_externalId`. 5.2 applies it to values only, so upgraded portals lost their tab externalIds (`/f/welcome` redirected to login). Fresh-install tests didn't notice, and the harness DATA check counts rows, not values (MOD-I126). | **Fixed in P2-2:** `@MapKeyType` on the four affected collections, plus stored-format tests. The dataExport data-equivalence check (MOD-D29 item 1) is the gate that catches this class of bug. |
+| MOD-I121 | Tests | Hibernate 5.2's `BatchFetchQueueHelper` assertion fails at random under `-ea` when `PortletPreferencesImpl` is join-fetched. | Tests run with that assertion disabled, as production does. Recheck on 5.6/6. |
+| MOD-I122 | Persistence | Rollback-only commits fail differently in 5.2. | `JpaClusterLockDao` rolls back explicitly. Keep MOD-I82 and reconcile with MOD-I99 (`05f40ce45`) at rebase. |
+| MOD-I123 | Persistence | 5.2's defaults (dialects, naming, id optimizers) would change the schema. | Frozen in `hibernate.properties` (MOD-D33). The 6.0 schema and copy tool (MOD-D11) replace the freeze block later. |
+| MOD-I124 | Build | Smaller 5.2 upgrade issues: `@Index` on a one-to-many is rejected, Javassist 3.22 fails on JDK 21, dom4j and Ehcache were each on the classpath twice, and the dialect lookup failed after the SessionFactory closed. | **Fixed in P2-2.** |
+| MOD-I125 | Runtime | New 5.2 log noise: HHH000112, HHH000482, and empty `AggrEvents.AggrEvents.*` query-cache regions. | Quiet or fix in P4-3 (Hibernate 5.6 + JCache regions). |
+| MOD-I126 | DB harness | Harness gaps: DATA counts rows only; `--skip-init` snapshots before deploying; the post-portal LOB report ignores `-PdbPort`; `--portal` doesn't deploy resource-server. | The data-equivalence workstream covers DATA. The other three are small uPortal-start fixes. |
+| MOD-I127 | Runtime | `TransientPortletEntityDao` throws an NPE on `layout.json` requests with user=null. It appeared in 3 runs after P2 was rebased onto `22bdf2b23` and in none of 6 before; the tests still pass. | Compare with a 4.3 portal on the same ccr commit to find whether P2 or a ccr change causes it (candidates: MOD-I82, MOD-I97). The HTTP replay workstream should also show it. |
 
 ## Open questions
 
