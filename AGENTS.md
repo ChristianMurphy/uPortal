@@ -56,6 +56,8 @@ npx eslint . --report-unused-disable-directives --max-warnings 0   # lint JS; np
 npm run lint-less                             # lint LESS
 npx remark -f *.md docs/**                    # lint Markdown
 .github/scripts/check-commit-messages.sh origin/master..HEAD  # check commit subjects (CI runs it)
+.github/scripts/vale.sh commits origin/master..HEAD  # check commit messages for AI writing tells (CI runs it)
+.github/scripts/vale.sh docs                         # check the 6.0 modernization docs for AI writing tells
 ```
 
 ## Project structure
