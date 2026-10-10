@@ -162,7 +162,10 @@ public abstract class AbstractPortletPreferencesImpl<C> implements PortletPrefer
         final IPortletPreference portletPreference = this.getPortletPreference(key);
 
         if (portletPreference != null) {
-            return portletPreference.getValues();
+            // A preference without values has no value associated with the key: the default,
+            // like getValue(key, def) (PLT.17.1, PortletPreferences#getValues)
+            final String[] values = portletPreference.getValues();
+            return values != null ? values : def;
         }
 
         return def;

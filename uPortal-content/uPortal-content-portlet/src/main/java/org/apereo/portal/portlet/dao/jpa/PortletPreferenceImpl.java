@@ -138,7 +138,10 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
         this.name = preference.getName();
         this.readOnly = preference.isReadOnly();
 
-        this.setValues(preference.getValues().toArray(new String[] {}));
+        // A <preference> without <value> in portlet.xml has no value (PLT.17.1): null values, so
+        // that getValues(key, def) answers the default, as it does in Pluto's own container
+        final List<String> values = preference.getValues();
+        this.setValues(values == null || values.isEmpty() ? null : values.toArray(new String[] {}));
     }
 
     public PortletPreferenceImpl(String name, boolean readOnly, String... values) {
