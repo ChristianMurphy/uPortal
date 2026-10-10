@@ -22,6 +22,15 @@
   `runtime` scope instead of being dropped; `uPortal-security-filters`
   lists `slf4j-api` as `runtime`; the developer organization is written
   correctly.
+- **Java formatter switched from the sherter google-java-format plugin
+  to Spotless.** The previous plugin (`com.github.sherter.google-java-format`
+  0.9) was last released in 2019 and cannot run google-java-format on
+  JDK 16+. Spotless takes its place with the same AOSP style and still
+  runs as part of `check`. Use `./gradlew spotlessCheck` to verify and
+  `./gradlew spotlessApply` to format; the old `./gradlew verGJF` and
+  `./gradlew goJF` commands keep working. Seven stray no-op empty
+  statements (`;` after a closing brace) were removed so the switch
+  does not reformat anything else.
 
 ## v5.17.3
 
