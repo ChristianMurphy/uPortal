@@ -193,9 +193,24 @@ war {
 }
 
 
-// Override the root maven publication for this WAR project — publish only the WAR artifact.
-// components.java (from root) would fail because jar.enabled = false.
-afterEvaluate {
-    publishing.publications.maven.artifacts.clear()
-    publishing.publications.maven.artifact(war)
+// Publish the WAR in place of the disabled jar, with war packaging. The POM dependencies
+// still come from components.java (configured in the root build.gradle), as they did
+// with the legacy `maven` plugin.
+publishing.publications.maven {
+    artifacts.clear()
+    artifact war
+    artifact sourcesJar
+    artifact javadocJar
+    pom.packaging = 'war'
+    // The war plugin's providedRuntime dependencies leak into the java component's
+    // variants (compile scope on Gradle 6, runtime on later versions), which would make the
+    // container-provided HSQLDB driver a dependency of the war. Keep it out of the POM, as
+    // the legacy `maven` plugin did.
+    pom.withXml {
+        def provided = configurations.providedRuntime.allDependencies.collect { "${it.group}:${it.name}".toString() }
+        asNode().dependencies.dependency.findAll {
+            "${it.groupId.text()}:${it.artifactId.text()}".toString() in provided
+        }.each { it.parent().remove(it) }
+    }
 }
+
