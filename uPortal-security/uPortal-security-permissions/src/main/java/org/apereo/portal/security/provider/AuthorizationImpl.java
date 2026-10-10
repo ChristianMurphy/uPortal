@@ -24,10 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-import net.sf.ehcache.constructs.blocking.CacheEntryFactory;
-import net.sf.ehcache.constructs.blocking.SelfPopulatingCache;
 import org.apereo.portal.AuthorizationException;
 import org.apereo.portal.concurrency.CachingException;
 import org.apereo.portal.concurrency.caching.RequestCache;
@@ -64,12 +60,14 @@ import org.apereo.portal.utils.Tuple;
 import org.apereo.portal.utils.cache.CacheFactory;
 import org.apereo.portal.utils.cache.CacheKey;
 import org.apereo.portal.utils.cache.CacheKey.CacheKeyBuilder;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.apereo.portal.utils.cache.UsernameTaggedCacheEntryPurger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 /** */
@@ -101,14 +99,17 @@ public class AuthorizationImpl implements IAuthorizationService {
     /** Indicates permission activity to permissionTargetProvider. */
     private IPermissionOwnerDao permissionOwner;
 
-    /** The cache to hold the list of principals. */
-    private Ehcache principalCache;
+    static final String PRINCIPAL_HAS_PERMISSION_CACHE_NAME =
+            "org.apereo.portal.security.provider.AuthorizationImpl.PRINCIPAL_HAS_PERMISSION";
 
     /** The cache to hold the list of principals. */
-    private Ehcache entityParentsCache;
+    private Cache principalCache;
+
+    /** The cache to hold the list of principals. */
+    private Cache entityParentsCache;
 
     /** The cache to hold permission resolution. */
-    private Ehcache doesPrincipalHavePermissionCache;
+    private Cache doesPrincipalHavePermissionCache;
 
     /** The class representing the permission set type. */
     private static final Class<IPermissionSet> PERMISSION_SET_TYPE = IPermissionSet.class;
@@ -140,31 +141,24 @@ public class AuthorizationImpl implements IAuthorizationService {
     }
 
     @Autowired
-    public void setPrincipalCache(@Qualifier(CacheFactory.PRINCIPAL_CACHE) Ehcache principalCache) {
-        this.principalCache =
-                new SelfPopulatingCache(
-                        principalCache,
-                        new CacheEntryFactory() {
-                            @Override
-                            public Object createEntry(Object key) throws Exception {
-                                final Tuple<String, Class> principalKey =
-                                        (Tuple<String, Class>) key;
-                                return primNewPrincipal(principalKey.first, principalKey.second);
-                            }
-                        });
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setPrincipalCache(
+                CacheLookup.requireCache(cacheManager, CacheFactory.PRINCIPAL_CACHE));
+        this.setEntityParentsCache(
+                CacheLookup.requireCache(cacheManager, CacheFactory.ENTITY_PARENTS_CACHE));
+        this.setDoesPrincipalHavePermissionCache(
+                CacheLookup.requireCache(cacheManager, PRINCIPAL_HAS_PERMISSION_CACHE_NAME));
     }
 
-    @Autowired
-    public void setEntityParentsCache(
-            @Qualifier(CacheFactory.ENTITY_PARENTS_CACHE) Ehcache entityParentsCache) {
+    public void setPrincipalCache(Cache principalCache) {
+        this.principalCache = principalCache;
+    }
+
+    public void setEntityParentsCache(Cache entityParentsCache) {
         this.entityParentsCache = entityParentsCache;
     }
 
-    @Autowired
-    public void setDoesPrincipalHavePermissionCache(
-            @Qualifier(
-                            "org.apereo.portal.security.provider.AuthorizationImpl.PRINCIPAL_HAS_PERMISSION")
-                    Ehcache doesPrincipalHavePermissionCache) {
+    public void setDoesPrincipalHavePermissionCache(Cache doesPrincipalHavePermissionCache) {
         this.doesPrincipalHavePermissionCache = doesPrincipalHavePermissionCache;
     }
 
@@ -568,9 +562,9 @@ public class AuthorizationImpl implements IAuthorizationService {
 
         final CacheKey key = cacheKeyBuilder.build();
 
-        final Element element = this.doesPrincipalHavePermissionCache.get(key);
-        if (element != null) {
-            return (Boolean) element.getValue();
+        final Boolean cachedResult = this.doesPrincipalHavePermissionCache.get(key, Boolean.class);
+        if (cachedResult != null) {
+            return cachedResult;
         }
 
         boolean result = false; // fail closed
@@ -631,7 +625,7 @@ public class AuthorizationImpl implements IAuthorizationService {
                             policy);
         }
 
-        this.doesPrincipalHavePermissionCache.put(new Element(key, result));
+        this.doesPrincipalHavePermissionCache.put(key, result);
 
         return result;
     }
@@ -933,9 +927,8 @@ public class AuthorizationImpl implements IAuthorizationService {
     @Override
     public IAuthorizationPrincipal newPrincipal(String key, Class type) {
         final Tuple<String, Class> principalKey = new Tuple<>(key, type);
-        final Element element = this.principalCache.get(principalKey);
-        // principalCache is self populating, it can never return a null entry
-        return (IAuthorizationPrincipal) element.getObjectValue();
+        // Loads under a per-key lock, as the SelfPopulatingCache used here before 6.0 did
+        return this.principalCache.get(principalKey, () -> primNewPrincipal(key, type));
     }
 
     /**
@@ -1029,9 +1022,9 @@ public class AuthorizationImpl implements IAuthorizationService {
 
         if (target != null) {
 
-            final Element element = this.entityParentsCache.get(target);
-            if (element != null) {
-                containingGroups = (Set<String>) element.getObjectValue();
+            final Cache.ValueWrapper cachedGroups = this.entityParentsCache.get(target);
+            if (cachedGroups != null) {
+                containingGroups = (Set<String>) cachedGroups.get();
             } else {
                 containingGroups = new HashSet<>();
 
@@ -1086,7 +1079,7 @@ public class AuthorizationImpl implements IAuthorizationService {
                     }
                 }
 
-                this.entityParentsCache.put(new Element(target, containingGroups));
+                this.entityParentsCache.put(target, containingGroups);
             }
 
         } else {

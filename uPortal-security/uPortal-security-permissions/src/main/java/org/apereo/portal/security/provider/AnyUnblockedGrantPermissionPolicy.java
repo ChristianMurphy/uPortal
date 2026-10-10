@@ -17,8 +17,6 @@ package org.apereo.portal.security.provider;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
 import org.apereo.portal.AuthorizationException;
 import org.apereo.portal.groups.GroupsException;
 import org.apereo.portal.groups.IEntityGroup;
@@ -33,11 +31,13 @@ import org.apereo.portal.security.IAuthorizationService;
 import org.apereo.portal.security.IPermission;
 import org.apereo.portal.security.IPermissionPolicy;
 import org.apereo.portal.utils.cache.CacheKey;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.apereo.portal.utils.cache.UsernameTaggedCacheEntryPurger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 /**
@@ -68,17 +68,26 @@ import org.springframework.stereotype.Service;
 @Service("anyUnblockedGrantPermissionPolicy")
 public class AnyUnblockedGrantPermissionPolicy implements IPermissionPolicy {
 
+    static final String HAS_UNBLOCKED_GRANT_CACHE_NAME =
+            "org.apereo.portal.security.provider.AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT";
+
     protected final Logger log = LoggerFactory.getLogger(getClass());
 
     @Autowired private IPermissionOwnerDao permissionOwnerDao;
 
     @Autowired private IPermissionTargetProviderRegistry targetProviderRegistry;
 
-    @Autowired
-    @Qualifier(
-            value =
-                    "org.apereo.portal.security.provider.AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT")
     private Cache hasUnblockedGrantCache;
+
+    @Autowired
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setHasUnblockedGrantCache(
+                CacheLookup.requireCache(cacheManager, HAS_UNBLOCKED_GRANT_CACHE_NAME));
+    }
+
+    public void setHasUnblockedGrantCache(Cache hasUnblockedGrantCache) {
+        this.hasUnblockedGrantCache = hasUnblockedGrantCache;
+    }
 
     @Override
     public boolean doesPrincipalHavePermission(
@@ -232,15 +241,14 @@ public class AnyUnblockedGrantPermissionPolicy implements IPermissionPolicy {
             throws GroupsException {
 
         final CacheKey cacheKey = getCacheKey(principal, owner, activity, target);
-        Element element = hasUnblockedGrantCache.get(cacheKey);
-        if (element == null) {
-            final boolean answer =
-                    hasUnblockedPathToGrant(
-                            service, principal, owner, activity, target, seenGroups);
-            element = new Element(cacheKey, answer);
-            hasUnblockedGrantCache.put(element);
+        final Boolean cached = hasUnblockedGrantCache.get(cacheKey, Boolean.class);
+        if (cached != null) {
+            return cached;
         }
-        return (Boolean) element.getObjectValue();
+        final boolean answer =
+                hasUnblockedPathToGrant(service, principal, owner, activity, target, seenGroups);
+        hasUnblockedGrantCache.put(cacheKey, answer);
+        return answer;
     }
 
     /**

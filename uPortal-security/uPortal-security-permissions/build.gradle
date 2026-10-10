@@ -12,6 +12,8 @@ dependencies {
     api project(':uPortal-spring')
 
     annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateJpamodelgenVersion}"
+
+    testImplementation "${servletApiDependency}"
 }
 
 /*
