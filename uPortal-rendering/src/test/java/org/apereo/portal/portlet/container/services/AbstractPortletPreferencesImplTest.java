@@ -168,7 +168,11 @@ public class AbstractPortletPreferencesImplTest {
         String[] values = portletPreferences.getValues("key0", new String[] {"FOOBAR"});
         assertArrayEquals(new String[] {"FOOBAR"}, values);
 
+        // A preference without values has no value: the default (PortletPreferences#getValues)
         values = portletPreferences.getValues("key1", new String[] {"FOOBAR"});
+        assertArrayEquals(new String[] {"FOOBAR"}, values);
+
+        values = portletPreferences.getValues("key1", null);
         assertNull(values);
 
         values = portletPreferences.getValues("key2", new String[] {"FOOBAR"});
