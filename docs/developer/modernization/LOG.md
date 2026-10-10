@@ -693,6 +693,73 @@ chosen per portlet.
   the floors. It gets implemented after the MOD-I82–I84 fixes land, so
   workflow edits don't collide.
 
+### MOD-D25: old database versions are migration sources only; 6.0 runs on and is tuned for current servers
+
+This supersedes MOD-D24's runtime matrix.
+
+* **Decision (project owner):** older database versions stay in the plan
+  only as **upgrade sources** for the copy tool (MOD-D11). 5.17
+  deployments run on them, and the tool reads from them. uPortal 6.0
+  itself targets and is tuned for **current servers**.
+* **6.0 runtime matrix, every push:**
+
+| Vendor | Version |
+| --- | --- |
+| PostgreSQL | 18 |
+| MySQL | 9.7 LTS |
+| MariaDB | 12.3 LTS |
+| SQL Server | 2025 |
+| Oracle | Free 23.26 |
+| HSQLDB | 2.7.4 (dev only) |
+
+  Nightly canaries, allowed to fail: PostgreSQL 19, MySQL 26.x innovation,
+  MariaDB 13.x. These are also the documented minimum versions for 6.0;
+  the project owner can relax them.
+* **Migration-source matrix** (G-migrate and the 5.17 harness baselines;
+  5.17 code on old servers):
+
+| Vendor | Source versions |
+| --- | --- |
+| PostgreSQL | 14, 15, 16 |
+| MySQL | 8.0, 8.4 |
+| MariaDB | 10.6, 10.11, 11.4 |
+| SQL Server | 2019, 2022 |
+| Oracle | XE 21, as the closest freely available stand-in for 19c |
+| HSQLDB | 2.5.1, 2.7.4 |
+
+  The copy tool must read every source and write every 6.0 target,
+  including cross-vendor pairs.
+* **Tune 6.0 for newer servers** (feeds the 6.0 schema, MOD-D11, and the
+  index audit, MOD-D12):
+  * **Native JSON columns** for JSON stored as text today (the
+    `JacksonType` and `StatisticsJacksonType` columns, event data):
+    `jsonb` on PostgreSQL, `JSON` on MySQL/MariaDB, native `json` on SQL
+    Server 2025, `JSON` on Oracle 23. Mapped with Hibernate 7
+    `@JdbcTypeCode(SqlTypes.JSON)`.
+  * **Native types:** Oracle 23 `BOOLEAN`; UUID types (`uuid`,
+    `uniqueidentifier`, MariaDB `UUID`) for UUID ids, considering
+    time-ordered UUIDv7 (PostgreSQL 18 `uuidv7()`) for insert locality.
+  * **Time partitioning for high-volume analytics:** raw events, event
+    sessions and aggregations partitioned by time, using PostgreSQL
+    declarative partitioning, MySQL/MariaDB RANGE partitions, SQL Server
+    partition schemes and Oracle interval partitioning. Purges then
+    become partition drops instead of multi-million-row DELETEs. Test it
+    at large-campus scale (MOD-Q7).
+  * **Index features:** BRIN on PostgreSQL time columns, covering
+    `INCLUDE` indexes on PostgreSQL and SQL Server, decided by the
+    G-index workload.
+  * **Exact dialect versions:** configure Hibernate with the actual
+    server version, so it uses the newest SQL features.
+* **Correction to MOD-D11:** "native sequences everywhere" can't apply
+  to **MySQL**, which still has no sequences (MariaDB has them since
+  10.3). The 6.0 MySQL options are:
+  * (a) keep table-backed generators, which the copy tool positions;
+  * (b) IDENTITY / AUTO_INCREMENT, which turns off Hibernate's JDBC batch
+    inserts for those entities.
+
+  The default is (a), unless the G-index workload shows (b) is better.
+  Every other vendor uses native sequences.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
