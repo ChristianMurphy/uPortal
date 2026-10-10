@@ -94,7 +94,6 @@ dependencies {
     testImplementation "${servletApiDependency}"
 
     runtimeOnly "ch.qos.logback:logback-classic:${logbackVersion}"
-    runtimeOnly "joda-time:joda-time-jsptags:${jodaTimeJsptagsVersion}"
     runtimeOnly "org.aspectj:aspectjweaver:${aspectjVersion}"
     runtimeOnly "org.codehaus.groovy:groovy-jsr223:${groovyVersion}"
     runtimeOnly "org.hibernate:hibernate-entitymanager:${hibernateVersion}"

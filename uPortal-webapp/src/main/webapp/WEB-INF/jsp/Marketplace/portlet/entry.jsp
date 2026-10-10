@@ -588,7 +588,9 @@
                     <p>
                         <span class="marketplace_section_header"><spring:message code="whats.new" text="What's New"/></span>
                         <c:if test="${not empty marketplaceEntry.portletReleaseNotes.releaseDate}">
-                            <span class="marketplace_release_date"> (Released <joda:format value="${marketplaceEntry.portletReleaseNotes.releaseDate}" pattern="dd-MM-yyyy" />)</span>
+                            <%-- A java.time.LocalDateTime, whose text starts yyyy-MM-dd; shown as dd-MM-yyyy --%>
+                            <c:set var="releaseDate" value="${marketplaceEntry.portletReleaseNotes.releaseDate}" />
+                            <span class="marketplace_release_date"> (Released ${fn:substring(releaseDate, 8, 10)}-${fn:substring(releaseDate, 5, 7)}-${fn:substring(releaseDate, 0, 4)})</span>
                         </c:if>
 
                     </p>
