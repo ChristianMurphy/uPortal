@@ -26,6 +26,8 @@ import org.apereo.portal.portlet.om.IPortletWindowId;
 import org.apereo.portal.portlet.registry.IPortletEntityRegistry;
 import org.apereo.portal.portlet.registry.IPortletWindowRegistry;
 import org.apereo.portal.portlet.rendering.IPortletRenderer;
+import org.apereo.portal.portlet.rendering.webcomponent.WebComponentChannelRenderer;
+import org.apereo.portal.portlet.rendering.webcomponent.WebComponentRenderExecutionWorker;
 import org.apereo.portal.user.IUserInstance;
 import org.apereo.portal.user.IUserInstanceManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,7 @@ public class PortletWorkerFactoryImpl implements IPortletWorkerFactory {
     private IUserInstanceManager userInstanceManager;
     private IPortletEntityRegistry portletEntityRegistry;
     private IPortletWindowRegistry portletWindowRegistry;
+    private WebComponentChannelRenderer webComponentChannelRenderer;
 
     public void setErrorPortletFName(String errorPortletFName) {
         this.errorPortletFName = errorPortletFName;
@@ -65,6 +68,12 @@ public class PortletWorkerFactoryImpl implements IPortletWorkerFactory {
     @Autowired
     public void setPortletWindowRegistry(IPortletWindowRegistry portletWindowRegistry) {
         this.portletWindowRegistry = portletWindowRegistry;
+    }
+
+    @Autowired
+    public void setWebComponentChannelRenderer(
+            WebComponentChannelRenderer webComponentChannelRenderer) {
+        this.webComponentChannelRenderer = webComponentChannelRenderer;
     }
 
     @Autowired
@@ -149,6 +158,11 @@ public class PortletWorkerFactoryImpl implements IPortletWorkerFactory {
         if (portletWindow == null) {
             throw new RuntimeException(
                     "Failed to retrieve the specified PortletWindow:  " + portletWindowId);
+        }
+        if (webComponentChannelRenderer.isWebComponent(portletWindow)) {
+            // Web-component channels are rendered by the portal, not the portlet container
+            return new WebComponentRenderExecutionWorker(
+                    webComponentChannelRenderer, request, response, portletWindow);
         }
         return new PortletRenderExecutionWorker(
                 portletThreadPool,
