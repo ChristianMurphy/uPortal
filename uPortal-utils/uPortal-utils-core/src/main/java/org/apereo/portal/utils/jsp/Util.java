@@ -18,7 +18,6 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collection;
@@ -140,8 +139,9 @@ public class Util {
     public static String encodePathSegment(String val) {
         try {
             return UriUtils.encodePathSegment(val, "UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            // should be unreachable...
+        } catch (Exception e) {
+            // UnsupportedEncodingException on Spring 4.3 (not declared from Spring 5); should
+            // be unreachable...
             throw new RuntimeException(e);
         }
     }

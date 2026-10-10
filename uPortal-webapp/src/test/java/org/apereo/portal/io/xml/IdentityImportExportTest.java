@@ -37,10 +37,9 @@ import org.mockito.stubbing.Answer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.jdbc.JdbcTestUtils;
 import org.w3c.dom.Element;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -85,21 +84,16 @@ public class IdentityImportExportTest extends BasePortalJpaDaoTest {
     private IDataExporter<Tuple<String, org.dom4j.Element>> fragmentDefinitionExporter;
 
     @Autowired private ICounterStore counterStore;
-    private JdbcTemplate simpleJdbcTemplate;
     private int counter = 0;
 
     protected void runSql(final String sql) {
-        if (simpleJdbcTemplate == null) {
-            simpleJdbcTemplate = new JdbcTemplate(dataSource);
-        }
-        JdbcTestUtils.executeSqlScript(
-                simpleJdbcTemplate, new ByteArrayResource(sql.getBytes()), false);
+        // ResourceDatabasePopulator exists in Spring 4.3 and 5.3; JdbcTestUtils.executeSqlScript
+        // does not exist in 5
+        new ResourceDatabasePopulator(new ByteArrayResource(sql.getBytes())).execute(dataSource);
     }
 
     @Before
     public void setup() {
-        simpleJdbcTemplate = null;
-
         counter = 0;
         when(counterStore.getNextId(anyString()))
                 .thenAnswer(
