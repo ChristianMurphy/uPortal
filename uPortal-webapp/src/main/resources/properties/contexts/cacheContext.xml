@@ -92,6 +92,8 @@
                         <entry key="/**/*.min.js" value="31536000"/>
                         <entry key="/**/*.min.css" value="31536000"/>
                         <entry key="/rs/**/*" value="31536000"/>
+                        <!-- Web component modules have content-hashed names (manifest.json does not) -->
+                        <entry key="/webcomponents/assets/**/*" value="31536000"/>
                         <entry key="/**/*.jpg" value="1800"/>
                         <entry key="/**/*.gif" value="1800"/>
                         <entry key="/**/*.png" value="1800"/>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Apereo under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Apereo licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License.  You may obtain a
+    copy of the License at the following location:
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+<!--
+ | Publishing definition of the "Web Component" channel type. The portal renders these channels
+ | itself, as a custom element plus its ES module script, without the portlet container. See
+ | docs/developer/web-components/README.md.
+ +-->
+<portlet-publishing-definition
+    xmlns="https://source.jasig.org/schemas/uportal/portlet-publishing"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://source.jasig.org/schemas/uportal/portlet-publishing ../../../../../xsd/portlet-publishing/portlet-publishing-definition.xsd">
+
+    <portlet-descriptor xmlns:up="https://source.jasig.org/schemas/uportal">
+        <up:isFramework>true</up:isFramework>
+        <up:portletName>WebComponent</up:portletName>
+    </portlet-descriptor>
+
+    <step>
+        <name>Web component</name>
+        <description>
+            The custom element this channel renders, and the ES module that defines it.
+        </description>
+
+        <parameter>
+            <name>webComponent.tagName</name>
+            <label>web.component.tag.name</label>
+            <description>Name of the custom element; it must contain a hyphen.</description>
+            <example>up-favorites</example>
+            <single-text-parameter-input display="text"/>
+        </parameter>
+
+        <parameter>
+            <name>webComponent.moduleUrl</name>
+            <label>web.component.module.url</label>
+            <description>
+                The ES module that defines the element: the name of a module bundled with uPortal,
+                an absolute http(s) URL, or a path that starts with /.
+            </description>
+            <example>up-favorites</example>
+            <single-text-parameter-input display="text"/>
+        </parameter>
+
+        <parameter>
+            <name>webComponent.attributes</name>
+            <label>web.component.attributes</label>
+            <description>
+                Attributes to set on the element, one attribute-name=value per line. The portal
+                sets locale, window-state, context-path, fname, csrf-header and csrf-token itself.
+            </description>
+            <example>max-items=10</example>
+            <single-text-parameter-input display="textarea"/>
+        </parameter>
+
+        <parameter>
+            <name>webComponent.preferenceAttributes</name>
+            <label>web.component.preference.attributes</label>
+            <description>
+                Portlet preferences to pass as attributes, one attribute-name=preferenceName per
+                line. A value the user saved wins over the value set here.
+            </description>
+            <example>max-height-pixels=maxHeightPixels</example>
+            <single-text-parameter-input display="textarea"/>
+        </parameter>
+    </step>
+
+    <step>
+        <name>Preferences</name>
+        <description>
+            Preferences of the channel, passed to the element through the preference attributes
+            above.
+        </description>
+        <arbitrary-preferences>true</arbitrary-preferences>
+    </step>
+
+</portlet-publishing-definition>

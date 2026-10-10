@@ -20,9 +20,13 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import javax.portlet.GenericPortlet;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import org.apereo.portal.portlets.webcomponent.WebComponentPortlet;
 import org.apereo.portal.spring.web.portlet.DispatcherPortlet;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
@@ -39,6 +43,13 @@ public class FrameworkPortletClassesTest {
 
     private static final File PORTLET_XML = new File("src/main/webapp/WEB-INF/portlet.xml");
 
+    /**
+     * Portlets that are deliberately not Spring dispatcher portlets: the framework portlet that
+     * anchors web-component channels in the portlet registry and never renders (MOD-D18).
+     */
+    private static final Set<Class<? extends GenericPortlet>> OTHER_PORTLETS =
+            Collections.singleton(WebComponentPortlet.class);
+
     @Test
     public void portletClassesAreDispatcherPortlets() throws Exception {
         final NodeList portletClasses =
@@ -46,7 +57,11 @@ public class FrameworkPortletClassesTest {
         assertTrue(portletClasses.getLength() > 0);
         for (int i = 0; i < portletClasses.getLength(); i++) {
             final String className = portletClasses.item(i).getTextContent().trim();
-            assertTrue(className, DispatcherPortlet.class.isAssignableFrom(load(className)));
+            final Class<?> portletClass = load(className);
+            assertTrue(
+                    className,
+                    DispatcherPortlet.class.isAssignableFrom(portletClass)
+                            || OTHER_PORTLETS.contains(portletClass));
         }
     }
 

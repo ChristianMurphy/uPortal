@@ -134,6 +134,27 @@
     </portlet>
 
     <portlet>
+        <!--
+         | Descriptor of every web-component channel (portlet type "Web Component"). The portal
+         | renders those channels itself, as a custom element plus its ES module script (see
+         | WebComponentChannelRenderer); this portlet class only exists because the portlet
+         | registries key each channel on a descriptor, and it renders nothing.
+         +-->
+        <portlet-name>WebComponent</portlet-name>
+        <display-name xml:lang="en">Web Component</display-name>
+        <portlet-class>org.apereo.portal.portlets.webcomponent.WebComponentPortlet</portlet-class>
+        <expiration-cache>0</expiration-cache>
+        <supports>
+            <mime-type>text/html</mime-type>
+            <portlet-mode>VIEW</portlet-mode>
+        </supports>
+        <supported-locale>en</supported-locale>
+        <portlet-info>
+            <title>Web Component</title>
+        </portlet-info>
+    </portlet>
+
+    <portlet>
         <portlet-name>PortletMarketplace</portlet-name>
         <display-name xml:lang="en">Marketplace</display-name>
         <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>

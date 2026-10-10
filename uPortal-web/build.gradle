@@ -15,6 +15,7 @@ dependencies {
     api "joda-time:joda-time:${jodaTimeVersion}"
 
     testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    testImplementation "${portletApiDependency}"
     testImplementation "${servletApiDependency}"
 
     compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
