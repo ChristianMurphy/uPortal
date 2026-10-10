@@ -27,7 +27,6 @@ import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
-import javax.persistence.Lob;
 import javax.persistence.OrderColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
@@ -68,9 +67,15 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
     @Column(name = "ENTITY_VERSION")
     private final long entityVersion;
 
+    /*
+     * PREF_NAME and PREF_VALUE are long VARCHAR columns, read and written as strings. Their type
+     * follows from the length: varchar(100000) on HSQLDB and PostgreSQL, longtext on MySQL and
+     * MariaDB, varchar(MAX) on SQL Server, clob on Oracle. They used to be annotated as LOBs as
+     * well, which the @Type overrode; Hibernate 6 drops string @Type and would then turn them into
+     * CLOB columns (oid on PostgreSQL).
+     */
     @Column(name = "PREF_NAME", length = 100000)
     @Type(type = "org.hibernate.type.StringType")
-    @Lob
     private String name = null;
 
     @Column(name = "READ_ONLY", nullable = false)
@@ -79,7 +84,6 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
     @ElementCollection(fetch = FetchType.EAGER, targetClass = String.class)
     @JoinTable(name = "UP_PORTLET_PREF_VALUES", joinColumns = @JoinColumn(name = "PORTLET_PREF_ID"))
     @OrderColumn(name = "VALUE_ORDER")
-    @Lob
     @Column(name = "PREF_VALUE", length = 100000)
     @Type(type = "org.hibernate.type.StringType")
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

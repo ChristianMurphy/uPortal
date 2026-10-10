@@ -414,7 +414,7 @@ the dialect choice in `PortalDialectResolver`. Do not override them in your own
 
 | Setting | Why it is there |
 | --- | --- |
-| `hibernate.dialect_resolvers=org.apereo.portal.utils.PortalDialectResolver` | Keeps each database on the dialect Hibernate 4.3 chose: `MySQL55Dialect` for MySQL 8 and for MariaDB reporting MySQL metadata (Hibernate 5.2 would pick `MySQL57Dialect`, with `datetime(6)` columns, or a MariaDB dialect with sequences), `PostgreSQL81Dialect` for PostgreSQL 10 and later, `SQLServer2005Dialect` for SQL Server (no sequences) |
+| `hibernate.dialect_resolvers=org.apereo.portal.utils.PortalDialectResolver` | Keeps each database on the dialect Hibernate 4.3 chose: `MySQL55Dialect` for MySQL 8 and for MariaDB reporting MySQL metadata (Hibernate 5.2 would pick `MySQL57Dialect`, with `datetime(6)` columns, or a MariaDB dialect with sequences), `PostgreSQL81Dialect` for PostgreSQL 10 and later (as `PostgreSQL81TextClobDialect`, see below), `SQLServer2005Dialect` for SQL Server (no sequences) |
 | `hibernate.implicit_naming_strategy=org.apereo.portal.hibernate.PortalImplicitNamingStrategy` | Join column names and the `FK_…`/`UK_…` constraint names of Hibernate 4.3 |
 | `hibernate.physical_naming_strategy=…PhysicalNamingStrategyStandardImpl` | Names are used as they are mapped |
 | `hibernate.id.optimizer.pooled.preferred=pooled` | Identifiers are allocated as before from the `UP_*_SEQ` sequences or one-row tables |
@@ -441,3 +441,20 @@ If you customized any of the following, adapt it before you upgrade:
   might.
 * **dom4j.** Hibernate 5.2.18 depends on `org.dom4j:dom4j` 2.1; the portal keeps
   `dom4j:dom4j` 1.6.1, which the uPortal code is written against, and excludes 2.1.
+
+## PostgreSQL: do not run `vacuumlo`
+
+On PostgreSQL, uPortal stores the raw event data (`UP_RAW_EVENTS.EVENT_DATA` and
+`UP_ANALYTICS_EVENTS.EVENT_DATA`) as large objects and keeps each large object's OID in a `text`
+column. uPortal 5.17 does this, and 6.0 keeps it: `PortalDialectResolver` picks
+`PostgreSQL81TextClobDialect` for PostgreSQL 10 and later, which still declares these columns
+`text` where Hibernate 5.6.2 and later would declare them `oid`.
+
+`vacuumlo` only counts references from `oid` and `lo` columns. It therefore treats the data of
+every stored raw event as orphaned and deletes it: on a 5.17 test portal, `vacuumlo -n` reported
+that it would remove all 720 large objects written during one portal session. Do not run
+`vacuumlo` (or any other clean-up of "orphaned" large objects) against a uPortal database, and
+exclude it from scheduled maintenance.
+
+These columns keep their current type until a later release migrates them to a proper large-object
+type; after that `vacuumlo` is safe to use again.

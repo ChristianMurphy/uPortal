@@ -92,6 +92,15 @@
   proxy classes on JDK 21); the portal keeps dom4j 1.6.1. Adopters with code or settings
   that touch Hibernate directly should read
   [UPGRADING-6.0.md](UPGRADING-6.0.md).
+- **PostgreSQL: `vacuumlo` deletes raw event data.** The large-object
+  strings `UP_RAW_EVENTS.EVENT_DATA` and `UP_ANALYTICS_EVENTS.EVENT_DATA`
+  keep their large-object OIDs in `text` columns, which `vacuumlo`
+  ignores, so it deletes the data of every stored raw event. This is
+  already the case on 5.17. Do not run `vacuumlo`; see
+  [UPGRADING-6.0.md](UPGRADING-6.0.md). The PostgreSQL dialect now pins
+  CLOB columns to `text` so that new databases keep matching existing
+  ones, and `PortletPreferenceImpl`'s `PREF_NAME`/`PREF_VALUE` (long
+  VARCHAR columns) are no longer annotated `@Lob`.
 
 ## v5.17.3
 
