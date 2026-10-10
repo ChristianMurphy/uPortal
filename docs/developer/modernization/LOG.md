@@ -1193,6 +1193,62 @@ This supersedes MOD-D24's runtime matrix.
     every vendor, the upgrade path and G-portal.
 * **Findings:** MOD-I120 to MOD-I127.
 
+### MOD-D34: Apache ECharts replaces Google Charts, in two steps
+
+* **Context:** uPortal draws statistics charts with Google Charts and builds the chart data with
+  `google-visualization-java`, a fork published only on jitpack.io (MOD-I51). The fork is
+  unmaintained, and Google's original (1.1.1 on Maven Central, 2013) has a bug that writes invalid
+  JSON for null cells. Google Charts itself is closed source, and its terms don't allow hosting it,
+  so every viewer's browser loads it from Google. That conflicts with a strict Content Security
+  Policy and with student-privacy reviews.
+* **Users:** the Statistics, Activity, Popular Portlets and SQL Query portlets, the CSV and HTML
+  table views, and `reportGraph.jsp`, `reportList.jsp` and the SQL Query chart JSPs.
+* **Options compared (npm registry, 2026-10-10):**
+  * Apache ECharts (Apache-2.0) is an Apache Software Foundation project, with 6.0 in July 2025 and
+    6.1 in May 2026. It draws SVG or canvas and has screen-reader descriptions, decal patterns for
+    colour-blind users and dark mode. Chart types import one by one.
+  * Vega-Lite (BSD-3) is very active, with 6.5.0 on 8 October 2026, and its charts are JSON specs.
+    The download is larger. Its expression engine needs `unsafe-eval` unless the interpreter package
+    is added.
+  * Plotly.js (MIT) is active, with 4.1.2 in October 2026. It has the largest download and its own
+    look.
+* **Not chosen:**
+  * Chart.js, by the owner's call. It had one release in the past year.
+  * Observable Plot, with no release since February 2025.
+  * uPlot, with one maintainer and time series only.
+  * D3, last released in March 2024. We would write our own charts on it.
+  * Highcharts, under a commercial licence.
+  * ApexCharts, whose v8 uses its own licence file.
+  * IBM Carbon Charts, built for the Carbon design system rather than Bootstrap.
+* **Decision (owner, 2026-10-10):** use Apache ECharts, in two steps.
+  1. Now, uPortal gets its own small table model in place of `google-visualization-java`. Jackson
+     writes its JSON and plain RFC 4180 escaping writes its CSV. The JSON is unchanged from what Google Charts
+     reads, so the pages don't change, and the null-cell bug is fixed. jitpack.io leaves the build
+     (MOD-I51, cloud session `gviz`).
+  2. With the portlet replacement (workstream 14, MOD-D18 and MOD-D19), REST endpoints return plain
+     JSON rows and web components draw them with ECharts imported from `echarts/core`. Google Charts
+     then leaves the pages.
+
+### MOD-D35: prose and commit messages are checked with Vale and the ai-tells rules
+
+* **Asked by the owner:** validate prose with Vale and the AI-tells rule set. The owner chose the
+  scope, which is the docs written for 6.0 plus commit messages.
+* **Tool:** `.github/scripts/vale.sh` in both repositories downloads Vale 3.24.0 and the `ai-tells`
+  and `ai-tells-commits` styles 1.37.0 from tbhb/vale-ai-tells, checks their SHA-256, and runs
+  `docs [paths]` or `commits <range>`. The release zips match the v1.37.0 tag, and all 151 rules are
+  YAML patterns with no scripts. Every rule is at error level. Any finding fails the check.
+* **Docs in scope:** `docs/UPGRADING-6.0.md`, `docs/developer/modernization/`,
+  `docs/developer/other/STATIC_ANALYSIS.md` (uPortal) and `docs/db-upgrade-harness.md`
+  (uPortal-start). Upstream docs join when they are rewritten.
+* **Status:**
+  * Commit messages: checked in CI from uPortal `247d76b87` and uPortal-start `dde58e2c0` on. A
+    seeded bad message failed with four findings, and 3 of the previous 60 commits would have failed.
+  * Docs: about 2,000 findings at the start (785 em dashes, 537 semicolons, 146 capitals after a
+    colon, then smaller groups), mostly in the research reports. Agents are rewriting the files in
+    parallel, and the docs check joins CI when they reach zero.
+* **Alternative considered:** krishnasunkam/vale-ai-tells, a smaller package with 17 rules. The tbhb
+  package is the one Vale's catalog lists as `ai-tells`, and it has the commit-message rules.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1310,6 +1366,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I125 | Runtime | New 5.2 log noise: HHH000112, HHH000482, and empty `AggrEvents.AggrEvents.*` query-cache regions. | Quiet or fix in P4-3 (Hibernate 5.6 + JCache regions). |
 | MOD-I126 | DB harness | Harness gaps: DATA counts rows only; `--skip-init` snapshots before deploying; the post-portal LOB report ignores `-PdbPort`; `--portal` doesn't deploy resource-server. | The data-equivalence workstream covers DATA. The other three are small uPortal-start fixes. |
 | MOD-I127 | Runtime | `TransientPortletEntityDao` throws an NPE on `layout.json` requests with user=null. It appeared in 3 runs after P2 was rebased onto `22bdf2b23` and in none of 6 before; the tests still pass. | Compare with a 4.3 portal on the same ccr commit to find whether P2 or a ccr change causes it (candidates: MOD-I82, MOD-I97). The HTTP replay workstream should also show it. |
+| MOD-I170 | Environment | **Prototype machine only.** The session worker restarted at about 23:06 UTC on 2026-10-10. It stopped the five local agents, the Docker daemon and the local landing run. Their worktrees kept all files. | Docker was started again by hand (`dockerd`, since `service docker start` fails on `ulimit` here). The owner approved new agents, which resumed from each worktree and its notes. Agents now commit in small local steps so a restart loses little. |
 
 ## Open questions
 
