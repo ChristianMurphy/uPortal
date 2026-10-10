@@ -66,6 +66,13 @@ and lists uPortal's changes once there are some.
 * **Servlet 2.4:** the code compiles against `javax.servlet:servlet-api:2.4`,
   as upstream did. Its `ServletOutputStream` subclasses don't implement the
   abstract methods that Servlet 3.1 added.
+* **Resource filtering:** Pluto's Maven build filled in the placeholders of
+  the portal driver's `pluto-configuration.properties` (container name and
+  version, Portlet spec version), which `PortletContext.getServerInfo()`,
+  `getMajorVersion()` and `getMinorVersion()` report. The `-sources` jar keeps
+  the placeholders, so `processResources` fills in Pluto's values
+  (`PlutoContainerInfoTest` checks them). Maven also gave two XML resources a
+  final newline; nothing reads that difference.
 * **Java 8:** it compiles with `--release 8`. The code predates JDK 9, which
   changed `NamespaceContext.getPrefixes` to return `Iterator<String>`, so it
   doesn't compile against the Java 11 API. Upstream shipped Java 5 bytecode.

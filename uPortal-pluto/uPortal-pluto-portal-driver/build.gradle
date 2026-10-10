@@ -17,4 +17,28 @@ dependencies {
     compileOnly "${plutoServletApiDependency}"
     compileOnly "javax.ccpp:ccpp:${ccppVersion}"
     compileOnly "javax.servlet.jsp:javax.servlet.jsp-api:${jspApiVersion}"
+
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
+}
+
+/*
+ * Pluto's Maven build filters src/main/resources: the -sources jar keeps the placeholders in
+ * pluto-configuration.properties, which PlutoContainerInfo reads for PortletContext.getServerInfo(),
+ * getMajorVersion() and getMinorVersion(). Fill them in with the values Pluto's POMs supply, so
+ * the built jar carries what Apache's jar does.
+ */
+processResources {
+    def plutoFilterValues = [
+            'pluto.container.name'       : 'Pluto',
+            'pom.version'                : '2.1.0-M3',
+            'javax.portlet.version.major': '2',
+            'javax.portlet.version.minor': '0',
+    ]
+    // Gradle doesn't fingerprint filter closures; declare the values so changes rerun the task
+    inputs.properties(plutoFilterValues)
+    filesMatching('org/apache/pluto/driver/container/pluto-configuration.properties') {
+        filter { String line ->
+            plutoFilterValues.inject(line) { result, key, value -> result.replace('${' + key + '}', value) }
+        }
+    }
 }
