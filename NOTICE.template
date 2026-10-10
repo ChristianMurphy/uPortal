@@ -35,6 +35,13 @@ This project includes:
  https://github.com/spring-projects/spring-framework
  https://github.com/spring-projects/spring-webflow
 
+ Source code from Apache Pluto 2.1.0-M3, Copyright 2003-2012 The Apache
+ Software Foundation, and from the Java Portlet Specification V2.1.0 API,
+ Copyright 2004-2015 The Apache Software Foundation (original code Copyright
+ IBM Corp. 2006, 2007), under the Apache License, Version 2.0, in the
+ uPortal-pluto modules (see uPortal-pluto/NOTICE)
+ https://portals.apache.org/pluto/
+
 #GENERATED_NOTICES#
  
 This project also includes code under copywrite of the following institutions:

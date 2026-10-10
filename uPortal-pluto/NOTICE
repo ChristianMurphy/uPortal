@@ -1,0 +1,62 @@
+uPortal-pluto: Apache Pluto 2.1.0-M3 and the Java Portlet API 2.1.0, imported from the
+Apache Software Foundation's releases on Maven Central under the Apache License, Version 2.0
+(see LICENSE). The NOTICE files of the imported artifacts follow; each module also ships its
+own in META-INF/NOTICE.
+
+----------------------------------------------------------------------
+pluto-container-api-2.1.0-M3
+----------------------------------------------------------------------
+Apache Pluto Container API
+Copyright 2003-2012 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+----------------------------------------------------------------------
+pluto-container-driver-api-2.1.0-M3
+----------------------------------------------------------------------
+Apache Pluto Container Driver API
+Copyright 2003-2012 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+----------------------------------------------------------------------
+pluto-container-2.1.0-M3
+----------------------------------------------------------------------
+Apache Pluto Portlet Container
+Copyright 2003-2012 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+----------------------------------------------------------------------
+pluto-portal-driver-2.1.0-M3
+----------------------------------------------------------------------
+Apache Pluto Portal Driver
+Copyright 2003-2012 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+----------------------------------------------------------------------
+pluto-taglib-2.1.0-M3
+----------------------------------------------------------------------
+Apache Pluto Portlet Tag Library
+Copyright 2003-2012 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+----------------------------------------------------------------------
+portlet-api_2.1.0_spec-1.0
+----------------------------------------------------------------------
+Java Portlet Specification V2.1.0
+Copyright 2004-2015 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+Original code
+© Copyright IBM Corp. 2006, 2007
+All rights reserved.

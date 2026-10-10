@@ -1,0 +1,10 @@
+description = "Apereo uPortal Pluto: Apache Pluto Container Driver API 2.1.0-M3"
+
+// Dependencies as org.apache.portals.pluto:pluto-container-driver-api:2.1.0-M3 declares them
+dependencies {
+    api project(':uPortal-pluto:uPortal-pluto-container-api')
+
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    compileOnly "${plutoServletApiDependency}"
+    compileOnly "javax.ccpp:ccpp:${ccppVersion}"
+}

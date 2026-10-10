@@ -1,0 +1,6 @@
+description = "Apereo uPortal Pluto: Java Portlet API 2.1.0 (javax.portlet)"
+
+// Dependencies as org.apache.portals:portlet-api_2.1.0_spec:1.0 declares them
+dependencies {
+    compileOnly "${plutoServletApiDependency}"
+}
