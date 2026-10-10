@@ -153,3 +153,54 @@ be removed in a later release.
 
 Unsafe requests to the new `/api/v6-0/` REST APIs need Spring Security's CSRF token (or an OIDC
 bearer token), unlike the older APIs under `/api`.
+
+## Joda-Time replaced by `java.time` (outside the database mappings)
+
+Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
+code that does not map database columns; the JPA entities and the event-aggregation code built
+on them follow with the Hibernate upgrade.
+
+### Settings in `portal.properties`
+
+Every duration and period setting accepts the same values as before. The duration settings
+(`ClusterLockDao.abandonedLockAge`, `maximumLockDuration`, `updateLockRate` and
+`dbLockAcquireTimeout`) take ISO-8601 durations such as `PT30S`, and now also accept forms
+such as `PT1M`. The event settings (`PortalRawEventsAggregatorImpl.aggregationDelay`,
+`PortalEventDimensionPopulatorImpl.dimensionBuffer`, `PortalEventPurgerImpl.purgeDelay` and
+`PortalEventSessionPurgerImpl.eventSessionDuration`) take ISO-8601 periods such as `P1D`,
+`PT30S` or `P1DT12H`: days, weeks, months and years count calendar days in the portal's time
+zone, and hours, minutes and seconds count elapsed time, as they did with Joda-Time. The old
+comment's `purgeDelay=P1H` example was never valid. The default is `PT1H`.
+
+### Spring property editors
+
+`org.apereo.portal.spring.properties.ReadableDurationEditor` and `ReadablePeriodEditor` are
+removed, with their entries in `portalPropertyEditorRegistrar` (`applicationContext.xml`). The
+registrar now converts text to `java.time.Duration` (`DurationEditor`) and to
+`java.time.temporal.TemporalAmount` (`TemporalAmountEditor`). If your overlay has beans with
+`org.joda.time.ReadableDuration` or `ReadablePeriod` properties set from text, change those
+properties to `java.time.Duration` or `TemporalAmount`.
+
+### Java API changes
+
+| Class | Change |
+| --- | --- |
+| `ClusterLockServiceImpl` | `setUpdateLockRate`, `setMaximumLockDuration`, `setDbLockTimeout` take `java.time.Duration` |
+| `JpaClusterLockDao` | `setAbandonedLockAge` takes `java.time.Duration` |
+| `DelegatingThreadPoolTaskScheduler` | `setInitialDelay` takes `java.time.Duration` |
+| `PortalRawEventsAggregatorImpl` | `setAggregationDelay` takes `java.time.temporal.TemporalAmount` |
+| `PortalEventDimensionPopulatorImpl` | `setDimensionBuffer` takes `TemporalAmount` |
+| `PortalEventPurgerImpl` | `setPurgeDelay` takes `TemporalAmount` |
+| `PortalEventSessionPurgerImpl` | `setEventSessionDuration` takes `TemporalAmount` |
+| `IAnalyticsPortalEventService` | `getAnalytics` takes `java.time.ZonedDateTime` start and end dates |
+| `PortletReleaseNotes` (Marketplace) | `releaseDate` and `initialReleaseDate` are `java.time.LocalDateTime` |
+
+The Marketplace JSON (`/api/marketplace/entries.json` and `entry/{fname}.json`) still writes
+`releaseDate` and `initialReleaseDate` as epoch milliseconds in the portal's time zone.
+
+### JSP tags
+
+The Joda-Time JSP tag library (`joda-time-jsptags`) is no longer in the web application, and
+`WEB-INF/jsp/include.jsp` no longer declares the `joda` prefix. If a JSP in your overlay uses
+`<joda:format>` or another `joda:` tag, format the value another way, such as with
+`fn:substring` on a `java.time` value's ISO text, or by formatting it in the controller.
