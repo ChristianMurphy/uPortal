@@ -147,7 +147,7 @@ public class PortalEventDimensionPopulatorImplTest {
         when(eventAggregationManagementDao.getQuartersDetails())
                 .thenReturn(EventDateTimeUtils.createStandardQuarters());
 
-        portalEventDimensionPopulator.setDimensionBuffer(dimensionBuffer);
+        portalEventDimensionPopulator.setDimensionBuffer(java.time.Period.ofDays(30));
         portalEventDimensionPopulator.doPopulateDateDimensions();
 
         verify(dateDimensionDao)
