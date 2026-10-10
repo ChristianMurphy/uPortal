@@ -25,13 +25,14 @@ jobs:
           - corretto
         java-version:
           - 21
+          - 25
         include:
           - platform: windows-latest
             java-distribution: temurin
-            java-version: 21
+            java-version: 25
           - platform: macos-latest
             java-distribution: temurin
-            java-version: 21
+            java-version: 25
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 45
     steps:

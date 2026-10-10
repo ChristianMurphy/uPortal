@@ -99,6 +99,11 @@ allprojects {
         errorprone "com.google.errorprone:error_prone_core:${errorproneVersion}"
     }
 
+    jacoco {
+        // JaCoCo 0.8.14+ supports Java 25 runtimes (class file version 69)
+        toolVersion = jacocoVersion
+    }
+
     codenarc {
         toolVersion = codenarcVersion
         reportFormat = 'console'
@@ -277,6 +282,11 @@ subprojects {
         // Mockito 5's inline mock maker otherwise self-attaches as a Java agent at runtime,
         // which JDK 21+ warns about and a future JDK will refuse (JEP 451). Load it explicitly.
         jvmArgumentProviders.add(new JavaAgentArgumentProvider(configurations.mockitoAgent))
+        // Since JDK 24 the default conf/jaxp.properties sets jdk.xml.enableExtensionFunctions=false,
+        // but uPortal's XSLT (rendering pipeline, Xalan helpers, import upgrades) calls Java
+        // extension functions. A portal running on JDK 24+ needs this flag too; on JDK 21 it is
+        // already the default.
+        systemProperty 'jdk.xml.enableExtensionFunctions', 'true'
     }
 
     /* Release Management
