@@ -14,12 +14,19 @@
  */
 package org.apereo.portal.portlet.marketplace;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
+import java.time.format.SignStyle;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.Validate;
@@ -39,9 +46,6 @@ import org.apereo.portal.security.AuthorizationPrincipalHelper;
 import org.apereo.portal.security.IAuthorizationPrincipal;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.utils.web.PortalWebUtils;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,8 +65,27 @@ public class MarketplacePortletDefinition implements IPortletDefinition {
     private static final String RELEASE_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final String MARKETPLACE_SHORT_LINK_PREF = "short_link";
     private static final String MARKETPLACE_KEYWORDS_PREF = "keywords";
-    private static final DateTimeFormatter releaseDateFormatter =
-            DateTimeFormat.forPattern(RELEASE_DATE_FORMAT);
+
+    /**
+     * Parses {@link #RELEASE_DATE_FORMAT} as leniently as the Joda-Time pattern did: fields may
+     * have fewer digits than the pattern, and the year up to nine.
+     */
+    static final DateTimeFormatter releaseDateFormatter =
+            new DateTimeFormatterBuilder()
+                    .appendValue(ChronoField.YEAR, 1, 9, SignStyle.NORMAL)
+                    .appendLiteral('-')
+                    .appendValue(ChronoField.MONTH_OF_YEAR, 1, 2, SignStyle.NOT_NEGATIVE)
+                    .appendLiteral('-')
+                    .appendValue(ChronoField.DAY_OF_MONTH, 1, 2, SignStyle.NOT_NEGATIVE)
+                    .appendLiteral(' ')
+                    .appendValue(ChronoField.HOUR_OF_DAY, 1, 2, SignStyle.NOT_NEGATIVE)
+                    .appendLiteral(':')
+                    .appendValue(ChronoField.MINUTE_OF_HOUR, 1, 2, SignStyle.NOT_NEGATIVE)
+                    .appendLiteral(':')
+                    .appendValue(ChronoField.SECOND_OF_MINUTE, 1, 2, SignStyle.NOT_NEGATIVE)
+                    .toFormatter(Locale.ROOT)
+                    .withResolverStyle(ResolverStyle.STRICT);
+
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     private IMarketplaceService marketplaceService;
     private IPortletCategoryRegistry portletCategoryRegistry;
@@ -181,9 +204,9 @@ public class MarketplacePortletDefinition implements IPortletDefinition {
             if (MarketplacePortletDefinition.RELEASE_DATE_PREFERENCE_NAME.equalsIgnoreCase(
                     portletPreference.getName())) {
                 try {
-                    DateTime dt =
-                            releaseDateFormatter.parseDateTime(portletPreference.getValues()[0]);
-                    temp.setReleaseDate(dt);
+                    temp.setReleaseDate(
+                            LocalDateTime.parse(
+                                    portletPreference.getValues()[0], releaseDateFormatter));
                 } catch (Exception e) {
                     logger.warn(
                             "Issue with parsing "
@@ -202,9 +225,9 @@ public class MarketplacePortletDefinition implements IPortletDefinition {
             if (MarketplacePortletDefinition.INITIAL_RELEASE_DATE_PREFERENCE_NAME.equalsIgnoreCase(
                     portletPreference.getName())) {
                 try {
-                    DateTime dt =
-                            releaseDateFormatter.parseDateTime(portletPreference.getValues()[0]);
-                    temp.setInitialReleaseDate(dt);
+                    temp.setInitialReleaseDate(
+                            LocalDateTime.parse(
+                                    portletPreference.getValues()[0], releaseDateFormatter));
                 } catch (Exception e) {
                     logger.warn(
                             "Issue with parsing "

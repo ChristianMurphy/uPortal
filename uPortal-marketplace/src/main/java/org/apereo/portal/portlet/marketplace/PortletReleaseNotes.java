@@ -14,25 +14,33 @@
  */
 package org.apereo.portal.portlet.marketplace;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
-import org.joda.time.DateTime;
 
 public class PortletReleaseNotes {
 
-    private DateTime releaseDate;
-    private DateTime initialReleaseDate;
+    private LocalDateTime releaseDate;
+    private LocalDateTime initialReleaseDate;
     private List<String> releaseNotes;
 
     public PortletReleaseNotes() {}
 
     /**
-     * @return releaseDate as DateTime. Can be null if not set via portlet preference.
+     * @return releaseDate, in the portal's time zone. Can be null if not set via portlet
+     *     preference.
      */
-    public DateTime getReleaseDate() {
+    @JsonSerialize(using = EpochMillisSerializer.class)
+    public LocalDateTime getReleaseDate() {
         return releaseDate;
     }
 
-    public void setReleaseDate(DateTime releaseDate) {
+    public void setReleaseDate(LocalDateTime releaseDate) {
         this.releaseDate = releaseDate;
     }
 
@@ -48,13 +56,33 @@ public class PortletReleaseNotes {
     }
 
     /**
-     * @return initialReleaseDate as DateTime. Can be null if not set via portlet preference.
+     * @return initialReleaseDate, in the portal's time zone. Can be null if not set via portlet
+     *     preference.
      */
-    public DateTime getInitialReleaseDate() {
+    @JsonSerialize(using = EpochMillisSerializer.class)
+    public LocalDateTime getInitialReleaseDate() {
         return initialReleaseDate;
     }
 
-    public void setInitialReleaseDate(DateTime initialReleaseDate) {
+    public void setInitialReleaseDate(LocalDateTime initialReleaseDate) {
         this.initialReleaseDate = initialReleaseDate;
+    }
+
+    /**
+     * Writes the date as epoch milliseconds in the portal's default time zone, the JSON the
+     * Joda-Time {@code DateTime} properties produced, whichever Jackson modules are registered.
+     */
+    static final class EpochMillisSerializer extends StdSerializer<LocalDateTime> {
+        private static final long serialVersionUID = 1L;
+
+        EpochMillisSerializer() {
+            super(LocalDateTime.class);
+        }
+
+        @Override
+        public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider)
+                throws IOException {
+            gen.writeNumber(value.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        }
     }
 }
