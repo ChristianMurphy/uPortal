@@ -637,7 +637,7 @@ chosen per portlet.
   Oracle Free 23 nightly. All five were proven on push once (run
   38061900729).
 * **uPortal-start `integration.yml`:** builds uPortal from source on the
-  same branch, then runs the full Playwright suite (124 specs) on HSQLDB,
+  same branch, then runs the full Playwright suite (124 tests) on HSQLDB,
   PostgreSQL 16 and MariaDB 11.4, and the DB harness on all 7 vendors.
   Run 38061904020 was green apart from the known drift MOD-I83/I84.
 * **Harness changes:**
@@ -722,9 +722,9 @@ This supersedes MOD-D24's runtime matrix.
 | Oracle | Free 23.26 |
 | HSQLDB | 2.7.4 (dev only) |
 
-  Nightly canaries, allowed to fail: PostgreSQL 19, MySQL 26.x Innovation,
-  MariaDB 13.x. These are also the documented minimum versions for 6.0;
-  the project owner can relax them.
+  The versions in this table are also the documented minimum versions for
+  6.0. The project owner can relax them. Nightly canaries, allowed to fail,
+  run PostgreSQL 19, MySQL 26.x Innovation and MariaDB 13.x.
 * **Migration-source matrix** (G-migrate and the 5.17 harness baselines;
   5.17 code on old servers):
 

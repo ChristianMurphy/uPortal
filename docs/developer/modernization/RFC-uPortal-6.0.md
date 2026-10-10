@@ -55,7 +55,7 @@ Where they line up, this plan carries out the "Recommended First Moves" from the
 ## What adopters would need to do
 
 - **Upgrade from 5.17.x only.**
-- **Meet the database minimums** that Hibernate 7.4 requires: PostgreSQL 14, MariaDB 10.6, SQL Server 2014, Oracle 19 and MySQL 8.
+- **Run a current database server.** 6.0 runs on, and is tuned for, PostgreSQL 18, MySQL 9.7 LTS, MariaDB 12.3 LTS, SQL Server 2025 and Oracle 23.26 or later. Older servers are migration sources only: the copy tool moves 5.17 data from them into a new server, across vendors if you like.
 - **Run Java 25 on Tomcat 11.** uPortal-start will provide the Tomcat configuration, including explicit connector limits.
 - **Expect a session flush** (every user logs in again) and **a Lucene reindex** on first start.
 - **Take care with PostgreSQL LOBs.** Our current mappings keep large-object OIDs in `text` columns, and `vacuumlo` can delete large objects referenced only that way. Don't run `vacuumlo` against a uPortal database, and back up before upgrading. 6.0 pins these column types, and the upgrade test runs `vacuumlo` and re-reads every LOB.
