@@ -157,7 +157,6 @@ subprojects {
 
     /*======== Plugins ========*/
     apply plugin: 'maven-publish'
-    apply plugin: 'maven'
     apply plugin: 'signing'
 
     /*======== Dependency Management ========**/
@@ -191,23 +190,6 @@ subprojects {
         publishingRepositoryUrl = project.hasProperty('ossrhUrl') ? project.getProperty('ossrhUrl') : "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
         publishingRepositoryUrlSnapshot = project.hasProperty('ossrhUrlSnapshot') ? project.getProperty('ossrhUrlSnapshot') : "https://central.sonatype.com/repository/maven-snapshots/"
     }
-    signing {
-        // Sign via the gpg command + gpg-agent (like the Maven ecosystem components),
-        // rather than reading an in-process secring.gpg. gpg-agent supplies the
-        // passphrase (pinentry), so no signing.password is stored in a properties file,
-        // and the modern GnuPG keystore is used. Select the key with the
-        // `signing.gnupg.keyName` Gradle property (e.g. in ~/.gradle/gradle.properties).
-        useGpgCmd()
-        required { gradle.taskGraph.hasTask('uploadArchives') }
-        sign configurations.archives
-    }
-    // `useGpgCmd()` makes the gpg command an always-present signatory, so the Sign
-    // tasks would otherwise run on CI (gpg is installed) with no key and fail. `required`
-    // only governs enforcement, not execution — gate the tasks themselves so they run
-    // only when a release is actually uploading artifacts.
-    tasks.withType(Sign).configureEach {
-        onlyIf { gradle.taskGraph.hasTask('uploadArchives') }
-    }
     tasks.withType(Javadoc).all {
         // disable JavaDocs until we start using them again in our website
         enabled = false
@@ -226,59 +208,82 @@ subprojects {
         classifier = 'javadoc'
         from javadoc.destinationDir
     }
-    artifacts {
-        archives javadocJar, sourcesJar
-    }
     publishing {
         publications {
             maven(MavenPublication) {
+                // uPortal-webapp swaps the jar for its war in its own build script
                 from components.java
-            }
-        }
-    }
-    uploadArchives {
-        repositories {
-            mavenDeployer {
-                beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-                repository(url: publishingRepositoryUrl) {
-                    authentication(userName: publishingUsername, password: publishingPassword)
-                }
-
-                snapshotRepository(url: publishingRepositoryUrlSnapshot) {
-                    authentication(userName: publishingUsername, password: publishingPassword)
-                }
-
-                pom.project {
-                    name 'uPortal'
-                    packaging project.plugins.hasPlugin('war') ? 'war' : 'jar'
-                    // optionally artifactId can be defined here
-                    description 'Enterprise open source portal built by and for the higher education community.'
-                    url 'https://github.com/uPortal-Project/uPortal'
-
+                artifact sourcesJar
+                artifact javadocJar
+                pom {
+                    name = 'uPortal'
+                    description = 'Enterprise open source portal built by and for the higher education community.'
+                    url = 'https://github.com/uPortal-Project/uPortal'
                     scm {
-                        connection 'scm:git@github.com:uPortal-Project/uPortal.git'
-                        url 'https://github.com/uPortal-Project/uPortal'
+                        connection = 'scm:git@github.com:uPortal-Project/uPortal.git'
+                        url = 'https://github.com/uPortal-Project/uPortal'
                     }
-
                     licenses {
                         license {
-                            name 'The Apache License, Version 2.0'
-                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                            name = 'The Apache License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                         }
                     }
-
                     developers {
                         developer {
-                            organization 'uPortal Developers'
-                            organizationUrl 'https://github.com/uPortal-Project/uPortal/graphs/contributors'
+                            organization = 'uPortal Developers'
+                            organizationUrl = 'https://github.com/uPortal-Project/uPortal/graphs/contributors'
                         }
                     }
                 }
             }
         }
+        repositories {
+            maven {
+                // Releases go to the OSSRH Staging API, snapshots to the Central Portal
+                // snapshot repository (the same split the legacy mavenDeployer made).
+                url = version.toString().endsWith('SNAPSHOT') ? publishingRepositoryUrlSnapshot : publishingRepositoryUrl
+                credentials {
+                    username = publishingUsername
+                    password = publishingPassword
+                }
+            }
+        }
     }
-    afterReleaseBuild.dependsOn uploadArchives
+    // Publish exactly what the legacy `maven` plugin published (POM + jar/war + sources +
+    // javadoc + signatures). Gradle Module Metadata (.module) would change how Gradle
+    // consumers such as uPortal-start resolve these artifacts; leave that for a separate change.
+    tasks.withType(GenerateModuleMetadata).configureEach {
+        enabled = false
+    }
+    // True only when artifacts are being uploaded to a remote repository (a release).
+    def isPublishingToRemote = {
+        gradle.taskGraph.allTasks.any { it instanceof PublishToMavenRepository }
+    }
+    signing {
+        // Sign via the gpg command + gpg-agent (like the Maven ecosystem components),
+        // rather than reading an in-process secring.gpg. gpg-agent supplies the
+        // passphrase (pinentry), so no signing.password is stored in a properties file,
+        // and the modern GnuPG keystore is used. Select the key with the
+        // `signing.gnupg.keyName` Gradle property (e.g. in ~/.gradle/gradle.properties).
+        useGpgCmd()
+        required { isPublishingToRemote() }
+        sign publishing.publications.maven
+    }
+    // `useGpgCmd()` makes the gpg command an always-present signatory, so the Sign
+    // tasks would otherwise run on CI (gpg is installed) with no key and fail. `required`
+    // only governs enforcement, not execution — gate the tasks themselves so they run
+    // only when a release is actually uploading artifacts.
+    tasks.withType(Sign).configureEach {
+        onlyIf { isPublishingToRemote() }
+    }
+    // Backward-compatible alias: `./gradlew install` (used by uPortal-start's docs and
+    // release-uportal.sh) keeps publishing to the local Maven repository.
+    task install {
+        group = 'publishing'
+        description = 'Alias for publishToMavenLocal (backward compatibility)'
+        dependsOn publishToMavenLocal
+    }
 
     def jacocoExecutionDataFiles = fileTree(buildDir).include("/jacoco/*.exec")
     jacocoTestReport {
@@ -295,6 +300,7 @@ release {
         requireBranch.set('')
     }
 }
+afterReleaseBuild.dependsOn subprojects.collect { "${it.path}:publish" }
 
 
 task jacocoAggregateReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
