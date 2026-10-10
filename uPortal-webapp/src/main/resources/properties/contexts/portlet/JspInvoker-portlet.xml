@@ -29,7 +29,7 @@
     <context:annotation-config/>
     <context:component-scan base-package="org.apereo.portal.portlets.jsp"/>
 
-    <bean class="org.springframework.web.portlet.mvc.annotation.DefaultAnnotationHandlerMapping">
+    <bean class="org.apereo.portal.spring.web.portlet.mvc.annotation.DefaultAnnotationHandlerMapping">
         <property name="interceptors" ref="minimizedStateHandlerInterceptor" />
     </bean>
 

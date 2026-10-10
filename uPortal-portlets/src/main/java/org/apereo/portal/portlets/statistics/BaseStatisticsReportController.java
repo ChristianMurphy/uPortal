@@ -48,6 +48,7 @@ import org.apereo.portal.events.aggr.BaseGroupedAggregationDiscriminator;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupLookupDao;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMappingNameComparator;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
@@ -58,7 +59,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.portlet.ModelAndView;
 
 /**
  * Base class for reporting on portal statistics. Does most of the heavy lifting for reporting

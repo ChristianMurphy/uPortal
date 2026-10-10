@@ -19,8 +19,8 @@ import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apereo.portal.spring.webflow.mvc.portlet.AbstractFlowHandler;
 import org.springframework.webflow.execution.FlowExecutionOutcome;
-import org.springframework.webflow.mvc.portlet.AbstractFlowHandler;
 
 /** Simple Flow handler just returns a specified flowId, defaults to 'view'. */
 public class ParamaterizableFlowHandler extends AbstractFlowHandler {
@@ -51,7 +51,7 @@ public class ParamaterizableFlowHandler extends AbstractFlowHandler {
     }
 
     /* (non-Javadoc)
-     * @see org.springframework.webflow.mvc.portlet.AbstractFlowHandler#getFlowId()
+     * @see org.apereo.portal.spring.webflow.mvc.portlet.AbstractFlowHandler#getFlowId()
      */
     @Override
     public String getFlowId() {
@@ -59,7 +59,7 @@ public class ParamaterizableFlowHandler extends AbstractFlowHandler {
     }
 
     /* (non-Javadoc)
-     * @see org.springframework.webflow.mvc.portlet.AbstractFlowHandler#handleExecutionOutcome(org.springframework.webflow.execution.FlowExecutionOutcome, javax.portlet.ActionRequest, javax.portlet.ActionResponse)
+     * @see org.apereo.portal.spring.webflow.mvc.portlet.AbstractFlowHandler#handleExecutionOutcome(org.springframework.webflow.execution.FlowExecutionOutcome, javax.portlet.ActionRequest, javax.portlet.ActionResponse)
      */
     @Override
     public boolean handleExecutionOutcome(

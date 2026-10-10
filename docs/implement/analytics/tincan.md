@@ -67,12 +67,12 @@ To set up the `DefaultTinCanAPIProvider`, a new `DefaultTinCanAPIProvider` bean 
                <list>
                    <!-- Enable a MAXIMUM of 1 of the following interceptors -->
                    <!-- -->
-                   <bean class="org.springframework.web.client.interceptors.BasicAuthInterceptor">
+                   <bean class="org.apereo.portal.spring.web.client.interceptors.BasicAuthInterceptor">
                        <property name="id" value="scorm-cloud-lrs"/>
                    </bean>
                    <!-- -->
                    <!--
-                   <bean class="org.springframework.web.client.interceptors.ZeroLeggedOAuthInterceptor">
+                   <bean class="org.apereo.portal.spring.web.client.interceptors.ZeroLeggedOAuthInterceptor">
                        <property name="id" value="scorm-cloud-lrs"/>
                    </bean>
                    -->
@@ -181,12 +181,12 @@ The `BatchTinCanProvider` configuration is similar to the configuration for `Def
                <list>
                    <!-- Enable a MAXIMUM of 1 of the following interceptors -->
                    <!-- -->
-                   <bean class="org.springframework.web.client.interceptors.BasicAuthInterceptor">
+                   <bean class="org.apereo.portal.spring.web.client.interceptors.BasicAuthInterceptor">
                        <property name="id" value="scorm-cloud-lrs"/>
                    </bean>
                    <!-- -->
                    <!--
-                   <bean class="org.springframework.web.client.interceptors.ZeroLeggedOAuthInterceptor">
+                   <bean class="org.apereo.portal.spring.web.client.interceptors.ZeroLeggedOAuthInterceptor">
                        <property name="id" value="scorm-cloud-lrs"/>
                    </bean>
                    -->
@@ -253,7 +253,7 @@ To add Basic Authentication, edit _tincanAPIContext.xml_ and to the `restTemplat
 <bean class="org.springframework.web.client.RestTemplate">
     <property name="interceptors">
         <list>
-            <bean class="org.springframework.web.client.interceptors.BasicAuthInterceptor">
+            <bean class="org.apereo.portal.spring.web.client.interceptors.BasicAuthInterceptor">
                 <property name="id" value="scorm-cloud-lrs"/>
             </bean>
         </list>
@@ -279,7 +279,7 @@ The TinCan API can be configured to use basic Oauth signatures for authenticatio
 <bean class="org.springframework.web.client.RestTemplate">
     <property name="interceptors">
         <list>
-            <bean class="org.springframework.web.client.interceptors.ZeroLeggedOAuthInterceptor">
+            <bean class="org.apereo.portal.spring.web.client.interceptors.ZeroLeggedOAuthInterceptor">
                 <property name="id" value="scorm-cloud-lrs"/>
             </bean>
         </list>

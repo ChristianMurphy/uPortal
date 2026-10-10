@@ -27,13 +27,13 @@ import net.sf.ehcache.Element;
 import org.apache.commons.lang.StringUtils;
 import org.apereo.portal.jpa.BasePortalJpaDao;
 import org.apereo.portal.portlet.IPortletSpELService;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.mvc.AbstractController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.ColumnMapRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.mvc.AbstractController;
 
 /**
  * This portlet executes a (configurable) SQL query against a (configurable) DataSource accessed via

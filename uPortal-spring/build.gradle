@@ -13,7 +13,6 @@ dependencies {
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
     implementation "org.springframework:spring-web:${springVersion}"
     implementation "org.springframework:spring-webmvc:${springVersion}"
-    implementation "org.springframework:spring-webmvc-portlet:${springVersion}"
 
     compileOnly "${portletApiDependency}"
     compileOnly "${servletApiDependency}"

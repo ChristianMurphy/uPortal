@@ -40,12 +40,12 @@ import org.apereo.portal.events.aggr.login.LoginAggregationKeyImpl;
 import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.services.GroupService;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller

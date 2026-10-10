@@ -64,6 +64,10 @@ import org.apereo.portal.search.SearchRequest;
 import org.apereo.portal.search.SearchResult;
 import org.apereo.portal.search.SearchResults;
 import org.apereo.portal.spring.spel.IPortalSpELService;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ActionMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.EventMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.apereo.portal.url.IPortalUrlBuilder;
 import org.apereo.portal.url.IPortalUrlProvider;
@@ -80,10 +84,6 @@ import org.springframework.expression.spel.SpelParseException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.ActionMapping;
-import org.springframework.web.portlet.bind.annotation.EventMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 /**
  * SearchPortletController produces both a search form and results for configured search services.
@@ -328,7 +328,8 @@ public class SearchPortletController {
 
     private Cache<String, Boolean> getSearchCounterCache(PortletSession session) {
         Cache<String, Boolean> searchCounterCache;
-        synchronized (org.springframework.web.portlet.util.PortletUtils.getSessionMutex(session)) {
+        synchronized (
+                org.apereo.portal.spring.web.portlet.util.PortletUtils.getSessionMutex(session)) {
             searchCounterCache = (Cache<String, Boolean>) session.getAttribute(SEARCH_COUNTER_NAME);
             if (searchCounterCache == null) {
                 searchCounterCache =
@@ -346,7 +347,8 @@ public class SearchPortletController {
 
         // place the portal search results object in the session using the queryId to namespace it
         Cache<String, PortalSearchResults> searchResultsCache;
-        synchronized (org.springframework.web.portlet.util.PortletUtils.getSessionMutex(session)) {
+        synchronized (
+                org.apereo.portal.spring.web.portlet.util.PortletUtils.getSessionMutex(session)) {
             searchResultsCache =
                     (Cache<String, PortalSearchResults>)
                             session.getAttribute(SEARCH_RESULTS_CACHE_NAME);
@@ -398,7 +400,8 @@ public class SearchPortletController {
         // duplicate results
         ConcurrentMap<String, Boolean> searchHandledCache;
         final PortletSession session = request.getPortletSession();
-        synchronized (org.springframework.web.portlet.util.PortletUtils.getSessionMutex(session)) {
+        synchronized (
+                org.apereo.portal.spring.web.portlet.util.PortletUtils.getSessionMutex(session)) {
             searchHandledCache =
                     (ConcurrentMap<String, Boolean>)
                             session.getAttribute(

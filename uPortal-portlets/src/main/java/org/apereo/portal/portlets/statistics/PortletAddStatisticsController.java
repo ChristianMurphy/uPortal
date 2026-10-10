@@ -20,11 +20,11 @@ import com.google.visualization.datasource.datatable.value.Value;
 import java.util.Collections;
 import java.util.List;
 import org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregation;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 @Controller
 @RequestMapping(value = "VIEW")

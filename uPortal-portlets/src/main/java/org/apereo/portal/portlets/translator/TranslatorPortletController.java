@@ -18,11 +18,11 @@ import java.util.List;
 import javax.portlet.RenderRequest;
 import org.apereo.portal.portlets.localization.LocaleBean;
 import org.apereo.portal.portlets.localization.UserLocaleHelper;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
 
 /**
  * This controller simply returns a single JSP page and populates "locales" request attribute by
