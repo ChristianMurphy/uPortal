@@ -629,6 +629,26 @@ chosen per portlet.
   portlets, the XSLT rendering pipeline, Pluto), the plan keeps the
   existing choice. Each such exception is recorded in this log.
 
+### MOD-D23: multi-database CI is live (MOD-D16 delivered)
+
+* **uPortal `db-integration.yml`:** the JPA/DAO tests read their database
+  from system properties, defaulting to HSQLDB. They run on PostgreSQL 16,
+  MariaDB 11.4 and MySQL 8.4 on every push, and on SQL Server 2022 and
+  Oracle Free 23 nightly. All five were proven on push once (run
+  38061900729).
+* **uPortal-start `integration.yml`:** builds uPortal from source on the
+  same branch, then runs the full Playwright suite (124 specs) on HSQLDB,
+  PostgreSQL 16 and MariaDB 11.4, and the DB harness on all 7 vendors.
+  Run 38061904020 was green apart from the known drift MOD-I83/I84.
+* **Harness changes:**
+  * The baseline is picked from `uPortalVersion`.
+  * Drift and failed specs are published as GitHub annotations, because
+    artifacts can't be downloaded through the sandbox proxy.
+  * CAS now follows the harness database.
+* **Real bugs found:** MOD-I82 (product) and MOD-I86 (tests).
+* **Still to do:** remove the `continue-on-error` markings once
+  MOD-I82–I84 are fixed (in progress).
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -714,6 +734,11 @@ chosen per portlet.
 | MOD-I79 | Dev DB | The HSQLDB `uPortal.lobs` file grows past 3 GB over repeated `dataInit` runs. | Have `dataInit` (or a clean task) remove the HSQLDB files. Small uPortal-start fix. |
 | MOD-I80 | Runtime | Since JDK 24, `jaxp.properties` disables XSLT extension functions. `TemplatesBuilder` is fixed in code (MOD-I63), but 7 tests that build their own TransformerFactory need `-Djdk.xml.enableExtensionFunctions=true`, which Phase 1 sets on every test JVM. | Before the runtime moves to JDK 25 (P6), route those through `TemplatesBuilder` (MOD-I70) so adopters don't need the JVM flag. |
 | MOD-I81 | Environment | The sandbox egress policy blocks `getbootstrap.com` (and `blog.getbootstrap.com`), including the LLM docs at `https://getbootstrap.com/llms-full.txt`. | Not routed around. The same content was rebuilt from the official source repo on GitHub (`twbs/bootstrap` main @ `5c8346d`, package version 6.0.0-alpha.1): `site/src/pages/llms-full.txt.ts` concatenates the sidebar-ordered MDX docs, and a scratchpad script mirrors that by reading the files without running repo code. Result: 140 pages, 1.3 MB, at `scratchpad/bootstrap-docs/llms-full.txt`. WS14 and skin agents use it together with the Bootstrap skills. CI and developers can fetch the canonical URL directly. |
+| MOD-I82 | Concurrency | **Found by multi-DB CI.** `JpaClusterLockDao.getClusterMutex` reads in the caller's transaction, creates the mutex in REQUIRES_NEW, then re-reads in the caller's snapshot. Under InnoDB REPEATABLE READ (the MySQL/MariaDB default) the new row isn't visible, so it throws "Failed to find or create ClusterMutex". 5 tests fail on mysql-8.4 and mariadb-11.4 but pass with READ COMMITTED. Real portals on MySQL/MariaDB hit this the first time each mutex is used. | Fix in progress: create the row outside the caller's snapshot. Upstream candidate. |
+| MOD-I83 | DB harness | HSQLDB 2.7.4 (uPortal-start P1) names constraint-backing indexes after the constraint, where 2.5.1 used `SYS_IDX_*`. That shows up as 111 NAMES drift; STRUCTURE, DATA and GENERATORS are clean. | Re-record the hsqldb baseline under 2.7.4. |
+| MOD-I84 | DB harness | Oracle sequences are cached, so the current values read from metadata vary between runs (e.g. 1201/546/931 against a max id of 403). | For Oracle, compare generators by invariant: next value > max(id), and increment = allocationSize. Keep exact values for the deterministic vendors (they caught MOD-I72). |
+| MOD-I85 | uPortal-start | The CAS overlay hard-coded HSQLDB in `deployerConfigContext.xml`, so CAS login failed on other databases. The harness now drives it from `-PdbVendor`, but adopters switching databases still have to edit it by hand. | Document it. Goes away with MOD-Q3 (local login default, CAS external). |
+| MOD-I86 | Tests | `JpaVersionDaoTest` used `ALTER TABLE` forms that SQL Server and Oracle reject. | **Fixed** (portable DDL). No test is vendor-skipped. |
 
 ## Open questions
 
