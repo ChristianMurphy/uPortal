@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import javax.portlet.Event;
 import javax.xml.namespace.QName;
-import net.sf.ehcache.Ehcache;
 import org.apache.pluto.container.om.portlet.EventDefinition;
 import org.apache.pluto.container.om.portlet.EventDefinitionReference;
 import org.apache.pluto.container.om.portlet.PortletApplicationDefinition;
@@ -37,6 +36,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.cache.Cache;
 
 /** */
 @Ignore // Breaks on move to Gradle
@@ -46,7 +46,7 @@ public class PortletEventCoordinatationServiceTest {
     private PortletEventCoordinatationService portletEventCoordinatationService =
             new PortletEventCoordinatationService();
 
-    @Mock private Ehcache supportedEventCache;
+    @Mock private Cache supportedEventCache;
     @Mock private IPortletDefinitionRegistry portletDefinitionRegistry;
 
     @Test

@@ -20,7 +20,6 @@ import java.util.*;
 import javax.portlet.Event;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import net.sf.ehcache.Ehcache;
 import org.apache.pluto.container.PortletContainer;
 import org.apache.pluto.container.PortletWindow;
 import org.apache.pluto.container.driver.PortletContextService;
@@ -39,12 +38,14 @@ import org.apereo.portal.services.AuthorizationServiceFacade;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.apereo.portal.user.IUserInstance;
 import org.apereo.portal.user.IUserInstanceManager;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.apereo.portal.utils.web.PortalWebUtils;
 import org.apereo.portal.xml.XmlUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 /**
@@ -68,7 +69,7 @@ public class PortletEventCoordinatationService implements IPortletEventCoordinat
     private IPortletEntityRegistry portletEntityRegistry;
     private IPortletDefinitionRegistry portletDefinitionRegistry;
     private IUserInstanceManager userInstanceManager;
-    private Ehcache supportedEventCache;
+    private Cache supportedEventCache;
     private IPortalRequestUtils portalRequestUtils;
     private XmlUtilities xmlUtilities;
     private PortletContextService portletContextService;
@@ -89,9 +90,13 @@ public class PortletEventCoordinatationService implements IPortletEventCoordinat
     }
 
     @Autowired
-    public void setSupportedEventCache(
-            @Qualifier("org.apereo.portal.portlet.rendering.SupportedEventCache")
-                    Ehcache supportedEventCache) {
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setSupportedEventCache(
+                CacheLookup.requireCache(
+                        cacheManager, "org.apereo.portal.portlet.rendering.SupportedEventCache"));
+    }
+
+    public void setSupportedEventCache(Cache supportedEventCache) {
         this.supportedEventCache = supportedEventCache;
     }
 
