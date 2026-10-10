@@ -15,6 +15,9 @@ on:
   push:
     branches:
       - master
+      # Prototype only (MOD-I74): run on the modernization
+      # integration branches. Drop this line before upstreaming.
+      - 'ccr-*'
   pull_request:
     branches:
       - master
