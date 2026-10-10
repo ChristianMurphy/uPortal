@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -339,8 +340,9 @@ public class FavoritesUtils {
 
         for (IUserLayoutNodeDescription nodeDescription : favorites) {
             if (nodeDescription instanceof IUserLayoutChannelDescription) {
-                if (((IUserLayoutChannelDescription) nodeDescription).getFunctionalName()
-                        == functionalName) {
+                if (Objects.equals(
+                        ((IUserLayoutChannelDescription) nodeDescription).getFunctionalName(),
+                        functionalName)) {
                     matchingFavorites.add((IUserLayoutChannelDescription) nodeDescription);
                 }
             }
