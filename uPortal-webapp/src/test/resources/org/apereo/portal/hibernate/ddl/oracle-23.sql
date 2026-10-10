@@ -119,7 +119,7 @@ create table UP_PORTLET_LIST_ITEM (ID varchar2(255 char) not null, ENTITY_ID var
 create table UP_PORTLET_PREF (PORTLET_PREF_ID number(19,0) not null, ENTITY_VERSION number(19,0), PREF_NAME clob, NULL_VALUES number(1,0) not null, READ_ONLY number(1,0) not null, PORTLET_PREFS_ID number(19,0), PREF_ORDER number(10,0), primary key (PORTLET_PREF_ID))
 create table UP_PORTLET_PREFS (PORTLET_PREFS_ID number(19,0) not null, ENTITY_VERSION number(19,0), primary key (PORTLET_PREFS_ID))
 create table UP_PORTLET_PREF_VALUES (PORTLET_PREF_ID number(19,0) not null, PREF_VALUE clob, VALUE_ORDER number(10,0) not null, primary key (PORTLET_PREF_ID, VALUE_ORDER))
-create table UP_PORTLET_RATING (USER_NAME varchar2(255 char) not null, RATING number(10,0), REVIEW varchar2(160 char), PORTLET_ID number(19,0), primary key (PORTLET_ID, USER_NAME))
+create table UP_PORTLET_RATING (USER_NAME varchar2(255 char) not null, RATING number(10,0), REVIEW varchar2(160 char), PORTLET_ID number(19,0) not null, primary key (PORTLET_ID, USER_NAME))
 create table UP_PORTLET_TYPE (TYPE_ID number(10,0) not null, TYPE_DEF_URI varchar2(255 char) not null, TYPE_DESCR varchar2(2000 char), ENTITY_VERSION number(19,0), TYPE_NAME varchar2(70 char), primary key (TYPE_ID))
 create table UP_PROFILE_SELECTION (SELECTION_ID number(10,0) not null, ENTITY_VERSION number(19,0), PROFILE_FNAME varchar2(70 char) not null, USERNAME varchar2(70 char) not null, primary key (SELECTION_ID))
 create table UP_SS_DESC (SS_DESC_ID number(19,0) not null, DESCRIPTION varchar2(2000 char), ENTITY_VERSION number(19,0), SS_NAME varchar2(100 char) not null, STYLESHEET varchar2(2000 char) not null, URL_SYNTAX_HELPER_NAME varchar2(100 char), primary key (SS_DESC_ID))

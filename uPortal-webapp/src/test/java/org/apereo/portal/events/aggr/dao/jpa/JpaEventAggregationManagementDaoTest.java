@@ -44,6 +44,7 @@ import org.joda.time.MonthDay;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.TransactionSystemException;
@@ -299,8 +300,9 @@ public class JpaEventAggregationManagementDaoTest extends BaseAggrEventsJpaDaoTe
                     });
 
             fail();
-        } catch (TransactionSystemException e) {
-            // Expected
+        } catch (TransactionSystemException | JpaSystemException e) {
+            // Expected: the transaction was marked rollback-only. Committing it raised a
+            // TransactionSystemException on Hibernate 4.3 and raises a JpaSystemException on 5.2.
         }
 
         this.executeInTransaction(

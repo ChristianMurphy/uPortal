@@ -24,6 +24,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.SequenceGenerator;
@@ -35,10 +36,16 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.MapKeyType;
 import org.hibernate.annotations.Type;
 
 @Entity
-@Table(name = "UP_SS_USER_PREF_LAY_ATTR")
+// The index on the join column that StylesheetUserPreferencesImpl.layoutAttributes owns. Hibernate
+// 5 can no longer declare it on that collection (@org.hibernate.annotations.Index there looks for
+// the property on this entity), so it is declared on this table under the same name.
+@Table(
+        name = "UP_SS_USER_PREF_LAY_ATTR",
+        indexes = @Index(name = "IDX_SS_USER_PREF_ID", columnList = "SS_USER_PREF_ID"))
 @SequenceGenerator(
         name = "UP_SS_USER_PREF_LAY_ATTR_GEN",
         sequenceName = "UP_SS_USER_PREF_LAY_ATTR_SEQ",
@@ -65,7 +72,11 @@ class LayoutNodeAttributesImpl {
     @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyColumn(name = "ATTR_NAME", nullable = false, length = 500)
     @Column(name = "ATTR_VALUE", nullable = false, length = 2000)
-    @Type(type = "nullSafeString") // only applies to map values
+    // Hibernate 4.3 applied this @Type to the map keys as well, so existing rows store the keys
+    // with NullSafeStringType's "_" prefix too (e.g. "_externalId"). Hibernate 5 applies @Type
+    // to the values only; @MapKeyType keeps the keys in the stored format.
+    @MapKeyType(@Type(type = "nullSafeString"))
+    @Type(type = "nullSafeString")
     @CollectionTable(
             name = "UP_SS_USER_PREF_LAY_ATTR_VAL",
             joinColumns = @JoinColumn(name = "UP_SS_USER_PREF_LAY_ATTR_ID", nullable = false))

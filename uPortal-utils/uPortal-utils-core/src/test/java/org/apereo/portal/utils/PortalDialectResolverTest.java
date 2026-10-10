@@ -50,7 +50,9 @@ public class PortalDialectResolverTest {
 
     @Test
     public void mysqlAndMariadb() {
-        assertDialect("org.hibernate.dialect.MySQL5Dialect", "MySQL", 8, 4, "MySQL Connector/J");
+        // Hibernate 4.3 chose MySQL5Dialect, which named no storage engine (InnoDB by default);
+        // MySQL55Dialect has the same types and names InnoDB, unlike Hibernate 5's MySQL5Dialect
+        assertDialect("org.hibernate.dialect.MySQL55Dialect", "MySQL", 8, 4, "MySQL Connector/J");
         // MySQL Connector/J reports MariaDB 10.x as 5.5.5-10.x
         assertDialect(
                 "org.apereo.portal.utils.hibernate4.dialects.MySQL5InnoDBCompressedDialect",
@@ -59,8 +61,10 @@ public class PortalDialectResolverTest {
                 5,
                 "MySQL Connector/J");
         // MariaDB Connector/J with useMysqlMetadata=true
-        assertDialect("org.hibernate.dialect.MySQL5Dialect", "MySQL", 11, 4, "MariaDB Connector/J");
-        assertDialect("org.hibernate.dialect.MySQL5Dialect", "MySQL", 10, 6, "MariaDB Connector/J");
+        assertDialect(
+                "org.hibernate.dialect.MySQL55Dialect", "MySQL", 11, 4, "MariaDB Connector/J");
+        assertDialect(
+                "org.hibernate.dialect.MySQL55Dialect", "MySQL", 10, 6, "MariaDB Connector/J");
     }
 
     @Test

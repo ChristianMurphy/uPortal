@@ -2,7 +2,6 @@ description = "Apereo uPortal RDBM"
 
 dependencies {
     api project(':uPortal-utils:uPortal-utils-core')
-    implementation project(':uPortal-hibernate')
 
     implementation "com.google.guava:guava:${guavaVersion}"
     api "org.apache.commons:commons-math3:${commonsMath3Version}"

@@ -17,8 +17,8 @@ package org.hibernate.cache.ehcache;
 import java.util.Properties;
 import net.sf.ehcache.CacheManager;
 import org.apache.commons.lang.StringUtils;
+import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
-import org.hibernate.cfg.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ public class SpringBeanEhCacheRegionFactory extends AbstractEhcacheRegionFactory
     public static final String CACHE_MANAGER_NAME = "org.apereo.portal.cache.CacheManagerName";
 
     @Override
-    public void start(Settings settings, Properties properties) throws CacheException {
+    public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
         this.settings = settings;
         try {
             String cacheManagerBeanName = null;

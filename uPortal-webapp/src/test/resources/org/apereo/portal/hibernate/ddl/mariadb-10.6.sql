@@ -64,77 +64,77 @@ create index IDX_UPP_PREFS_ID on UP_PORTLET_PREF (PORTLET_PREFS_ID)
 create index IDX_UP_PORTLET_ENT__UP_USER on UP_PORTLET_ENT (USER_ID)
 create index IDX_UP_PRTLT_CKS_EXP on UP_PORTLET_COOKIES (EXPIRES)
 create index IDX_UP_PRTL_CK_EXP on UP_PORTAL_COOKIES (EXPIRES)
-create table UP_DLM_EVALUATOR (EVALUATOR_TYPE varchar(31) not null, EVALUATOR_ID bigint not null, ENTITY_VERSION bigint, DESCRIPTION varchar(255), FRAGMENT_NAME varchar(255), OWNER_ID varchar(255), PRECEDENCE double precision, ATTRIBUTE_MODE integer, ATTRIBUTE_NAME varchar(255), ATTRIBUTE_VALUE varchar(255), EVALUATOR_MODE integer, GROUP_KEY varchar(255), GROUP_NAME varchar(255), PROFILE_FNAME varchar(255), PAREN_TYPE integer, primary key (EVALUATOR_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_DLM_EVALUATOR_PAREN (PAREN_EVAL_ID bigint not null, CHILD_EVAL_ID bigint not null, EVAL_INDEX integer not null, primary key (PAREN_EVAL_ID, EVAL_INDEX)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_DLM_EVALUATOR_SEQ ( next_val bigint )
-create table UP_JGROUPS_AUTH (SERVICE_NAME varchar(100) not null, RANDOM_TOKEN varchar(4000), primary key (SERVICE_NAME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_MESSAGE (ID bigint not null, CODE varchar(128) not null, LOCALE varchar(64) not null, VALUE varchar(1024) not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_MESSAGE_SEQ ( next_val bigint )
-create table UP_MUTEX (MUTEX_ID bigint not null, ENTITY_VERSION bigint, LOCK_UPDATE datetime not null, LOCK_END datetime not null, LOCK_START datetime not null, LOCKED bit not null, MUTEX_NAME varchar(200) not null, PREV_SERVER_ID varchar(200), SERVER_ID varchar(200), primary key (MUTEX_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_MUTEX_SEQ ( next_val bigint )
-create table UP_PAGS_GROUP (PAGS_GROUP_ID bigint not null, DESCRIPTION varchar(500), ENTITY_VERSION bigint, NAME varchar(500) not null, primary key (PAGS_GROUP_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PAGS_GROUP_MEMBERS (PAGS_GROUP_ID bigint not null, PAGS_GROUP_MEMBER_ID bigint not null, primary key (PAGS_GROUP_ID, PAGS_GROUP_MEMBER_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PAGS_GROUP_SEQ ( next_val bigint )
-create table UP_PAGS_TEST (PAGS_TEST_ID bigint not null, ATTRIBUTE_NAME varchar(500), ENTITY_VERSION bigint, TEST_VALUE varchar(500), TESTER_CLASS varchar(500), PAGS_TEST_GROUP_ID bigint not null, primary key (PAGS_TEST_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PAGS_TEST_GROUP (PAGS_TEST_GROUP_ID bigint not null, ENTITY_VERSION bigint, PAGS_GROUP_ID bigint not null, primary key (PAGS_TEST_GROUP_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PAGS_TEST_GROUP_SEQ ( next_val bigint )
-create table UP_PAGS_TEST_SEQ ( next_val bigint )
-create table UP_PERMISSION_ACTIVITY (ACTIVITY_ID bigint not null, ACTIVITY_DESCRIPTION varchar(255), ENTITY_VERSION bigint, ACTIVITY_FNAME varchar(128) not null, ACTIVITY_NAME varchar(128) not null, OWNER_TARGET_PROVIDER varchar(255) not null, OWNER_ID bigint, primary key (ACTIVITY_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PERMISSION_ACTIVITY_SEQ ( next_val bigint )
-create table UP_PERMISSION_OWNER (OWNER_ID bigint not null, OWNER_DESCRIPTION varchar(255), ENTITY_VERSION bigint, OWNER_FNAME varchar(128) not null, OWNER_NAME varchar(128) not null, primary key (OWNER_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PERMISSION_OWNER_SEQ ( next_val bigint )
-create table UP_PERSON_ATTR (id integer not null, ENTITY_VERSION bigint, ATTR_NAME varchar(255) not null, USER_DIR_ID bigint not null, primary key (id)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PERSON_ATTR_SEQ ( next_val bigint )
-create table UP_PERSON_ATTR_VALUES (ATTR_ID integer not null, ATTR_VALUE varchar(255), VALUE_ORDER integer not null, primary key (ATTR_ID, VALUE_ORDER)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PERSON_DIR (USER_DIR_ID bigint not null, ENTITY_VERSION bigint, LST_PSWD_CGH_DT datetime, USER_NAME varchar(100) not null, ENCRPTD_PSWD varchar(256), primary key (USER_DIR_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PERSON_DIR_SEQ ( next_val bigint )
-create table UP_PORTAL_COOKIES (PORTAL_COOKIE_ID bigint not null, CREATED datetime not null, ENTITY_VERSION bigint, EXPIRES datetime not null, COOKIE_VALUE varchar(100) not null, primary key (PORTAL_COOKIE_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTAL_COOKIES_SEQ ( next_val bigint )
-create table UP_PORTLET_COOKIES (PORTLET_COOKIE_ID bigint not null, COOKIE_COMMENT varchar(1000), COOKIE_DOMAIN varchar(500), ENTITY_VERSION bigint, EXPIRES datetime not null, COOKIE_NAME varchar(500) not null, COOKIE_PATH varchar(1000), SECURE bit not null, COOKIE_VALUE varchar(1000) not null, VERSION integer not null, portalCookie_PORTAL_COOKIE_ID bigint, PORTAL_COOKIE_ID bigint, primary key (PORTLET_COOKIE_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_COOKIES_SEQ ( next_val bigint )
-create table UP_PORTLET_DEF (PORTLET_DEF_ID bigint not null, ACTION_TIMEOUT integer, PORTLET_DESC varchar(255), ENTITY_VERSION bigint, EVENT_TIMEOUT integer, PORTLET_FNAME varchar(255) not null, PORTLET_NAME varchar(128) not null, PORTLET_FRAMEWORK bit not null, PORTLET_APPLICATION_NAME varchar(255) not null, PORTLET_WEBAPP_NAME varchar(255), AVG_RATING double precision, RENDER_TIMEOUT integer, RESOURCE_TIMEOUT integer, PORTLET_TIMEOUT integer not null, PORTLET_TITLE varchar(128) not null, AVG_RATING_USER_COUNT bigint, PORTLET_PREFS_ID bigint not null, PORTLET_TYPE_ID integer not null, primary key (PORTLET_DEF_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_DEF_MDATA (PORTLET_ID bigint not null, PORTLET_DESC varchar(255), PORTLET_NAME varchar(128), PORTLET_TITLE varchar(128), LOCALE varchar(64) not null, primary key (PORTLET_ID, LOCALE)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_DEF_PARAM (PARAM_ID bigint not null, PARAM_DESC varchar(255), PARAM_NAME varchar(255) not null, PARAM_VAL varchar(2000), PORTLET_DEF_ID bigint not null, primary key (PARAM_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_DEF_PARAM_SEQ ( next_val bigint )
-create table UP_PORTLET_DEF_SEQ ( next_val bigint )
-create table UP_PORTLET_ENT (PORTLET_ENT_ID bigint not null, ENTITY_VERSION bigint, LAYOUT_NODE_ID varchar(255) not null, USER_ID integer not null, PORTLET_DEF_ID bigint not null, PORTLET_PREFS_ID bigint not null, primary key (PORTLET_ENT_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_ENT_SEQ ( next_val bigint )
-create table UP_PORTLET_ENT__STATES (PORTLET_ENT_ID bigint not null, WINDOW_STATE varchar(255), STYLESHEET_DESCRIPTOR_ID bigint not null, primary key (PORTLET_ENT_ID, STYLESHEET_DESCRIPTOR_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_LIFECYCLE (ENTRY_ID bigint not null, ENTRY_DATE datetime, LIFECYCLE_STATE_ID integer, USER_ID integer, PORTLET_DEF_ID bigint not null, primary key (ENTRY_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_LIFECYCLE_SEQ ( next_val bigint )
-create table UP_PORTLET_LIST (ID varchar(255) not null, CREATED_BY varchar(255) not null, CREATED_ON datetime not null, NAME varchar(255) not null, OWNER_USERNAME varchar(255) not null, UPDATED_BY varchar(255) not null, UPDATED_ON datetime not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_LIST_ITEM (ID varchar(255) not null, ENTITY_ID varchar(255) not null, LIST_ORDER integer not null, LIST_ID varchar(255) not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_PREF (PORTLET_PREF_ID bigint not null, ENTITY_VERSION bigint, PREF_NAME longtext, NULL_VALUES bit not null, READ_ONLY bit not null, PORTLET_PREFS_ID bigint, PREF_ORDER integer, primary key (PORTLET_PREF_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_PREFS (PORTLET_PREFS_ID bigint not null, ENTITY_VERSION bigint, primary key (PORTLET_PREFS_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_PREFS_SEQ ( next_val bigint )
-create table UP_PORTLET_PREF_SEQ ( next_val bigint )
-create table UP_PORTLET_PREF_VALUES (PORTLET_PREF_ID bigint not null, PREF_VALUE longtext, VALUE_ORDER integer not null, primary key (PORTLET_PREF_ID, VALUE_ORDER)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_RATING (USER_NAME varchar(255) not null, RATING integer, REVIEW varchar(160), PORTLET_ID bigint, primary key (PORTLET_ID, USER_NAME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_TYPE (TYPE_ID integer not null, TYPE_DEF_URI varchar(255) not null, TYPE_DESCR varchar(2000), ENTITY_VERSION bigint, TYPE_NAME varchar(70), primary key (TYPE_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_TYPE_SEQ ( next_val bigint )
-create table UP_PROFILE_SELECTION (SELECTION_ID integer not null, ENTITY_VERSION bigint, PROFILE_FNAME varchar(70) not null, USERNAME varchar(70) not null, primary key (SELECTION_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PROFILE_SELECTION_SEQ ( next_val bigint )
-create table UP_SS_DESC (SS_DESC_ID bigint not null, DESCRIPTION varchar(2000), ENTITY_VERSION bigint, SS_NAME varchar(100) not null, STYLESHEET varchar(2000) not null, URL_SYNTAX_HELPER_NAME varchar(100), primary key (SS_DESC_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_DESC_LAY_ATTR (SS_DESC_LAYOUT_ATTR_ID bigint not null, DEFAULT_VALUE varchar(500), DESCRIPTION varchar(2000), DATA_NAME varchar(100) not null, PERSISTENCE_SCOPE varchar(255) not null, ENTITY_VERSION bigint, SS_DESC_ID bigint not null, primary key (SS_DESC_LAYOUT_ATTR_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_DESC_LAY_ATTR_ELMS (ATTR_ID bigint not null, ELEMENT_NAME varchar(255)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_DESC_LAY_ATTR_SEQ ( next_val bigint )
-create table UP_SS_DESC_OUTPUT_PROP (SS_DESC_LAYOUT_ATTR_ID bigint not null, DEFAULT_VALUE varchar(500), DESCRIPTION varchar(2000), DATA_NAME varchar(100) not null, PERSISTENCE_SCOPE varchar(255) not null, ENTITY_VERSION bigint, SS_DESC_ID bigint not null, primary key (SS_DESC_LAYOUT_ATTR_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_DESC_OUTPUT_PROP_SEQ ( next_val bigint )
-create table UP_SS_DESC_PARAM (SS_DESC_PARAM_ID bigint not null, DEFAULT_VALUE varchar(500), DESCRIPTION varchar(2000), DATA_NAME varchar(100) not null, PERSISTENCE_SCOPE varchar(255) not null, ENTITY_VERSION bigint, SS_DESC_ID bigint not null, primary key (SS_DESC_PARAM_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_DESC_PARAM_SEQ ( next_val bigint )
-create table UP_SS_DESC_SEQ ( next_val bigint )
-create table UP_SS_USER_PREF (SS_USER_PREF_ID bigint not null, ENTITY_VERSION bigint, PROFILE_ID integer not null, USER_ID integer not null, UP_SS_DESCRIPTOR_ID bigint not null, primary key (SS_USER_PREF_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_USER_PREF_LAY_ATTR (UP_SS_USER_PREF_LAY_ATTR_ID bigint not null, ENTITY_VERSION bigint, NODE_ID varchar(200) not null, SS_USER_PREF_ID bigint not null, primary key (UP_SS_USER_PREF_LAY_ATTR_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_USER_PREF_LAY_ATTR_SEQ ( next_val bigint )
-create table UP_SS_USER_PREF_LAY_ATTR_VAL (UP_SS_USER_PREF_LAY_ATTR_ID bigint not null, ATTR_VALUE varchar(2000) not null, ATTR_NAME varchar(500) not null, primary key (UP_SS_USER_PREF_LAY_ATTR_ID, ATTR_NAME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_USER_PREF_OUTPUT_PROP (SS_USER_PREF_ID bigint not null, PROP_VALUE varchar(2000) not null, PROP_NAME varchar(500) not null, primary key (SS_USER_PREF_ID, PROP_NAME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_USER_PREF_PARAM (SS_USER_PREF_ID bigint not null, PARAM_VALUE varchar(2000) not null, PARAM_NAME varchar(500) not null, primary key (SS_USER_PREF_ID, PARAM_NAME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SS_USER_PREF_SEQ ( next_val bigint )
-create table UP_TENANT (TENANT_ID bigint not null, TENANT_FNAME varchar(128) not null, TENANT_NAME varchar(255) not null, primary key (TENANT_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_TENANT_ATTRIBUTES (TENANT_ID bigint not null, ATTR_VALUE varchar(2000) not null, ATTR_NAME varchar(500) not null, primary key (TENANT_ID, ATTR_NAME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_TENANT_SEQ ( next_val bigint )
-create table UP_VERSION (VERSION_ID bigint not null, ENTITY_VERSION bigint, LOCAL_VER integer, MAJOR_VER integer not null, MINOR_VER integer not null, PATCH_VER integer not null, PRODUCT varchar(128) not null, primary key (VERSION_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_VERSION_SEQ ( next_val bigint )
+create table UP_DLM_EVALUATOR (EVALUATOR_TYPE varchar(31) not null, EVALUATOR_ID bigint not null, ENTITY_VERSION bigint, DESCRIPTION varchar(255), FRAGMENT_NAME varchar(255), OWNER_ID varchar(255), PRECEDENCE double precision, ATTRIBUTE_MODE integer, ATTRIBUTE_NAME varchar(255), ATTRIBUTE_VALUE varchar(255), EVALUATOR_MODE integer, GROUP_KEY varchar(255), GROUP_NAME varchar(255), PROFILE_FNAME varchar(255), PAREN_TYPE integer, primary key (EVALUATOR_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_DLM_EVALUATOR_PAREN (PAREN_EVAL_ID bigint not null, CHILD_EVAL_ID bigint not null, EVAL_INDEX integer not null, primary key (PAREN_EVAL_ID, EVAL_INDEX)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_DLM_EVALUATOR_SEQ (next_val bigint)
+create table UP_JGROUPS_AUTH (SERVICE_NAME varchar(100) not null, RANDOM_TOKEN varchar(4000), primary key (SERVICE_NAME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_MESSAGE (ID bigint not null, CODE varchar(128) not null, LOCALE varchar(64) not null, VALUE varchar(1024) not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_MESSAGE_SEQ (next_val bigint)
+create table UP_MUTEX (MUTEX_ID bigint not null, ENTITY_VERSION bigint, LOCK_UPDATE datetime not null, LOCK_END datetime not null, LOCK_START datetime not null, LOCKED bit not null, MUTEX_NAME varchar(200) not null, PREV_SERVER_ID varchar(200), SERVER_ID varchar(200), primary key (MUTEX_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_MUTEX_SEQ (next_val bigint)
+create table UP_PAGS_GROUP (PAGS_GROUP_ID bigint not null, DESCRIPTION varchar(500), ENTITY_VERSION bigint, NAME varchar(500) not null, primary key (PAGS_GROUP_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PAGS_GROUP_MEMBERS (PAGS_GROUP_ID bigint not null, PAGS_GROUP_MEMBER_ID bigint not null, primary key (PAGS_GROUP_ID, PAGS_GROUP_MEMBER_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PAGS_GROUP_SEQ (next_val bigint)
+create table UP_PAGS_TEST (PAGS_TEST_ID bigint not null, ATTRIBUTE_NAME varchar(500), ENTITY_VERSION bigint, TEST_VALUE varchar(500), TESTER_CLASS varchar(500), PAGS_TEST_GROUP_ID bigint not null, primary key (PAGS_TEST_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PAGS_TEST_GROUP (PAGS_TEST_GROUP_ID bigint not null, ENTITY_VERSION bigint, PAGS_GROUP_ID bigint not null, primary key (PAGS_TEST_GROUP_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PAGS_TEST_GROUP_SEQ (next_val bigint)
+create table UP_PAGS_TEST_SEQ (next_val bigint)
+create table UP_PERMISSION_ACTIVITY (ACTIVITY_ID bigint not null, ACTIVITY_DESCRIPTION varchar(255), ENTITY_VERSION bigint, ACTIVITY_FNAME varchar(128) not null, ACTIVITY_NAME varchar(128) not null, OWNER_TARGET_PROVIDER varchar(255) not null, OWNER_ID bigint, primary key (ACTIVITY_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PERMISSION_ACTIVITY_SEQ (next_val bigint)
+create table UP_PERMISSION_OWNER (OWNER_ID bigint not null, OWNER_DESCRIPTION varchar(255), ENTITY_VERSION bigint, OWNER_FNAME varchar(128) not null, OWNER_NAME varchar(128) not null, primary key (OWNER_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PERMISSION_OWNER_SEQ (next_val bigint)
+create table UP_PERSON_ATTR (id integer not null, ENTITY_VERSION bigint, ATTR_NAME varchar(255) not null, USER_DIR_ID bigint not null, primary key (id)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PERSON_ATTR_SEQ (next_val bigint)
+create table UP_PERSON_ATTR_VALUES (ATTR_ID integer not null, ATTR_VALUE varchar(255), VALUE_ORDER integer not null, primary key (ATTR_ID, VALUE_ORDER)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PERSON_DIR (USER_DIR_ID bigint not null, ENTITY_VERSION bigint, LST_PSWD_CGH_DT datetime, USER_NAME varchar(100) not null, ENCRPTD_PSWD varchar(256), primary key (USER_DIR_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PERSON_DIR_SEQ (next_val bigint)
+create table UP_PORTAL_COOKIES (PORTAL_COOKIE_ID bigint not null, CREATED datetime not null, ENTITY_VERSION bigint, EXPIRES datetime not null, COOKIE_VALUE varchar(100) not null, primary key (PORTAL_COOKIE_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTAL_COOKIES_SEQ (next_val bigint)
+create table UP_PORTLET_COOKIES (PORTLET_COOKIE_ID bigint not null, COOKIE_COMMENT varchar(1000), COOKIE_DOMAIN varchar(500), ENTITY_VERSION bigint, EXPIRES datetime not null, COOKIE_NAME varchar(500) not null, COOKIE_PATH varchar(1000), SECURE bit not null, COOKIE_VALUE varchar(1000) not null, VERSION integer not null, portalCookie_PORTAL_COOKIE_ID bigint, PORTAL_COOKIE_ID bigint, primary key (PORTLET_COOKIE_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_COOKIES_SEQ (next_val bigint)
+create table UP_PORTLET_DEF (PORTLET_DEF_ID bigint not null, ACTION_TIMEOUT integer, PORTLET_DESC varchar(255), ENTITY_VERSION bigint, EVENT_TIMEOUT integer, PORTLET_FNAME varchar(255) not null, PORTLET_NAME varchar(128) not null, PORTLET_FRAMEWORK bit not null, PORTLET_APPLICATION_NAME varchar(255) not null, PORTLET_WEBAPP_NAME varchar(255), AVG_RATING double precision, RENDER_TIMEOUT integer, RESOURCE_TIMEOUT integer, PORTLET_TIMEOUT integer not null, PORTLET_TITLE varchar(128) not null, AVG_RATING_USER_COUNT bigint, PORTLET_PREFS_ID bigint not null, PORTLET_TYPE_ID integer not null, primary key (PORTLET_DEF_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_DEF_MDATA (PORTLET_ID bigint not null, PORTLET_DESC varchar(255), PORTLET_NAME varchar(128), PORTLET_TITLE varchar(128), LOCALE varchar(64) not null, primary key (PORTLET_ID, LOCALE)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_DEF_PARAM (PARAM_ID bigint not null, PARAM_DESC varchar(255), PARAM_NAME varchar(255) not null, PARAM_VAL varchar(2000), PORTLET_DEF_ID bigint not null, primary key (PARAM_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_DEF_PARAM_SEQ (next_val bigint)
+create table UP_PORTLET_DEF_SEQ (next_val bigint)
+create table UP_PORTLET_ENT (PORTLET_ENT_ID bigint not null, ENTITY_VERSION bigint, LAYOUT_NODE_ID varchar(255) not null, USER_ID integer not null, PORTLET_DEF_ID bigint not null, PORTLET_PREFS_ID bigint not null, primary key (PORTLET_ENT_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_ENT_SEQ (next_val bigint)
+create table UP_PORTLET_ENT__STATES (PORTLET_ENT_ID bigint not null, WINDOW_STATE varchar(255), STYLESHEET_DESCRIPTOR_ID bigint not null, primary key (PORTLET_ENT_ID, STYLESHEET_DESCRIPTOR_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_LIFECYCLE (ENTRY_ID bigint not null, ENTRY_DATE datetime, LIFECYCLE_STATE_ID integer, USER_ID integer, PORTLET_DEF_ID bigint not null, primary key (ENTRY_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_LIFECYCLE_SEQ (next_val bigint)
+create table UP_PORTLET_LIST (ID varchar(255) not null, CREATED_BY varchar(255) not null, CREATED_ON datetime not null, NAME varchar(255) not null, OWNER_USERNAME varchar(255) not null, UPDATED_BY varchar(255) not null, UPDATED_ON datetime not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_LIST_ITEM (ID varchar(255) not null, ENTITY_ID varchar(255) not null, LIST_ORDER integer not null, LIST_ID varchar(255) not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_PREF (PORTLET_PREF_ID bigint not null, ENTITY_VERSION bigint, PREF_NAME longtext, NULL_VALUES bit not null, READ_ONLY bit not null, PORTLET_PREFS_ID bigint, PREF_ORDER integer, primary key (PORTLET_PREF_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_PREFS (PORTLET_PREFS_ID bigint not null, ENTITY_VERSION bigint, primary key (PORTLET_PREFS_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_PREFS_SEQ (next_val bigint)
+create table UP_PORTLET_PREF_SEQ (next_val bigint)
+create table UP_PORTLET_PREF_VALUES (PORTLET_PREF_ID bigint not null, PREF_VALUE longtext, VALUE_ORDER integer not null, primary key (PORTLET_PREF_ID, VALUE_ORDER)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_RATING (USER_NAME varchar(255) not null, RATING integer, REVIEW varchar(160), PORTLET_ID bigint not null, primary key (PORTLET_ID, USER_NAME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_TYPE (TYPE_ID integer not null, TYPE_DEF_URI varchar(255) not null, TYPE_DESCR varchar(2000), ENTITY_VERSION bigint, TYPE_NAME varchar(70), primary key (TYPE_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_TYPE_SEQ (next_val bigint)
+create table UP_PROFILE_SELECTION (SELECTION_ID integer not null, ENTITY_VERSION bigint, PROFILE_FNAME varchar(70) not null, USERNAME varchar(70) not null, primary key (SELECTION_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PROFILE_SELECTION_SEQ (next_val bigint)
+create table UP_SS_DESC (SS_DESC_ID bigint not null, DESCRIPTION varchar(2000), ENTITY_VERSION bigint, SS_NAME varchar(100) not null, STYLESHEET varchar(2000) not null, URL_SYNTAX_HELPER_NAME varchar(100), primary key (SS_DESC_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_DESC_LAY_ATTR (SS_DESC_LAYOUT_ATTR_ID bigint not null, DEFAULT_VALUE varchar(500), DESCRIPTION varchar(2000), DATA_NAME varchar(100) not null, PERSISTENCE_SCOPE varchar(255) not null, ENTITY_VERSION bigint, SS_DESC_ID bigint not null, primary key (SS_DESC_LAYOUT_ATTR_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_DESC_LAY_ATTR_ELMS (ATTR_ID bigint not null, ELEMENT_NAME varchar(255)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_DESC_LAY_ATTR_SEQ (next_val bigint)
+create table UP_SS_DESC_OUTPUT_PROP (SS_DESC_LAYOUT_ATTR_ID bigint not null, DEFAULT_VALUE varchar(500), DESCRIPTION varchar(2000), DATA_NAME varchar(100) not null, PERSISTENCE_SCOPE varchar(255) not null, ENTITY_VERSION bigint, SS_DESC_ID bigint not null, primary key (SS_DESC_LAYOUT_ATTR_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_DESC_OUTPUT_PROP_SEQ (next_val bigint)
+create table UP_SS_DESC_PARAM (SS_DESC_PARAM_ID bigint not null, DEFAULT_VALUE varchar(500), DESCRIPTION varchar(2000), DATA_NAME varchar(100) not null, PERSISTENCE_SCOPE varchar(255) not null, ENTITY_VERSION bigint, SS_DESC_ID bigint not null, primary key (SS_DESC_PARAM_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_DESC_PARAM_SEQ (next_val bigint)
+create table UP_SS_DESC_SEQ (next_val bigint)
+create table UP_SS_USER_PREF (SS_USER_PREF_ID bigint not null, ENTITY_VERSION bigint, PROFILE_ID integer not null, USER_ID integer not null, UP_SS_DESCRIPTOR_ID bigint not null, primary key (SS_USER_PREF_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_USER_PREF_LAY_ATTR (UP_SS_USER_PREF_LAY_ATTR_ID bigint not null, ENTITY_VERSION bigint, NODE_ID varchar(200) not null, SS_USER_PREF_ID bigint not null, primary key (UP_SS_USER_PREF_LAY_ATTR_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_USER_PREF_LAY_ATTR_SEQ (next_val bigint)
+create table UP_SS_USER_PREF_LAY_ATTR_VAL (UP_SS_USER_PREF_LAY_ATTR_ID bigint not null, ATTR_VALUE varchar(2000) not null, ATTR_NAME varchar(500) not null, primary key (UP_SS_USER_PREF_LAY_ATTR_ID, ATTR_NAME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_USER_PREF_OUTPUT_PROP (SS_USER_PREF_ID bigint not null, PROP_VALUE varchar(2000) not null, PROP_NAME varchar(500) not null, primary key (SS_USER_PREF_ID, PROP_NAME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_USER_PREF_PARAM (SS_USER_PREF_ID bigint not null, PARAM_VALUE varchar(2000) not null, PARAM_NAME varchar(500) not null, primary key (SS_USER_PREF_ID, PARAM_NAME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SS_USER_PREF_SEQ (next_val bigint)
+create table UP_TENANT (TENANT_ID bigint not null, TENANT_FNAME varchar(128) not null, TENANT_NAME varchar(255) not null, primary key (TENANT_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_TENANT_ATTRIBUTES (TENANT_ID bigint not null, ATTR_VALUE varchar(2000) not null, ATTR_NAME varchar(500) not null, primary key (TENANT_ID, ATTR_NAME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_TENANT_SEQ (next_val bigint)
+create table UP_VERSION (VERSION_ID bigint not null, ENTITY_VERSION bigint, LOCAL_VER integer, MAJOR_VER integer not null, MINOR_VER integer not null, PATCH_VER integer not null, PRODUCT varchar(128) not null, primary key (VERSION_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_VERSION_SEQ (next_val bigint)
 insert into UP_DLM_EVALUATOR_SEQ values ( 1 )
 insert into UP_MESSAGE_SEQ values ( 1 )
 insert into UP_MUTEX_SEQ values ( 1 )
@@ -280,10 +280,10 @@ create index IDX_UP_RAW_EVENTS_SERVER_ID on UP_RAW_EVENTS (SERVER_ID)
 create index IDX_UP_RAW_EVENTS_SESSION_ID on UP_RAW_EVENTS (SESSION_ID)
 create index IDX_UP_RAW_EVENTS_TIMESTAMP on UP_RAW_EVENTS (TIMESTAMP)
 create index IDX_UP_RAW_EVENTS_USER_NAME on UP_RAW_EVENTS (USER_NAME)
-create table UP_ANALYTICS_EVENTS (EVENT_ID bigint not null, EVENT_DATA longtext not null, SESSION_ID varchar(500) not null, EVENT_TYPE varchar(200) not null, SERVER_ID varchar(200) not null, TIMESTAMP datetime not null, USER_NAME varchar(100) not null, primary key (EVENT_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_ANALYTICS_EVENTS_SEQ ( next_val bigint )
-create table UP_RAW_EVENTS (EVENT_ID bigint not null, AGGREGATED bit, ERROR_AGGR bit, EVENT_DATA longtext not null, SESSION_ID varchar(500) not null, EVENT_TYPE varchar(200) not null, SERVER_ID varchar(200) not null, TIMESTAMP datetime not null, USER_NAME varchar(100) not null, primary key (EVENT_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_RAW_EVENTS_SEQ ( next_val bigint )
+create table UP_ANALYTICS_EVENTS (EVENT_ID bigint not null, EVENT_DATA longtext not null, SESSION_ID varchar(500) not null, EVENT_TYPE varchar(200) not null, SERVER_ID varchar(200) not null, TIMESTAMP datetime not null, USER_NAME varchar(100) not null, primary key (EVENT_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_ANALYTICS_EVENTS_SEQ (next_val bigint)
+create table UP_RAW_EVENTS (EVENT_ID bigint not null, AGGREGATED bit, ERROR_AGGR bit, EVENT_DATA longtext not null, SESSION_ID varchar(500) not null, EVENT_TYPE varchar(200) not null, SERVER_ID varchar(200) not null, TIMESTAMP datetime not null, USER_NAME varchar(100) not null, primary key (EVENT_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_RAW_EVENTS_SEQ (next_val bigint)
 insert into UP_ANALYTICS_EVENTS_SEQ values ( 1 )
 insert into UP_RAW_EVENTS_SEQ values ( 1 )
 -- RawEventsDb drop
@@ -375,50 +375,50 @@ create index IDX_UP_TAB_REND_INTRVL on UP_TAB_RENDER_AGGR (AGGR_INTERVAL)
 create index IDX_UP_TD_FIVE_MIN_INCR on UP_TIME_DIMENSION (TD_FIVE_MINUTE_INCREMENT)
 create index IDX_UP_TD_HOUR on UP_TIME_DIMENSION (TD_HOUR)
 create index IDX_UP_TD_MINUTE on UP_TIME_DIMENSION (TD_MINUTE)
-create table UP_ACADEMIC_TERM_DETAIL (TERM_ID bigint not null, TERM_END datetime not null, TERM_START datetime not null, TERM_NAME varchar(255) not null, primary key (TERM_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_ACADEMIC_TERM_DETAIL_SEQ ( next_val bigint )
-create table UP_AGGR_GROUP_MAPPING (ID bigint not null, GROUP_NAME varchar(200) not null, GROUP_SERVICE varchar(200) not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_AGGR_GROUP_MAPPING_SEQ ( next_val bigint )
-create table UP_AGGR_PORTLET_MAPPING (ID bigint not null, PORTLET_FNAME varchar(255) not null, PORTLET_NAME varchar(128) not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_AGGR_PORTLET_MAPPING_SEQ ( next_val bigint )
-create table UP_AGGR_TAB_MAPPING (ID bigint not null, FRAGMENT_NAME varchar(200) not null, TAB_NAME varchar(200) not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_AGGR_TAB_MAPPING_SEQ ( next_val bigint )
-create table UP_CONCURRENT_USER_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, CONCURRENT_USERS integer not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, UNIQUE_STRINGS_ID bigint, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_CONCURRENT_USER_AGGR_SEQ ( next_val bigint )
-create table UP_DATE_DIMENSION (DATE_ID bigint not null, DD_DATE date not null, DD_DAY integer not null, DD_MONTH integer not null, DD_QUARTER integer not null, DD_TERM varchar(200), DD_WEEK integer not null, DD_YEAR integer not null, primary key (DATE_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_DATE_DIMENSION_SEQ ( next_val bigint )
-create table UP_EVENT_AGGR_CONF_GROUPS (ID bigint not null, AGGREGATOR_TYPE varchar(255) not null, ENTITY_VERSION bigint, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_AGGR_CONF_GROUPS_EXC (UP_EVENT_AGGR_CONF_GROUPS_ID bigint not null, GROUP_ID bigint not null, primary key (UP_EVENT_AGGR_CONF_GROUPS_ID, GROUP_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_AGGR_CONF_GROUPS_INC (UP_EVENT_AGGR_CONF_GROUPS_ID bigint not null, GROUP_ID bigint not null, primary key (UP_EVENT_AGGR_CONF_GROUPS_ID, GROUP_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_AGGR_CONF_GROUPS_SEQ ( next_val bigint )
-create table UP_EVENT_AGGR_CONF_INTRVL (ID bigint not null, AGGREGATOR_TYPE varchar(255) not null, ENTITY_VERSION bigint, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_AGGR_CONF_INTRVL_EXC (UP_EVENT_AGGR_CONF_INTRVL_ID bigint not null, AGGR_INTERVAL varchar(255)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_AGGR_CONF_INTRVL_INC (UP_EVENT_AGGR_CONF_INTRVL_ID bigint not null, AGGR_INTERVAL varchar(255)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_AGGR_CONF_INTRVL_SEQ ( next_val bigint )
-create table UP_EVENT_AGGR_STATUS (ID bigint not null, ENTITY_VERSION bigint, LAST_END datetime, LAST_EVENT_DATE datetime, LAST_START datetime, PROCESSING_TYPE varchar(255) not null, SERVER_NAME varchar(200), primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_AGGR_STATUS_SEQ ( next_val bigint )
-create table UP_EVENT_SESSION (ID bigint not null, SESSION_ID varchar(500) not null, LAST_ACCESSED datetime not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_SESSION_GROUPS (UP_EVENT_SESSION_ID bigint not null, GROUP_ID bigint not null, primary key (UP_EVENT_SESSION_ID, GROUP_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_EVENT_SESSION_SEQ ( next_val bigint )
-create table UP_LOGIN_EVENT_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, LOGIN_COUNT integer not null, UNIQUE_LOGIN_COUNT integer not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, UNIQUE_STRINGS_ID bigint, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_LOGIN_EVENT_AGGR_SEQ ( next_val bigint )
-create table UP_PORTLET_EXEC_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, STATS_COMPLETE bit not null, TIME_COUNT integer not null, GEOMETRIC_MEAN_TIME double precision not null, MAX_TIME double precision not null, MEAN_TIME double precision not null, MIN_TIME double precision not null, POPULATION_VARIANCE_TIME double precision not null, SECOND_MOMENT_TIME double precision not null, STD_DEVIATION_TIME double precision not null, CM_MAX_N bigint, CM_MAX_VALUE double precision, CM_MIN_N bigint, CM_MIN_VALUE double precision, CM_2MMNT_M2 double precision, CM_1MMNT_DEV double precision, CM_1MMNT_M1 double precision, CM_1MMNT_N bigint, CM_1MMNT_NDEV double precision, CM_SUM_N bigint, CM_SUM_VALUE double precision, CM_SUMOLOGS_N integer, CM_SUMOLOGS_VALUE double precision, CM_SUMOSQRS_N bigint, CM_SUMOSQRS_VALUE double precision, SUM_TIME double precision not null, SUM_OF_LOGS_TIME double precision not null, SUMSQ_TIME double precision not null, VARIANCE_TIME double precision not null, EXECUTION_TYPE varchar(50) not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, AGGR_PORTLET_ID bigint not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_EXEC_AGGR_SEQ ( next_val bigint )
-create table UP_PORTLET_LAYOUT_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, ADD_COUNT integer not null, STATS_COMPLETE bit not null, DEL_COUNT integer not null, MOVE_COUNT integer not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, AGGR_PORTLET_ID bigint not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PORTLET_LAYOUT_AGGR_SEQ ( next_val bigint )
-create table UP_QUARTER_DETAIL (QUARTER_ID bigint not null, QUARTER_END varchar(255) not null, QUARTER_NUMBER integer not null, QUARTER_START varchar(255) not null, primary key (QUARTER_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_QUARTER_DETAIL_SEQ ( next_val bigint )
-create table UP_SEARCH_REQ_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, STATS_COMPLETE bit not null, SEARCH_COUNT integer not null, SEARCH_TERM varchar(255) not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SEARCH_REQ_AGGR_SEQ ( next_val bigint )
-create table UP_TAB_RENDER_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, STATS_COMPLETE bit not null, TIME_COUNT integer not null, GEOMETRIC_MEAN_TIME double precision not null, MAX_TIME double precision not null, MEAN_TIME double precision not null, MIN_TIME double precision not null, POPULATION_VARIANCE_TIME double precision not null, SECOND_MOMENT_TIME double precision not null, STD_DEVIATION_TIME double precision not null, CM_MAX_N bigint, CM_MAX_VALUE double precision, CM_MIN_N bigint, CM_MIN_VALUE double precision, CM_2MMNT_M2 double precision, CM_1MMNT_DEV double precision, CM_1MMNT_M1 double precision, CM_1MMNT_N bigint, CM_1MMNT_NDEV double precision, CM_SUM_N bigint, CM_SUM_VALUE double precision, CM_SUMOLOGS_N integer, CM_SUMOLOGS_VALUE double precision, CM_SUMOSQRS_N bigint, CM_SUMOSQRS_VALUE double precision, SUM_TIME double precision not null, SUM_OF_LOGS_TIME double precision not null, SUMSQ_TIME double precision not null, VARIANCE_TIME double precision not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, AGGR_TAB_ID bigint not null, primary key (ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_TAB_RENDER_AGGR_SEQ ( next_val bigint )
-create table UP_TIME_DIMENSION (TIME_ID bigint not null, TD_FIVE_MINUTE_INCREMENT integer not null, TD_HOUR integer not null, TD_MINUTE integer not null, TD_TIME time not null, primary key (TIME_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_TIME_DIMENSION_SEQ ( next_val bigint )
-create table UP_UNIQUE_STR (UNIQUE_STR_ID bigint not null, primary key (UNIQUE_STR_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_UNIQUE_STR_SEGMENT (UNIQUE_STR_SEGMENT_ID bigint not null, UNIQUE_STR_ID bigint not null, primary key (UNIQUE_STR_SEGMENT_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_UNIQUE_STR_SEGMENT_SEQ ( next_val bigint )
-create table UP_UNIQUE_STR_SEGMENT__UIDS (UNIQUE_STR_SEGMENT_ID bigint not null, UNIQUE_STR varchar(255) not null, primary key (UNIQUE_STR_SEGMENT_ID, UNIQUE_STR)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_UNIQUE_STR_SEQ ( next_val bigint )
+create table UP_ACADEMIC_TERM_DETAIL (TERM_ID bigint not null, TERM_END datetime not null, TERM_START datetime not null, TERM_NAME varchar(255) not null, primary key (TERM_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_ACADEMIC_TERM_DETAIL_SEQ (next_val bigint)
+create table UP_AGGR_GROUP_MAPPING (ID bigint not null, GROUP_NAME varchar(200) not null, GROUP_SERVICE varchar(200) not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_AGGR_GROUP_MAPPING_SEQ (next_val bigint)
+create table UP_AGGR_PORTLET_MAPPING (ID bigint not null, PORTLET_FNAME varchar(255) not null, PORTLET_NAME varchar(128) not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_AGGR_PORTLET_MAPPING_SEQ (next_val bigint)
+create table UP_AGGR_TAB_MAPPING (ID bigint not null, FRAGMENT_NAME varchar(200) not null, TAB_NAME varchar(200) not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_AGGR_TAB_MAPPING_SEQ (next_val bigint)
+create table UP_CONCURRENT_USER_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, CONCURRENT_USERS integer not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, UNIQUE_STRINGS_ID bigint, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_CONCURRENT_USER_AGGR_SEQ (next_val bigint)
+create table UP_DATE_DIMENSION (DATE_ID bigint not null, DD_DATE date not null, DD_DAY integer not null, DD_MONTH integer not null, DD_QUARTER integer not null, DD_TERM varchar(200), DD_WEEK integer not null, DD_YEAR integer not null, primary key (DATE_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_DATE_DIMENSION_SEQ (next_val bigint)
+create table UP_EVENT_AGGR_CONF_GROUPS (ID bigint not null, AGGREGATOR_TYPE varchar(255) not null, ENTITY_VERSION bigint, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_AGGR_CONF_GROUPS_EXC (UP_EVENT_AGGR_CONF_GROUPS_ID bigint not null, GROUP_ID bigint not null, primary key (UP_EVENT_AGGR_CONF_GROUPS_ID, GROUP_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_AGGR_CONF_GROUPS_INC (UP_EVENT_AGGR_CONF_GROUPS_ID bigint not null, GROUP_ID bigint not null, primary key (UP_EVENT_AGGR_CONF_GROUPS_ID, GROUP_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_AGGR_CONF_GROUPS_SEQ (next_val bigint)
+create table UP_EVENT_AGGR_CONF_INTRVL (ID bigint not null, AGGREGATOR_TYPE varchar(255) not null, ENTITY_VERSION bigint, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_AGGR_CONF_INTRVL_EXC (UP_EVENT_AGGR_CONF_INTRVL_ID bigint not null, AGGR_INTERVAL varchar(255)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_AGGR_CONF_INTRVL_INC (UP_EVENT_AGGR_CONF_INTRVL_ID bigint not null, AGGR_INTERVAL varchar(255)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_AGGR_CONF_INTRVL_SEQ (next_val bigint)
+create table UP_EVENT_AGGR_STATUS (ID bigint not null, ENTITY_VERSION bigint, LAST_END datetime, LAST_EVENT_DATE datetime, LAST_START datetime, PROCESSING_TYPE varchar(255) not null, SERVER_NAME varchar(200), primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_AGGR_STATUS_SEQ (next_val bigint)
+create table UP_EVENT_SESSION (ID bigint not null, SESSION_ID varchar(500) not null, LAST_ACCESSED datetime not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_SESSION_GROUPS (UP_EVENT_SESSION_ID bigint not null, GROUP_ID bigint not null, primary key (UP_EVENT_SESSION_ID, GROUP_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_EVENT_SESSION_SEQ (next_val bigint)
+create table UP_LOGIN_EVENT_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, LOGIN_COUNT integer not null, UNIQUE_LOGIN_COUNT integer not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, UNIQUE_STRINGS_ID bigint, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_LOGIN_EVENT_AGGR_SEQ (next_val bigint)
+create table UP_PORTLET_EXEC_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, STATS_COMPLETE bit not null, TIME_COUNT integer not null, GEOMETRIC_MEAN_TIME double precision not null, MAX_TIME double precision not null, MEAN_TIME double precision not null, MIN_TIME double precision not null, POPULATION_VARIANCE_TIME double precision not null, SECOND_MOMENT_TIME double precision not null, STD_DEVIATION_TIME double precision not null, CM_MAX_N bigint, CM_MAX_VALUE double precision, CM_MIN_N bigint, CM_MIN_VALUE double precision, CM_2MMNT_M2 double precision, CM_1MMNT_DEV double precision, CM_1MMNT_M1 double precision, CM_1MMNT_N bigint, CM_1MMNT_NDEV double precision, CM_SUM_N bigint, CM_SUM_VALUE double precision, CM_SUMOLOGS_N integer, CM_SUMOLOGS_VALUE double precision, CM_SUMOSQRS_N bigint, CM_SUMOSQRS_VALUE double precision, SUM_TIME double precision not null, SUM_OF_LOGS_TIME double precision not null, SUMSQ_TIME double precision not null, VARIANCE_TIME double precision not null, EXECUTION_TYPE varchar(50) not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, AGGR_PORTLET_ID bigint not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_EXEC_AGGR_SEQ (next_val bigint)
+create table UP_PORTLET_LAYOUT_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, ADD_COUNT integer not null, STATS_COMPLETE bit not null, DEL_COUNT integer not null, MOVE_COUNT integer not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, AGGR_PORTLET_ID bigint not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PORTLET_LAYOUT_AGGR_SEQ (next_val bigint)
+create table UP_QUARTER_DETAIL (QUARTER_ID bigint not null, QUARTER_END varchar(255) not null, QUARTER_NUMBER integer not null, QUARTER_START varchar(255) not null, primary key (QUARTER_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_QUARTER_DETAIL_SEQ (next_val bigint)
+create table UP_SEARCH_REQ_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, STATS_COMPLETE bit not null, SEARCH_COUNT integer not null, SEARCH_TERM varchar(255) not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SEARCH_REQ_AGGR_SEQ (next_val bigint)
+create table UP_TAB_RENDER_AGGR (ID bigint not null, DURATION integer not null, AGGR_INTERVAL varchar(255) not null, STATS_COMPLETE bit not null, TIME_COUNT integer not null, GEOMETRIC_MEAN_TIME double precision not null, MAX_TIME double precision not null, MEAN_TIME double precision not null, MIN_TIME double precision not null, POPULATION_VARIANCE_TIME double precision not null, SECOND_MOMENT_TIME double precision not null, STD_DEVIATION_TIME double precision not null, CM_MAX_N bigint, CM_MAX_VALUE double precision, CM_MIN_N bigint, CM_MIN_VALUE double precision, CM_2MMNT_M2 double precision, CM_1MMNT_DEV double precision, CM_1MMNT_M1 double precision, CM_1MMNT_N bigint, CM_1MMNT_NDEV double precision, CM_SUM_N bigint, CM_SUM_VALUE double precision, CM_SUMOLOGS_N integer, CM_SUMOLOGS_VALUE double precision, CM_SUMOSQRS_N bigint, CM_SUMOSQRS_VALUE double precision, SUM_TIME double precision not null, SUM_OF_LOGS_TIME double precision not null, SUMSQ_TIME double precision not null, VARIANCE_TIME double precision not null, AGGR_GROUP_ID bigint not null, DATE_DIMENSION_ID bigint not null, TIME_DIMENSION_ID bigint not null, AGGR_TAB_ID bigint not null, primary key (ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_TAB_RENDER_AGGR_SEQ (next_val bigint)
+create table UP_TIME_DIMENSION (TIME_ID bigint not null, TD_FIVE_MINUTE_INCREMENT integer not null, TD_HOUR integer not null, TD_MINUTE integer not null, TD_TIME time not null, primary key (TIME_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_TIME_DIMENSION_SEQ (next_val bigint)
+create table UP_UNIQUE_STR (UNIQUE_STR_ID bigint not null, primary key (UNIQUE_STR_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_UNIQUE_STR_SEGMENT (UNIQUE_STR_SEGMENT_ID bigint not null, UNIQUE_STR_ID bigint not null, primary key (UNIQUE_STR_SEGMENT_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_UNIQUE_STR_SEGMENT_SEQ (next_val bigint)
+create table UP_UNIQUE_STR_SEGMENT__UIDS (UNIQUE_STR_SEGMENT_ID bigint not null, UNIQUE_STR varchar(255) not null, primary key (UNIQUE_STR_SEGMENT_ID, UNIQUE_STR)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_UNIQUE_STR_SEQ (next_val bigint)
 insert into UP_ACADEMIC_TERM_DETAIL_SEQ values ( 1 )
 insert into UP_AGGR_GROUP_MAPPING_SEQ values ( 1 )
 insert into UP_AGGR_PORTLET_MAPPING_SEQ values ( 1 )
@@ -526,20 +526,20 @@ create index UPPERM_IDX__PETYPE on UP_PERMISSION (PERMISSION_TYPE)
 create index UPPERM_IDX__PRKEY on UP_PERMISSION (PRINCIPAL_KEY)
 create index UPPERM_IDX__PRTYPE on UP_PERMISSION (PRINCIPAL_TYPE)
 create index UPPERM_IDX__TARGET on UP_PERMISSION (TARGET)
-create table JGROUPSPING (own_addr varchar(200) not null, cluster_name varchar(200) not null, ping_data blob, primary key (own_addr, cluster_name)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_ENTITY_CACHE_INVALIDATION (ENTITY_TYPE_ID integer not null, ENTITY_KEY varchar(240) not null, INVALIDATION_TIME datetime not null, ENTITY_CACHE_ID integer not null, primary key (ENTITY_TYPE_ID, ENTITY_KEY)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_ENTITY_LOCK (ENTITY_TYPE_ID integer not null, ENTITY_KEY varchar(240) not null, LOCK_TYPE integer not null, EXPIRATION_TIME datetime not null, LOCK_OWNER varchar(240) not null, primary key (ENTITY_TYPE_ID, ENTITY_KEY, LOCK_OWNER, EXPIRATION_TIME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_ENTITY_TYPE (ENTITY_TYPE_ID integer not null, ENTITY_TYPE_NAME varchar(255), DESCRIPTIVE_NAME varchar(255), primary key (ENTITY_TYPE_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_GROUP (GROUP_ID varchar(240) not null, CREATOR_ID varchar(240) not null, ENTITY_TYPE_ID integer not null, GROUP_NAME varchar(255) not null, DESCRIPTION varchar(255), primary key (GROUP_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_GROUP_MEMBERSHIP (GROUP_ID varchar(200) not null, MEMBER_SERVICE varchar(80) not null, MEMBER_KEY varchar(200) not null, MEMBER_IS_GROUP varchar(1) not null, primary key (GROUP_ID, MEMBER_SERVICE, MEMBER_KEY, MEMBER_IS_GROUP)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_LAYOUT_PARAM (USER_ID integer not null, LAYOUT_ID integer not null, STRUCT_ID integer not null, STRUCT_PARM_NM varchar(35) not null, STRUCT_PARM_VAL varchar(2000) not null, primary key (USER_ID, LAYOUT_ID, STRUCT_ID, STRUCT_PARM_NM)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_LAYOUT_STRUCT (USER_ID integer not null, LAYOUT_ID integer not null, STRUCT_ID integer not null, NEXT_STRUCT_ID integer, CHLD_STRUCT_ID integer, EXTERNAL_ID varchar(64), CHAN_ID integer, NAME varchar(35), TYPE varchar(35), HIDDEN varchar(1), IMMUTABLE varchar(1), UNREMOVABLE varchar(1), primary key (LAYOUT_ID, USER_ID, STRUCT_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_PERMISSION (OWNER varchar(255), PRINCIPAL_TYPE integer, PRINCIPAL_KEY varchar(255), ACTIVITY varchar(255), TARGET varchar(255), PERMISSION_TYPE varchar(255), EFFECTIVE datetime, EXPIRES datetime) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_SEQUENCE (SEQUENCE_NAME varchar(255) not null, SEQUENCE_VALUE integer, primary key (SEQUENCE_NAME)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_USER (USER_ID integer not null, USER_NAME varchar(100), USER_DFLT_LAY_ID integer, NEXT_STRUCT_ID integer, LST_CHAN_UPDT_DT datetime, primary key (USER_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_USER_LAYOUT (LAYOUT_ID integer not null, USER_ID integer not null, LAYOUT_TITLE varchar(15), INIT_STRUCT_ID integer, primary key (LAYOUT_ID, USER_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_USER_LOCALE (USER_ID integer not null, LOCALE varchar(64) not null, PRIORITY integer, primary key (USER_ID, LOCALE)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
-create table UP_USER_PROFILE (USER_ID integer not null, PROFILE_ID integer not null, PROFILE_FNAME varchar(50) not null, PROFILE_NAME varchar(50), DESCRIPTION varchar(100), LAYOUT_ID integer, STRUCTURE_SS_ID integer, THEME_SS_ID integer, primary key (USER_ID, PROFILE_ID)) ENGINE=InnoDB ROW_FORMAT=COMPRESSED
+create table JGROUPSPING (own_addr varchar(200) not null, cluster_name varchar(200) not null, ping_data blob, primary key (own_addr, cluster_name)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_ENTITY_CACHE_INVALIDATION (ENTITY_TYPE_ID integer not null, ENTITY_KEY varchar(240) not null, INVALIDATION_TIME datetime not null, ENTITY_CACHE_ID integer not null, primary key (ENTITY_TYPE_ID, ENTITY_KEY)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_ENTITY_LOCK (ENTITY_TYPE_ID integer not null, ENTITY_KEY varchar(240) not null, LOCK_TYPE integer not null, EXPIRATION_TIME datetime not null, LOCK_OWNER varchar(240) not null, primary key (ENTITY_TYPE_ID, ENTITY_KEY, LOCK_OWNER, EXPIRATION_TIME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_ENTITY_TYPE (ENTITY_TYPE_ID integer not null, ENTITY_TYPE_NAME varchar(255), DESCRIPTIVE_NAME varchar(255), primary key (ENTITY_TYPE_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_GROUP (GROUP_ID varchar(240) not null, CREATOR_ID varchar(240) not null, ENTITY_TYPE_ID integer not null, GROUP_NAME varchar(255) not null, DESCRIPTION varchar(255), primary key (GROUP_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_GROUP_MEMBERSHIP (GROUP_ID varchar(200) not null, MEMBER_SERVICE varchar(80) not null, MEMBER_KEY varchar(200) not null, MEMBER_IS_GROUP varchar(1) not null, primary key (GROUP_ID, MEMBER_SERVICE, MEMBER_KEY, MEMBER_IS_GROUP)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_LAYOUT_PARAM (USER_ID integer not null, LAYOUT_ID integer not null, STRUCT_ID integer not null, STRUCT_PARM_NM varchar(35) not null, STRUCT_PARM_VAL varchar(2000) not null, primary key (USER_ID, LAYOUT_ID, STRUCT_ID, STRUCT_PARM_NM)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_LAYOUT_STRUCT (USER_ID integer not null, LAYOUT_ID integer not null, STRUCT_ID integer not null, NEXT_STRUCT_ID integer, CHLD_STRUCT_ID integer, EXTERNAL_ID varchar(64), CHAN_ID integer, NAME varchar(35), TYPE varchar(35), HIDDEN varchar(1), IMMUTABLE varchar(1), UNREMOVABLE varchar(1), primary key (LAYOUT_ID, USER_ID, STRUCT_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_PERMISSION (OWNER varchar(255), PRINCIPAL_TYPE integer, PRINCIPAL_KEY varchar(255), ACTIVITY varchar(255), TARGET varchar(255), PERMISSION_TYPE varchar(255), EFFECTIVE datetime, EXPIRES datetime) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_SEQUENCE (SEQUENCE_NAME varchar(255) not null, SEQUENCE_VALUE integer, primary key (SEQUENCE_NAME)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_USER (USER_ID integer not null, USER_NAME varchar(100), USER_DFLT_LAY_ID integer, NEXT_STRUCT_ID integer, LST_CHAN_UPDT_DT datetime, primary key (USER_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_USER_LAYOUT (LAYOUT_ID integer not null, USER_ID integer not null, LAYOUT_TITLE varchar(15), INIT_STRUCT_ID integer, primary key (LAYOUT_ID, USER_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_USER_LOCALE (USER_ID integer not null, LOCALE varchar(64) not null, PRIORITY integer, primary key (USER_ID, LOCALE)) engine=InnoDB ROW_FORMAT=COMPRESSED
+create table UP_USER_PROFILE (USER_ID integer not null, PROFILE_ID integer not null, PROFILE_FNAME varchar(50) not null, PROFILE_NAME varchar(50), DESCRIPTION varchar(100), LAYOUT_ID integer, STRUCTURE_SS_ID integer, THEME_SS_ID integer, primary key (USER_ID, PROFILE_ID)) engine=InnoDB ROW_FORMAT=COMPRESSED
 -- tables.xml drop
 drop table if exists JGROUPSPING
 drop table if exists UP_ENTITY_CACHE_INVALIDATION
