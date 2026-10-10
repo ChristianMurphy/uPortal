@@ -123,7 +123,8 @@ public class JpaVersionDaoTest extends BasePortalJpaDaoTest {
                     }
                 });
 
-        jdbcOperations.execute("ALTER TABLE UP_VERSION DROP LOCAL_VER");
+        // DROP COLUMN and ADD without COLUMN are the forms every supported database accepts
+        jdbcOperations.execute("ALTER TABLE UP_VERSION DROP COLUMN LOCAL_VER");
         try {
             // Doesn't exist
             this.execute(
@@ -139,7 +140,7 @@ public class JpaVersionDaoTest extends BasePortalJpaDaoTest {
                         }
                     });
         } finally {
-            jdbcOperations.execute("ALTER TABLE UP_VERSION ADD COLUMN LOCAL_VER INTEGER");
+            jdbcOperations.execute("ALTER TABLE UP_VERSION ADD LOCAL_VER INTEGER");
         }
     }
 }
