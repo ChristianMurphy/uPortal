@@ -324,6 +324,50 @@ research report.
   vendors happens in CI, with the snapshots uploaded as artifacts and then
   committed.
 
+### MOD-D17: Phase 1 toolchain merged in both repos
+
+* **uPortal (`31bdb3a98`, merge of `p1-gradle-toolchain`, 20 commits):**
+  * Gradle 9.8.1, run on JDK 21 (25 also works); bytecode stays
+    `--release 11`; `-parameters`.
+  * `maven-publish` with an `install` alias; `jcenter` dropped.
+  * Spotless 8.10.4 + gjf 1.36.1 (1.37.0 fails inside Spotless) with
+    `verGJF`/`goJF` aliases. The reformat touched 409 files and is listed
+    in `.git-blame-ignore-revs`.
+  * Error Prone 2.50.0, SpotBugs plugin 6.5.12, JaCoCo 0.8.15, CodeNarc
+    groovy-4 build, nebula.lint 21.3.0.
+  * Mockito 5.24.0 loaded as a javaagent; Groovy 4.0.33 + Spock 2.4.
+  * Coveralls through the GitHub Action.
+  * CI on JDK 21 (ubuntu) and 25 (windows/macos).
+  * Test counts are identical on JDK 11, 21 and 25 (1055 tests).
+  * POMs: same coordinates and metadata. Test-scope dependencies are no
+    longer listed; `runtimeOnly` now appears with runtime scope.
+  * SLF4J resolves to 2.0.18 with Logback 1.6.3, which works (closes
+    MOD-I34).
+  * #2921 is superseded and extended, but conflicts with it on the war
+    publication (#2921 publishes no dependencies). #2988 is extended.
+* **uPortal-start (`0a73bcde2`, merge of `p1-start-toolchain`, 10 commits):**
+  * Gradle 6.9.4 → 7.6.6 → 8.14.6 → 9.8.1, with the daemon on JDK 21
+    (`gradle/gradle-daemon-jvm.properties`); `JAVA_HOME` stays Java 11 for
+    Tomcat, HSQLDB and the data tools.
+  * `javaVersionCheck` accepts 11, 17, 21 and 25.
+  * Tomcat 9.0.122 (connector limits explicit, `compressibleMimeType`).
+  * HSQLDB 2.7.4: upgrades a 2.5.1 database in place and can't be
+    downgraded.
+  * Playwright 1.64.0 (type arguments added to keep type-coverage at
+    100%).
+  * The CKEditor version-check request is filtered by URL only, so the
+    sandbox gate is now fully green except the web-proxy internet tests.
+  * gradle-docker-plugin 10.0.0; JMeter plugin removed (dead since 2018).
+  * Overlay WARs are byte-identical across the Gradle hops. On Gradle 9,
+    only 4 CAS classes differ, and they have the same bytecode level and
+    instructions.
+* **Adopter changes** (for UPGRADING-6.0):
+  * New `gradle.properties` values: `tomcatVersion`, `servletApiDependency`
+    4.0.1, `hsqldbVersion`, `gradleDockerPluginVersion`.
+  * A JDK 21 is needed for Gradle.
+  * Rebase `etc/tomcat` customisations onto Tomcat 9.
+  * Rename the overlay build-script configurations.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -404,6 +448,10 @@ research report.
 | MOD-I74 | CI | No GitHub Actions run has validated any modernization change yet. Both repos' `CI.yml` only trigger on `push`/`pull_request` to `master`, so pushes to the `ccr-*` branches don't run CI. Local gates and static checks (actionlint and a YAML parse for `db-harness.yml`) are all that has run. | **Addressed:** commits `2a2289c3e` (uPortal) and `77d75ab28` (uPortal-start) add a prototype-only `ccr-*` push trigger. Both commits are marked to be dropped before upstreaming. CI now runs on every integration push. The DB harness workflow is left out until MOD-I72's baseline question is settled. **First real runs green (2026-10-10):** uPortal CI run 38055220426 passed all 5 matrix jobs (ubuntu temurin/zulu/corretto, windows, macos) with the DTD, XSLT and shutdown fixes, and so did run 38055604902. uPortal-start CI run 38055325542 passed (5 build jobs plus Playwright, including the new admin specs and the port changes against released 5.17.9). Note: superseded queued push runs get cancelled by the concurrency group, which is expected. |
 | MOD-I75 | CI security | zizmor 1.30.1 (offline) flags every workflow in both repos: `unpinned-uses` (high) on every action, `artipacked` (checkout persists credentials), and `excessive-permissions` (top-level `contents: write` in uPortal-start `CI.yml`). The new `db-harness.yml` has the same findings. | CI-hardening commit per repo: pin actions to commit SHAs with version comments (Renovate keeps digests current), `persist-credentials: false`, least-privilege `permissions:` (top-level `contents: read`; `contents: write` only on the dependency-submission job), and a zizmor + actionlint workflow so findings stay at zero. **Done:** `ebb11e0e2` (uPortal) and `ba38035e9` (uPortal-start). zizmor reports zero findings with the regular and pedantic personas (service images pinned by digest too). Workflow lint (zizmor online audits + actionlint) passed on GitHub for both repos. Also found: gradle/actions v6 defaults to a commercial cache provider, so both repos now set `cache-provider: basic`. Upstream candidate. |
 | MOD-I76 | Environment | The prototype container has about 40 GB of writable allowance. Each uPortal-start worktree with a deployed portal takes 2–6 GB (Tomcat with ~16 exploded webapps, overlay WAR builds, HSQLDB, node_modules), and the shared Gradle home with four Gradle versions about 4.6 GB. The disk hit 99% twice. | Worktrees are removed right after merge. Unused Gradle distributions, DB images and volumes, and spike copies get pruned. Agents remove the containers and images they started, and `scratchpad/disk-guard.sh` must pass (≥ 6 GB free) before heavy steps. At most two portal-running agents at a time. |
+| MOD-I77 | Correction | The research report says Tomcat's `maxParameterCount` default is 1000. Tomcat 9.0.122's code default is still 10000; only its shipped `server.xml` sets 1000. FeedbackPortlet's `disableURLRewriting` is already ignored on 8.5. | uPortal-start now sets `maxParameterCount=10000` and `maxPartCount=50` explicitly. |
+| MOD-I78 | Data | NewsReader `dataExport` fails because a `.crn` file is missing from the portlet WAR. Pre-existing. | Portlet-repo fix in 6.x (MOD-D13). |
+| MOD-I79 | Dev DB | The HSQLDB `uPortal.lobs` file grows past 3 GB over repeated `dataInit` runs. | Have `dataInit` (or a clean task) remove the HSQLDB files. Small uPortal-start fix. |
+| MOD-I80 | Runtime | Since JDK 24, `jaxp.properties` disables XSLT extension functions. `TemplatesBuilder` is fixed in code (MOD-I63), but 7 tests that build their own TransformerFactory need `-Djdk.xml.enableExtensionFunctions=true`, which Phase 1 sets on every test JVM. | Before the runtime moves to JDK 25 (P6), route those through `TemplatesBuilder` (MOD-I70) so adopters don't need the JVM flag. |
 
 ## Open questions
 
