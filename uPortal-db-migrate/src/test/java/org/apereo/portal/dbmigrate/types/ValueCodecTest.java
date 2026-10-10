@@ -17,6 +17,7 @@ package org.apereo.portal.dbmigrate.types;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import org.apereo.portal.dbmigrate.Vendor;
 import org.apereo.portal.dbmigrate.schema.Column;
 import org.junit.Test;
@@ -296,4 +298,28 @@ public class ValueCodecTest {
         assertEquals(6, type(Vendor.MARIADB, Types.TIMESTAMP, "DATETIME", 26, 6).fractionDigits());
     }
 
+    @Test
+    public void lossyStringAndDoubleConversionsAreNoted() {
+        // A value these conversions change must be in the report, not pass as copied exactly
+        ColumnType varchar = type(Vendor.MARIADB, Types.VARCHAR, "VARCHAR", 255, 0);
+        ColumnType varchar2 = type(Vendor.ORACLE, Types.VARCHAR, "VARCHAR2", 255, 0);
+        assertEquals(
+                Collections.singletonList("empty strings become NULL (Oracle stores '' as NULL)"),
+                pair(varchar, varchar2).notes());
+        // From Oracle nothing changes: its '' is NULL already
+        assertEquals(Collections.emptyList(), pair(varchar2, varchar).notes());
+        assertEquals(Collections.emptyList(), pair(varchar2, varchar2).notes());
+
+        ColumnType numeric = type(Vendor.POSTGRESQL, Types.NUMERIC, "numeric", 38, 10);
+        ColumnType number = type(Vendor.ORACLE, Types.NUMERIC, "NUMBER", 0, -127);
+        ColumnType dbl = type(Vendor.MARIADB, Types.DOUBLE, "DOUBLE", 22, null);
+        ColumnType float8 = type(Vendor.POSTGRESQL, Types.DOUBLE, "float8", 17, 17);
+        for (ColumnType decimal : new ColumnType[] {numeric, number}) {
+            ColumnPair p = pair(decimal, dbl);
+            assertEquals(ColumnType.Family.DOUBLE, p.logical());
+            assertTrue(p.notes().toString(), p.notes().get(0).contains("binary double"));
+        }
+        // Double to double is exact
+        assertEquals(Collections.emptyList(), pair(float8, dbl).notes());
+    }
 }
