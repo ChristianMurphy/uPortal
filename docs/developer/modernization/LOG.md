@@ -1021,6 +1021,44 @@ This supersedes MOD-D24's runtime matrix.
     (`-overlays`).
   * Local login default with CAS opt-in (`-local-login`).
 
+### MOD-D31: Lit components model their state explicitly with XState
+
+* **Decision (project owner, 2026-10-10):** WS14's Lit web components
+  model their UI state as XState v5 state machines.
+* **How:**
+  * A small Lit `ReactiveController` adapter in uPortal-webcomponents.
+    It starts the actor when the component connects, subscribes through
+    a selector, calls `requestUpdate()` only when the selected value
+    changes, and stops the actor when the component disconnects.
+  * There is no official `@xstate/lit`; npm returns 404 (checked
+    2026-10-10).
+  * Machines are pure modules built with `setup(...).createMachine(...)`.
+    Side effects such as REST calls are `fromPromise` actors declared in
+    `setup`, so tests can replace them.
+  * Templates render from `matches()` and `hasTag()` rather than from
+    ad hoc boolean properties.
+  * Any component with more than trivial state uses a machine, including
+    every portlet conversion that follows.
+* **Testing:**
+  * Pure machine tests in Vitest.
+  * Model-based tests with `@xstate/graph`: shortest and simple paths
+    drive the real component in Vitest browser mode through every
+    reachable state.
+  * The existing per-file coverage thresholds stay in force.
+* **Versions:** `xstate` 5.33.2 and `@xstate/graph` 3.0.4 (peer
+  dependency `xstate` ^5.19.4), pinned and updated by Renovate. The build
+  puts XState in one shared chunk, loaded once for all components.
+* **Alternatives considered:**
+  * Robot3 with lit-robot: smaller (robot3 1.4.0, lit-robot 3.0.1), but a
+    second state vocabulary next to XState.
+  * `@xstate/store` 4.3: event-driven stores, not statecharts.
+  * Plain Lit reactive properties: states stay implicit and untestable as
+    a model.
+  * Lit's template compiler (`@lit-labs/compiler` 1.1.2) stays out; it is
+    still a Labs prototype.
+* **Status:** the WS14 foundation agent adds the adapter, converts
+  `<up-favorites>` and adds the model-based tests before its merge.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
