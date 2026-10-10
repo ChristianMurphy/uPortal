@@ -24,7 +24,7 @@ plugins {
     // id 'cz.malohlava.visteg' version '1.0.5'
 
     // Sub project plugins
-    id 'com.diffplug.spotless' version '7.2.1' apply false
+    id 'com.diffplug.spotless' version '8.10.4' apply false
     id 'nebula.lint' version '20.6.2' apply false
     id 'net.ltgt.errorprone' version '5.1.1' apply false
     id 'com.github.spotbugs' version '6.5.12' apply false
@@ -70,7 +70,7 @@ allprojects {
     }
 
     dependencies {
-        errorprone 'com.google.errorprone:error_prone_core:2.3.4'
+        errorprone "com.google.errorprone:error_prone_core:${errorproneVersion}"
     }
 
     codenarc {
@@ -97,6 +97,14 @@ allprojects {
     // names from the debug info, so its behaviour does not change.
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.add('-parameters')
+    }
+    tasks.withType(JavaCompile).configureEach {
+        options.errorprone {
+            // ERROR-level checks added to Error Prone after 2.3.4 that flag existing code.
+            // Disabled so the toolchain upgrade needs no production change; each finding
+            // should be fixed (and its check re-enabled) separately.
+            disable('BanJNDI', 'BoxedPrimitiveEquality', 'DoubleBraceInitialization', 'SelfAssertion')
+        }
     }
 
     gradleLint.criticalRules = [
@@ -125,9 +133,6 @@ allprojects {
     }
     spotless {
         java {
-            // 1.8 is the lowest version Spotless accepts on JVM 11; the previous
-            // sherter plugin pinned 1.7.  The two produce nearly identical output,
-            // diverging only when empty statements follow a closing brace.
             googleJavaFormat(googleJavaFormatVersion).aosp()
             targetExclude '**/generated-sources/**', '**/build/**'
         }

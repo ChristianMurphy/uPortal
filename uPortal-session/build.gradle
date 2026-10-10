@@ -12,3 +12,10 @@ dependencies {
     testRuntimeOnly "org.slf4j:jcl-over-slf4j:${slf4jVersion}"
     testRuntimeOnly "org.slf4j:slf4j-api:${slf4jVersion}"
 }
+
+tasks.named('test') {
+    // system-rules' EnvironmentVariables rule edits the JVM's environment map by reflection
+    // (java.util.Collections$UnmodifiableMap on Linux/macOS, java.lang.ProcessEnvironment on
+    // Windows), which JDK 16+ denies unless those packages are opened. Test-only.
+    jvmArgs '--add-opens=java.base/java.util=ALL-UNNAMED', '--add-opens=java.base/java.lang=ALL-UNNAMED'
+}
