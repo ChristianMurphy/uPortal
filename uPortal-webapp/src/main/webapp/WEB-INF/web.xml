@@ -344,7 +344,7 @@
     <!-- Supports view rendering -->
     <servlet>
         <servlet-name>ViewRendererServlet</servlet-name>
-        <servlet-class>org.springframework.web.servlet.ViewRendererServlet</servlet-class>
+        <servlet-class>org.apereo.portal.spring.web.servlet.ViewRendererServlet</servlet-class>
     </servlet>
 
     <!-- Supports Spring controllers -->
