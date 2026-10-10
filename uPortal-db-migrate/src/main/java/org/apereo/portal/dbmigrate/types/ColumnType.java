@@ -187,16 +187,20 @@ public final class ColumnType {
 
     /**
      * Fractional-second digits of a TIME or TIMESTAMP column. Most drivers report them as
-     * DECIMAL_DIGITS; MySQL-family drivers may only report the display size (19 = seconds).
+     * DECIMAL_DIGITS (for MySQL and MariaDB the schema reader takes them from information_schema);
+     * without them, the display size tells: JDBC's length of the value as text, 19 or 8 characters
+     * for seconds, plus a point and the fraction digits. HSQLDB reports no DECIMAL_DIGITS for
+     * TIMESTAMP(0).
      */
     static int fractionDigits(Vendor vendor, Column c, int fallback) {
         Integer d = c.decimalDigits();
-        if (vendor.isMySqlFamily()) {
+        int max = vendor.isMySqlFamily() ? 6 : 9;
+        if (d == null) {
             if (c.jdbcType() == Types.TIMESTAMP && c.size() >= 19) {
-                return Math.min(6, Math.max(0, c.size() - 20));
+                return Math.min(max, Math.max(0, c.size() - 20));
             }
             if (c.jdbcType() == Types.TIME && c.size() >= 8) {
-                return Math.min(6, Math.max(0, c.size() - 9));
+                return Math.min(max, Math.max(0, c.size() - 9));
             }
         }
         if (d != null && d >= 0 && d <= 9) {
