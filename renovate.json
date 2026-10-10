@@ -67,6 +67,12 @@
       "description": "vite-plus bundles Vite and Vitest; the Vitest browser packages and Playwright must move with it (MOD-D20)."
     },
     {
+      "groupName": "XState",
+      "matchFileNames": ["uPortal-webcomponents/package.json"],
+      "matchPackageNames": ["xstate", "@xstate/graph"],
+      "description": "@xstate/graph has xstate as a peer dependency, so they move together (MOD-D31)."
+    },
+    {
       "matchFileNames": ["uPortal-webcomponents/package.json"],
       "matchPackageNames": ["bootstrap"],
       "dependencyDashboardApproval": true,

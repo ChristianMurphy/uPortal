@@ -141,6 +141,18 @@ describe('ApiClient', () => {
         expect(error.message).toContain('items is not an array');
     });
 
+    it('passes an abort signal to fetch', async () => {
+        const { api, fetchMock } = client(new Response(null, { status: 204 }), { csrf: true });
+        const controller = new AbortController();
+
+        await api.get('/api/x', asIs, { signal: controller.signal }).catch(() => undefined);
+        await api.send('DELETE', '/api/x', undefined, undefined, { signal: controller.signal });
+
+        expect((fetchMock.mock.calls[0] as FetchArgs)[1].signal).toBe(controller.signal);
+        expect((fetchMock.mock.calls[1] as FetchArgs)[1].signal).toBe(controller.signal);
+        expect(fetchMock.mock.calls.length).toBe(2);
+    });
+
     it('uses the global fetch by default', async () => {
         const fetchMock = vi.fn(() => Promise.resolve(Response.json([1])));
         vi.stubGlobal('fetch', fetchMock);

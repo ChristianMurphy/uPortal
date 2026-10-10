@@ -12,12 +12,14 @@
     "fix": "vp check --fix"
   },
   "dependencies": {
-    "lit": "3.3.3"
+    "lit": "3.3.3",
+    "xstate": "5.33.2"
   },
   "devDependencies": {
     "@vitest/browser": "5.0.3",
     "@vitest/browser-playwright": "5.0.3",
     "@vitest/coverage-v8": "5.0.3",
+    "@xstate/graph": "3.0.4",
     "axe-core": "4.14.0",
     "bootstrap": "6.0.0-alpha.1",
     "playwright": "1.64.0",

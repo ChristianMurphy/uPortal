@@ -25,6 +25,11 @@ export default defineConfig({
                 entryFileNames: 'assets/[name]-[hash].js',
                 chunkFileNames: 'assets/[name]-[hash].js',
                 assetFileNames: 'assets/[name]-[hash][extname]',
+                // XState in one shared chunk that every component imports, so a page with
+                // several components loads it once (MOD-D31)
+                codeSplitting: {
+                    groups: [{ name: 'xstate', test: /[\\/]node_modules[\\/]xstate[\\/]/ }],
+                },
             },
         },
     },
