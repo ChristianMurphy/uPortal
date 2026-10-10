@@ -207,9 +207,10 @@ public final class EntityService {
      * Convenience method that looks up the name of the given group member. Used for person types.
      *
      * @param entity Entity to look up
-     * @return groupMember's name or null if there's an error
+     * @return groupMember's name, or null if its type is unknown, its ID is blank, or there's an
+     *     error
      */
-    private String lookupEntityName(Entity entity) {
+    /* package-private */ String lookupEntityName(Entity entity) {
         if (entity == null) {
             return null;
         }
@@ -218,7 +219,7 @@ public final class EntityService {
     }
 
     private String lookupEntityName(EntityEnum entityType, String entityId) {
-        if (entityType == null && (StringUtils.isBlank(entityId))) {
+        if (entityType == null || StringUtils.isBlank(entityId)) {
             return null;
         }
         IEntityNameFinder finder;
