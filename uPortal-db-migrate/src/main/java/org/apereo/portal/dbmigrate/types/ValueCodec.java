@@ -325,11 +325,10 @@ public final class ValueCodec {
             case TIME:
                 {
                     LocalTime t = (LocalTime) v;
-                    t =
-                            pair.sqlServerGrid()
-                                    ? sqlServerDatetime(LocalDateTime.of(EPOCH_DATE, t))
-                                            .toLocalTime()
-                                    : truncate(t, pair.fractionDigits());
+                    if (pair.sqlServerGrid()) {
+                        t = sqlServerDatetime(LocalDateTime.of(EPOCH_DATE, t)).toLocalTime();
+                    }
+                    t = truncate(t, pair.fractionDigits());
                     return ascii(t.toNanoOfDay() + "n");
                 }
             case TIMESTAMP:
@@ -337,10 +336,12 @@ public final class ValueCodec {
                     // A timestamp without zone is compared as the instant it denotes in UTC; no
                     // JVM or session zone takes part
                     LocalDateTime t = (LocalDateTime) v;
-                    t =
-                            pair.sqlServerGrid()
-                                    ? sqlServerDatetime(t)
-                                    : truncate(t, pair.fractionDigits());
+                    // On SQL Server's 1/300 s grid first, then at the pair's precision: from a
+                    // datetime into whole seconds the copy truncates .997 to the second
+                    if (pair.sqlServerGrid()) {
+                        t = sqlServerDatetime(t);
+                    }
+                    t = truncate(t, pair.fractionDigits());
                     return instant(t.toEpochSecond(ZoneOffset.UTC), t.getNano());
                 }
             case TIMESTAMP_TZ:
