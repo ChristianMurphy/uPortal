@@ -828,6 +828,55 @@ This supersedes MOD-D24's runtime matrix.
   MOD-I90 (a session swapped mid-render) also need a code fix and a
   regression test. SpotBugs' MT detectors catch only some of them.
 
+### MOD-D28: copy tool v0 merged (MOD-D11, 5.17 → 5.17 across vendors)
+
+* **Commits:** uPortal `1abff7f67` (merge `179e11d66`) and uPortal-start
+  `55a2df094` (merge `d3b98e271`). The uPortal-start branch's CAS fix
+  (`596bab6fb`) duplicated `36ed5df1d`, so the integration version was
+  kept.
+* **Shape (MOD-D22):** subproject `uPortal-db-migrate`, a standalone
+  Spring Boot 4.1.1 CLI.
+  * Spring Batch 6.0.5 + Spring JDBC + HikariCP; Boot's BOM; compiled
+    with `--release 21` (this module only); no other uPortal modules on
+    its classpath.
+  * Executable jar, with JDBC drivers supplied externally.
+  * uPortal-start runs it as `./gradlew dbMigrate -PsourceDbVendor=…
+    -PtargetDbVendor=…`.
+  * Exit codes: 0 = copied and verified, 1 = failure, 2 = plan error
+    (nothing written).
+* **Design:**
+  * Tables load in FK-level order with constraints left on; each level
+    runs one partitioned Batch step per table, in parallel. Cycles are
+    broken at nullable FKs with a second pass.
+  * Batch metadata lives in in-memory H2.
+  * PostgreSQL OID LOBs are read with `lo_get` and written with
+    `lo_from_bytea`. Missing LOBs fail the plan before anything is
+    written.
+  * Timestamps are copied without a zone, so they don't shift (tested
+    in America/New_York).
+  * The 49 generators come from a build-time annotation scan. Each is
+    positioned at ≥ max(id) + allocationSize, and never below its source
+    value. MySQL uses one-row tables.
+  * Verification: per-table row count plus an order-independent hash of
+    normalised rows, then the generator positions.
+* **Demos (old → new):**
+  * PostgreSQL 16 → MariaDB 12.3 (14,619 rows); MariaDB 11.4 → PostgreSQL
+    18 (24,853 rows); HSQLDB 2.7.4 → PostgreSQL 18 (9,765 rows). All
+    verified.
+  * Playwright on the migrated portals: everything passed except the
+    sandbox web-proxy tests (2 flaky).
+  * Post-migration inserts worked with no duplicate keys.
+  * 1M raw events with LOBs, PostgreSQL 16 → MariaDB 12.3: 148.5 s
+    (6.7k rows/s), verified in 108.6 s, peak heap 94 MiB.
+  * 61 unit tests, plus a Testcontainers chain PostgreSQL 16 → MariaDB
+    12.3 → PostgreSQL 18 that includes a partitioned events table.
+* **Ready for 6.0:** the rule SPI can express JSON text → native JSON,
+  UUID types, zone-aware timestamps and renamed sequences, and loading a
+  partitioned PostgreSQL table through its parent works.
+* **Still to build:** a 6.0 generator profile; table split/merge;
+  restartable runs; SQL Server and Oracle runs in CI (G-migrate matrix,
+  MOD-D25).
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -923,6 +972,11 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I89 | Spring | `FixedXMLEventStreamReader` has to stay in `org.springframework.util.xml`, because it extends a package-private Spring class, so MOD-I12 isn't fully closed. | Revisit at P4-1/P6; replace with a composition-based reader if Spring changes the base class. |
 | MOD-I90 | Runtime | Race: when a re-login swaps the session mid-render, `PortletPreferencesFactoryImpl.isGuestUser` can throw an NPE. Seen once; the baseline hit a similar race in a different class. | Related to MOD-I56 (transient focus state). Track it, and add a test when the rendering code is reworked. |
 | MOD-I91 | uPortal-start | `dataImport` always fails, because `playwright.gradle` looks up a task that the overlay skips for that task name. The workaround is to invoke it as `dataImp`. | Small uPortal-start fix needed. Check whether P1 introduced it. |
+| MOD-I92 | Portlets/data | Bookmarks, Feedback and Notification create their tables on first start (hbm2ddl), so a target database needs `dataInit` plus one portal start before the copy tool can fill it. | Document this in the copy-tool runbook. Long term, ship portlet DDL or let the tool create the portlet schema. |
+| MOD-I93 | Portlets/data | The portlets share a `hibernate_sequence`, which is an auto-increment column on MariaDB. | Handled by copy-tool rules in uPortal-start. |
+| MOD-I94 | Portlets/data | Notification and SimpleContent also store data in PostgreSQL OID LOB columns, so the `vacuumlo` risk (MOD-I24) extends to portlet tables. | Include them in the adopter warning. The copy tool handles them. |
+| MOD-I95 | Persistence | On MySQL/MariaDB, 5.17 timestamp columns have no fractional seconds (34 columns), so PostgreSQL → MariaDB loses sub-second precision. The tool reports it. | The 6.0 schema uses `DATETIME(6)` / `TIMESTAMP(6)` on MySQL/MariaDB. |
+| MOD-I96 | Tooling | With externally supplied drivers, a driver also bundled in the jar caused a sealed-package error, and `DriverManager` rejected the class-loader-loaded drivers. | **Fixed:** drivers stay out of the jar and are instantiated directly. |
 
 ## Open questions
 
