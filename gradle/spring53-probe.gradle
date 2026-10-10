@@ -154,6 +154,7 @@ tasks.register('spring53Probe') {
     def summaryPath = System.getenv('GITHUB_STEP_SUMMARY')
     def versions = probeVersions
     dependsOn subprojects.collect { sub -> sub.tasks.matching { it.name == 'spring53Probe' } }
+    dependsOn ':uPortal-webapp:spring53ContextProbe'
     doLast {
         def dir = reportDir.get().asFile
         def counts = new TreeMap<String, Integer>()
@@ -222,6 +223,43 @@ tasks.register('spring53Probe') {
         } else if (total < baselineTotal) {
             logger.lifecycle("Spring 5.3 probe: ${baselineTotal - total} fewer error(s) than the baseline; " +
                     "lower it with ./gradlew spring53Probe -PupdateBaseline")
+        }
+    }
+}
+
+/*
+ * The Spring XML contexts against the Spring 5.3 bloc: SpringXmlContextsTest, compiled by the
+ * regular build, runs on a runtime classpath with the probe versions, so it fails on anything the
+ * XML configuration names that Spring 5.3, Security 5.8 or Web Flow 2.5 no longer has. Every
+ * context passes, so this is a plain pass/fail check.
+ */
+project(':uPortal-webapp') {
+    plugins.withType(JavaPlugin).configureEach {
+        def regular = configurations.testRuntimeClasspath
+        // The name starts with "test" so uPortal-webapp's Groovy 4 alignment for test classpaths applies
+        def probe = configurations.create('testSpring53ProbeRuntimeClasspath') {
+            canBeConsumed = false
+            canBeResolved = true
+            extendsFrom(regular.extendsFrom as Configuration[])
+            regular.attributes.keySet().each { key ->
+                attributes.attribute(key, regular.attributes.getAttribute(key))
+            }
+            resolutionStrategy.eachDependency { details ->
+                def version = probeVersions[details.requested.group]
+                if (version != null) {
+                    details.useVersion version
+                    details.because 'Spring 5.3 context probe'
+                }
+            }
+        }
+        tasks.register('spring53ContextProbe', Test) {
+            group = 'verification'
+            description = 'Runs SpringXmlContextsTest against Spring 5.3.'
+            testClassesDirs = sourceSets.test.output.classesDirs
+            classpath = sourceSets.test.output + sourceSets.main.output + probe
+            filter.includeTestsMatching 'org.apereo.portal.spring.context.SpringXmlContextsTest'
+            reports.junitXml.outputLocation = layout.buildDirectory.dir('test-results/spring53ContextProbe')
+            reports.html.outputLocation = layout.buildDirectory.dir('reports/tests/spring53ContextProbe')
         }
     }
 }
