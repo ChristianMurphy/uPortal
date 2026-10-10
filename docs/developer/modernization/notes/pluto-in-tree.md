@@ -18,7 +18,8 @@ Branches: `ccr-43ba0785-hzlrj5-pluto` in uPortal and in uPortal-start.
 | `0b31bcd` `build: build the in-tree apache pluto modules` | Six subprojects, README, NOTICE, `verify-import.sh`, SpotBugs baselines, root NOTICE credit, STATIC_ANALYSIS note. |
 | `97463b0` `build: build uportal against the in-tree pluto and portlet api` | 24 build scripts switch from the Maven Central artifacts to the projects; `plutoVersion` and `portletApiDependency` go. |
 | `a27321a` | Merge of the integration branch (one docs commit). |
-| (this note) | `docs:` handoff note and `compare-classes.py`. |
+| `e10520b` `fix(build): fill in pluto's container info as its maven build did` | Fills in the placeholders of `pluto-configuration.properties` that Pluto's Maven build filtered (F6); `PlutoContainerInfoTest`. Squash into `0b31bcd` when replaying upstream. |
+| `b5905bf`, `d2b7d13`, and later | `docs:` this note and `compare-classes.py`. |
 
 ### uPortal-start
 
@@ -75,6 +76,11 @@ imported, because it is the one that runs.
   | container | 87 = 87 | 0 | 1148 | 1095 | 53 | 0 |
   | portal-driver | 69 = 69 | 0 (1 anonymous class header) | 660 | 645 | 15 | 0 |
   | taglib | 30 = 30 | 0 | 164 | 152 | 12 | 0 |
+
+  `compare-classes.py` also compares every resource (everything but classes
+  and Maven's own `META-INF` files): all are identical, except two XML files
+  (`web-app_2_3.dtd`, `pluto-portal-driver-config.xsd`) to which Maven's
+  filtering added a final newline.
 
   **The public and protected API is identical.** The only member-level
   difference is a synthetic `private static $values()` in each of the three
@@ -184,6 +190,50 @@ installed into mavenLocal, not committed. Its embedded POM is
 `com.github.ci-rt:visualization-datasource:1.1.3`, so it was installed with
 the coordinates the build asks for.
 
+## Pluto 2.0 test suite: baseline and the 16 failing checks
+
+Run locally with uPortal-start (`portalInit` on HSQLDB, Tomcat 9, JDK 11),
+driven by `tests/ux/portlets/pluto-testsuite.spec.ts`, against uPortal built
+from the integration branch (`87e0b98`, Apache's Pluto jars in the WAR). The
+result is exactly the spike's 5.17 result: **32 tests: 12 PASSED, 10 FAILED,
+8 MANUAL, 2 WARNING; 144 checks passed, 16 failed.** Both portlets give the
+same per-test result:
+
+| Test | Result | Checks yes/no | Failing checks |
+| --- | --- | --- | --- |
+| 0 | PASSED | 5/0 | |
+| 1 | PASSED | 3/0 | |
+| 2 | FAILED | 3/1 | `checkInvalidParameters` |
+| 3 | PASSED | 9/0 | |
+| 4 | FAILED | 11/1 | `checkEnumerateAttributes` |
+| 5 | PASSED | 3/0 | |
+| 6 | MANUAL | 0/0 | |
+| 7 | PASSED | 3/0 | |
+| 8 | FAILED | 14/2 | `checkPreferenceValidator`, `checkGetNoValuePreference` |
+| 9 | FAILED | 13/1 | `checkGetNoValuePreference` |
+| 10–12 | MANUAL | 0/0 | |
+| 13 | FAILED | 3/3 | `checkPortalInfo`, `checkContextServerInfo`, `checkContextMajorVersion` |
+| 14 | WARNING | 1/0 | (direct URL) |
+| 15 | PASSED | 4/0 | |
+
+Why each check fails, from the result pages ("got … expected …"):
+
+| Check | Assertion | Cause | Kind |
+| --- | --- | --- | --- |
+| `checkPortalInfo` | got `uPortal/5.17.10-SNAPSHOT`, expected `uPortal/5.0.0-SNAPSHOT` | uPortal-start's `overlays/pluto-testsuite/.../expectedResults.properties` is stale | test-suite data |
+| `checkContextMajorVersion` | got `2`, expected `1` | the same file expects Portlet 1.0 (`expected.version.major = 1`); the WAR's own file says 2 | test-suite data |
+| `checkContextServerInfo` | got `Pluto/${pluto.version}`, expected `Pluto/2.1.0-M3` | uPortal ships its own `uPortal-webapp/src/main/resources/org/apache/pluto/driver/container/pluto-configuration.properties` (it overrides the jar's, and adds the `javax.portlet.renderHeaders` runtime option); its `${pluto.version}` is never filled in | uPortal bug (cosmetic) |
+| `checkGetNoValuePreference` (×2) | got `{}`, expected `{Default}` | a preference declared with no value returns no values instead of the default the portlet passes (PLT.14.1) | uPortal deviation from JSR-286 (preferences implementation) |
+| `checkPreferenceValidator` | "Illegal value not caught by validator" | `PortletPreferences.store()` doesn't run the portlet's `PreferencesValidator` (PLT.14.4) | uPortal deviation from JSR-286 |
+| `checkEnumerateAttributes` | got 6 attribute names with the test's prefix, expected 5 | one extra `org.apache.pluto.testsuite.BOGUS_KEY*` request attribute is visible: probably left by an earlier attribute test of the same suite; not traced | undiagnosed (likely test interaction) |
+| `checkInvalidParameters` | got parameter `""`, expected `null` | a dispatch query string with a key and no `=` (`?includedTestKeyA&…`) reaches the included servlet as an empty value instead of being dropped | container behaviour (Pluto/Tomcat query merging) |
+
+The three test-suite and config issues are one-line fixes (the overlay's
+`expectedResults.properties`, and `${pluto.version}` → `2.1.0-M3` in
+uPortal's file); the spec pins today's result, so whoever fixes them updates
+it. The two preference deviations are real uPortal bugs worth their own
+issues.
+
 ## Findings
 
 * **F1 (Servlet 3.1 gap):** Pluto's `ServletOutputStream` subclasses don't
@@ -207,6 +257,20 @@ the coordinates the build asks for.
   corrupted copyright sign (U+FFFD). The imported copy keeps it; uPortal's
   combined `uPortal-pluto/NOTICE` writes "©".
 
+* **F6 (filtered resource):** Pluto's Maven build filtered the portal
+  driver's resources; the `-sources` jar keeps the placeholders of
+  `pluto-configuration.properties` (container name and version, Portlet spec
+  version). The first build shipped them (`0b31bcd`–`a27321a`); `e10520b`
+  fills them in, and the file is byte-identical to Apache's. Inside uPortal's
+  webapp this never reached portlets, because uPortal's own copy of the file
+  in `WEB-INF/classes` takes precedence (so `e10520b`'s message overstates the
+  impact). It matters for the jar on its own, and for faithfulness. The
+  signature and dependency comparisons couldn't see it; `compare-classes.py`
+  now compares resources too.
+* **F7 (uPortal's own Pluto config):** uPortal's override has an unfilled
+  `${pluto.version}`, so portlets see `Pluto/${pluto.version}` as the server
+  info on 5.17 today (`checkContextServerInfo`).
+
 ## Proposed LOG entries
 
 * **MOD-D?: P3-2 delivered — Pluto 2.1.0-M3 and the portlet API in tree.**
@@ -226,6 +290,14 @@ the coordinates the build asks for.
 * Add to **MOD-I51**: the jar in the 5.17.9 WAR carries a
   `visualization-datasource:1.1.3` POM, so mavenLocal needs one written with
   `google-visualization-java:release-1.1.3` (F4).
+
+* **MOD-I?: two JSR-286 preference deviations** found by the Pluto test suite:
+  a preference declared without a value returns `{}` instead of the default
+  (PLT.14.1), and `store()` doesn't run the `PreferencesValidator`
+  (PLT.14.4).
+* **MOD-I?: stale Pluto test-suite expectations and server info** (F7): the
+  overlay's `expectedResults.properties` and uPortal's
+  `pluto-configuration.properties` account for 3 of the 8 failing checks.
 
 ## What's left
 
