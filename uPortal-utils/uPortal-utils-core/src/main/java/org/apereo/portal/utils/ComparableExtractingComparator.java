@@ -20,7 +20,8 @@ import java.util.Comparator;
  * Base comparator that is used for comparing two objects that are not directly comparable.
  *
  * <p>Implementations have a custom {@link #getComparable(Object)} method that returns an
- * appropriate {@link Comparable} for the object.
+ * appropriate {@link Comparable} for the object. Without a custom {@link Comparator}, a null
+ * comparable sorts before any other.
  *
  * @param <T> The root type being compared
  * @param <C> The type that extracted for comparison
@@ -46,8 +47,11 @@ public abstract class ComparableExtractingComparator<T, C extends Comparable<? s
             return this.comparator.compare(c1, c2);
         }
 
-        if (c1 == null && c1 == c2) {
-            return 0;
+        if (c1 == null) {
+            return c2 == null ? 0 : -1;
+        }
+        if (c2 == null) {
+            return 1;
         }
 
         return c1.compareTo(c2);
