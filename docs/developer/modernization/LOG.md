@@ -886,6 +886,11 @@ This supersedes MOD-D24's runtime matrix.
 * **Still to build:** a 6.0 generator profile; table split/merge;
   restartable runs; SQL Server and Oracle runs in CI (G-migrate matrix,
   MOD-D25).
+* **CI after the merges:** uPortal CI and DB integration are green from
+  7ded7362d (runs 38072747439, 38072747374), and uPortal-start CI and
+  Integration from 3695a5927 (38072765561, 38072765632). The merge commit
+  itself (179e11d66) had one red Windows job, caused by a Maven Central
+  403 (MOD-I98), not by the merge.
 
 ## Issues
 
