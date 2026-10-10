@@ -892,6 +892,62 @@ This supersedes MOD-D24's runtime matrix.
   itself (179e11d66) had one red Windows job, caused by a Maven Central
   403 (MOD-I98), not by the merge.
 
+### MOD-D29 (proposed): test expansion that uses 5.17 as the oracle
+
+* **Gap:** today's suites (124 Playwright tests in 24 specs, 244 unit-test
+  classes, the DB harness on 7 databases, copy-tool row hashes) show the
+  portal still works on the paths they click. They miss silent changes:
+  values read back differently, JSON formats, routes, security defaults,
+  analytics buckets. The harness compares schema and row counts, not
+  values. Playwright runs Chromium only, at one desktop size, with
+  `retries: 2`, which hides flaky tests.
+* **Principle:** record what 5.17 does once, keep the recordings as
+  fixtures, and require every phase to match them or log why a
+  difference is intended.
+* **Old vs new:**
+  1. *Data equivalence:* `dataExport` of every entity type on 5.17,
+     upgrade (in place and through the copy tool), `dataExport` with
+     the new code, then diff the normalised XML. Needs MOD-I78 fixed or
+     excluded.
+  2. *HTTP differential replay:* record the requests made by Playwright
+     and by an API crawl against 5.17, replay them against each phase,
+     and diff status, redirects, headers, cookie attributes, normalised
+     JSON and HTML. Dump the handler mappings so every route is
+     exercised. Catches Spring 6 path matching, Jackson 3 defaults and
+     Tomcat 11 behaviour.
+  3. *Analytics equivalence:* one generated raw-event stream (crossing
+     DST, month and year ends, several time zones) through 5.17 and the
+     new build, then compare the aggregation tables.
+* **Coverage:**
+  4. *Portlet bridge conformance:* run the already-deployed Pluto JSR-286
+     test suite (`overlays/pluto-testsuite`, test-portlet-1/2) and
+     require PASS, both now and on the transformed WAR on Tomcat 11.
+  5. Smoke every bundled portlet in every mode and window state.
+  6. *Characterisation specs* for each WS14 portlet and flow before it
+     is replaced; the replacement passes the same spec.
+  7. *Entity round-trip* with edge values on every vendor, plus
+     characterisation of HQL/Criteria results through Hibernate 5.2 →
+     7.4.
+  8. *Security matrix* (role × route → status), legacy password hashes,
+     CSRF, and a header snapshot.
+  9. *Two-node cluster:* jobs run once, cache invalidation propagates,
+     and the lock recovers when a node dies.
+* **Strength and non-functional:**
+  * Query-count and latency budgets, and a nightly campus-scale load
+    test.
+  * PIT mutation testing and copy-tool fault injection.
+  * jqwik property tests for the copy tool.
+  * Firefox, WebKit and phone viewports, with axe and visual
+    snapshots.
+  * ArchUnit end-state rules, and japicmp on the extension APIs.
+  * An anonymised production database, plus a large-campus data
+    generator.
+* **Order:** 1, 2 and 4 first. They reuse existing tools, and P2
+  (Hibernate 5.2) should be gated on 1 and 7. Then 7, 8 and 9. Run a
+  small set of vendor pairs per push and the rest nightly. For the
+  G-portal gate, run with `retries: 0` or count retried tests as
+  failures.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
