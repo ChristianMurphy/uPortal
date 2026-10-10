@@ -40,7 +40,7 @@
     <!-- Handler Mapping -->
     
     <bean id="portletModeHandlerMapping"
-        class="org.springframework.web.portlet.handler.PortletModeHandlerMapping">
+        class="org.apereo.portal.spring.web.portlet.handler.PortletModeHandlerMapping">
         <property name="interceptors" ref="minimizedStateHandlerInterceptor" />
         <property name="portletModeMap">
             <map>

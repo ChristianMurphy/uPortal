@@ -33,7 +33,7 @@
     <portlet>
         <portlet-name>AttributeSwapperPortlet</portlet-name>
         <display-name xml:lang="en">Attribute Swapper Portlet</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/attributeSwapperContext.xml</value>
@@ -89,7 +89,7 @@
     <portlet>
         <portlet-name>ExitFragmentAdministration</portlet-name>
         <display-name xml:lang="en">Exit Fragment Administration</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/ExitFragmentAdministration-portlet.xml</value>
@@ -107,7 +107,7 @@
     <portlet>
         <portlet-name>Favorites</portlet-name>
         <display-name xml:lang="en">Favorites</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Favorites-portlet.xml</value>
@@ -136,7 +136,7 @@
     <portlet>
         <portlet-name>PortletMarketplace</portlet-name>
         <display-name xml:lang="en">Marketplace</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/PortletMarketplace-portlet.xml</value>
@@ -171,7 +171,7 @@
     <portlet>
         <portlet-name>FragmentAdministration</portlet-name>
         <display-name xml:lang="en">Fragment Administration</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/FragmentAdministration-portlet.xml</value>
@@ -189,7 +189,7 @@
 
     <portlet>
         <portlet-name>ImportExportPortlet</portlet-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>/WEB-INF/classes/properties/contexts/portlet/ImportExportPortlet-portlet.xml</value>
@@ -207,7 +207,7 @@
     <portlet>
         <portlet-name>IFrame</portlet-name>
         <display-name xml:lang="en">IFrame</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/IFrame-portlet.xml</value>
@@ -226,7 +226,7 @@
     <portlet>
         <portlet-name>Image</portlet-name>
         <display-name xml:lang="en">Image</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Image-portlet.xml</value>
@@ -245,7 +245,7 @@
     <portlet>
         <portlet-name>Error</portlet-name>
         <display-name xml:lang="en">Error</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Error-portlet.xml</value>
@@ -264,7 +264,7 @@
     <portlet>
         <portlet-name>GroupsAdministration</portlet-name>
         <display-name xml:lang="en">Groups Administration Portlet</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/GroupsAdministration-portlet.xml</value>
@@ -283,7 +283,7 @@
     <portlet>
         <portlet-name>PortletAdministration</portlet-name>
         <display-name xml:lang="en">Portlet Administration Portlet</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/PortletAdministration-portlet.xml</value>
@@ -302,7 +302,7 @@
     <portlet>
         <portlet-name>PortalAdministration</portlet-name>
         <display-name xml:lang="en">Portal Administration</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/PortalAdministration-portlet.xml</value>
@@ -321,7 +321,7 @@
     <portlet>
         <portlet-name>PermissionsAdministration</portlet-name>
         <display-name xml:lang="en">Permissions Administration Portlet</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/PermissionsAdministration-portlet.xml</value>
@@ -340,7 +340,7 @@
     <portlet>
         <portlet-name>SqlQuery</portlet-name>
         <display-name xml:lang="en">Sql Query</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/SqlQuery-portlet.xml</value>
@@ -379,7 +379,7 @@
     <portlet>
         <portlet-name>Statistics</portlet-name>
         <display-name xml:lang="en">Statistics</display-name>
-        <portlet-class>org.springframework.web.portlet.ForwardingDispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.ForwardingDispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Statistics-portlet.xml</value>
@@ -398,7 +398,7 @@
     <portlet>
         <portlet-name>PortalActivity</portlet-name>
         <display-name xml:lang="en">Portal Activity</display-name>
-        <portlet-class>org.springframework.web.portlet.ForwardingDispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.ForwardingDispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/PortalActivity-portlet.xml</value>
@@ -441,7 +441,7 @@
     <portlet>
         <portlet-name>Snooper</portlet-name>
         <display-name xml:lang="en">User Locale</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Snooper-portlet.xml</value>
@@ -460,7 +460,7 @@
     <portlet>
         <portlet-name>UserLocale</portlet-name>
         <display-name xml:lang="en">User Locale</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/UserLocale-portlet.xml</value>
@@ -479,7 +479,7 @@
     <portlet>
         <portlet-name>ToggleResourcesAggregation</portlet-name>
         <display-name xml:lang="en">Toggle CSS/JavaScript Aggregation</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/ToggleResourcesAggregation-portlet.xml</value>
@@ -498,7 +498,7 @@
     <portlet>
         <portlet-name>CacheManager</portlet-name>
         <display-name xml:lang="en">Cache Manager</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/CacheManager-portlet.xml</value>
@@ -517,7 +517,7 @@
     <portlet>
         <portlet-name>UserAdministration</portlet-name>
         <display-name xml:lang="en">User Administration</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/UserAdministration-portlet.xml</value>
@@ -543,7 +543,7 @@
     <portlet>
         <portlet-name>SelfEditAccount</portlet-name>
         <display-name xml:lang="en">Edit My Portal Account</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/SelfEditAccount-portlet.xml</value>
@@ -562,7 +562,7 @@
     <portlet>
         <portlet-name>ResetMyLayout</portlet-name>
         <display-name xml:lang="en">Reset My Layout</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/ResetMyLayout-portlet.xml</value>
@@ -581,7 +581,7 @@
     <portlet>
         <portlet-name>FragmentAudit</portlet-name>
         <display-name xml:lang="en">Audit DLM Fragments</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/FragmentAudit-portlet.xml</value>
@@ -600,7 +600,7 @@
     <portlet>
         <portlet-name>DynamicRespondrSkin</portlet-name>
         <display-name xml:lang="en">Dynamic Respondr Skin</display-name>
-        <portlet-class>org.springframework.web.portlet.HeaderHandlingDispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.HeaderHandlingDispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/DynamicRespondrSkin-portlet.xml</value>
@@ -681,7 +681,7 @@
     <portlet>
         <portlet-name>Search</portlet-name>
         <display-name xml:lang="en">Search</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Search-portlet.xml</value>
@@ -766,7 +766,7 @@
     <portlet>
         <portlet-name>Directory</portlet-name>
         <display-name xml:lang="en">Directory</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Directory-portlet.xml</value>
@@ -800,7 +800,7 @@
     <portlet>
         <portlet-name>PopularPortlets</portlet-name>
         <display-name xml:lang="en">Most Popular Apps</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/PopularPortlets-portlet.xml</value>
@@ -819,7 +819,7 @@
     <portlet>
         <portlet-name>Login</portlet-name>
         <display-name xml:lang="en">Login</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Login-portlet.xml</value>
@@ -843,7 +843,7 @@
     <portlet>
         <portlet-name>JspInvoker</portlet-name>
         <display-name xml:lang="en">JspInvoker</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/JspInvoker-portlet.xml</value>
@@ -910,7 +910,7 @@
     <portlet>
         <portlet-name>ForgotPassword</portlet-name>
         <display-name xml:lang="en">Forgot Password</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/ForgotPassword-portlet.xml</value>
@@ -929,7 +929,7 @@
     <portlet>
         <portlet-name>Translator</portlet-name>
         <display-name xml:lang="en">Translator</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/Translator-portlet.xml</value>
@@ -948,7 +948,7 @@
     <portlet>
         <portlet-name>GoogleAnalytics</portlet-name>
         <display-name xml:lang="en">Google Analytics</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/GoogleAnalytics-portlet.xml</value>
@@ -973,7 +973,7 @@
         <portlet-name>backgroundPreference</portlet-name>
         <display-name>BackgroundPreference Portlet</display-name>
 
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/BackgroundPreference-portlet.xml</value>
@@ -1034,7 +1034,7 @@
     <portlet>
         <portlet-name>TenantManager</portlet-name>
         <display-name xml:lang="en">Tenant Manager</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/TenantManager-portlet.xml</value>
@@ -1063,7 +1063,7 @@
     <portlet>
         <portlet-name>SessionTimeout</portlet-name>
         <display-name xml:lang="en">Session Timeout</display-name>
-        <portlet-class>org.springframework.web.portlet.HeaderHandlingDispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.HeaderHandlingDispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/properties/contexts/portlet/SessionTimeout-portlet.xml</value>
@@ -1111,7 +1111,7 @@
     <portlet>
         <portlet-name>Soffit Connector</portlet-name>
         <display-name xml:lang="en">Soffit Connector</display-name>
-        <portlet-class>org.springframework.web.portlet.DispatcherPortlet</portlet-class>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
         <init-param>
             <name>contextConfigLocation</name>
             <value>classpath:/org/apereo/portal/soffit/connector/connector-portlet.xml</value>

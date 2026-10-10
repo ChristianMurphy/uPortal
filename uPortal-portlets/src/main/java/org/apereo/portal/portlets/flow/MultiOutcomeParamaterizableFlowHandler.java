@@ -18,10 +18,10 @@ import java.io.IOException;
 import java.util.Map;
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
+import org.apereo.portal.spring.webflow.mvc.portlet.AbstractFlowHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.webflow.execution.FlowExecutionOutcome;
-import org.springframework.webflow.mvc.portlet.AbstractFlowHandler;
 
 /**
  * MultiOutcomeParamaterizableFlowHandler provides an alternative to ParamaterizableFlowHandler for
@@ -55,7 +55,7 @@ public class MultiOutcomeParamaterizableFlowHandler extends AbstractFlowHandler 
     }
 
     /* (non-Javadoc)
-     * @see org.springframework.webflow.mvc.portlet.AbstractFlowHandler#getFlowId()
+     * @see org.apereo.portal.spring.webflow.mvc.portlet.AbstractFlowHandler#getFlowId()
      */
     @Override
     public String getFlowId() {
@@ -63,7 +63,7 @@ public class MultiOutcomeParamaterizableFlowHandler extends AbstractFlowHandler 
     }
 
     /* (non-Javadoc)
-     * @see org.springframework.webflow.mvc.portlet.AbstractFlowHandler#handleExecutionOutcome(org.springframework.webflow.execution.FlowExecutionOutcome, javax.portlet.ActionRequest, javax.portlet.ActionResponse)
+     * @see org.apereo.portal.spring.webflow.mvc.portlet.AbstractFlowHandler#handleExecutionOutcome(org.springframework.webflow.execution.FlowExecutionOutcome, javax.portlet.ActionRequest, javax.portlet.ActionResponse)
      */
     @Override
     public boolean handleExecutionOutcome(

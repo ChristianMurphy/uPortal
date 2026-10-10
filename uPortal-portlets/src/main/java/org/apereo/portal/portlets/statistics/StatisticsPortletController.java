@@ -20,6 +20,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.AggregationIntervalHelper;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.joda.time.DateMidnight;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
@@ -33,9 +36,6 @@ import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 /** StatisticsPortletController drives stats reporting */
 @Controller

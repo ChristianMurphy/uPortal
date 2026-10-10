@@ -41,9 +41,9 @@ import org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregationKeyIm
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletLookupDao;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMappingNameComparator;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.portlet.ModelAndView;
 
 public abstract class BasePortletLayoutStatisticsController<F extends BasePortletLayoutReportForm>
         extends BaseStatisticsReportController<

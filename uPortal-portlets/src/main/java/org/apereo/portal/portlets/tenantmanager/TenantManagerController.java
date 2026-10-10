@@ -29,6 +29,8 @@ import javax.portlet.PortletRequest;
 import javax.portlet.PortletSession;
 import javax.portlet.RenderRequest;
 import org.apache.commons.lang.StringUtils;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ActionMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.tenants.ITenant;
 import org.apereo.portal.tenants.ITenantManagementAction;
 import org.apereo.portal.tenants.ITenantOperationsListener;
@@ -40,8 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.portlet.bind.annotation.ActionMapping;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
 import org.springframework.web.servlet.ModelAndView;
 
 @Controller

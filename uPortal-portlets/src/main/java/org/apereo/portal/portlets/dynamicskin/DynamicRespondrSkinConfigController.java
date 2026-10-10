@@ -28,14 +28,14 @@ import javax.portlet.ValidatorException;
 import javax.portlet.WindowState;
 import javax.portlet.WindowStateException;
 import org.apereo.portal.portlets.dynamicskin.storage.DynamicSkinService;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ActionMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.bind.annotation.ActionMapping;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
 
 /**
  * DynamicRespondrSkin portlet includes a CONFIG mode interface that allows an admin to set various

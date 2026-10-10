@@ -30,11 +30,11 @@ import org.apereo.portal.security.IPermission;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
 import org.apereo.portal.services.AuthorizationServiceFacade;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
 
 /**
  * ImportExportPortletController controls the display of the import/export portlet interface views.
