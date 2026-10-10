@@ -161,7 +161,13 @@ jobs:
                       failed.append((case.get('classname') + '.' + case.get('name'), text))
           print(f'{len(failed)} failed tests')
           for title, text in failed[:10]:
-              text = '\n'.join(text.splitlines()[:30])
+              # The message, the top of the stack, and each cause with its first frames
+              lines = text.splitlines()
+              keep = lines[:6]
+              for i, line in enumerate(lines[6:], 6):
+                  if line.startswith('Caused by:'):
+                      keep += ['...'] + lines[i:i + 4]
+              text = '\n'.join(keep[:60])
               text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
               print(f'::error title={title}::{text}')
           EOF
@@ -266,7 +272,13 @@ jobs:
                       failed.append((case.get('classname') + '.' + case.get('name'), text))
           print(f'{len(failed)} failed tests')
           for title, text in failed[:10]:
-              text = '\n'.join(text.splitlines()[:30])
+              # The message, the top of the stack, and each cause with its first frames
+              lines = text.splitlines()
+              keep = lines[:6]
+              for i, line in enumerate(lines[6:], 6):
+                  if line.startswith('Caused by:'):
+                      keep += ['...'] + lines[i:i + 4]
+              text = '\n'.join(keep[:60])
               text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
               print(f'::error title={title}::{text}')
           EOF
