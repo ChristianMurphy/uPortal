@@ -286,7 +286,23 @@ production uses (third row).
 
 ## Gates
 
-GATE-RESULTS-PLACEHOLDER
+**Status at handoff (2026-10-10 22:35 UTC): local gates green; GitHub gates still queued.**
+GitHub Actions is saturated across the workstreams; runs on this branch queue for a long time,
+and each new push cancels the older run.
+
+| Gate | Run | Result |
+| --- | --- | --- |
+| uPortal CI, light profile for workstream branches: Linux leg, static analysis, commit messages | [38091362346](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362346) on `066fbd9` | queued |
+| uPortal DB integration | [38091362114](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362114) | queued |
+| uPortal-start Integration: DB harness and Playwright on three databases | [38091366801](https://github.com/ChristianMurphy/uPortal-start/actions/runs/38091366801), building uPortal `ccr-43ba0785-hzlrj5-cache-seam` | queued |
+| uPortal CI, full matrix, first commit only | [38088762888](https://github.com/ChristianMurphy/uPortal/actions/runs/38088762888) on `6e7d045` | Build and Test green on windows-latest temurin 25 and ubuntu zulu 21; the other legs had not finished |
+| SpotBugs baseline | local `spotbugsMain` on all 14 modules the branch touches | no new findings, baseline unchanged |
+| Unit test count | local, all modules | 1044 tests, 0 failures. No tests removed; 23 added. |
+
+**Commit subjects:** `b0e2662` (77 characters), `85a36c8` (73) and `72f8f8b` (74) are over the 72-character
+limit that the integration branch's commit check (`8dee16c`) now enforces. They were pushed
+before that check reached this branch, and history is not rewritten. Later commits pass the
+check.
 
 * **Local runs (JDK 21):** all green.
   * Tests and SpotBugs for utils-core, events, layout-impl, security-permissions, persondir,
