@@ -46,7 +46,7 @@ Credentials are read from ~/.gradle/gradle.properties:
 
 Phases:
   1. Tree state — clean, on expected branch, in sync with upstream
-  2. Env — Java 11, ~/.gradle/gradle.properties has all creds + signing,
+  2. Env — Java 21+ (classes still target Java 11), ~/.gradle/gradle.properties has all creds + signing,
      GPG key on keys.openpgp.org
   3. License header check — modified .java/.xml/.jsp since last release
      all carry the Apache 2.0 header
@@ -130,7 +130,9 @@ ok "current version: $CURRENT_VERSION (will release as $RELEASE, then bump to $N
 # 2. Env & credentials
 hdr "Env & credentials"
 JAVA_VER=$(java -version 2>&1 | awk -F\" 'NR==1{print $2}')
-[[ "$JAVA_VER" == 11.* ]] || warn "java $JAVA_VER — expected 11.x"
+# The build needs JDK 21+ (Error Prone, google-java-format); classes are still compiled
+# with --release 11, so the release stays Java 11 compatible.
+[[ "${JAVA_VER%%.*}" -ge 21 ]] 2>/dev/null || warn "java $JAVA_VER — expected 21 or newer"
 ok "java $JAVA_VER"
 
 GRADLE_PROPS="$HOME/.gradle/gradle.properties"

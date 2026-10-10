@@ -130,6 +130,9 @@ cd ./uPortal-start
 
 ## Cut Release
 
+Use JDK 21 or newer (the version pinned in `.sdkmanrc`; `sdk env` selects it). The build
+compiles with `--release 11`, so the released classes still run on Java 11.
+
 Run the following command in the uPortal clone's directory:
 
 ```sh
