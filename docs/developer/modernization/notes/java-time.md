@@ -110,11 +110,11 @@ against the Joda computation it replaces, across the 2026 DST changes. The clust
 tests exercise `DurationEditor` through the test context (`abandonedLockAge=PT0.100S`).
 
 Every affected module's tests ran with `TZ=UTC` and again with
-`TZ=America/New_York` (counts under Gate results). Gradle passes `TZ` to the test JVMs; a
+`TZ=America/New_York` (counts under Check results). Gradle passes `TZ` to the test JVMs; a
 throwaway probe test confirmed that `TimeZone.getDefault()` and `DateTimeZone.getDefault()` both
 followed it.
 
-## Gate results
+## Check results
 
 * **Local, all affected modules:** after installing `google-visualization-java` from the 5.17.9
   war into mavenLocal (the coordinator's MOD-I51 workaround, sha256 checked), every module
@@ -187,7 +187,7 @@ followed it.
   (uPortal-core), `jackson-datatype-joda` (uPortal-portlets; keep it while any Joda value can
   reach JSON).
 
-### Seams left for the JPA slice
+### Bridge call sites left for the JPA slice
 
 `JodaTimeBridge` is the only crossing. Its call sites, each removed by deleting the call once
 the other side is `java.time`:
@@ -208,11 +208,11 @@ the other side is `java.time`:
    that reproduces today's storage (same column types and the same zone handling as Jadira's
    `PersistentDateTime`/`PersistentLocalDate`/`PersistentLocalTime`/`PersistentMonthDayAsString`),
    and change the entity fields to `Instant`/`ZonedDateTime`, `LocalDate`, `LocalTime` and
-   `MonthDay`. Gate: the persistence goldens (MOD-D29 item 7) unchanged on every vendor.
+   `MonthDay`. Required check: the persistence goldens (MOD-D29 item 7) unchanged on every vendor.
 2. **Same PR or the next:** convert the entity interfaces, the DAOs' parameters and the
    aggregation engine together (`AggregationInterval` maps onto `ChronoUnit` and
    `TemporalAdjusters`; `DateMidnight` becomes `LocalDate`, with `atStartOfDay(zone)` where an
-   instant is needed). Gate: the analytics goldens (MOD-D29 item 3) unchanged. They cover DST
+   instant is needed). Required check: the analytics goldens (MOD-D29 item 3) unchanged. They cover DST
    changes and month and year ends in several zones.
 3. **Then:** the statistics portlet (form as `LocalDate` with a `M/d/yyyy` editor), the
    aggregation import/export, the cookie service, and `PortalEvent.getTimestampAsDate()`.
