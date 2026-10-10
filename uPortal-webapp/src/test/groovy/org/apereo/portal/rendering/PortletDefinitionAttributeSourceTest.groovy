@@ -18,6 +18,7 @@
  */
 package org.apereo.portal.rendering
 
+import groovy.test.GroovyTestCase
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao
 import org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl
 import org.apereo.portal.portlet.dao.jpa.PortletTypeImpl

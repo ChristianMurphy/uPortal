@@ -18,6 +18,7 @@
  */
 package org.apereo.portal.groups.pags.testers
 
+import groovy.test.GroovyTestCase
 import org.junit.Test
 
 class AdHocGroupTesterTest extends GroovyTestCase {
