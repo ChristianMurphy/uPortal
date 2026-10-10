@@ -1,0 +1,22 @@
+// The Bootstrap 6 subset every uPortal web component adopts into its shadow root.
+//
+// Bootstrap's CSS does not reach into shadow DOM, so each component carries the parts it uses.
+// Lit turns this one stylesheet into one constructable CSSStyleSheet that every component
+// instance on the page shares (see shared-styles.ts). Bootstrap 6 emits its design tokens on
+// `:root, :host`, so they apply to each component's host element.
+//
+// Compiled from Bootstrap's Sass sources, the tokens are unprefixed (`--primary-base`, not
+// `--bs-primary-base`); that is also how a skin compiled with plain Sass names them. Add a
+// partial here only when a component needs it: the sheet is shared, but every byte is parsed.
+@use 'bootstrap/scss/colors';
+@use 'bootstrap/scss/root';
+@use 'bootstrap/scss/content/reboot';
+@use 'bootstrap/scss/buttons/button';
+@use 'bootstrap/scss/buttons/close';
+@use 'bootstrap/scss/list-group';
+@use 'bootstrap/scss/alert';
+@use 'bootstrap/scss/spinner';
+@use 'bootstrap/scss/placeholder';
+@use 'bootstrap/scss/helpers/theme-colors';
+@use 'bootstrap/scss/helpers/visually-hidden';
+@use 'bootstrap/scss/helpers/focus-ring';

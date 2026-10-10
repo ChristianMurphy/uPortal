@@ -49,6 +49,8 @@ jar.enabled = false
 configurations {
     // These get packaged with the war in a special way
     webjars
+    // The web components' jar; its META-INF/resources/webcomponents goes to /webcomponents/
+    webcomponents
 }
 
 // The Groovy/Spock tests compile and run on Groovy 4 (groovyTestVersion), while the war
@@ -126,6 +128,8 @@ dependencies {
     webjars "org.jasig.resourceserver:resource-server-content:${resourceServerVersion}"
     webjars "org.webjars.npm:bootstrap:${bootstrapVersion}"
     webjars "org.webjars.npm:jstree:${jstreeVersion}"
+
+    webcomponents project(':uPortal-webcomponents')
 
 }
 
@@ -265,6 +269,13 @@ war {
     with {
         from "${buildDir}/generated-sources/skin/main/webapp"
         into '/'
+    }
+    // Add the web components' ES modules and build manifest, served from /webcomponents/
+    dependsOn configurations.webcomponents
+    from({ configurations.webcomponents.collect { zipTree(it) } }) {
+        include 'META-INF/resources/webcomponents/**'
+        eachFile { it.path = it.path.substring('META-INF/resources/'.length()) }
+        includeEmptyDirs = false
     }
 }
 

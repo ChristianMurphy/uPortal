@@ -61,6 +61,18 @@
       "matchPackageNames": ["/^org.webjars.npm:uportal/"]
     },
     {
+      "groupName": "Vite+ and Vitest",
+      "matchFileNames": ["uPortal-webcomponents/package.json"],
+      "matchPackageNames": ["vite-plus", "@vitest/browser", "@vitest/browser-playwright", "@vitest/coverage-v8", "playwright"],
+      "description": "vite-plus bundles Vite and Vitest; the Vitest browser packages and Playwright must move with it (MOD-D20)."
+    },
+    {
+      "matchFileNames": ["uPortal-webcomponents/package.json"],
+      "matchPackageNames": ["bootstrap"],
+      "dependencyDashboardApproval": true,
+      "description": "Bootstrap 6 prereleases change markup and tokens; upgrade deliberately (MOD-D21)."
+    },
+    {
       "groupName": "Person Directory",
       "matchPackageNames": ["/^org.apereo.service.persondir/"]
     },

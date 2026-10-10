@@ -2,8 +2,12 @@
 
 uPortal 6 replaces its own portlets with REST APIs and web components (decisions MOD-D18 to
 MOD-D22 in the [modernization log](../modernization/LOG.md)). This page describes the parts
-every conversion builds on: the **Web Component channel type**, which places a custom element on
-a portal page without the portlet container.
+every conversion builds on:
+
+* the **Web Component channel type**, which places a custom element on a portal page without the
+  portlet container;
+* the **`uPortal-webcomponents` workspace**, where the components are written (Lit and
+  TypeScript), styled (Bootstrap 6), tested (Vitest) and built (Vite+).
 
 ## The Web Component channel type
 
@@ -151,3 +155,140 @@ module only once anyway; this keeps the page free of duplicate script tags.
 * Channel output delivered as an HTML fragment that a client inserts with `innerHTML` (for
   example the portlet-content REST API) does not run its `<script>`. Such clients must load the
   module themselves.
+
+## The `uPortal-webcomponents` workspace
+
+All of uPortal's web components live in one npm workspace, which is also a Gradle subproject of
+uPortal, so they are versioned, built and released together with the REST APIs they call.
+
+```text
+uPortal-webcomponents/
+  build.gradle            Gradle tasks that run the npm scripts
+  package.json            exact versions; package-lock.json pins the rest
+  .npmrc                  no install scripts, exact versions, engine check
+  tsconfig.json           strict TypeScript for the browser
+  vite.config.ts          Vite+ config: build, Vitest projects, lint, format
+  src/lib/                the base library every component uses
+  src/components/<tag>/   one directory per component; <tag>.ts is its entry
+  src/test-support/       test helpers (fetch stub, fixtures, axe)
+```
+
+A separate subproject, rather than a directory of `uPortal-webapp`, keeps the JavaScript
+toolchain out of the webapp's build: the workspace has its own lockfile and `node_modules`, its
+tasks are up to date unless its own files change, and `./gradlew :uPortal-webcomponents:check`
+checks it alone. Its jar is a webjar (the modules under `META-INF/resources/webcomponents`);
+`uPortal-webapp` unpacks it into the war, so the modules are served from `/uPortal/webcomponents/`
+whatever the servlet container's jar scanning settings.
+
+### Toolchain and Gradle tasks
+
+The workspace is built with [Vite+](https://viteplus.dev) (`vp`), which bundles Vite, Vitest,
+Oxlint, Oxfmt and Rolldown. `vite-plus` is an exact-version devDependency; it is never installed
+globally with `curl | bash`. Node comes from the node-gradle plugin (`nodejsVersion` in
+`gradle.properties`), like the rest of the build, and `npm ci` installs exactly what
+`package-lock.json` pins.
+
+| Gradle task | npm script | Part of |
+| --- | --- | --- |
+| `vpCheck` | `vp check`: formatting (Oxfmt), lint (Oxlint, warnings fail) and type checks | `check` |
+| `vpTest` | `vp test run --coverage`: unit and browser tests with coverage thresholds | `test`, so `check` and `build` |
+| `vpBuild` | `vp build`: ES modules with content-hashed names, and `manifest.json` | `jar`, so `build` and `install` |
+| `installChromium` | `playwright install chromium` (with system libraries on Linux CI) | CI only |
+
+The configuration is plain `vite.config.ts` through `defineConfig` from `vite-plus`, with the
+Vitest settings in its `test` block, so the workspace could fall back to plain Vite and Vitest by
+changing the imports.
+
+For day-to-day work, use the Node that Gradle downloaded, or any Node that `package.json`'s
+`engines` accepts:
+
+```sh
+cd uPortal-webcomponents
+npm ci
+npx vp check --fix        # format and lint
+npx vp test watch         # tests in watch mode
+npx vp build
+```
+
+The browser tests need the Chromium build that the pinned Playwright expects. Run
+`./gradlew :uPortal-webcomponents:installChromium` once, or point `PLAYWRIGHT_BROWSERS_PATH` at
+an existing install of that revision.
+
+### The base library (`src/lib`)
+
+* **`UpElement`** (`up-element.ts`): the base class. It declares the context attributes the
+  channel renderer sets (`locale`, `window-state`, `context-path`, `fname`, `csrf-header`,
+  `csrf-token`) as reflected properties, adopts the shared Bootstrap stylesheet, and offers
+  `this.api` (an `ApiClient` set up from those attributes), `this.msg(key, ...args)` and
+  `this.emit(name, detail)`. A component lists its messages, with English defaults, by
+  overriding `defaultMessages`.
+* **`ApiClient`** (`api-client.ts`): same-origin `fetch` with the session cookie, JSON in and
+  out, the CSRF header on unsafe methods, and one error type, `ApiError`, whose `kind` is
+  `unauthorized` (401), `forbidden` (403), `not-found` (404), `conflict` (409), `server` (5xx),
+  `http` (other statuses), `network` (no response) or `malformed` (not JSON, or a body the
+  component's validator refuses). Components validate every response body.
+* **Messages** (`i18n.ts`): a component renders its English defaults at once, then loads the
+  same keys in the user's locale from `GET /api/v6-0/messages`, which reads the portal's message
+  source: `Messages.properties`, its translations, and messages edited in the portal. One request
+  per locale and set of keys serves every instance on the page; if it fails, the defaults stay.
+  Keys follow `Messages.properties`, and placeholders are `{0}`, `{1}`, …
+* **Events** (`events.ts`): components report what happened with `CustomEvent`s named
+  `up-<subject>-<past-tense verb>`, such as `up-favorite-removed`. They bubble, are composed
+  (they leave the shadow root) and are not cancelable; `detail` is plain data.
+
+### Bootstrap 6 and shadow DOM
+
+Components render into a shadow root, so neither the portal's skin (still Bootstrap 5) nor
+legacy CSS leaks into them, and Bootstrap's CSS does not reach in either. Each component
+therefore adopts **one shared constructable stylesheet**: `src/lib/styles/bootstrap.scss`
+compiles the parts of Bootstrap 6 that the components use (root and color tokens, reboot,
+buttons, close button, list group, alert, spinner, placeholder, theme colors, focus ring and
+visually-hidden helpers) from Bootstrap's Sass sources, and Lit adopts the resulting sheet, a
+single `CSSStyleSheet` object, into every shadow root. It is about 60 kB minified (10 kB
+gzipped), loaded once per page with the first component.
+
+Light DOM was the alternative. It would let the page's own CSS style the markup, but the page's
+CSS is Bootstrap 5, so Bootstrap 6 markup would render wrongly until the skin moves (MOD-D21),
+and legacy portal styles would leak in. Light DOM can still suit a later, very simple component
+once the skin is Bootstrap 6.
+
+Consequences:
+
+* Markup is Bootstrap 6 from the start: `btn-solid theme-primary`, `list-group`,
+  `alert theme-danger`, `visually-hidden`, and so on. Fonts and text color are inherited from the
+  page.
+* Bootstrap 6 puts its design tokens on `:root, :host`. Compiled from source without Bootstrap's
+  PostCSS step, they are unprefixed (`--primary-bg`, `--spacer`), which is also how a skin
+  compiled with plain Sass names them. Because the tokens are set on each component's host, a
+  skin themes components by setting tokens on the elements themselves, for example
+  `up-favorites { --primary-bg: #8c1d40; }`; tokens set only on the page's `:root` do not reach
+  them.
+* Components follow the page's `color-scheme` rather than Bootstrap's `light dark` default, so a
+  component does not turn dark inside a light portal page.
+* Components draw their own small SVG icons; icon fonts (Font Awesome) do not reach into shadow
+  roots.
+* Add a partial to `bootstrap.scss` only when a component needs it: the sheet is shared, but
+  every byte is parsed.
+
+The browser tests check that the sheet is shared, that tokens and components apply inside the
+shadow root, that the page can theme a component, and that the color scheme follows the page.
+
+### Testing
+
+`vp test` runs two Vitest projects:
+
+* `unit` (`*.unit.test.ts`), in Node, for logic without a DOM;
+* `browser` (`*.browser.test.ts`), in headless Chromium through Playwright, for everything that
+  touches custom elements, shadow DOM, styles, focus and the keyboard.
+
+Every component's browser tests cover each rendering state (loading, empty, error, populated);
+interactions and the events they emit; attribute and property reflection; the messages it uses;
+keyboard navigation and focus; an axe-core accessibility check in each state
+(`src/test-support/axe.ts`, WCAG 2.2 A and AA); and its REST calls against stubbed responses,
+including 401, 403, 500, network failures and malformed bodies. REST calls are stubbed by
+replacing `fetch` with a small router of real `Response` objects (`src/test-support/fetch-stub.ts`)
+rather than with MSW: there is no service worker to install in the browser runner, and the stub
+records each request for assertions. Snapshots are only for small, stable markup.
+
+Coverage (V8) must stay at 90% or more of lines, branches, functions and statements; `vp test`
+fails below that. The report is in `build/coverage`.
