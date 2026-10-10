@@ -1,0 +1,30 @@
+{
+  "name": "uportal-webcomponents",
+  "version": "0.0.0",
+  "private": true,
+  "description": "uPortal's web components (Lit + Bootstrap 6), built and tested with Vite+",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "check": "vp check",
+    "test": "vp test run --coverage",
+    "build": "vp build",
+    "fix": "vp check --fix"
+  },
+  "dependencies": {
+    "lit": "3.3.3"
+  },
+  "devDependencies": {
+    "@vitest/browser": "5.0.3",
+    "@vitest/browser-playwright": "5.0.3",
+    "@vitest/coverage-v8": "5.0.3",
+    "axe-core": "4.14.0",
+    "bootstrap": "6.0.0-alpha.1",
+    "playwright": "1.64.0",
+    "sass": "1.105.1",
+    "vite-plus": "1.1.0"
+  },
+  "engines": {
+    "node": "^22.18.0 || ^24.11.0 || >=26.0.0"
+  }
+}

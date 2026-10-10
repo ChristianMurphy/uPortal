@@ -1,0 +1,98 @@
+import { defineConfig } from 'vite-plus';
+import { playwright } from 'vite-plus/test/browser-playwright';
+
+/**
+ * The components to build, by custom element name. Each one is an entry,
+ * src/components/<name>/<name>.ts, that the portal loads by its name through the build manifest
+ * (build/dist/manifest.json; see WebComponentModuleResolver in uPortal-rendering).
+ */
+const components: string[] = [];
+
+export default defineConfig({
+    // Built files import each other relatively, so the bundle works under any context path
+    base: './',
+    build: {
+        outDir: 'build/dist',
+        emptyOutDir: true,
+        target: 'es2023',
+        // build/dist/manifest.json maps each entry name to its content-hashed file
+        manifest: 'manifest.json',
+        rolldownOptions: {
+            input: Object.fromEntries(
+                components.map((name) => [name, `src/components/${name}/${name}.ts`]),
+            ),
+            output: {
+                entryFileNames: 'assets/[name]-[hash].js',
+                chunkFileNames: 'assets/[name]-[hash].js',
+                assetFileNames: 'assets/[name]-[hash][extname]',
+            },
+        },
+    },
+    test: {
+        // Restore globals stubbed with vi.stubGlobal (fetch) after every test
+        unstubGlobals: true,
+        projects: [
+            {
+                extends: true,
+                test: {
+                    name: 'unit',
+                    include: ['src/**/*.unit.test.ts'],
+                    environment: 'node',
+                },
+            },
+            {
+                extends: true,
+                test: {
+                    name: 'browser',
+                    include: ['src/**/*.browser.test.ts'],
+                    browser: {
+                        enabled: true,
+                        headless: true,
+                        provider: playwright(),
+                        instances: [{ browser: 'chromium' }],
+                        screenshotFailures: false,
+                    },
+                },
+            },
+        ],
+        coverage: {
+            provider: 'v8',
+            include: ['src/**/*.ts'],
+            exclude: ['src/**/*.test.ts', 'src/test-support/**'],
+            reportsDirectory: 'build/coverage',
+            reporter: ['text', 'html', 'lcov', 'json-summary'],
+            thresholds: {
+                lines: 90,
+                branches: 90,
+                functions: 90,
+                statements: 90,
+            },
+        },
+    },
+    lint: {
+        ignorePatterns: ['build/**', 'node_modules/**'],
+        categories: {
+            correctness: 'error',
+            suspicious: 'error',
+            perf: 'error',
+        },
+        options: {
+            typeAware: true,
+            typeCheck: true,
+            denyWarnings: true,
+            reportUnusedDisableDirectives: 'error',
+        },
+        overrides: [
+            {
+                // Tests narrow DOM queries and mocks on purpose; a wrong guess fails the test
+                files: ['src/**/*.test.ts', 'src/test-support/**'],
+                rules: { 'typescript/no-unsafe-type-assertion': 'off' },
+            },
+        ],
+    },
+    fmt: {
+        ignorePatterns: ['build/**', 'node_modules/**', 'package-lock.json'],
+        singleQuote: true,
+        printWidth: 100,
+    },
+});

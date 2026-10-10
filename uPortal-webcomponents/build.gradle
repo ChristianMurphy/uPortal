@@ -1,0 +1,94 @@
+import com.github.gradle.node.npm.task.NpmTask
+import com.github.gradle.node.npm.task.NpxTask
+
+description = "Apereo uPortal Web Components"
+
+/*
+ * uPortal's web components: an npm workspace (Lit, Bootstrap 6) built and tested with Vite+
+ * (`vp`), which is a pinned devDependency and never a global install. Node comes from the
+ * node-gradle plugin, like the rest of the build. See docs/developer/web-components/README.md.
+ *
+ *   vpCheck  `vp check`: formatting, lint and type checks       (part of check)
+ *   vpTest   `vp test`: unit tests and Chromium browser tests,  (part of test, so of check)
+ *            with the coverage thresholds of vite.config.ts
+ *   vpBuild  `vp build`: content-hashed ES modules and their     (part of jar, so of build)
+ *            manifest, packaged under META-INF/resources/webcomponents and served by the
+ *            uPortal webapp from /webcomponents/
+ *
+ * The browser tests need the Chromium that the pinned Playwright expects. CI installs it with
+ * installChromium; locally, run that task once (or point PLAYWRIGHT_BROWSERS_PATH at an
+ * existing install).
+ */
+apply plugin: 'com.github.node-gradle.node'
+
+node {
+    version = nodejsVersion
+    download = true
+    // Install exactly what package-lock.json pins and never rewrite it
+    npmInstallCommand = 'ci'
+}
+
+def workspaceInputs = files(
+        fileTree('src'),
+        'package.json',
+        'package-lock.json',
+        'tsconfig.json',
+        'vite.config.ts',
+        rootProject.file('.editorconfig'))
+
+tasks.register('vpCheck', NpmTask) {
+    group = 'verification'
+    description = 'Checks formatting, lint and types of the web components (vp check).'
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'check']
+    inputs.files(workspaceInputs).withPathSensitivity(PathSensitivity.RELATIVE)
+    def marker = layout.buildDirectory.file('vp-check.passed')
+    outputs.file(marker)
+    doLast {
+        marker.get().asFile.text = 'vp check passed\n'
+    }
+}
+
+tasks.register('vpTest', NpmTask) {
+    group = 'verification'
+    description = 'Runs the web components\' unit and browser tests with coverage (vp test).'
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'test']
+    inputs.files(workspaceInputs).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(layout.buildDirectory.dir('coverage'))
+}
+
+def vpBuild = tasks.register('vpBuild', NpmTask) {
+    group = 'build'
+    description = 'Builds the web components into content-hashed ES modules (vp build).'
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'build']
+    inputs.files(workspaceInputs).withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.dir(layout.buildDirectory.dir('dist'))
+    // Vite needs at least one entry
+    onlyIf('the workspace has components') { !fileTree('src/components').isEmpty() }
+}
+
+tasks.register('installChromium', NpxTask) {
+    group = 'build setup'
+    description = 'Installs the Chromium that the pinned Playwright drives in the browser tests.'
+    dependsOn tasks.named('npmInstall')
+    command = 'playwright'
+    // On CI (Linux) also install the system libraries Chromium needs
+    def linuxCi = System.getenv('CI') && System.getProperty('os.name').toLowerCase().contains('linux')
+    args = ['install'] + (linuxCi ? ['--with-deps'] : []) + ['chromium']
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('vpCheck')
+}
+
+tasks.named('test') {
+    dependsOn tasks.named('vpTest')
+}
+
+jar {
+    from(vpBuild) {
+        into 'META-INF/resources/webcomponents'
+    }
+}
