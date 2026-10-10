@@ -14,51 +14,52 @@
  */
 package org.apereo.portal.layout.dlm;
 
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apereo.portal.IUserProfile;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.utils.cache.CacheKey;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.apereo.portal.utils.cache.UsernameTaggedCacheEntryPurger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 /** Provides API for layout caching service */
 @Service("layoutCachingService")
 public class LayoutCachingService implements ILayoutCachingService {
+    static final String LAYOUT_CACHE_NAME = "org.apereo.portal.layout.dlm.LAYOUT_CACHE";
+
     protected final Log logger = LogFactory.getLog(this.getClass());
 
-    private Ehcache layoutCache;
+    private Cache layoutCache;
 
     @Autowired
-    public void setLayoutCache(
-            @Qualifier("org.apereo.portal.layout.dlm.LAYOUT_CACHE") Ehcache layoutCache) {
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setLayoutCache(CacheLookup.requireCache(cacheManager, LAYOUT_CACHE_NAME));
+    }
+
+    public void setLayoutCache(Cache layoutCache) {
         this.layoutCache = layoutCache;
     }
 
     @Override
     public void cacheLayout(IPerson owner, IUserProfile profile, DistributedUserLayout layout) {
         final CacheKey cacheKey = this.getCacheKey(owner, profile);
-        this.layoutCache.put(new Element(cacheKey, layout));
+        this.layoutCache.put(cacheKey, layout);
     }
 
     @Override
     public DistributedUserLayout getCachedLayout(IPerson owner, IUserProfile profile) {
         final CacheKey cacheKey = this.getCacheKey(owner, profile);
-        final Element element = this.layoutCache.get(cacheKey);
-        if (element != null) {
-            return (DistributedUserLayout) element.getObjectValue();
-        }
-        return null;
+        return this.layoutCache.get(cacheKey, DistributedUserLayout.class);
     }
 
     @Override
     public void removeCachedLayout(IPerson owner, IUserProfile profile) {
         final CacheKey cacheKey = this.getCacheKey(owner, profile);
-        this.layoutCache.remove(cacheKey);
+        this.layoutCache.evict(cacheKey);
     }
 
     protected CacheKey getCacheKey(IPerson owner, IUserProfile profile) {
