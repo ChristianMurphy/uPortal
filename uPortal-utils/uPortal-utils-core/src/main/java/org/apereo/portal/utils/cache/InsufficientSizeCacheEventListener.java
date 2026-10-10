@@ -38,7 +38,7 @@ public class InsufficientSizeCacheEventListener extends CacheEventListenerAdapte
              * leave the cache EXCEPT when they exceed their timeToLiveSeconds
              * or timeToIdleSeconds.
              */
-            cacheHealthReporterService.reportCacheSizeNotLargeEnough(cache, element);
+            cacheHealthReporterService.reportCacheSizeNotLargeEnough(cache.getName());
         }
     }
 }

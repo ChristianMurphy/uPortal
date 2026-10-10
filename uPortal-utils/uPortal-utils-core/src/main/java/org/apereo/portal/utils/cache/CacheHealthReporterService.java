@@ -19,8 +19,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -31,6 +29,9 @@ import org.springframework.stereotype.Service;
  * recognize when "something bad" is happening with a uPortal cache. Those listeners quickly contact
  * this service with the details. Periodically this service produces a report on bad things that are
  * occurring, if any, and writes it to the log.
+ *
+ * <p>The service only takes cache names, so it does not depend on the cache provider; the
+ * provider-specific listeners (InsufficientSizeCacheEventListener for Ehcache 2) report to it.
  */
 @Service("cacheHealthReporterService")
 public class CacheHealthReporterService {
@@ -40,12 +41,11 @@ public class CacheHealthReporterService {
     private enum Reports {
         CACHE_SIZE_NOT_LARGE_ENOUGH {
             @Override
-            protected void doReportInternal(Logger logger, List<ReportTuple> list) {
+            protected void doReportInternal(Logger logger, List<String> list) {
                 if (list.size() != 0) {
                     final StringBuilder report = new StringBuilder();
                     final Map<String, Integer> counts = new HashMap<>();
-                    for (ReportTuple tuple : list) {
-                        final String cacheName = tuple.getCache().getName();
+                    for (String cacheName : list) {
                         Integer newCount = 1; // default
                         Integer oldCount = counts.get(cacheName);
                         if (oldCount != null) {
@@ -70,21 +70,21 @@ public class CacheHealthReporterService {
             }
         };
 
-        private final List<ReportTuple> entries = Collections.synchronizedList(new ArrayList<>());
+        private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
 
-        public final void add(ReportTuple tuple) {
-            entries.add(tuple);
+        public final void add(String cacheName) {
+            entries.add(cacheName);
         }
 
         public final void writeReport(Logger logger) {
 
             // Copy & Reset the entries list
-            final List<ReportTuple> list = new ArrayList<>(entries);
+            final List<String> list = new ArrayList<>(entries);
             entries.clear();
             doReportInternal(logger, list);
         }
 
-        protected abstract void doReportInternal(Logger logger, List<ReportTuple> list);
+        protected abstract void doReportInternal(Logger logger, List<String> list);
     }
 
     public void generateReports() {
@@ -93,31 +93,9 @@ public class CacheHealthReporterService {
         }
     }
 
+    /** Records that the named cache evicted an entry that had not expired. */
     @Async
-    public void reportCacheSizeNotLargeEnough(Ehcache cache, Element element) {
-        final ReportTuple tuple = new ReportTuple(cache, element);
-        Reports.CACHE_SIZE_NOT_LARGE_ENOUGH.add(tuple);
-    }
-
-    /*
-     * Nested Types
-     */
-
-    private static final class ReportTuple {
-        private final Ehcache cache;
-        private final Element element;
-
-        public ReportTuple(Ehcache cache, Element element) {
-            this.cache = cache;
-            this.element = element;
-        }
-
-        public Ehcache getCache() {
-            return cache;
-        }
-
-        public Element getElement() {
-            return element;
-        }
+    public void reportCacheSizeNotLargeEnough(String cacheName) {
+        Reports.CACHE_SIZE_NOT_LARGE_ENOUGH.add(cacheName);
     }
 }
