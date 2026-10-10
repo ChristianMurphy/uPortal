@@ -760,6 +760,44 @@ This supersedes MOD-D24's runtime matrix.
   The default is (a), unless the G-index workload shows (b) is better.
   Every other vendor uses native sequences.
 
+### MOD-D26: P3-1 merged — Spring Portlet MVC and Web Flow's portlet glue vendored
+
+* **Commits** (merge `a5c27ca20`):
+  * `65a04d252`: uPortal classes move out of Spring's packages (MOD-I12).
+  * `1eaa654d4`: new module `uPortal-spring-portlet`. Vendored code
+    lives in `src/vendored` (Spring formatting and Apache-2.0 headers,
+    skipped by Spotless), and uPortal's two DispatcherPortlet subclasses
+    in `src/main`.
+  * `272a417fb`: switches uPortal's portlets to it. BREAKING:
+    `org.springframework.` → `org.apereo.portal.spring.`; the full rename
+    map is in `docs/UPGRADING-6.0.md`, and NOTICE credits Spring.
+* **What was vendored:** 69 classes, 12,462 lines, chosen with jdeps
+  starting from every reference in uPortal's code and config. All 81
+  vendored files are byte-identical to upstream apart from the package
+  rename, and 15 unused Portlet MVC classes were left out.
+  spring-webmvc-portlet is gone from all 244 resolved configurations;
+  the WAR differs by exactly one jar.
+* **Gates:**
+  * Unit tests: 1069 run, 0 failed (10 new).
+  * Playwright, two runs: only the two sandbox web-proxy tests fail. All
+    admin specs (Web Flow), portlet-options and per-role specs pass.
+  * All 37 portlets render as before (`render_portlets.py`), and the
+    logs are unchanged.
+* **P4-1 (Spring 5.3) needs, measured by compiling against Spring 5.3.34
+  / Web Flow 2.5.1 (37 errors in 6 files):**
+  * vendor `ViewRendererServlet` and update `web.xml`;
+  * vendor `HandlerMethodInvoker`, `HandlerMethodResolver` and
+    `HandlerMethodInvocationException` (they compile unchanged on 5.3);
+  * port PortletMVC4Spring's `PortletSessionScope` to replace
+    `SCOPE_GLOBAL_SESSION`;
+  * delete the dead servlet `AnnotationMethodHandlerAdapter` bean in
+    `PortletMarketplace-portlet.xml`.
+* **PortletMVC4Spring 5.3.4 vs the vendored code:** 59 of 69 classes
+  differ only in formatting. Worth porting: `PortletSessionScope`,
+  null-filtering of action-exception parameters, config-location
+  tokenizing, and resource-phase multipart. Portlet 3.0-only APIs appear
+  only in classes we didn't vendor.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -850,6 +888,11 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I84 | DB harness | Oracle sequences are cached, so the current values read from metadata vary between runs (e.g. 1201/546/931 against a max id of 403). | For Oracle, compare generators by invariant: next value > max(id), and increment = allocationSize. Keep exact values for the deterministic vendors (they caught MOD-I72). |
 | MOD-I85 | uPortal-start | The CAS overlay hard-coded HSQLDB in `deployerConfigContext.xml`, so CAS login failed on other databases. The harness now drives it from `-PdbVendor`, but adopters switching databases still have to edit it by hand. | Document it. Goes away with MOD-Q3 (local login default, CAS external). |
 | MOD-I86 | Tests | `JpaVersionDaoTest` used `ALTER TABLE` forms that SQL Server and Oracle reject. | **Fixed** (portable DDL). No test is vendor-skipped. |
+| MOD-I87 | Portlets | `ScopingPortletSessionImpl`'s SPR-9287 workaround matched on Spring's `DispatcherPortlet` class name. It serves every portlet, so after vendoring it has to match both names (uPortal's vendored class and Spring's class inside external portlet WARs). | **Fixed** in P3-1. Without the fix it would have stopped working silently for uPortal's own portlets. |
+| MOD-I88 | Portlets | Web Flow 2.4.8 recognises portlet contexts only by Spring's own context class. Harmless today, because the flow executor lives in the root servlet context. | Goes away when the flows are replaced (MOD-D18). |
+| MOD-I89 | Spring | `FixedXMLEventStreamReader` has to stay in `org.springframework.util.xml`, because it extends a package-private Spring class, so MOD-I12 isn't fully closed. | Revisit at P4-1/P6; replace with a composition-based reader if Spring changes the base class. |
+| MOD-I90 | Runtime | Race: when a re-login swaps the session mid-render, `PortletPreferencesFactoryImpl.isGuestUser` can throw an NPE. Seen once; the baseline hit a similar race in a different class. | Related to MOD-I56 (transient focus state). Track it, and add a test when the rendering code is reworked. |
+| MOD-I91 | uPortal-start | `dataImport` always fails, because `playwright.gradle` looks up a task that the overlay skips for that task name. The workaround is to invoke it as `dataImp`. | Small uPortal-start fix needed. Check whether P1 introduced it. |
 
 ## Open questions
 
