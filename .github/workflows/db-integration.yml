@@ -112,7 +112,9 @@ jobs:
 
   db-nightly:
     name: "DB integration: ${{ matrix.vendor }}"
-    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    # Temporary (MOD-D16): also on push, to prove SQL Server and Oracle once on the fork, where
+    # the workflow is not on the default branch and cannot be dispatched. Reverted next.
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
