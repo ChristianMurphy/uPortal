@@ -35,7 +35,7 @@
         <property name="server" ref="mbeanServer" />
         <property name="ensureUniqueRuntimeObjectNames" value="true" />
         <property name="assembler" ref="mbeanInfoAssembler" />
-        <property name="registrationBehaviorName" value="REGISTRATION_REPLACE_EXISTING" />
+        <property name="registrationPolicy" value="REPLACE_EXISTING" />
         <property name="beans">
             <map>
                 <entry key="uPortal:section=Framework,name=Statistics" value-ref="portalFrameworkMBean" />
