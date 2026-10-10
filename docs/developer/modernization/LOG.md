@@ -96,6 +96,18 @@ databases upgrading in place.
     shows the 6.2→7.0 delta is small.
   * Release a javax 6.0. Rejected under MOD-D1.
 
+### MOD-D7: baseline and sandbox gate
+
+* **Baseline:** master `657741e` + `5007322bc` (MOD-I50), on Java 11 / Gradle
+  6.9.4 / Tomcat 8.5.100 / HSQLDB.
+* **uPortal unit tests:** all pass offline (uPortal-webapp: 376 run,
+  0 failed).
+* **Playwright:** 116 of 119 pass in both runs; 1 flaky test (feedback, run 1
+  only); 3 failures are caused by the sandbox network (MOD-I55).
+* **Sandbox G-portal gate:** every spec green except those 3
+  environment-blocked tests, in two consecutive runs. CI (with internet) is
+  the authority for those 3.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -152,6 +164,9 @@ databases upgrading in place.
 | MOD-I50 | Persistence | **Found by the prototype.** Since the Hibernate 4.3 upgrade, `hibernate*.cfg.xml` (via `hibernate.ejb.cfgfile`) is parsed through StAX. On the portal classpath that is Woodstox, which ignores Hibernate's local DTD resolver, so every startup downloads `http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd`. Portals without access to hibernate.org fail to start, and 60 JPA tests fail offline. | **Fixed** in commit `5007322bc` (removed the DOCTYPEs; Woodstox offline-parse regression test). Upstream candidate for 5.17.x. |
 | MOD-I51 | Build | `com.github.ci-rt:google-visualization-java:release-1.1.3` exists only on jitpack, which is a supply-chain and availability risk. The sandbox blocks jitpack, so the prototype installed the jar from the official uPortal-webapp 5.17.9 WAR into `~/.m2`. | Replace it with a Central artifact, or vendor it. Track in WS12. |
 | MOD-I52 | Environment | The sandbox gets HTTP 429 from Maven Central under load, and Gradle 6.9 doesn't retry. | Prototype-only workaround: an init script pointing to Google's Central mirror (scratchpad, not committed). |
+| MOD-I53 | Runtime | `tomcatStop` leaves Tomcat running: two uPortal-owned worker threads (`pool-19-thread-1/2`) are never shut down, and Tomcat logs leak warnings naming the uPortal webapp. CI never notices. | Find the executor and shut it down on context close. Upstream candidate. |
+| MOD-I54 | Tests | The web-proxy "no critical JavaScript errors" test passes by accident. It waits for "Example Domain", which matches the portlet title "Example Domain (test proxy)", not the proxied page. | Tighten the selector (P0-1). |
+| MOD-I55 | Tests | The sandbox blocks three Playwright tests: web-proxy can't reach `example.com`, and two visual-resource-server tests fail because CKEditor 4.22.1's version check calls `cke4.ckeditor.com`. Feedback "renders feedback form" is flaky (post-login navigation race, 1 of 2 runs). | Sandbox gate = all specs except those 3 environment-blocked tests. Consider `versionCheck: false` for CKEditor (it also stops nagging adopters). Fix the feedback race in P0-1. |
 
 ## Open questions
 
