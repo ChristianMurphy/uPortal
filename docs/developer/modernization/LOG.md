@@ -461,6 +461,24 @@ research report.
   * Servlet Web Flow 4 with server-side views. That keeps a second UI
     stack.
 
+* **Status (2026-10-11, WS14 foundation, on `ccr-43ba0785-hzlrj5` in both
+  repositories):**
+  * Channel type: a definition of the "Web Component" portlet type
+    (framework portlet `WebComponent`; parameters `webComponent.tagName`,
+    `moduleUrl`, `attributes`, `preferenceAttributes`) gets a
+    `WebComponentRenderExecutionWorker` from `PortletWorkerFactoryImpl`
+    instead of a Pluto worker. It renders on the request thread in page
+    order, so a module script is emitted once per page, with no XSL change.
+    The element gets `locale`, `window-state`, `context-path`, `fname`,
+    `csrf-header` and `csrf-token`.
+  * REST calls use the session cookie and that CSRF token; `/api/v6-0/`
+    is CSRF-protected, bearer requests exempt. The JWT/OIDC userinfo
+    route is documented, not wired.
+  * Reference conversion (MOD-D19): `/api/v6-0/favorites` and
+    `<up-favorites>`. uPortal-start publishes Favorites as a Web Component
+    channel. The import upgrader and copy-tool rule are not built
+    (MOD-I133). Guide: `docs/developer/web-components/README.md`.
+
 ### MOD-D19: per-portlet choice between REST + web components and server-rendered Spring pages
 
 This refines MOD-D18 at the project owner's direction: replacements may be
@@ -564,6 +582,14 @@ chosen per portlet.
     linked under the revision Playwright expects; CI uses the
     Playwright-installed browsers.
 
+* **Status (2026-10-10, WS14 foundation):** `uPortal-webcomponents`
+  pins vite-plus 1.1.0, Vitest 5.0.3 (a Node unit project and a Chromium
+  browser project), Lit 3.3.3 and bootstrap 6.0.0-alpha.1. `vp check`,
+  `vp test` (90% of lines, branches, functions and statements in every file)
+  and `vp build` run in Gradle's `check`, `test` and `jar`; the WAR serves
+  the content-hashed modules from `/webcomponents/`. CI installs Chromium
+  with `:uPortal-webcomponents:installChromium`.
+
 ### MOD-D21: Bootstrap stays the theme; target Bootstrap 6
 
 * **Decision (project owner):** keep Bootstrap as uPortal's theme
@@ -630,7 +656,13 @@ chosen per portlet.
      tokens do cross shadow roots) plus a shared constructable
      stylesheet, or render simple components in light DOM. The choice is
      made in the WS14 foundation and covered by the Vitest browser-mode
-     tests.
+     tests. **Chosen (2026-10-10):** shadow DOM, with one shared
+     constructable stylesheet compiled from the Bootstrap 6 Sass modules
+     the components use (tokens unprefixed on `:host`,
+     `color-scheme: inherit`), so components keep their markup private
+     and follow the page's light or dark mode. axe checks every state in
+     the browser tests; it found the alpha's contrast failures
+     (MOD-I132).
 * **Risks:**
   * Alpha API churn. Mitigation: pin it, and keep Bootstrap-specific
     markup in Thymeleaf fragments and a small set of Lit base classes.
@@ -1599,6 +1631,14 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I125 | Runtime | New 5.2 log noise: HHH000112, HHH000482, and empty `AggrEvents.AggrEvents.*` query-cache regions. | Quiet or fix in P4-3 (Hibernate 5.6 + JCache regions). |
 | MOD-I126 | DB harness | Harness gaps: DATA counts rows only, `--skip-init` snapshots before deploying, the post-portal LOB report ignores `-PdbPort`, and `--portal` doesn't deploy resource-server. | The data-equivalence workstream covers DATA. The other three are small uPortal-start fixes. |
 | MOD-I127 | Runtime | `TransientPortletEntityDao` throws an NPE on `layout.json` requests with user=null. It appeared in 3 runs after P2 was rebased onto `22bdf2b23` and in none of 6 before. The tests still pass. | Compare with a 4.3 portal on the same ccr commit to find whether P2 or a ccr change causes it (candidates: MOD-I82, MOD-I97). The HTTP replay workstream should also show it. |
+| MOD-I130 | Security | **Found by WS14.** Every legacy endpoint under `/api` is exempt from CSRF (`PortalCsrfSecurityRequestMatcher` ignores `/api.*`), although browsers call them with the session cookie: `/api/layout` (add, move and remove layout nodes, favorites), portlet lists, permissions. The web-component channel spec adds and removes channels through `/api/layout` without a token. | The WS14 APIs under `/api/v6-0/` are protected: session cookie plus CSRF token, requests with `Authorization: Bearer` exempt (uPortal "feat(favorites): add favorites rest api"). Protect each legacy endpoint when WS14 replaces its callers. Upstream candidate. |
+| MOD-I131 | Favorites | `FavoritesUtils.getDuplicateFavoritesByFNameToDelete`, behind the Options menu's "Remove from my favorites", compared fnames with `==` (also in the SpotBugs baseline as ES_COMPARING_PARAMETER_STRING_WITH_EQ). | **Fixed** ("fix(favorites): compare fnames by value when unfavoriting") with a regression test that fails on the old code. The baseline entry is dropped ("build(spotbugs): drop the fixed FavoritesUtils finding from the baseline"). Upstream candidate. |
+| MOD-I132 | UI | **Found by axe in the WS14 Vitest browser tests.** Bootstrap 6.0.0-alpha.1's default tokens fail WCAG AA in light mode: links and primary buttons 3.56:1, danger buttons 4.41:1, subtle alerts 3.12:1 to 3.65:1. | The web components' shared stylesheet overrides `--link-color`, `--primary-bg`, `--danger-bg` and the alert text colour, with a contrast regression test ("feat(favorites): add up-favorites web component"). The skin migration (MOD-D21) needs the same overrides. Report it upstream to twbs. |
+| MOD-I133 | Data upgrade | The XML import upgraders (`XsltDataUpgrader`) only run for data versions without an importer, so converting portlet-definition 4.0 to 4.0 can't be an import upgrader. The copy tool's rules (MOD-D28) rename, skip and transform tables and columns, but can't add rows or rewrite rows picked by content (a portlet type, a definition's descriptor and parameters). The MOD-D18 "import upgrader plus copy-tool rule" for Favorites isn't built. | Documented instead: import the Web Component type and then the converted definition. `dataImport` updates the definition by fname and keeps its ID and layout placements. Add a 6.0 portlet-definition data version with an upgrader, and a `convert-portlet` copy-tool rule, with the first batch of conversions. |
+| MOD-I134 | DB harness | **Found by the hsqldb harness.** A quickstart data change moves DATA and GENERATORS. Publishing Favorites as a Web Component channel (uPortal-start "feat(data): render favorites as a web component channel") adds one `UP_PORTLET_TYPE` row (and sequence value) and two `UP_PORTLET_DEF_PARAM` rows. STRUCTURE and NAMES don't drift. Every later portlet conversion moves data the same way. | **Addressed (coordinator decision, 2026-10-11):** the 5.17 baselines stay as recorded. `tests/db/snapshots/5.17/intended-changes.txt` lists `UP_PORTLET_TYPE rows +1` and `UP_PORTLET_DEF_PARAM rows +2`, and `dbVerify` adds the deltas to every vendor's baseline before comparing (uPortal-start "test(db): let the harness accept listed data changes"). A found entry is a notice. Any other drift fails, and so does a listed change that a run doesn't show. Each later conversion adds its rows to the list. |
+| MOD-I135 | CI | uPortal-start `CI.yml` runs the full Playwright suite against released uPortal 5.17.9. Data and specs that need unreleased uPortal fail there: with the WS14 data and specs (uPortal-start "feat(data): render favorites as a web component channel" and "test(e2e): cover the favorites web component and the channel type"), 5.17.9 has no `WebComponent` portlet, `/api/v6-0/` or `/webcomponents/`. There the Favorites channel shows an error and the seven new tests fail. `integration.yml` (uPortal built from source) runs them on the matching uPortal. | **Decided (coordinator, 2026-10-11):** CI.yml skips its released-uPortal Playwright job on every `ccr-*` branch (uPortal-start "ci(prototype): skip the released-uportal playwright run on ccr branches"). Integration runs the suite there against uPortal built from source. Ordering rule: a uPortal-start change that needs a new uPortal lands after that uPortal release, so upstream the job keeps running on master and pull requests. |
+| MOD-I136 | Tests | uPortal-start `npm run lint` fails on `tests/db/migrate/matrix.mjs` (8 `no-undef` errors for `console` and `process`): `eslint.config.js` declares globals for TypeScript files only. The linter runs in `./gradlew playwrightRun`, which no workflow calls. | Add Node globals for `*.mjs` in `eslint.config.js`. |
+| MOD-I137 | DB harness | **Found by the WS14 hsqldb harness run.** `dataInit` runs the import in a Spring context that also starts uPortal's scheduled event-aggregation jobs. On this loaded machine the context took 2 min 47 s to start, and the jobs ran after the tables existed. Before the snapshot they filled the date and time dimensions (365 and 1440 rows) and wrote rows to `UP_MUTEX` (4) and `UP_EVENT_AGGR_STATUS` (2). The harness reported these as DATA and GENERATORS drift. Faster runs (CI, the earlier local run) take the snapshot first. | Turn the aggregation jobs off in the import context, or snapshot right after the import ends. Harness owners (DB matrix). |
 | MOD-I170 | Environment | **Prototype machine only.** The session worker restarted at about 23:06 UTC on 2026-10-10. It stopped the five local agents, the Docker daemon and the local landing run. Their worktrees kept all files. | Docker was started again by hand (`dockerd`, since `service docker start` fails on `ulimit` here). The owner approved new agents, which resumed from each worktree and its notes. Agents now commit in small local steps so a restart loses little. |
 | MOD-I171 | CI | The commit messages of uPortal `d66bdc5a5` and `cd841c8c3` fail `vale.sh commits`. The coordinator wrote the first, with a figurative phrase. A prose agent wrote the second, which quotes a jargon word. In both cases the check ran piped into `tail` or `grep` inside an `&&` chain, so its failure didn't stop the push. The commit-message job flags the first push. The integration branch isn't rewritten. | The coordinator pushes through a script that runs both checks with `pipefail` and pushes only if they pass. The agent rules forbid piping a check inside an `&&` chain. |
 | MOD-I172 | Spring | The authentication, rendering, JSON-rendering and redirection servlet contexts used `DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter`, which Spring 5 removed. `PortletRedirectionController` depended on the old `PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE` value and threw `UnsupportedOperationException` with two or more path parameters. | **Fixed** on Spring 4.3 by "refactor(mvc): map servlet controllers with requestmappinghandlermapping" (MOD-D38). Upstream candidate. |
