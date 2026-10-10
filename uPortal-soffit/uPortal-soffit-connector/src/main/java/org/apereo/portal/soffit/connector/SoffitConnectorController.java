@@ -50,7 +50,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.portlet.bind.annotation.RenderMapping;
 
-/** @since 5.0 */
+/**
+ * @since 5.0
+ */
 @Controller
 @RequestMapping(value = {"VIEW", "EDIT", "HELP"})
 public class SoffitConnectorController implements ApplicationContextAware {
@@ -247,11 +249,11 @@ public class SoffitConnectorController implements ApplicationContextAware {
             if (cacheControlHeader != null) {
                 switch (cacheControlValue) {
                     case Headers.CACHE_CONTROL_NOCACHE:
-                        /*
-                         * This value means we can use validation caching based on
-                         * Last-Modified or ETag.  Those things aren't implemented
-                         * yet, so fall through to the handling for 'no-store'.
-                         */
+                    /*
+                     * This value means we can use validation caching based on
+                     * Last-Modified or ETag.  Those things aren't implemented
+                     * yet, so fall through to the handling for 'no-store'.
+                     */
                     case Headers.CACHE_CONTROL_NOSTORE:
                         /*
                          * The value 'no-store' is the default.

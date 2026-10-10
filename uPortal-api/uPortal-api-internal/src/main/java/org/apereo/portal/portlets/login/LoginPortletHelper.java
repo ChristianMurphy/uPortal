@@ -44,7 +44,9 @@ public class LoginPortletHelper {
 
     private IPortalRequestUtils portalRequestUtils;
 
-    /** @param portalRequestUtils the portalRequestUtils to set */
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired(required = true)
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         Validate.notNull(portalRequestUtils);

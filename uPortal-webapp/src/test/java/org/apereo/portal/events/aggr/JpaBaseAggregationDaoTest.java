@@ -63,7 +63,9 @@ public abstract class JpaBaseAggregationDaoTest<
     @Autowired protected ICompositeGroupService compositeGroupService;
     @Autowired protected AggregationIntervalHelper aggregationIntervalHelper;
 
-    /** @return The private aggregation DAO to use */
+    /**
+     * @return The private aggregation DAO to use
+     */
     protected abstract BaseAggregationPrivateDao<T, K> getAggregationDao();
 
     /**

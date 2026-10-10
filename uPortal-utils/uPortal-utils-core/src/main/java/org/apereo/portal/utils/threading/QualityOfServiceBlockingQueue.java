@@ -77,7 +77,9 @@ public abstract class QualityOfServiceBlockingQueue<K, T> implements BlockingQue
         this.capacity = capacity;
     }
 
-    /** @return the key for the specified element */
+    /**
+     * @return the key for the specified element
+     */
     protected abstract K getElementKey(T e);
 
     /**
@@ -90,12 +92,16 @@ public abstract class QualityOfServiceBlockingQueue<K, T> implements BlockingQue
      */
     protected abstract K getNextElementKey();
 
-    /** @return A read only Set of the keys in the queue */
+    /**
+     * @return A read only Set of the keys in the queue
+     */
     public final Set<K> getKeySet() {
         return queueKeySet;
     }
 
-    /** @return true if there are no elements for the specified key */
+    /**
+     * @return true if there are no elements for the specified key
+     */
     public final boolean isKeyEmpty(K key) {
         final Queue<T> queue = this.keyedQueues.get(key);
         if (queue == null) {
@@ -105,7 +111,9 @@ public abstract class QualityOfServiceBlockingQueue<K, T> implements BlockingQue
         return queue.isEmpty();
     }
 
-    /** @return The number of elements in the queue for the specified key */
+    /**
+     * @return The number of elements in the queue for the specified key
+     */
     public final int getKeySize(K key) {
         final Queue<T> queue = this.keyedQueues.get(key);
         if (queue == null) {

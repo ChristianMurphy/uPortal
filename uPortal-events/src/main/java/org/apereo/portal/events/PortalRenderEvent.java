@@ -33,6 +33,7 @@ public final class PortalRenderEvent extends PortalEvent {
     private final UrlType urlType;
     private final Map<String, List<String>> parameters;
     private final String targetedLayoutNodeId;
+
     /**
      * Still here to support deserializing old event json
      *
@@ -75,7 +76,9 @@ public final class PortalRenderEvent extends PortalEvent {
         this.executionTimeNano = executionTimeNano;
     }
 
-    /** @return the executionTime in milliseconds */
+    /**
+     * @return the executionTime in milliseconds
+     */
     public long getExecutionTime() {
         if (this.executionTime == null) {
             this.executionTime = TimeUnit.NANOSECONDS.toMillis(this.executionTimeNano);
@@ -84,7 +87,9 @@ public final class PortalRenderEvent extends PortalEvent {
         return this.executionTime;
     }
 
-    /** @return the executionTime in nanoseconds */
+    /**
+     * @return the executionTime in nanoseconds
+     */
     public long getExecutionTimeNano() {
         if (this.executionTimeNano == -1 && this.executionTime != null) {
             this.executionTimeNano = TimeUnit.MILLISECONDS.toNanos(this.executionTime);
@@ -93,27 +98,37 @@ public final class PortalRenderEvent extends PortalEvent {
         return this.executionTimeNano;
     }
 
-    /** @return the requestPathInfo */
+    /**
+     * @return the requestPathInfo
+     */
     public String getRequestPathInfo() {
         return this.requestPathInfo;
     }
 
-    /** @return the urlState */
+    /**
+     * @return the urlState
+     */
     public UrlState getUrlState() {
         return this.urlState;
     }
 
-    /** @return the urlType */
+    /**
+     * @return the urlType
+     */
     public UrlType getUrlType() {
         return this.urlType;
     }
 
-    /** @return the parameters */
+    /**
+     * @return the parameters
+     */
     public Map<String, List<String>> getParameters() {
         return this.parameters;
     }
 
-    /** @return the targetedLayoutNodeId */
+    /**
+     * @return the targetedLayoutNodeId
+     */
     public String getTargetedLayoutNodeId() {
         return this.targetedLayoutNodeId;
     }

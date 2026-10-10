@@ -489,7 +489,9 @@ public class GrouperEntityGroupStore implements IEntityGroupStore, IEntityStore,
         }
     }
 
-    /** @see IEntityStore#newInstance(java.lang.String, java.lang.Class) */
+    /**
+     * @see IEntityStore#newInstance(java.lang.String, java.lang.Class)
+     */
     @Override
     @SuppressWarnings("unchecked")
     public IEntity newInstance(String key, Class type) throws GroupsException {
@@ -585,7 +587,9 @@ public class GrouperEntityGroupStore implements IEntityGroupStore, IEntityStore,
         }
     }
 
-    /** @see IEntityGroupStore#update(IEntityGroup) */
+    /**
+     * @see IEntityGroupStore#update(IEntityGroup)
+     */
     @Override
     public void update(IEntityGroup group) throws GroupsException {
 
@@ -611,7 +615,9 @@ public class GrouperEntityGroupStore implements IEntityGroupStore, IEntityStore,
         updateMembers(group);
     }
 
-    /** @see IEntityGroupStore#updateMembers(IEntityGroup) */
+    /**
+     * @see IEntityGroupStore#updateMembers(IEntityGroup)
+     */
     @Override
     public void updateMembers(IEntityGroup group) throws GroupsException {
 
@@ -628,7 +634,9 @@ public class GrouperEntityGroupStore implements IEntityGroupStore, IEntityStore,
         gcAddMember.execute();
     }
 
-    /** @see IEntityGroupStore#delete(IEntityGroup) */
+    /**
+     * @see IEntityGroupStore#delete(IEntityGroup)
+     */
     @Override
     public void delete(IEntityGroup group) throws GroupsException {
 
@@ -636,7 +644,9 @@ public class GrouperEntityGroupStore implements IEntityGroupStore, IEntityStore,
         new GcGroupDelete().addGroupLookup(new WsGroupLookup(groupName, null)).execute();
     }
 
-    /** @see IEntityGroupStore#findLockable(java.lang.String) */
+    /**
+     * @see IEntityGroupStore#findLockable(java.lang.String)
+     */
     @Override
     public ILockableEntityGroup findLockable(String key) throws GroupsException {
         throw new UnsupportedOperationException(

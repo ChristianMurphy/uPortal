@@ -22,6 +22,8 @@ import org.apereo.portal.events.aggr.tabs.AggregatedTabMapping;
  */
 public interface TabRenderAggregationDiscriminator extends BaseGroupedAggregationDiscriminator {
 
-    /** @return The name of the tab */
+    /**
+     * @return The name of the tab
+     */
     AggregatedTabMapping getTabMapping();
 }

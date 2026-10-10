@@ -59,12 +59,16 @@ public class PortalRootPersonAttributeDao extends AbstractFlatteningPersonAttrib
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /** @return the delegatePersonAttributeDao */
+    /**
+     * @return the delegatePersonAttributeDao
+     */
     public IPersonAttributeDao getDelegatePersonAttributeDao() {
         return delegatePersonAttributeDao;
     }
 
-    /** @param delegatePersonAttributeDao the delegatePersonAttributeDao to set */
+    /**
+     * @param delegatePersonAttributeDao the delegatePersonAttributeDao to set
+     */
     @Required
     public void setDelegatePersonAttributeDao(IPersonAttributeDao delegatePersonAttributeDao) {
         Validate.notNull(delegatePersonAttributeDao, "delegatePersonAttributeDao can not be null");
@@ -76,12 +80,16 @@ public class PortalRootPersonAttributeDao extends AbstractFlatteningPersonAttrib
         this.usernameAttributeProvider = usernameAttributeProvider;
     }
 
-    /** @return the overridesMap */
+    /**
+     * @return the overridesMap
+     */
     public Map<String, Map<String, List<Object>>> getAttributeOverridesMap() {
         return overridesMap;
     }
 
-    /** @param overridesMap the overridesMap to set */
+    /**
+     * @param overridesMap the overridesMap to set
+     */
     public void setAttributeOverridesMap(Map<String, Map<String, List<Object>>> overridesMap) {
         Validate.notNull(overridesMap, "overridesMap can not be null");
         this.overridesMap = overridesMap;

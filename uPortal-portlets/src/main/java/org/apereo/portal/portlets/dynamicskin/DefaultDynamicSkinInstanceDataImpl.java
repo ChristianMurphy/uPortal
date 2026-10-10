@@ -40,13 +40,17 @@ public class DefaultDynamicSkinInstanceDataImpl implements DynamicSkinInstanceDa
         this.portletRequest = request;
     }
 
-    /** @see DynamicSkinInstanceData#getPortletAbsolutePathRoot() */
+    /**
+     * @see DynamicSkinInstanceData#getPortletAbsolutePathRoot()
+     */
     @Override
     public String getPortletAbsolutePathRoot() {
         return this.portletAbsolutePathRoot;
     }
 
-    /** @see DynamicSkinInstanceData#getSkinName() */
+    /**
+     * @see DynamicSkinInstanceData#getSkinName()
+     */
     @Override
     public String getSkinName() {
         return this.skinName;
@@ -57,7 +61,9 @@ public class DefaultDynamicSkinInstanceDataImpl implements DynamicSkinInstanceDa
         return this.portletRequest;
     }
 
-    /** @see DynamicSkinInstanceData#getVariablesValuesMap() */
+    /**
+     * @see DynamicSkinInstanceData#getVariablesValuesMap()
+     */
     @Override
     public Map<String, String> getVariableNameToValueMap() {
         return this.variableNameToValueMap;

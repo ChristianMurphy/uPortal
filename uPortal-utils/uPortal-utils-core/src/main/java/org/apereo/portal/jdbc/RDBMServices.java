@@ -120,12 +120,16 @@ public class RDBMServices {
         return dataSource;
     }
 
-    /** @return Return the current number of active connections */
+    /**
+     * @return Return the current number of active connections
+     */
     public static int getActiveConnectionCount() {
         return activeConnections.intValue();
     }
 
-    /** @return Return the maximum number of connections */
+    /**
+     * @return Return the maximum number of connections
+     */
     public static int getMaxConnectionCount() {
         return maxConnections;
     }

@@ -18,6 +18,8 @@ import java.util.Set;
 
 /** Used to tag cache entries (keys or values) */
 public interface TaggedCacheEntry {
-    /** @return Tags for the cache entry */
+    /**
+     * @return Tags for the cache entry
+     */
     Set<CacheEntryTag> getTags();
 }

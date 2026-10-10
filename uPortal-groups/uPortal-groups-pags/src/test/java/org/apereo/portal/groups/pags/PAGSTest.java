@@ -60,12 +60,15 @@ public class PAGSTest extends TestCase {
         super(name);
     }
 
-    /** @return org.apereo.portal.groups.IEntity */
+    /**
+     * @return org.apereo.portal.groups.IEntity
+     */
     private IPerson getIPerson(String key) {
         IPerson ip = new PersonImpl();
         ip.setAttribute(IPerson.USERNAME, key);
         return ip;
     }
+
     /**
      * @return java.lang.String
      * @param length int
@@ -81,7 +84,10 @@ public class PAGSTest extends TestCase {
         }
         return new String(chars);
     }
-    /** @param msg java.lang.String */
+
+    /**
+     * @param msg java.lang.String
+     */
     private static void print(String msg) {
         LOG.debug(msg);
     }

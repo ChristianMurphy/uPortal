@@ -93,7 +93,9 @@ public class FailsafeSingletonScope implements Scope, DisposableBean {
         }
     }
 
-    /** @see org.springframework.web.context.request.SessionScope#getConversationId() */
+    /**
+     * @see org.springframework.web.context.request.SessionScope#getConversationId()
+     */
     @Override
     public String getConversationId() {
         try {
@@ -134,7 +136,9 @@ public class FailsafeSingletonScope implements Scope, DisposableBean {
         }
     }
 
-    /** @see org.springframework.web.context.request.SessionScope#remove(java.lang.String) */
+    /**
+     * @see org.springframework.web.context.request.SessionScope#remove(java.lang.String)
+     */
     @Override
     public Object remove(String name) {
         try {
@@ -167,7 +171,9 @@ public class FailsafeSingletonScope implements Scope, DisposableBean {
             this.name = name;
         }
 
-        /** @see java.lang.Object#equals(Object) */
+        /**
+         * @see java.lang.Object#equals(Object)
+         */
         @Override
         public boolean equals(Object object) {
             if (object == this) {
@@ -180,13 +186,17 @@ public class FailsafeSingletonScope implements Scope, DisposableBean {
             return new EqualsBuilder().append(this.name, rhs.name).isEquals();
         }
 
-        /** @see java.lang.Object#hashCode() */
+        /**
+         * @see java.lang.Object#hashCode()
+         */
         @Override
         public int hashCode() {
             return new HashCodeBuilder(217891979, 1307635269).append(this.name).toHashCode();
         }
 
-        /** @see java.lang.Object#toString() */
+        /**
+         * @see java.lang.Object#toString()
+         */
         @Override
         public String toString() {
             return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)

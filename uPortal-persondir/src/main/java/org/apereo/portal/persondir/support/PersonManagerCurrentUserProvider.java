@@ -33,13 +33,18 @@ public class PersonManagerCurrentUserProvider implements ICurrentUserProvider {
     public IPersonManager getPersonManager() {
         return personManager;
     }
-    /** @param personManager the personManager to set */
+
+    /**
+     * @param personManager the personManager to set
+     */
     @Autowired
     public void setPersonManager(IPersonManager personManager) {
         this.personManager = personManager;
     }
 
-    /** @param portalRequestUtils the portalRequestUtils to set */
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         this.portalRequestUtils = portalRequestUtils;

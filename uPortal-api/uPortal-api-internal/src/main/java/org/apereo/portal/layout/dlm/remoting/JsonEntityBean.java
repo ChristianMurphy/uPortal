@@ -155,7 +155,9 @@ public class JsonEntityBean implements Serializable, Comparable<JsonEntityBean> 
         return targetString;
     }
 
-    /** @since 4.0.14 */
+    /**
+     * @since 4.0.14
+     */
     public void setTargetString(String targetString) {
         this.targetString = targetString;
     }

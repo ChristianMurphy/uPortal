@@ -75,6 +75,7 @@ public interface IGroupMember extends IBasicEntity {
      * . For an entity, it will be the type of the underlying <code>EntityIdentifier</code>.
      */
     Class getType();
+
     /**
      * Returns <code>EntityIdentifier</code> for this <code>IGroupMember's</code> underlying entity.
      * In the case of an <code>IEntityGroup</code>, it will be the <code>EntityIdentifier</code> for
@@ -93,8 +94,11 @@ public interface IGroupMember extends IBasicEntity {
      */
     boolean isDeepMemberOf(IEntityGroup group) throws GroupsException;
 
-    /** @return boolean */
+    /**
+     * @return boolean
+     */
     boolean isGroup();
+
     /**
      * Answers if <code>this</code> is a member of <code>IGroupMember</code> gm.
      *

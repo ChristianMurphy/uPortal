@@ -26,6 +26,7 @@ public interface IPersonAttributesGroupDefinitionDao {
             IPersonAttributesGroupDefinition personAttributesGroupDefinition);
 
     public void deletePersonAttributesGroupDefinition(IPersonAttributesGroupDefinition definition);
+
     /**
      * TODO: This method probably doesn't need to return a Set. We should refactor it to return a
      * single object.

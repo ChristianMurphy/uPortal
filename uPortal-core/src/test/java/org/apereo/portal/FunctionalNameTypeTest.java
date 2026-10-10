@@ -5,7 +5,9 @@ import static org.junit.Assert.*;
 import org.apereo.portal.dao.usertype.FunctionalNameType;
 import org.junit.Test;
 
-/** @author snehitroda */
+/**
+ * @author snehitroda
+ */
 public class FunctionalNameTypeTest {
 
     @Test

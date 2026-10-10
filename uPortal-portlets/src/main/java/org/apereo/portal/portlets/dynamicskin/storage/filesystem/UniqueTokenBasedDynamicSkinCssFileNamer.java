@@ -50,7 +50,9 @@ public class UniqueTokenBasedDynamicSkinCssFileNamer implements DynamicSkinCssFi
         this.prefix = prefix;
     }
 
-    /** @see DynamicSkinCssFileNamer#generateCssFileName(DynamicSkinInstanceData) */
+    /**
+     * @see DynamicSkinCssFileNamer#generateCssFileName(DynamicSkinInstanceData)
+     */
     @Override
     public String generateCssFileName(DynamicSkinInstanceData data) {
         final String prefixToUse = this.prefix == null ? data.getSkinName() : this.prefix;

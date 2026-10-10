@@ -38,18 +38,26 @@ public class EntityLockTest extends TestCase {
     private int numIPersonLocksInStoreForTestId = 0;
     private String[] testKeys = {"101", "102", "9999999", "12345"};
     private String[] testIds = {"de3", "df7", "av317"};
+
     /** EntityLockTester constructor comment. */
     public EntityLockTest(String name) {
         super(name);
     }
-    /** @return org.apereo.portal.concurrency.locking.IEntityLockStore */
+
+    /**
+     * @return org.apereo.portal.concurrency.locking.IEntityLockStore
+     */
     private IEntityLockStore getLockStore() {
         return lockStore;
     }
-    /** @return org.apereo.portal.groups.IEntityLockService */
+
+    /**
+     * @return org.apereo.portal.groups.IEntityLockService
+     */
     private IEntityLockService getService() throws LockingException {
         return ReferenceEntityLockService.singleton();
     }
+
     /**
      * Starts the application.
      *
@@ -70,7 +78,10 @@ public class EntityLockTest extends TestCase {
         }
         print("  Total: " + locks.length);
     }
-    /** @param msg java.lang.String */
+
+    /**
+     * @param msg java.lang.String
+     */
     private static void print(String msg) {
         LOG.debug(msg);
     }

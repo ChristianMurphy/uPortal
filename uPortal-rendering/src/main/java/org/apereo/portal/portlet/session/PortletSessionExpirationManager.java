@@ -59,7 +59,9 @@ public class PortletSessionExpirationManager
 
     private IPortalRequestUtils portalRequestUtils;
 
-    /** @param portalRequestUtils the portalRequestUtils to set */
+    /**
+     * @param portalRequestUtils the portalRequestUtils to set
+     */
     @Autowired
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
         this.portalRequestUtils = portalRequestUtils;

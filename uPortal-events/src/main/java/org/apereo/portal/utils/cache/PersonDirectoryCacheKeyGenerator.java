@@ -75,7 +75,7 @@ public class PersonDirectoryCacheKeyGenerator implements CacheKeyGenerator {
                 CacheKey.builder(cachableMethod.getName());
 
         switch (cachableMethod) {
-                // Both methods that take a Map argument can just have the first argument returned
+            // Both methods that take a Map argument can just have the first argument returned
             case PEOPLE_MAP:
             case PEOPLE_MULTIVALUED_MAP:
             case PEOPLE_MULTIVALUED_MAP_FILTER:
@@ -128,8 +128,8 @@ public class PersonDirectoryCacheKeyGenerator implements CacheKeyGenerator {
                     break;
                 }
 
-                // The multivalued attributes with a string needs to be converted to Map<String,
-                // List<Object>>
+            // The multivalued attributes with a string needs to be converted to Map<String,
+            // List<Object>>
             case MULTIVALUED_USER_ATTRIBUTES__STR:
                 {
                     final String uid = (String) methodArguments[0];
@@ -142,8 +142,8 @@ public class PersonDirectoryCacheKeyGenerator implements CacheKeyGenerator {
                     break;
                 }
 
-                // The single valued attributes with a string needs to be converted to Map<String,
-                // Object>
+            // The single valued attributes with a string needs to be converted to Map<String,
+            // Object>
             case PERSON_STR:
             case USER_ATTRIBUTES__STR:
                 {

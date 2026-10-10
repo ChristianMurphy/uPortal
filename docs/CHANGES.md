@@ -1,5 +1,76 @@
 ## Next Release
 
+- **Gradle wrapper bumped from 6.9.4 to 8.14.6.** Contributors using a
+  system Gradle install (instead of the bundled wrapper) must move to
+  Gradle 8.14 or newer; the wrapper remains the recommended entry point
+  and now verifies the distribution's SHA-256. The build no longer
+  declares `jcenter()`; only `mavenCentral()` is consulted. The
+  unmaintained `org.openrepose` JAXB plugin was replaced with an
+  Ant-based XJC task in `uPortal-io-jaxb` and `uPortal-api-search`
+  (generated sources are unchanged). Plugins bumped alongside the
+  wrapper: `nebula.lint` 17.8.0 → 20.6.2, `net.ltgt.errorprone` 4.4.0 →
+  5.1.1, `com.github.spotbugs` 4.8.0 → 6.5.12, `net.researchgate.release`
+  3.1.0 → 3.2.0.
+- **Artifacts are published with `maven-publish`** instead of the
+  legacy `maven` plugin (removed in Gradle 7). `./gradlew install` and
+  `./gradlew release` work as before, and the `ossrhUsername`,
+  `ossrhPassword`, `ossrhUrl` and `ossrhUrlSnapshot` properties keep
+  their names. Same coordinates and files (POM, jar or war, sources,
+  javadoc, signatures). POM changes: test-scoped dependencies are no
+  longer listed; `runtimeOnly` dependencies (for example `jjwt-impl` in
+  `uPortal-security-core` and `uPortal-soffit-core`) are now listed with
+  `runtime` scope instead of being dropped; `uPortal-security-filters`
+  lists `slf4j-api` as `runtime`; the developer organization is written
+  correctly.
+- **Java formatter switched from the sherter google-java-format plugin
+  to Spotless.** The previous plugin (`com.github.sherter.google-java-format`
+  0.9) was last released in 2019 and cannot run google-java-format on
+  JDK 16+. Spotless takes its place with the same AOSP style and still
+  runs as part of `check`. Use `./gradlew spotlessCheck` to verify and
+  `./gradlew spotlessApply` to format; the old `./gradlew verGJF` and
+  `./gradlew goJF` commands keep working. Seven stray no-op empty
+  statements (`;` after a closing brace) were removed so the switch
+  does not reformat anything else.
+- **Classes are compiled with `--release 11` and `-parameters`.** The
+  bytecode level stays Java 11, and the compiler now also rejects Java
+  12+ APIs whichever JDK runs the build. `-parameters` records method
+  parameter names in the class files (needed by Spring 6.1+); Spring 4.3
+  resolves the same names as before.
+- **Test libraries:** Mockito 4.11 → 5.24 (loaded as a `-javaagent` by
+  the test tasks; `mockito-inline` is no longer needed), and the Groovy
+  tests in `uPortal-webapp` now compile and run on Groovy 4.0 with Spock
+  2.4 (`groovyTestVersion`). The Groovy shipped in the war and used by
+  `uPortal-tools` stays at 3.0 (`groovyVersion`).
+- **Java sources were reformatted with google-java-format 1.24.0**
+  (javadoc and blank-line layout only; 409 files). Rebase open branches
+  with `./gradlew spotlessApply` before resolving conflicts, and run
+  `git config blame.ignoreRevsFile .git-blame-ignore-revs` so `git blame`
+  skips the reformat.
+- **JDK 21 or newer is required to build uPortal; CI builds and tests
+  on JDK 21 and 25.** The classes are still compiled for Java 11
+  (`--release 11`), so deployments can stay on Java 11. `.sdkmanrc` now
+  pins Temurin 25. Error Prone moved to 2.50.0 (four new checks that flag
+  existing code are disabled for now: `BanJNDI`, `BoxedPrimitiveEquality`,
+  `DoubleBraceInitialization`, `SelfAssertion`) and the formatter to
+  google-java-format 1.36.1 via Spotless 8.10.4 (no formatting change).
+- **Running the portal on JDK 24 or newer needs
+  `-Djdk.xml.enableExtensionFunctions=true`** (for example in
+  `CATALINA_OPTS`). Since JDK 24 the JDK's default `jaxp.properties`
+  disables XSLT extension functions, which uPortal's theme, security
+  helper and import-upgrade stylesheets call; without the flag rendering
+  fails with "The first argument to the non-static Java function
+  'getUrlString' is not a valid object reference". The test JVMs set it.
+  JDK 11–21 need nothing.
+- **Gradle wrapper bumped from 8.14.6 to 9.8.1.** Plugins: `nebula.lint`
+  → 21.3.0 (its `duplicate-dependency-class` rule is no longer run),
+  CodeNarc → 3.7.0-groovy-4.0, JaCoCo pinned to 0.8.15. The unmaintained
+  `com.github.kt3k.coveralls` plugin was removed, so there is no
+  `./gradlew coveralls` task any more: CI runs
+  `./gradlew build jacocoAggregateReport` and uploads the aggregate
+  JaCoCo report with the Coveralls GitHub Action. Jars are now built
+  reproducibly (fixed entry dates); the war keeps real file dates so
+  servlet containers still notice changed JSPs.
+
 ## v5.17.3
 
 - substantial frontend modernization landed in [#2915](https://github.com/uPortal-Project/uPortal/pull/2915):

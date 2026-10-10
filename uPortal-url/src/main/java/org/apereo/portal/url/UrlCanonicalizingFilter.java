@@ -59,6 +59,7 @@ public class UrlCanonicalizingFilter extends OncePerRequestFilter {
     public void setLoginRefUrlEncoder(LoginRefUrlEncoder loginRefUrlEncoder) {
         this.loginRefUrlEncoder = loginRefUrlEncoder;
     }
+
     /** Maximum number of consecutive redirects that are allowed. Defaults to 5. */
     public void setMaximumRedirects(int maximumRedirects) {
         this.maximumRedirects = maximumRedirects;

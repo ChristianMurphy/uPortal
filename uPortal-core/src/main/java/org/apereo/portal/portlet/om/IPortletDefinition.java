@@ -53,10 +53,14 @@ public interface IPortletDefinition extends IBasicEntity, IPortalData {
     /** A portlet parameter that specifies a target for the flyout, eg : _blank */
     String TARGET_PARAM = "target";
 
-    /** @return The unique identifier for this portlet definition. */
+    /**
+     * @return The unique identifier for this portlet definition.
+     */
     IPortletDefinitionId getPortletDefinitionId();
 
-    /** @return The List of PortletPreferences, will not be null */
+    /**
+     * @return The List of PortletPreferences, will not be null
+     */
     List<IPortletPreference> getPortletPreferences();
 
     /**
@@ -107,23 +111,29 @@ public interface IPortletDefinition extends IBasicEntity, IPortalData {
 
     String getTitle();
 
-    /** @return Default timeout in ms, -1 means no timeout. */
+    /**
+     * @return Default timeout in ms, -1 means no timeout.
+     */
     int getTimeout();
+
     /**
      * @return Optional timeout for action requests in ms, if null {@link #getTimeout()} should be
      *     used, -1 means no timeout.
      */
     Integer getActionTimeout();
+
     /**
      * @return Optional timeout for event requests in ms, if null {@link #getTimeout()} should be
      *     used, -1 means no timeout.
      */
     Integer getEventTimeout();
+
     /**
      * @return Optional timeout for render requests in ms, if null {@link #getTimeout()} should be
      *     used, -1 means no timeout.
      */
     Integer getRenderTimeout();
+
     /**
      * @return Optional timeout for resource requests in ms, if null {@link #getTimeout()} should be
      *     used, -1 means no timeout.
@@ -132,7 +142,9 @@ public interface IPortletDefinition extends IBasicEntity, IPortalData {
 
     IPortletType getType();
 
-    /** @return a READ-ONLY copy of the parameters */
+    /**
+     * @return a READ-ONLY copy of the parameters
+     */
     Set<IPortletDefinitionParameter> getParameters();
 
     IPortletDefinitionParameter getParameter(String key);
@@ -185,7 +197,9 @@ public interface IPortletDefinition extends IBasicEntity, IPortalData {
 
     void setTitle(String title);
 
-    /** @param timeout The default timeout value in ms, -1 means no timeout. */
+    /**
+     * @param timeout The default timeout value in ms, -1 means no timeout.
+     */
     void setTimeout(int timeout);
 
     /**
@@ -193,16 +207,19 @@ public interface IPortletDefinition extends IBasicEntity, IPortalData {
      *     #getTimeout()} will be used, -1 means no timeout.
      */
     void setActionTimeout(Integer actionTimeout);
+
     /**
      * @param eventTimeout Optional timeout for event requests in ms, if null {@link #getTimeout()}
      *     will be used, -1 means no timeout.
      */
     void setEventTimeout(Integer eventTimeout);
+
     /**
      * @param renderTimeout Optional timeout for render requests in ms, if null {@link
      *     #getTimeout()} will be used, -1 means no timeout.
      */
     void setRenderTimeout(Integer renderTimeout);
+
     /**
      * @param resourceTimeout Optional timeout for resource requests in ms, if null {@link
      *     #getTimeout()} will be used, -1 means no timeout.
@@ -219,16 +236,24 @@ public interface IPortletDefinition extends IBasicEntity, IPortalData {
 
     void addLocalizedDescription(String locale, String chanDesc);
 
-    /** @return a portlet rating */
+    /**
+     * @return a portlet rating
+     */
     Double getRating();
 
-    /** @param rating sets portlet rating */
+    /**
+     * @param rating sets portlet rating
+     */
     void setRating(Double rating);
 
-    /** @return Number of users that rated this portlet */
+    /**
+     * @return Number of users that rated this portlet
+     */
     Long getUsersRated();
 
-    /** @param usersRated sets number of users that rated this portlet */
+    /**
+     * @param usersRated sets number of users that rated this portlet
+     */
     void setUsersRated(Long usersRated);
 
     /**
@@ -254,7 +279,9 @@ public interface IPortletDefinition extends IBasicEntity, IPortalData {
      */
     void removeParameter(String name);
 
-    /** @return Hash code based only on the fname of the portlet definition */
+    /**
+     * @return Hash code based only on the fname of the portlet definition
+     */
     @Override
     int hashCode();
 

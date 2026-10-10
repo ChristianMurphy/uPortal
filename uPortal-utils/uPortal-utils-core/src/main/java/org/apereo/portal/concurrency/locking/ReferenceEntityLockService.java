@@ -48,11 +48,13 @@ public class ReferenceEntityLockService implements IEntityLockService {
      * inMemory == false.  Defaults to 5000.
      */
     private int lockToleranceMillis = 5000;
+
     /** ReferenceEntityLockingService constructor comment. */
     public ReferenceEntityLockService() throws LockingException {
         super();
         initialize();
     }
+
     /**
      * Attempts to change the lock's <code>lockType</code> to <code>newType</code>.
      *
@@ -64,6 +66,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
     public void convert(IEntityLock lock, int newType) throws LockingException {
         convert(lock, newType, defaultLockPeriod);
     }
+
     /**
      * Attempts to change the lock's <code>lockType</code> to <code>newType</code>.
      *
@@ -122,23 +125,37 @@ public class ReferenceEntityLockService implements IEntityLockService {
         return (lockArray.length > 0);
     }
 
-    /** @return int */
+    /**
+     * @return int
+     */
     private int getDefaultLockPeriod() {
         return defaultLockPeriod;
     }
-    /** @return org.apereo.portal.concurrency.locking.IEntityLockStore */
+
+    /**
+     * @return org.apereo.portal.concurrency.locking.IEntityLockStore
+     */
     private IEntityLockStore getLockStore() {
         return lockStore;
     }
-    /** @return int */
+
+    /**
+     * @return int
+     */
     private int getLockToleranceMillis() {
         return lockToleranceMillis;
     }
-    /** @return java.util.Date */
+
+    /**
+     * @return java.util.Date
+     */
     private Date getNewExpiration(int durationSecs) {
         return new Date(System.currentTimeMillis() + (durationSecs * 1000));
     }
-    /** @exception LockingException */
+
+    /**
+     * @exception LockingException
+     */
     private void initialize() throws LockingException {
         String eMsg = null;
 
@@ -179,6 +196,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
             }
         }
     }
+
     /**
      * Answers if the entity represented by the entityType and entityKey already has a lock of some
      * type.
@@ -190,6 +208,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
     private boolean isLocked(Class entityType, String entityKey) throws LockingException {
         return isLocked(entityType, entityKey, null);
     }
+
     /**
      * Answers if the entity represented by entityType and entityKey has one or more locks. Param
      * <code>lockType</code> can be null.
@@ -204,10 +223,14 @@ public class ReferenceEntityLockService implements IEntityLockService {
         IEntityLock[] locks = retrieveLocks(entityType, entityKey, lockType);
         return locks.length > 0;
     }
-    /** @return boolean */
+
+    /**
+     * @return boolean
+     */
     private boolean isMultiServer() {
         return multiServer;
     }
+
     /**
      * @param lock IEntityLock
      * @return boolean
@@ -215,6 +238,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
     private boolean isUnexpired(IEntityLock lock) {
         return lock.getExpirationTime().getTime() > System.currentTimeMillis();
     }
+
     /**
      * Answers if this <code>IEntityLock</code> represents a lock that is still good. To be valid, a
      * lock must exist in the underlying store and be unexpired.
@@ -310,6 +334,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
         }
         return newLock;
     }
+
     /**
      * Returns a lock for the entity, lock type and owner if no conflicting locks exist.
      *
@@ -324,6 +349,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
             throws LockingException {
         return newLock(entityID.getType(), entityID.getKey(), lockType, owner, defaultLockPeriod);
     }
+
     /**
      * Returns a lock for the entity, lock type and owner if no conflicting locks exist.
      *
@@ -340,6 +366,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
             throws LockingException {
         return newLock(entityID.getType(), entityID.getKey(), lockType, owner, durationSecs);
     }
+
     /**
      * Releases the <code>IEntityLock</code>.
      *
@@ -351,6 +378,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
         getLockStore().delete(lock);
         ((EntityLockImpl) lock).setExpirationTime(new Date(0));
     }
+
     /**
      * Extends the expiration time of the lock by some service-defined increment.
      *
@@ -361,6 +389,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
     public void renew(IEntityLock lock) throws LockingException {
         renew(lock, defaultLockPeriod);
     }
+
     /**
      * Extends the expiration time of the lock by some service-defined increment.
      *
@@ -377,6 +406,7 @@ public class ReferenceEntityLockService implements IEntityLockService {
             throw new LockingException("Could not renew " + lock + " : lock is invalid.");
         }
     }
+
     /**
      * Returns an IEntityLock[] containing unexpired locks for the entityType, entityKey and
      * lockType. Param <code>lockType</code> can be null.
@@ -395,19 +425,31 @@ public class ReferenceEntityLockService implements IEntityLockService {
 
         return getLockStore().findUnexpired(expiration, entityType, entityKey, lockType, null);
     }
-    /** @param newDefaultLockPeriod int */
+
+    /**
+     * @param newDefaultLockPeriod int
+     */
     private void setDefaultLockPeriod(int newDefaultLockPeriod) {
         defaultLockPeriod = newDefaultLockPeriod;
     }
-    /** @param newLockToleranceMillis int */
+
+    /**
+     * @param newLockToleranceMillis int
+     */
     private void setLockToleranceMillis(int newLockToleranceMillis) {
         lockToleranceMillis = newLockToleranceMillis;
     }
-    /** @param newMultiServer boolean */
+
+    /**
+     * @param newMultiServer boolean
+     */
     private void setMultiServer(boolean newMultiServer) {
         multiServer = newMultiServer;
     }
-    /** @return org.apereo.portal.concurrency.locking.ReferenceEntityLockService */
+
+    /**
+     * @return org.apereo.portal.concurrency.locking.ReferenceEntityLockService
+     */
     public static synchronized IEntityLockService singleton() throws LockingException {
         if (singleton == null) {
             singleton = new ReferenceEntityLockService();

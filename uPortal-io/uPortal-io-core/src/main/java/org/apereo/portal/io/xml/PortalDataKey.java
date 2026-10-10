@@ -29,6 +29,7 @@ public class PortalDataKey {
      * file version. Used for data files from 3.2 and earlier.
      */
     public static final QName SCRIPT_ATTRIBUTE_NAME = new QName("script");
+
     /** The version of the data file, used for data files form 4.0 and later. */
     public static final QName VERSION_ATTRIBUTE_NAME = new QName("version");
 

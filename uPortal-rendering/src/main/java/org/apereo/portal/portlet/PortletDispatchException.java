@@ -33,7 +33,9 @@ public class PortletDispatchException extends PortalException {
         this.portletWindow = portletWindow;
     }
 
-    /** @return the portletWindow */
+    /**
+     * @return the portletWindow
+     */
     public IPortletWindow getPortletWindow() {
         return portletWindow;
     }

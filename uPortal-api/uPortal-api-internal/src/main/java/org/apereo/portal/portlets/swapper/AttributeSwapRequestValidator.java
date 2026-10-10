@@ -31,6 +31,7 @@ public class AttributeSwapRequestValidator {
     public IAttributeSwapperHelper getAttributeSwapperHelper() {
         return attributeSwapperHelper;
     }
+
     /**
      * {@link IAttributeSwapperHelper} to use for getting configuration and query information from
      * for validation.

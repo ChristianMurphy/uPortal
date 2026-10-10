@@ -40,9 +40,13 @@ public interface BaseAggregationPrivateDao<
     /** Create a new aggregation for the specified key */
     T createAggregation(K key);
 
-    /** @param aggregation The aggregation to update */
+    /**
+     * @param aggregation The aggregation to update
+     */
     void updateAggregation(T aggregation);
 
-    /** @param aggregations The aggregations to update */
+    /**
+     * @param aggregations The aggregations to update
+     */
     void updateAggregations(Iterable<T> aggregations, boolean removeFromCache);
 }

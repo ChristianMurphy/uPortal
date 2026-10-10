@@ -179,34 +179,46 @@ public class AuthorizationTester extends TestCase {
         super(name);
     }
 
-    /** @return org.apereo.portal.security.IPermissionPolicy */
+    /**
+     * @return org.apereo.portal.security.IPermissionPolicy
+     */
     private IPermissionPolicy getNegativePermissionPolicy() throws AuthorizationException {
         if (negativePermissionPolicy == null) {
             negativePermissionPolicy = new AuthorizationTester.NegativePermissionPolicy();
         }
         return negativePermissionPolicy;
     }
-    /** @return org.apereo.portal.security.IPermissionStore */
+
+    /**
+     * @return org.apereo.portal.security.IPermissionStore
+     */
     private IPermissionStore getPermissionStore() throws AuthorizationException {
         if (permissionStore == null) {
             initializePermissionStore();
         }
         return permissionStore;
     }
-    /** @return org.apereo.portal.security.IPermissionPolicy */
+
+    /**
+     * @return org.apereo.portal.security.IPermissionPolicy
+     */
     private IPermissionPolicy getPositivePermissionPolicy() throws AuthorizationException {
         if (positivePermissionPolicy == null) {
             positivePermissionPolicy = new AuthorizationTester.PositivePermissionPolicy();
         }
         return positivePermissionPolicy;
     }
-    /** @return org.apereo.portal.security.AuthorizationServiceFacade */
+
+    /**
+     * @return org.apereo.portal.security.AuthorizationServiceFacade
+     */
     private IAuthorizationService getService() throws AuthorizationException {
         if (authorizationService == null) {
             initializeAuthorizationService();
         }
         return authorizationService;
     }
+
     /** Create an implementation of IAuthorizationService. */
     private void initializeAuthorizationService() throws AuthorizationException {
         authorizationService = AuthorizationServiceLocator.getAuthorizationService();
@@ -235,6 +247,7 @@ public class AuthorizationTester extends TestCase {
             throw new AuthorizationException(eMsg);
         }
     }
+
     /**
      * Starts the application.
      *
@@ -248,7 +261,10 @@ public class AuthorizationTester extends TestCase {
         printBlankLine();
         print("END TESTING AUTHORIZATION SERVICE");
     }
-    /** @param msg java.lang.String */
+
+    /**
+     * @param msg java.lang.String
+     */
     private static void print(String msg) {
         java.sql.Timestamp ts = new java.sql.Timestamp(System.currentTimeMillis());
         System.out.println(ts + " : " + msg);
@@ -605,6 +621,7 @@ public class AuthorizationTester extends TestCase {
 
         print("***** LEAVING AuthorizationTester.testPermissionStore() *****" + CR);
     }
+
     /**
      * Tests concurrent access to permissions via "singleton" principal objects. Only run this test
      * when the property org.apereo.portal.security.IAuthorizationService.cachePermissions=true,

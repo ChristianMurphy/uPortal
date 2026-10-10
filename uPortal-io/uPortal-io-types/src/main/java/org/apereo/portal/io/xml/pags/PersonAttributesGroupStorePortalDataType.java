@@ -39,12 +39,14 @@ public class PersonAttributesGroupStorePortalDataType extends AbstractPortalData
                     PERSON_ATTRIBUTE_GROUP_STORE_TYPE_QNAME,
                     "classpath://org/jasig/portal/io/import-pags-group_v4-1.crn",
                     null);
+
     /** Pseudo type used to enforce the importing of all groups before any members */
     public static final PortalDataKey IMPORT_PAGS_GROUP_41_DATA_KEY =
             new PortalDataKey(
                     PERSON_ATTRIBUTE_GROUP_STORE_TYPE_QNAME,
                     "classpath://org/jasig/portal/io/import-pags-group_v4-1.crn",
                     "GROUP");
+
     /** Pseudo type used to enforce the importing of all groups before any members */
     public static final PortalDataKey IMPORT_PAGS_MEMBERS_41_DATA_KEY =
             new PortalDataKey(

@@ -59,7 +59,9 @@ public class AuthorizationServiceFacade {
         return m_authorization.getGroupMember(principal);
     }
 
-    /** @return Authorization */
+    /**
+     * @return Authorization
+     */
     public static final AuthorizationServiceFacade instance() throws AuthorizationException {
         return authorizationServiceInstance.get();
     }

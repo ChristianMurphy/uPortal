@@ -46,6 +46,7 @@ public class ChannelDescription extends UserLayoutChannelDescription {
     public ChannelDescription() {
         super();
     }
+
     /**
      * Overridden constructor of super class.
      *

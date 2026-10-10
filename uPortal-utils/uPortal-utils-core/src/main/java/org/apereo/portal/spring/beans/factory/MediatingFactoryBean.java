@@ -29,22 +29,30 @@ public class MediatingFactoryBean<T> extends AbstractFactoryBean<T> implements B
     private List<String> delegateBeanNames;
     private Class<T> type = null;
 
-    /** @return the delegateBeanNames */
+    /**
+     * @return the delegateBeanNames
+     */
     public List<String> getDelegateBeanNames() {
         return this.delegateBeanNames;
     }
 
-    /** @param delegateBeanNames the delegateBeanNames to set */
+    /**
+     * @param delegateBeanNames the delegateBeanNames to set
+     */
     public void setDelegateBeanNames(List<String> delegateBeanNames) {
         this.delegateBeanNames = delegateBeanNames;
     }
 
-    /** @return the type */
+    /**
+     * @return the type
+     */
     public Class<T> getType() {
         return this.type;
     }
 
-    /** @param type the type to set */
+    /**
+     * @param type the type to set
+     */
     public void setType(Class<T> type) {
         this.type = type;
     }

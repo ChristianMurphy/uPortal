@@ -40,7 +40,9 @@ public class XalanAuthorizationHelperBean implements IXalanAuthorizationHelper {
     private IPortalRequestUtils portalRequestUtils;
     private IPersonManager personManager;
 
-    /** @param portletDefinitionRegistry the portletDefinitionRegistry to set */
+    /**
+     * @param portletDefinitionRegistry the portletDefinitionRegistry to set
+     */
     @Autowired
     public void setPortletDefinitionRegistry(IPortletDefinitionRegistry portletDefinitionRegistry) {
         this.portletDefinitionRegistry = portletDefinitionRegistry;

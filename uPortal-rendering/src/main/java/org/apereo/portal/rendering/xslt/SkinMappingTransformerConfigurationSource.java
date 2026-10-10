@@ -143,7 +143,9 @@ public abstract class SkinMappingTransformerConfigurationSource
         return this.stylesheetDescriptorNames.contains(stylesheetDescriptor.getName());
     }
 
-    /** @return The skin name to use for this request */
+    /**
+     * @return The skin name to use for this request
+     */
     protected abstract String getSkinName(HttpServletRequest request);
 
     private static final class SkinNameHolder implements Serializable {

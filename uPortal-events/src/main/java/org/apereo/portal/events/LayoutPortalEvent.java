@@ -18,7 +18,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.security.IPerson;
 
-/** @since 2.6 */
+/**
+ * @since 2.6
+ */
 public abstract class LayoutPortalEvent extends PortalEvent {
     private static final long serialVersionUID = 1L;
 
@@ -43,17 +45,23 @@ public abstract class LayoutPortalEvent extends PortalEvent {
         this.layoutOwner = this.layoutOwnerPerson.getUserName();
     }
 
-    /** @return the layoutId */
+    /**
+     * @return the layoutId
+     */
     public long getLayoutId() {
         return this.layoutId;
     }
 
-    /** @return the layoutOwner */
+    /**
+     * @return the layoutOwner
+     */
     public String getLayoutOwner() {
         return this.layoutOwner;
     }
 
-    /** @return the layoutOwnerPerson, may be null, if so fall back to {@link #getLayoutOwner()} */
+    /**
+     * @return the layoutOwnerPerson, may be null, if so fall back to {@link #getLayoutOwner()}
+     */
     public IPerson getLayoutOwnerPerson() {
         return this.layoutOwnerPerson;
     }

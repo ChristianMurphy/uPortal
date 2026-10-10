@@ -60,12 +60,16 @@ public abstract class SingletonDoubleCheckedCreator<T> extends DoubleCheckedCrea
         return this.instance;
     }
 
-    /** @return true if the singleton has been created as of this call */
+    /**
+     * @return true if the singleton has been created as of this call
+     */
     public final boolean isCreated() {
         return this.created.get();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)

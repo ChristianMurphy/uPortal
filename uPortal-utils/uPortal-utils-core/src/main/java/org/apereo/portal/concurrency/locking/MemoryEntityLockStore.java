@@ -194,17 +194,23 @@ public class MemoryEntityLockStore implements IEntityLockStore {
         return ((IEntityLock[]) lockAL.toArray(new IEntityLock[lockAL.size()]));
     }
 
-    /** @param lock org.apereo.portal.concurrency.locking.IEntityLock */
+    /**
+     * @param lock org.apereo.portal.concurrency.locking.IEntityLock
+     */
     private String getCacheKey(IEntityLock lock) {
         return lock.getEntityKey() + lock.getLockOwner();
     }
 
-    /** @return java.util.Map */
+    /**
+     * @return java.util.Map
+     */
     private java.util.Map getLockCache() {
         return lockCache;
     }
 
-    /** @return java.util.Map */
+    /**
+     * @return java.util.Map
+     */
     private synchronized Map getLockCache(Class type) {
         Map m = (Map) getLockCache().get(type);
         if (m == null) {
@@ -224,12 +230,16 @@ public class MemoryEntityLockStore implements IEntityLockStore {
         lockCache = new HashMap(10);
     }
 
-    /** @param newLockCache java.util.Map */
+    /**
+     * @param newLockCache java.util.Map
+     */
     private void setLockCache(java.util.Map newLockCache) {
         lockCache = newLockCache;
     }
 
-    /** @return org.apereo.portal.concurrency.locking.IEntityLockStore */
+    /**
+     * @return org.apereo.portal.concurrency.locking.IEntityLockStore
+     */
     public static synchronized IEntityLockStore singleton() {
         if (singleton == null) {
             singleton = new MemoryEntityLockStore();

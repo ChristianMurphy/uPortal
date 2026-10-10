@@ -27,13 +27,17 @@ public class MissingAttributeTester implements IPersonTester {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /** @since 5.2 */
+    /**
+     * @since 5.2
+     */
     public MissingAttributeTester(IPersonAttributesGroupTestDefinition definition) {
         super();
         attributeName = definition.getAttributeName();
     }
 
-    /** @return String */
+    /**
+     * @return String
+     */
     public String getAttributeName() {
         return attributeName;
     }

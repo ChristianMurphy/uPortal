@@ -95,6 +95,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             }
         }
     }
+
     /**
      * Add the IPermission to the store.
      *
@@ -128,6 +129,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             RDBMServices.releaseConnection(conn);
         }
     }
+
     /**
      * Delete the IPermissions from the store.
      *
@@ -146,6 +148,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             }
         }
     }
+
     /**
      * Delete a single IPermission from the store.
      *
@@ -173,7 +176,9 @@ public class RDBMPermissionImpl implements IPermissionStore {
         }
     }
 
-    /** @return java.lang.String */
+    /**
+     * @return java.lang.String
+     */
     private static String getAllPermissionColumnsSql() {
         if (allPermissionColumnsSql == null) {
             StringBuffer sqlBuff = new StringBuffer(200);
@@ -196,7 +201,10 @@ public class RDBMPermissionImpl implements IPermissionStore {
         }
         return allPermissionColumnsSql;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     private static String getDeletePermissionSql() {
         if (deletePermissionSql == null) {
             StringBuffer sqlBuff = new StringBuffer(200);
@@ -217,6 +225,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
         }
         return deletePermissionSql;
     }
+
     /**
      * Insert the method's description here. Creation date: (11/6/01 5:19:57 PM)
      *
@@ -242,7 +251,10 @@ public class RDBMPermissionImpl implements IPermissionStore {
         }
         return findPermissionSql;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     private static String getInsertPermissionSql() {
         if (insertPermissionSql == null) {
             StringBuffer sqlBuff = new StringBuffer(200);
@@ -255,6 +267,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
         }
         return insertPermissionSql;
     }
+
     /**
      * Returns the principal key portion of the IPermission principal.
      *
@@ -264,6 +277,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
     private String getPrincipalKey(String principalString) {
         return principalString.substring(principalString.indexOf(PRINCIPAL_SEPARATOR) + 1);
     }
+
     /**
      * Returns the principal key portion of the IPermission principal.
      *
@@ -274,6 +288,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
     private String getPrincipalKey(IPermission perm) throws AuthorizationException {
         return getPrincipalKey(perm.getPrincipal());
     }
+
     /**
      * Returns the principal type portion of the principal.
      *
@@ -284,6 +299,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
         return Integer.parseInt(
                 principalString.substring(0, principalString.indexOf(PRINCIPAL_SEPARATOR)));
     }
+
     /**
      * Returns the principal type portion of the IPermission principal.
      *
@@ -294,7 +310,10 @@ public class RDBMPermissionImpl implements IPermissionStore {
     private int getPrincipalType(IPermission perm) throws AuthorizationException {
         return getPrincipalType(perm.getPrincipal());
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     private static String getSelectPermissionSql() {
         if (selectPermissionSql == null) {
             StringBuffer sqlBuff = new StringBuffer(200);
@@ -307,7 +326,10 @@ public class RDBMPermissionImpl implements IPermissionStore {
         }
         return selectPermissionSql;
     }
-    /** @return java.lang.String */
+
+    /**
+     * @return java.lang.String
+     */
     private static String getUpdatePermissionSql() {
         if (updatePermissionSql == null) {
             StringBuffer sqlBuff = new StringBuffer(300);
@@ -334,6 +356,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
         }
         return updatePermissionSql;
     }
+
     /**
      * @return org.apereo.portal.security.IPermission
      * @param rs java.sql.ResultSet
@@ -360,11 +383,13 @@ public class RDBMPermissionImpl implements IPermissionStore {
 
         return perm;
     }
+
     /** Factory method for IPermissions */
     @Override
     public IPermission newInstance(String owner) {
         return new PermissionImpl(owner);
     }
+
     /**
      * Add the IPermissions to the store.
      *
@@ -412,6 +437,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             }
         }
     }
+
     /**
      * Set the params on the PreparedStatement and execute the insert.
      *
@@ -450,6 +476,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             ps.setTimestamp(8, ts);
         }
     }
+
     /**
      * Delete the IPermissions from the store.
      *
@@ -487,6 +514,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             }
         }
     }
+
     /**
      * Set the params on the PreparedStatement and execute the delete.
      *
@@ -506,6 +534,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
 
         return ps.executeUpdate();
     }
+
     /**
      * Update the IPermissions in the store.
      *
@@ -543,6 +572,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             }
         }
     }
+
     /**
      * Set the params on the PreparedStatement and execute the update.
      *
@@ -757,6 +787,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
 
         return ((IPermission[]) perms.toArray(new IPermission[perms.size()]));
     }
+
     /**
      * Update the IPermissions in the store.
      *
@@ -774,6 +805,7 @@ public class RDBMPermissionImpl implements IPermissionStore {
             }
         }
     }
+
     /**
      * Update a single IPermission in the store.
      *
@@ -801,7 +833,10 @@ public class RDBMPermissionImpl implements IPermissionStore {
             RDBMServices.releaseConnection(conn);
         }
     }
-    /** @return long */
+
+    /**
+     * @return long
+     */
     private static long getTimestampMillis(Timestamp ts) {
         return ts.getTime();
     }

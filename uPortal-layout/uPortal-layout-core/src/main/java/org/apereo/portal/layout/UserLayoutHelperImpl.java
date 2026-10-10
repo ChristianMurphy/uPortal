@@ -57,7 +57,9 @@ public class UserLayoutHelperImpl extends JdbcDaoSupport implements IUserLayoutH
         this.userLayoutStore = userLayoutStore;
     }
 
-    /** @param userIdentityStore the userIdentityStore to set */
+    /**
+     * @param userIdentityStore the userIdentityStore to set
+     */
     @Autowired
     public void setUserIdentityStore(IUserIdentityStore userIdentityStore) {
         this.userIdentityStore = userIdentityStore;

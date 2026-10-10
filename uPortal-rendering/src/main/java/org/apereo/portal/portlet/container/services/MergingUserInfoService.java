@@ -33,13 +33,17 @@ public class MergingUserInfoService implements UserInfoService {
 
     private Set<UserInfoService> userInfoServices = Collections.emptySet();
 
-    /** @param userInfoServices the list of UserInfoServices to be merged */
+    /**
+     * @param userInfoServices the list of UserInfoServices to be merged
+     */
     @Autowired
     public void setUserInfoServices(Set<UserInfoService> userInfoServices) {
         this.userInfoServices = userInfoServices;
     }
 
-    /** @return list of UserInfoServices */
+    /**
+     * @return list of UserInfoServices
+     */
     public Set<UserInfoService> getUserInfoServices() {
         return this.userInfoServices;
     }

@@ -16,10 +16,14 @@ package org.apereo.portal.io.xml;
 
 /** Defines a class that can export a specific type of portal data */
 public interface IDataDeleter<T> {
-    /** @return The type descriptor for the */
+    /**
+     * @return The type descriptor for the
+     */
     public IPortalDataType getPortalDataType();
 
-    /** @return All of the available data for this type */
+    /**
+     * @return All of the available data for this type
+     */
     public Iterable<? extends IPortalData> getPortalData();
 
     /** Deletes the data specified by the id. If data existed it will be returned. */

@@ -28,22 +28,34 @@ public interface BaseAggregation<
      */
     DateTime getDateTime();
 
-    /** @return The day the aggregation is for */
+    /**
+     * @return The day the aggregation is for
+     */
     DateDimension getDateDimension();
 
-    /** @return The time of day the aggregation is for */
+    /**
+     * @return The time of day the aggregation is for
+     */
     TimeDimension getTimeDimension();
 
-    /** @return The interval the aggregation is for */
+    /**
+     * @return The interval the aggregation is for
+     */
     AggregationInterval getInterval();
 
-    /** @return The group this aggregation is for, null if it is for all users */
+    /**
+     * @return The group this aggregation is for, null if it is for all users
+     */
     AggregatedGroupMapping getAggregatedGroup();
 
-    /** @return Duration in minutes of the aggregated time span */
+    /**
+     * @return Duration in minutes of the aggregated time span
+     */
     int getDuration();
 
-    /** @return The key for this aggregation */
+    /**
+     * @return The key for this aggregation
+     */
     K getAggregationKey();
 
     /**

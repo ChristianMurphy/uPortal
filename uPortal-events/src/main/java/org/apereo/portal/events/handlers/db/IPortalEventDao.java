@@ -44,7 +44,10 @@ public interface IPortalEventDao {
             DateTime endTime,
             int maxEvents,
             FunctionWithoutResult<PortalEvent> handler);
-    /** @see #getPortalEvents(DateTime, DateTime, int, FunctionWithoutResult) */
+
+    /**
+     * @see #getPortalEvents(DateTime, DateTime, int, FunctionWithoutResult)
+     */
     void getPortalEvents(
             DateTime startTime, DateTime endTime, FunctionWithoutResult<PortalEvent> handler);
 
@@ -76,10 +79,14 @@ public interface IPortalEventDao {
             int maxEvents,
             Function<PortalEvent, Boolean> handler);
 
-    /** @return The timestamp of the oldest event in the persitent store */
+    /**
+     * @return The timestamp of the oldest event in the persitent store
+     */
     DateTime getOldestPortalEventTimestamp();
 
-    /** @return The timestamp of the most recent event in the persitent store */
+    /**
+     * @return The timestamp of the most recent event in the persitent store
+     */
     DateTime getNewestPortalEventTimestamp();
 
     /** Delete events with timestamps from before the specified date (exclusive) */

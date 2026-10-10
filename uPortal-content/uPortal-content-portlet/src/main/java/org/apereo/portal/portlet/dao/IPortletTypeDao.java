@@ -64,6 +64,8 @@ public interface IPortletTypeDao {
      */
     public IPortletType getPortletType(String name);
 
-    /** @return A {@link List} of all persisted {@link IPortletType}s */
+    /**
+     * @return A {@link List} of all persisted {@link IPortletType}s
+     */
     public List<IPortletType> getPortletTypes();
 }

@@ -18,6 +18,8 @@ import javax.portlet.Event;
 
 /** Worker that executes a portlet event request */
 public interface IPortletEventExecutionWorker extends IPortletExecutionWorker<Long> {
-    /** @return The event that will be executed */
+    /**
+     * @return The event that will be executed
+     */
     public Event getEvent();
 }

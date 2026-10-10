@@ -287,7 +287,9 @@ public abstract class AbstractHttpServletRequestWrapper implements HttpServletRe
         return this.httpServletRequest.isRequestedSessionIdFromCookie();
     }
 
-    /** @see HttpServletRequest#isRequestedSessionIdFromUrl() */
+    /**
+     * @see HttpServletRequest#isRequestedSessionIdFromUrl()
+     */
     @Override
     public boolean isRequestedSessionIdFromUrl() {
         return this.isRequestedSessionIdFromURL();

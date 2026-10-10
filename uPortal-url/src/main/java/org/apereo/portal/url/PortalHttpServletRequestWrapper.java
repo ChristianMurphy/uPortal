@@ -49,6 +49,7 @@ public class PortalHttpServletRequestWrapper extends AbstractHttpServletRequestW
      */
     public static final String ATTRIBUTE__HTTP_SERVLET_REQUEST =
             PortalHttpServletRequestWrapper.class.getName() + ".PORTAL_HTTP_SERVLET_REQUEST";
+
     /**
      * {@link javax.servlet.http.HttpServletRequest} attribute that the {@link HttpServletResponse}
      * object will be available.

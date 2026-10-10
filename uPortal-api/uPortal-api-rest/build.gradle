@@ -23,6 +23,5 @@ dependencies {
     testImplementation "${portletApiDependency}"
     //need to add for SessionRESTControllerTest.java
     testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
     testImplementation project(':uPortal-security:uPortal-security-permissions')
 }

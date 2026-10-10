@@ -29,7 +29,9 @@ public interface IPortletExecutionContext {
         FAILURE;
     }
 
-    /** @return The type of portlet request the execution is happening for. */
+    /**
+     * @return The type of portlet request the execution is happening for.
+     */
     public ExecutionType getExecutionType();
 
     /**
@@ -46,10 +48,14 @@ public interface IPortletExecutionContext {
      */
     public Object getExecutionAttribute(String name);
 
-    /** @return The ID of the portlet window this context is for */
+    /**
+     * @return The ID of the portlet window this context is for
+     */
     public IPortletWindowId getPortletWindowId();
 
-    /** @return The fname of the portlet window (from {@link IPortletDefinition#getFName()}) */
+    /**
+     * @return The fname of the portlet window (from {@link IPortletDefinition#getFName()})
+     */
     public String getPortletFname();
 
     /**
@@ -58,27 +64,43 @@ public interface IPortletExecutionContext {
      */
     public long getApplicableTimeout();
 
-    /** @return true If the worker has been submitted */
+    /**
+     * @return true If the worker has been submitted
+     */
     public boolean isSubmitted();
 
-    /** @return true If the worker has been started */
+    /**
+     * @return true If the worker has been started
+     */
     public boolean isStarted();
 
-    /** @return true If the worker is complete */
+    /**
+     * @return true If the worker is complete
+     */
     public boolean isComplete();
 
-    /** @return time that the worker was submitted */
+    /**
+     * @return time that the worker was submitted
+     */
     public long getSubmittedTime();
 
-    /** @return time that the execution started */
+    /**
+     * @return time that the execution started
+     */
     public long getStartedTime();
 
-    /** @return time that the execution completed */
+    /**
+     * @return time that the execution completed
+     */
     public long getCompleteTime();
 
-    /** @return time that to wait from being submitted until being started */
+    /**
+     * @return time that to wait from being submitted until being started
+     */
     public long getWait();
 
-    /** @return time for the execution to complete (difference between started and completed) */
+    /**
+     * @return time for the execution to complete (difference between started and completed)
+     */
     public long getDuration();
 }

@@ -49,7 +49,9 @@ public class DistributedUserLayout {
         this.distributedThemeStylesheetUserPreferences = distributedThemeStylesheetUserPreferences;
     }
 
-    /** @return The layout document */
+    /**
+     * @return The layout document
+     */
     public Document getLayout() {
         return this.layout;
     }

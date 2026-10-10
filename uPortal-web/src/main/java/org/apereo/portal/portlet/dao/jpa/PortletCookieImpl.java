@@ -113,7 +113,10 @@ class PortletCookieImpl implements IPortletCookie {
         this.name = null;
         this.portalCookie = null;
     }
-    /** @param name */
+
+    /**
+     * @param name
+     */
     PortletCookieImpl(IPortalCookie portalCookie, Cookie cookie) {
         this.internalPortletCookieId = -1;
         this.entityVersion = -1;
@@ -135,56 +138,87 @@ class PortletCookieImpl implements IPortletCookie {
         this.setSecure(cookie.getSecure());
         this.setValue(cookie.getValue());
     }
-    /** @return the comment */
+
+    /**
+     * @return the comment
+     */
     @Override
     public String getComment() {
         return comment;
     }
-    /** @return the domain */
+
+    /**
+     * @return the domain
+     */
     @Override
     public String getDomain() {
         return domain;
     }
-    /** @return */
+
+    /**
+     * @return
+     */
     @Override
     public DateTime getExpires() {
         return this.expires;
     }
-    /** @return the name */
+
+    /**
+     * @return the name
+     */
     @Override
     public String getName() {
         return name;
     }
-    /** @return the path */
+
+    /**
+     * @return the path
+     */
     @Override
     public String getPath() {
         return path;
     }
-    /** @return the value */
+
+    /**
+     * @return the value
+     */
     @Override
     public String getValue() {
         return value;
     }
-    /** @return the version */
+
+    /**
+     * @return the version
+     */
     @Override
     public int getVersion() {
         return version;
     }
-    /** @return the secure */
+
+    /**
+     * @return the secure
+     */
     @Override
     public boolean isSecure() {
         return secure;
     }
-    /** @param comment the comment to set */
+
+    /**
+     * @param comment the comment to set
+     */
     @Override
     public void setComment(String comment) {
         this.comment = comment;
     }
-    /** @param domain the domain to set */
+
+    /**
+     * @param domain the domain to set
+     */
     @Override
     public void setDomain(String domain) {
         this.domain = domain;
     }
+
     /* (non-Javadoc)
      * @see org.apereo.portal.portlet.om.IPortletCookie#setExpires(java.util.Date)
      */
@@ -192,22 +226,34 @@ class PortletCookieImpl implements IPortletCookie {
     public void setExpires(DateTime expires) {
         this.expires = expires;
     }
-    /** @param path the path to set */
+
+    /**
+     * @param path the path to set
+     */
     @Override
     public void setPath(String path) {
         this.path = path;
     }
-    /** @param value the value to set */
+
+    /**
+     * @param value the value to set
+     */
     @Override
     public void setValue(String value) {
         this.value = value;
     }
-    /** @param version the version to set */
+
+    /**
+     * @param version the version to set
+     */
     @Override
     public void setVersion(int version) {
         this.version = version;
     }
-    /** @param secure the secure to set */
+
+    /**
+     * @param secure the secure to set
+     */
     @Override
     public void setSecure(boolean secure) {
         this.secure = secure;

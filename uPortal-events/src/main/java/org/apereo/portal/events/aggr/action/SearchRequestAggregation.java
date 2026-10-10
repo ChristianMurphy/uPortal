@@ -20,9 +20,13 @@ public interface SearchRequestAggregation
         extends BaseAggregation<
                 SearchRequestAggregationKey, SearchRequestAggregationDiscriminator> {
 
-    /** @return The term searched for */
+    /**
+     * @return The term searched for
+     */
     String getSearchTerm();
 
-    /** @return Number of times the term was searched for */
+    /**
+     * @return Number of times the term was searched for
+     */
     int getCount();
 }

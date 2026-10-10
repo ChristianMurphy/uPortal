@@ -1,0 +1,5 @@
+# Commits that only reformat code. GitHub's blame view skips them automatically;
+# locally, run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once.
+
+# style: reformat with google-java-format 1.24.0
+246b5e05f51cbc8dfb7554d88610e00291f5d350

@@ -30,6 +30,7 @@ public class CompositeServiceIdentifier extends CompositeEntityIdentifier {
     public CompositeServiceIdentifier(String serviceKey) throws GroupsException {
         super(serviceKey, ICompositeGroupService.GROUP_ENTITY_TYPE);
     }
+
     /**
      * CompositeServiceIdentifier.
      *
@@ -40,6 +41,7 @@ public class CompositeServiceIdentifier extends CompositeEntityIdentifier {
     public CompositeServiceIdentifier(String entityKey, Class entityType) throws GroupsException {
         super(entityKey, entityType);
     }
+
     /**
      * The service name is the entire key.
      *
@@ -49,6 +51,7 @@ public class CompositeServiceIdentifier extends CompositeEntityIdentifier {
     public synchronized Name getServiceName() {
         return getCompositeKey();
     }
+
     /**
      * Returns a String that represents the value of this object.
      *

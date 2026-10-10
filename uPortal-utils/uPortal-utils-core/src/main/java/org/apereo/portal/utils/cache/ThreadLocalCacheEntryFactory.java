@@ -44,6 +44,8 @@ public abstract class ThreadLocalCacheEntryFactory<A> implements CacheEntryFacto
         }
     }
 
-    /** @see CacheEntryFactory#createEntry(Object) */
+    /**
+     * @see CacheEntryFactory#createEntry(Object)
+     */
     protected abstract Object createEntry(Object key, A threadData) throws Exception;
 }

@@ -20,6 +20,7 @@ public class ReferenceChannelNameFinderFactory implements IEntityNameFinderFacto
     public ReferenceChannelNameFinderFactory() {
         super();
     }
+
     /**
      * Return a finder instance.
      *

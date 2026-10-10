@@ -85,7 +85,9 @@ public final class JdbcUtils {
         return tableExists;
     }
 
-    /** @see #dropTableIfExists(JdbcOperations, String, Function) */
+    /**
+     * @see #dropTableIfExists(JdbcOperations, String, Function)
+     */
     public static final void dropTableIfExists(JdbcOperations jdbcOperations, final String table) {
         dropTableIfExists(jdbcOperations, table, Functions.<JdbcOperations>identity());
     }

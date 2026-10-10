@@ -22,10 +22,12 @@ import org.apereo.portal.jdbc.RDBMServices;
 /** This type is a place to centralize the portal's sql transaction code. */
 public class SqlTransaction {
     private static final Log log = LogFactory.getLog(SqlTransaction.class);
+
     /** SqlTransaction constructor comment. */
     public SqlTransaction() {
         super();
     }
+
     /**
      * @param conn java.sql.Connection
      * @exception java.sql.SQLException
@@ -38,6 +40,7 @@ public class SqlTransaction {
          */
         RDBMServices.setAutoCommit(conn, false);
     }
+
     /**
      * @param conn java.sql.Connection
      * @exception java.sql.SQLException
@@ -60,6 +63,7 @@ public class SqlTransaction {
                         + "Sooner or later, your database will become corrupt.";
         log.warn(msg);
     }
+
     /**
      * @param conn java.sql.Connection
      * @exception java.sql.SQLException
@@ -68,6 +72,7 @@ public class SqlTransaction {
         RDBMServices.rollback(conn);
         RDBMServices.setAutoCommit(conn, true);
     }
+
     /**
      * @param conn java.sql.Connection
      * @param newValue boolean

@@ -40,12 +40,16 @@ public class PortletHungEvent extends PortalEvent {
         this.fname = worker.getPortletFname();
     }
 
-    /** @return The portlet worker that is hung. Not available during event aggregation */
+    /**
+     * @return The portlet worker that is hung. Not available during event aggregation
+     */
     public IPortletExecutionWorker<?> getWorker() {
         return worker;
     }
 
-    /** @return The functional name of the hung portlet */
+    /**
+     * @return The functional name of the hung portlet
+     */
     public String getFname() {
         return fname;
     }

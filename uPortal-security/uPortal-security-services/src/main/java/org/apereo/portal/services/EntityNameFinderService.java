@@ -37,7 +37,10 @@ public class EntityNameFinderService {
         super();
         initialize();
     }
-    /** @return org.apereo.portal.groups.IEntityNameFinder */
+
+    /**
+     * @return org.apereo.portal.groups.IEntityNameFinder
+     */
     public IEntityNameFinder getNameFinder(Class type) throws GroupsException {
         IEntityNameFinder finder = (IEntityNameFinder) (getNameFinders().get(type));
         if (finder == null) {
@@ -46,13 +49,17 @@ public class EntityNameFinderService {
         }
         return finder;
     }
-    /** @return java.util.Map */
+
+    /**
+     * @return java.util.Map
+     */
     private Map getNameFinders() {
         if (nameFinders == null) {
             nameFinders = new HashMap(10);
         }
         return nameFinders;
     }
+
     /**
      * Gets all the entity types and tries to instantiate and cache a finder for each one. There
      * needn't be a finder for every entity type, so if there's no entry in the portal.properties,
@@ -96,18 +103,27 @@ public class EntityNameFinderService {
         }
         setInitialized(true);
     }
-    /** @return EntityNameFinderService */
+
+    /**
+     * @return EntityNameFinderService
+     */
     public static final synchronized EntityNameFinderService instance() {
         if (m_instance == null) {
             m_instance = new EntityNameFinderService();
         }
         return m_instance;
     }
-    /** @return boolean */
+
+    /**
+     * @return boolean
+     */
     private static boolean isInitialized() {
         return initialized;
     }
-    /** @param newInitialized boolean */
+
+    /**
+     * @param newInitialized boolean
+     */
     static void setInitialized(boolean newInitialized) {
         initialized = newInitialized;
     }

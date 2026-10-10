@@ -22,23 +22,31 @@ public interface IStylesheetData {
         REQUEST;
     }
 
-    /** @return Unique ID of the descriptor */
+    /**
+     * @return Unique ID of the descriptor
+     */
     public long getId();
 
     /** Name of the attribute/parameter */
     public String getName();
 
-    /** @param defaultValue Default value */
+    /**
+     * @param defaultValue Default value
+     */
     public void setDefaultValue(String defaultValue);
 
     public String getDefaultValue();
 
-    /** @param scope Where the value is stored */
+    /**
+     * @param scope Where the value is stored
+     */
     public void setScope(Scope scope);
 
     public Scope getScope();
 
-    /** @param description Description */
+    /**
+     * @param description Description
+     */
     public void setDescription(String description);
 
     public String getDescription();

@@ -30,12 +30,16 @@ public class Attribute implements Serializable {
         this.value = value;
     }
 
-    /** @return the value */
+    /**
+     * @return the value
+     */
     public String getValue() {
         return value;
     }
 
-    /** @param value the value to set */
+    /**
+     * @param value the value to set
+     */
     public void setValue(String value) {
         this.value = value;
     }

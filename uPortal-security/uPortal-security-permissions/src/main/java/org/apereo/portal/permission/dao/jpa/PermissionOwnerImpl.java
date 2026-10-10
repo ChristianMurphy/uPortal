@@ -159,7 +159,9 @@ class PermissionOwnerImpl implements IPermissionOwner, Serializable {
         this.activities = activities;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {

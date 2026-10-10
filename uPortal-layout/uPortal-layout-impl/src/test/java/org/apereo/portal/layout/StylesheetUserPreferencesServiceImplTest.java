@@ -43,7 +43,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 /** */
 public class StylesheetUserPreferencesServiceImplTest {
 
-    /** @throws Exception */
+    /**
+     * @throws Exception
+     */
     @Test
     public void testThemeStylesheetUserPreferences() throws Exception {
         // Setup mocks

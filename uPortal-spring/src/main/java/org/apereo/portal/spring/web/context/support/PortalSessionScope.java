@@ -54,6 +54,7 @@ public class PortalSessionScope implements Scope {
         // TODO implement me!
         return null;
     }
+
     /* (non-Javadoc)
      * @see org.springframework.beans.factory.config.Scope#get(java.lang.String, org.springframework.beans.factory.ObjectFactory)
      */

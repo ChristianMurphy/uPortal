@@ -22,7 +22,9 @@ import org.apereo.portal.portlet.rendering.PortletRenderResult;
 /** Interface defining mechanism for retrieving {@link CacheControl}s. */
 public interface IPortletCacheControlService {
 
-    /** @return the maximum size of cached portlet output, in bytes */
+    /**
+     * @return the maximum size of cached portlet output, in bytes
+     */
     int getCacheSizeThreshold();
 
     /** Get the resource request cache state for the specified portlet */

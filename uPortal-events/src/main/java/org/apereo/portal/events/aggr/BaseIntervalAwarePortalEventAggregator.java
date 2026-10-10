@@ -50,7 +50,9 @@ public abstract class BaseIntervalAwarePortalEventAggregator<
         this.aggregationIntervalHelper = aggregationIntervalHelper;
     }
 
-    /** @return The private aggregation DAO to use */
+    /**
+     * @return The private aggregation DAO to use
+     */
     protected abstract BaseAggregationPrivateDao<T, K> getAggregationDao();
 
     /**

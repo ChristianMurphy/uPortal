@@ -25,6 +25,8 @@ public interface ConcurrentUserAggregation
         extends BaseAggregation<
                 ConcurrentUserAggregationKey, ConcurrentUserAggregationDiscriminator> {
 
-    /** @return Total number of users that were active for the duration of this aggregation. */
+    /**
+     * @return Total number of users that were active for the duration of this aggregation.
+     */
     int getConcurrentUsers();
 }

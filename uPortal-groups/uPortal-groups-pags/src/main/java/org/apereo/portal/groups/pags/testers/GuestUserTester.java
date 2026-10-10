@@ -26,7 +26,9 @@ public class GuestUserTester implements IPersonTester {
 
     public boolean guestValue;
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public GuestUserTester(IPersonAttributesGroupTestDefinition definition) {
         this.guestValue = Boolean.parseBoolean(definition.getTestValue());
     }

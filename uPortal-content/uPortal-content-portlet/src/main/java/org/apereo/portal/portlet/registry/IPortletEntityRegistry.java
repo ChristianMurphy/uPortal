@@ -82,6 +82,7 @@ public interface IPortletEntityRegistry {
     /** Gets or creates a portlet entity for a specific fname. */
     public IPortletEntity getOrCreatePortletEntityByFname(
             HttpServletRequest request, IUserInstance userInstance, String fname);
+
     /**
      * Same as {@link #getOrCreatePortletEntityByFname(IUserInstance, String)} but also provides a
      * preferred channel subscribe id. If the specified subscribe ID can be found in the user's
@@ -116,6 +117,8 @@ public interface IPortletEntityRegistry {
      */
     public void storePortletEntity(HttpServletRequest request, IPortletEntity portletEntity);
 
-    /** @return True if the specified portlet entity should be persistent */
+    /**
+     * @return True if the specified portlet entity should be persistent
+     */
     public boolean shouldBePersisted(IPortletEntity portletEntity);
 }

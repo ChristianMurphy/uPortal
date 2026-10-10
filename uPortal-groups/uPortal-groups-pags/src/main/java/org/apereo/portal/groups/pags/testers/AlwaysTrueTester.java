@@ -20,7 +20,9 @@ import org.apereo.portal.security.IPerson;
 
 public class AlwaysTrueTester implements IPersonTester {
 
-    /** @since 4.3 */
+    /**
+     * @since 4.3
+     */
     public AlwaysTrueTester(IPersonAttributesGroupTestDefinition definition) {}
 
     @Override

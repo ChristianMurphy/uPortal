@@ -14,7 +14,9 @@
  */
 package org.apereo.portal.portlet.rendering.worker;
 
-/** @param <V> */
+/**
+ * @param <V>
+ */
 public interface IPortletExecutionWorker<V> extends IPortletExecutionContext {
 
     /**
@@ -46,9 +48,13 @@ public interface IPortletExecutionWorker<V> extends IPortletExecutionContext {
     /** Cancel the worker, interrupting the thread that is executing the worker */
     public void cancel();
 
-    /** @return The number of times that cancel has been called. */
+    /**
+     * @return The number of times that cancel has been called.
+     */
     public int getCancelCount();
 
-    /** @return true If {@link #get(long)} has been called */
+    /**
+     * @return true If {@link #get(long)} has been called
+     */
     public boolean isRetrieved();
 }

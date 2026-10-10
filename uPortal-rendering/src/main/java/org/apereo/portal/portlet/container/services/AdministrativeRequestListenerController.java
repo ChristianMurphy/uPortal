@@ -83,35 +83,58 @@ public class AdministrativeRequestListenerController
     private boolean failOnKeyNotFound = false;
     private boolean failOnListenerNotFound = false;
 
-    /** @return the failOnKeyNotFound */
+    /**
+     * @return the failOnKeyNotFound
+     */
     public boolean isFailOnKeyNotFound() {
         return this.failOnKeyNotFound;
     }
-    /** @param failOnKeyNotFound the failOnKeyNotFound to set */
+
+    /**
+     * @param failOnKeyNotFound the failOnKeyNotFound to set
+     */
     public void setFailOnKeyNotFound(boolean failOnKeyNotFound) {
         this.failOnKeyNotFound = failOnKeyNotFound;
     }
-    /** @return the failOnListenerNotFound */
+
+    /**
+     * @return the failOnListenerNotFound
+     */
     public boolean isFailOnListenerNotFound() {
         return this.failOnListenerNotFound;
     }
-    /** @param failOnListenerNotFound the failOnListenerNotFound to set */
+
+    /**
+     * @param failOnListenerNotFound the failOnListenerNotFound to set
+     */
     public void setFailOnListenerNotFound(boolean failOnListenerNotFound) {
         this.failOnListenerNotFound = failOnListenerNotFound;
     }
-    /** @return the listenerKeyAttribute */
+
+    /**
+     * @return the listenerKeyAttribute
+     */
     public String getListenerKeyAttribute() {
         return this.listenerKeyAttribute;
     }
-    /** @param listenerKeyAttribute the listenerKeyAttribute to set */
+
+    /**
+     * @param listenerKeyAttribute the listenerKeyAttribute to set
+     */
     public void setListenerKeyAttribute(String listenerKeyAttribute) {
         this.listenerKeyAttribute = listenerKeyAttribute;
     }
-    /** @return the listeners */
+
+    /**
+     * @return the listeners
+     */
     public Map<String, AdministrativeRequestListener> getListeners() {
         return this.listeners;
     }
-    /** @param listeners the listeners to set */
+
+    /**
+     * @param listeners the listeners to set
+     */
     public void setListeners(Map<String, AdministrativeRequestListener> listeners) {
         this.listeners = listeners;
     }

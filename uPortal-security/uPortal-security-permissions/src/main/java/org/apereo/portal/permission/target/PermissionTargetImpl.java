@@ -70,7 +70,9 @@ public class PermissionTargetImpl
         return type;
     }
 
-    /** @see java.lang.Object#equals(Object) */
+    /**
+     * @see java.lang.Object#equals(Object)
+     */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
@@ -88,7 +90,9 @@ public class PermissionTargetImpl
                 .isEquals();
     }
 
-    /** @see java.lang.Object#hashCode() */
+    /**
+     * @see java.lang.Object#hashCode()
+     */
     @Override
     public int hashCode() {
         return new HashCodeBuilder(464270933, -1074792143)
@@ -98,7 +102,9 @@ public class PermissionTargetImpl
                 .toHashCode();
     }
 
-    /** @see java.lang.Object#toString() */
+    /**
+     * @see java.lang.Object#toString()
+     */
     @Override
     public String toString() {
         return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE)
@@ -107,7 +113,9 @@ public class PermissionTargetImpl
                 .toString();
     }
 
-    /** @see java.lang.Comparable#compareTo(java.lang.Object) */
+    /**
+     * @see java.lang.Comparable#compareTo(java.lang.Object)
+     */
     @Override
     public int compareTo(IPermissionTarget target) {
         return new CompareToBuilder()

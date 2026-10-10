@@ -17,9 +17,13 @@ package org.apereo.portal.portlet.om;
 /** Describes the IDs at the core of a portlet window */
 public interface IPortletWindowDescriptor {
 
-    /** @return ID of the portlet window */
+    /**
+     * @return ID of the portlet window
+     */
     public IPortletWindowId getPortletWindowId();
 
-    /** @return ID of the parent entity */
+    /**
+     * @return ID of the parent entity
+     */
     public IPortletEntityId getPortletEntityId();
 }

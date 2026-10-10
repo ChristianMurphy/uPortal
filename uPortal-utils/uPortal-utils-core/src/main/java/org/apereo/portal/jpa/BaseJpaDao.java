@@ -178,7 +178,9 @@ public abstract class BaseJpaDao implements InitializingBean, ApplicationContext
             this.naturalIdLoadAccess = naturalIdLoadAccess;
         }
 
-        /** @see NaturalIdLoadAccess#with(LockOptions) */
+        /**
+         * @see NaturalIdLoadAccess#with(LockOptions)
+         */
         public NaturalIdQuery<T> with(LockOptions lockOptions) {
             naturalIdLoadAccess.with(lockOptions);
             return this;
@@ -194,12 +196,16 @@ public abstract class BaseJpaDao implements InitializingBean, ApplicationContext
             return this;
         }
 
-        /** @see NaturalIdLoadAccess#getReference() */
+        /**
+         * @see NaturalIdLoadAccess#getReference()
+         */
         public T getReference() {
             return type.cast(naturalIdLoadAccess.getReference());
         }
 
-        /** @see NaturalIdLoadAccess#load() */
+        /**
+         * @see NaturalIdLoadAccess#load()
+         */
         public T load() {
             return type.cast(naturalIdLoadAccess.load());
         }

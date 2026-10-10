@@ -20,7 +20,9 @@ import org.apereo.portal.portlet.om.IPortletDefinition;
 
 public interface IMarketplaceRatingDao {
 
-    /** @return all ratings. Not null */
+    /**
+     * @return all ratings. Not null
+     */
     Set<IMarketplaceRating> getAllRatings();
 
     /**
@@ -29,7 +31,9 @@ public interface IMarketplaceRatingDao {
      */
     public Set<IMarketplaceRating> getRatingsByFname(String fname);
 
-    /** @param IMarketplaceRating. Can not be null */
+    /**
+     * @param IMarketplaceRating. Can not be null
+     */
     void deleteRating(IMarketplaceRating marketplaceRatingImplementation);
 
     /** Useful for when you're about to delete a portlet. */

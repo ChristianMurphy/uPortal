@@ -46,6 +46,7 @@ public interface IUrlNodeSyntaxHelper {
     /** Get a path folder name to include in the generated url for the targeted portlet window */
     public String getFolderNameForPortlet(
             HttpServletRequest request, IPortletWindowId portletWindowId);
+
     /**
      * Determine the targeted portlet window from the specified folder name
      *

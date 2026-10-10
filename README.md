@@ -121,7 +121,8 @@ Additional information about uPortal is available in the Manual.
 
 ## Requirements
 
--   JDK 11 - The JRE alone is NOT sufficient, a full JDK is required
+-   JDK 21 or newer to build - The JRE alone is NOT sufficient, a full JDK is required.
+    The classes are compiled for Java 11, so the portal itself still runs on Java 11+.
 -   GIT
 
 ## uPortal-start
