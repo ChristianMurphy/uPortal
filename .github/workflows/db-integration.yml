@@ -1,0 +1,191 @@
+name: DB integration
+#
+# Runs uPortal-webapp's tests against real databases instead of the in-memory HSQLDB (MOD-D16).
+# The JPA/DAO test contexts (everything that imports sharedJpaTestContext.xml, plus
+# pooledCounterStoreTestApplicationContext.xml) take their DataSource from the uportal.test.db.*
+# system properties (uPortal-webapp/src/test/resources/dataSource.properties); the module's other
+# tests run as usual. The dialect is left empty, so Hibernate resolves it from the JDBC metadata
+# exactly as a portal does (PortalDialectResolver first).
+#
+# PostgreSQL, MariaDB and MySQL run on every push and pull request; SQL Server and Oracle run
+# nightly and on demand. Credentials are throwaway CI values, the same as uPortal-start's
+# tests/db/vendors/*.properties.
+#
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  db:
+    name: "DB integration: ${{ matrix.vendor }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vendor: postgres-16
+            image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+            port: 5432
+            health: pg_isready -h 127.0.0.1 -U uportal -d uportal
+            driver: org.postgresql.Driver
+            url: jdbc:postgresql://localhost:5432/uportal
+          - vendor: mariadb-11.4
+            image: mariadb:11.4@sha256:1292844148b311e4ed4300022a996d39083f415a963e970cf47cad1b3b18e3a6
+            port: 3306
+            health: mariadb-admin ping -h 127.0.0.1 -u uportal -puportal
+            driver: org.mariadb.jdbc.Driver
+            # As in uPortal-start: Hibernate 4.3 has no dialect for the product name "MariaDB"
+            url: jdbc:mariadb://localhost:3306/uportal?useMysqlMetadata=true
+          - vendor: mysql-8.4
+            image: mysql:8.4@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242
+            port: 3306
+            health: mysqladmin ping -h 127.0.0.1 -u uportal -puportal
+            driver: com.mysql.cj.jdbc.Driver
+            url: jdbc:mysql://localhost:3306/uportal?useSSL=false&allowPublicKeyRetrieval=true
+    services:
+      db:
+        image: ${{ matrix.image }}
+        ports:
+          - ${{ matrix.port }}:${{ matrix.port }}
+        # One environment for every image; each image reads only its own variables.
+        env:
+          POSTGRES_DB: uportal
+          POSTGRES_USER: uportal
+          POSTGRES_PASSWORD: uportal
+          MARIADB_DATABASE: uportal
+          MARIADB_USER: uportal
+          MARIADB_PASSWORD: uportal
+          MARIADB_ROOT_PASSWORD: uportal-root
+          MYSQL_DATABASE: uportal
+          MYSQL_USER: uportal
+          MYSQL_PASSWORD: uportal
+          MYSQL_ROOT_PASSWORD: uportal-root
+        options: >-
+          --health-cmd "${{ matrix.health }}"
+          --health-interval 5s --health-timeout 5s --health-retries 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+      - name: Run uPortal-webapp's tests on ${{ matrix.vendor }}
+        env:
+          DB_DRIVER: ${{ matrix.driver }}
+          DB_URL: ${{ matrix.url }}
+        run: >-
+          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
+          -Duportal.test.db.username=uportal -Duportal.test.db.password=uportal
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-integration-${{ matrix.vendor }}
+          path: |
+            uPortal-webapp/build/reports/tests/
+            uPortal-webapp/build/test-results/
+
+  db-nightly:
+    name: "DB integration: ${{ matrix.vendor }}"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vendor: sqlserver-2022
+            image: mcr.microsoft.com/mssql/server:2022-latest@sha256:4402d880dd4c34bfa7d8705e56a86cd6c88da80a1f6bbbe741f999e76264a090
+            port: 1433
+            health: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P uPortal-Harness-1 -Q 'SELECT 1'
+            driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
+            url: jdbc:sqlserver://localhost:1433;databaseName=uportal;encrypt=false
+            username: sa
+            password: uPortal-Harness-1
+          - vendor: oracle-23
+            image: gvenzl/oracle-free:23-slim@sha256:6d61d267a3b978c24c5ac1790e62e927416a0aec446bd86e4b3a1527562757bd
+            port: 1521
+            # gvenzl's check that the database is open
+            health: healthcheck.sh
+            driver: oracle.jdbc.OracleDriver
+            url: jdbc:oracle:thin:@//localhost:1521/FREEPDB1
+            username: uportal
+            password: uportal
+    services:
+      db:
+        image: ${{ matrix.image }}
+        ports:
+          - ${{ matrix.port }}:${{ matrix.port }}
+        # One environment for every image; each image reads only its own variables.
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: uPortal-Harness-1
+          ORACLE_PASSWORD: uportal-sys
+          APP_USER: uportal
+          APP_USER_PASSWORD: uportal
+        options: >-
+          --health-cmd "${{ matrix.health }}"
+          --health-interval 10s --health-timeout 10s --health-retries 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+      # The SQL Server image has no setting that creates a database
+      - name: Create the uportal database
+        if: ${{ matrix.vendor == 'sqlserver-2022' }}
+        env:
+          DB_CONTAINER: ${{ job.services.db.id }}
+        run: >-
+          docker exec "$DB_CONTAINER" /opt/mssql-tools18/bin/sqlcmd -C -S localhost
+          -U sa -P uPortal-Harness-1 -Q "IF DB_ID('uportal') IS NULL CREATE DATABASE uportal"
+      - name: Run uPortal-webapp's tests on ${{ matrix.vendor }}
+        env:
+          DB_DRIVER: ${{ matrix.driver }}
+          DB_URL: ${{ matrix.url }}
+          DB_USERNAME: ${{ matrix.username }}
+          DB_PASSWORD: ${{ matrix.password }}
+        run: >-
+          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
+          "-Duportal.test.db.username=$DB_USERNAME" "-Duportal.test.db.password=$DB_PASSWORD"
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-integration-${{ matrix.vendor }}
+          path: |
+            uPortal-webapp/build/reports/tests/
+            uPortal-webapp/build/test-results/
