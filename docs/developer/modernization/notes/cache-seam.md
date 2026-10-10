@@ -1,4 +1,4 @@
-# P3-3 cache seam: handoff note
+# P3-3 Spring cache abstraction: handoff note
 
 Workstream WS5, plan step P3-3 (MOD-D6). The goal is to put uPortal's own caching behind
 Spring's cache abstraction (MOD-D22, MOD-Q10) and remove spring-modules-cache, while still on
@@ -9,7 +9,7 @@ and in uPortal-start (no uPortal-start changes).
 
 | Commit | Module(s) | Change |
 | --- | --- | --- |
-| `refactor(cache): replace spring-modules-cache with Spring's KeyGenerator` | build, uPortal-events, uPortal-utils-core, uPortal-webapp | spring-modules-cache 0.8 removed. `PersonDirectoryCacheKeyGenerator` implements Spring's `KeyGenerator`. The new `CachingPersonAttributeDao` replaces Person Directory's `CachingPersonAttributeDaoImpl`, whose API needs the spring-modules type. Adds the `CacheLookup` seam helper. |
+| `refactor(cache): replace spring-modules-cache with Spring's KeyGenerator` | build, uPortal-events, uPortal-utils-core, uPortal-webapp | spring-modules-cache 0.8 removed. `PersonDirectoryCacheKeyGenerator` is now a Spring `KeyGenerator`. The new `CachingPersonAttributeDao` replaces Person Directory's `CachingPersonAttributeDaoImpl`, whose API needs the spring-modules type. Adds the `CacheLookup` helper. |
 | `refactor(cache): look up the SpEL expression caches through Spring` | uPortal-utils-core | `PortalSpELServiceImpl`, `PortletSpELServiceImpl` |
 | `refactor(cache): move the layout cache to Spring's cache API` | uPortal-layout-impl | `LayoutCachingService` |
 | `refactor(cache): move the permission caches to Spring's cache API` | uPortal-security-permissions | `AuthorizationImpl` (3 caches, `SelfPopulatingCache` → `Cache.get(key, loader)`), `AnyUnblockedGrantPermissionPolicy` |
@@ -25,7 +25,7 @@ and in uPortal-start (no uPortal-start changes).
 Each commit is meant to become one upstream PR. They are in dependency order: the first one
 adds `CacheLookup`, and the others use it.
 
-### The seam
+### The Spring cache layer
 
 * **Spring `CacheManager`:** the existing `ehCacheManager` bean in `cacheContext.xml`, an
   `EhCacheCacheManager` over the Ehcache 2 `cacheManager` (an `EhCacheManagerFactoryBean` with
@@ -55,13 +55,13 @@ adds `CacheLookup`, and the others use it.
 * **Person attributes:** `CachingPersonAttributeDao` generates the same `CacheKey` (method
   name `getPeopleWithMultivaluedAttributes`, the seed attributes, the `username` tag), so
   entries and the logout purge (`UsernameTaggedCacheEntryPurger` → `TagTrackingCacheEventListener`)
-  work as before. Two things changed:
+  work as before. The bean changed in two ways.
   * The "null results" marker is now a uPortal class.
-  * The bean no longer counts queries and misses; it had only logged them at debug level.
+  * The bean stopped counting queries and misses. It had only logged them at debug level.
 
   MOD-I57 (a null lookup is cached for 15 minutes) is unchanged on purpose.
 * **commons-collections:** this jar reached `uPortal-utils-core`'s compile classpath only
-  through spring-modules (3.1). It is now declared at 3.2.2, the version the war already ships.
+  through spring-modules (3.1). It is now declared at 3.2.2, the version already in the war.
   spring-modules' other transitive jars (`concurrent` 1.3.4, `cglib-nodep` 2.1_3, `oro` 2.0.8)
   have no users in the code. The integration run's portal start is what shows they aren't
   needed at runtime.
@@ -88,11 +88,11 @@ only drops the replicators and the peer provider. Peer provider:
 
 Column key: size is `maxElementsInMemory`. TTL and TTI are in seconds, and 0 means none.
 Repl is `inval` for invalidation over JGroups, `no` for not replicated. Listener is `tag` for
-TagTracking and `size` for InsufficientSize. **Access** is how the code reaches the cache
+TagTracking and `size` for InsufficientSize. The access column says how the code gets the cache
 after this branch:
 
 * **Spring:** moved to Spring's `Cache` API through `CacheLookup`.
-* **@Cacheable:** Spring cache annotations.
+* **@Cacheable:** through Spring cache annotations.
 * **Ehcache:** still uses the Ehcache 2 API.
 * **Map:** through `CacheFactory`/`MapCacheProvider`.
 * **3rd party:** a library takes the Ehcache object.
@@ -102,43 +102,43 @@ after this branch:
 | `org.apereo.services.persondir.USER_INFO.merged` | `CacheKey` (tagged username, seed) → `Set<IPersonAttributes>` | 1000 | 900 | 0 | no | tag | PersonDirectoryConfiguration / CachingPersonAttributeDao | Spring |
 | `org.apereo.portal.layout.dlm.LAYOUT_CACHE` | `CacheKey` (tagged username, profile id) → `DistributedUserLayout` | 1000 | 7200 | 900 | inval | tag | LayoutCachingService | Spring |
 | `...AuthorizationImpl.AUTH_PRINCIPAL_CACHE` | `Tuple<String, Class>` → `IAuthorizationPrincipal` | 1000 | 0 | 900 | no | tag | AuthorizationImpl | Spring |
-| `...AuthorizationImpl.ENTITY_PARENTS_CACHE` | target `String` → `Set<String>` group keys | 1000 | 180 | 0 | no | — | AuthorizationImpl | Spring |
+| `...AuthorizationImpl.ENTITY_PARENTS_CACHE` | target `String` → `Set<String>` group keys | 1000 | 180 | 0 | no | none | AuthorizationImpl | Spring |
 | `...AuthorizationImpl.PRINCIPAL_HAS_PERMISSION` | `CacheKey` (tagged username, policy, type, owner, activity, target) → `Boolean` | 50000 | 180 | 0 | no | tag | AuthorizationImpl | Spring |
 | `...AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT` | `CacheKey` → `Boolean` | 250000 | 300 | 0 | no | tag | AnyUnblockedGrantPermissionPolicy | Spring |
-| `SpELExpressionCache` | expression `String` → `Expression` | 5000 | 0 | 900 | no | — | PortalSpELServiceImpl | Spring |
-| `portletSpELExpressionCache` | expression `String` → `Expression` | 100 | 0 | 900 | no | — | PortletSpELServiceImpl | Spring |
-| `org.apereo.portal.events.tincan.LrsActorCache` | username → `LrsActor` | 10000 | 0 | 600 | no | — | LrsActorService | Spring |
-| `org.apereo.portal.RDBMUserIdentityStore.userLockCache` | username → `SerializableObject` (lock) | 10000 | 0 | 600 | no | — | RDBMUserIdentityStore | Spring |
-| `org.apereo.portal.portlet.dao.jpa.PortletEntityImpl.idParseCache` | consistent id `String` → `IPortletEntityId` | 15000 | 60 | 0 | no | — | PortletEntityRegistryImpl | Spring |
-| `org.apereo.portal.portlet.rendering.SupportedEventCache` | `Tuple<IPortletDefinitionId, QName>` → `Boolean` | 1000 | 0 | 300 | no | — | PortletEventCoordinationHelper (+ Service) | Spring |
+| `SpELExpressionCache` | expression `String` → `Expression` | 5000 | 0 | 900 | no | none | PortalSpELServiceImpl | Spring |
+| `portletSpELExpressionCache` | expression `String` → `Expression` | 100 | 0 | 900 | no | none | PortletSpELServiceImpl | Spring |
+| `org.apereo.portal.events.tincan.LrsActorCache` | username → `LrsActor` | 10000 | 0 | 600 | no | none | LrsActorService | Spring |
+| `org.apereo.portal.RDBMUserIdentityStore.userLockCache` | username → `SerializableObject` (lock) | 10000 | 0 | 600 | no | none | RDBMUserIdentityStore | Spring |
+| `org.apereo.portal.portlet.dao.jpa.PortletEntityImpl.idParseCache` | consistent id `String` → `IPortletEntityId` | 15000 | 60 | 0 | no | none | PortletEntityRegistryImpl | Spring |
+| `org.apereo.portal.portlet.rendering.SupportedEventCache` | `Tuple<IPortletDefinitionId, QName>` → `Boolean` | 1000 | 0 | 300 | no | none | PortletEventCoordinationHelper (+ Service) | Spring |
 | `org.apereo.portal.EntityTypes.CLASS_BY_ID` / `ID_BY_CLASS` / `ALL` | id ↔ entity class | 50/50/1 | 28800 | 0 | inval | size (two of three) | EntityTypes | @Cacheable |
-| `org.apereo.portal.i18n.RDBMLocaleStore.userLocales` | person id → `Locale[]` | 2000 | 600 | 0 | no | — | RDBMLocaleStore | @Cacheable |
-| `org.apereo.portal.portlet.registry.PersistentPortletEntityWrapper.windowStates` | `"windowStates"` → window state map | 50 | 1800 | 0 | no | — | PersistentPortletEntityWrapper | @Cacheable |
-| `org.apereo.portal.layout.dlm.FragmentActivator.userViews` / `userViewErrors` | fragment owner + locale → `UserView` / `Exception` | 100 | 600/30 | 0 | inval/no | size/— | FragmentActivator (`SelfPopulatingCache` with an error cache) | Ehcache |
+| `org.apereo.portal.i18n.RDBMLocaleStore.userLocales` | person id → `Locale[]` | 2000 | 600 | 0 | no | none | RDBMLocaleStore | @Cacheable |
+| `org.apereo.portal.portlet.registry.PersistentPortletEntityWrapper.windowStates` | `"windowStates"` → window state map | 50 | 1800 | 0 | no | none | PersistentPortletEntityWrapper | @Cacheable |
+| `org.apereo.portal.layout.dlm.FragmentActivator.userViews` / `userViewErrors` | fragment owner + locale → `UserView` / `Exception` | 100 | 600/30 | 0 | inval/no | size/none | FragmentActivator (`SelfPopulatingCache` with an error cache) | Ehcache |
 | `org.apereo.portal.layout.dlm.RDBMDistributedLayoutStore.fragmentNodeInfoCache` | node id → `FragmentNodeInfo` | 1000 | 300 | 0 | no | size | RDBMDistributedLayoutStore | Ehcache |
-| `org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver` | layout node id (may be `null`) → `Tuple<String, String>` | 1000 | 300 | 0 | no | — | JpaAggregatedTabLookupDao | Spring |
+| `org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver` | layout node id (may be `null`) → `Tuple<String, String>` | 1000 | 300 | 0 | no | none | JpaAggregatedTabLookupDao | Spring |
 | `org.apereo.portal.jpa.cache.EntityManagerCache` | `CacheKey` → entity | 1000 | 0 | 300 | no | tag | EntityManagerCacheImpl | Ehcache |
-| `org.apereo.portal.groups.IEntityGroup` / `IEntity` / `org.apereo.portal.security.IPermissionSet` | entity key → entity | 1000/2500/1000 | 21600 | 0 | inval | size/—/size | CacheFactoryEntityCachingService (name built from the entity class) | Map |
+| `org.apereo.portal.groups.IEntityGroup` / `IEntity` / `org.apereo.portal.security.IPermissionSet` | entity key → entity | 1000/2500/1000 | 21600 | 0 | inval | size/none/size | CacheFactoryEntityCachingService (name built from the entity class) | Map |
 | `org.apereo.portal.groups.GroupMemberImpl.parentGroups` | member key → parent group keys | 5000 | 300 | 0 | inval | tag | GroupMemberImpl, LocalGroupsCacheAuthenticationListener (looked up through `ApplicationContextLocator`) | Ehcache |
 | `org.apereo.portal.groups.EntityGroupImpl.children` | group key → child keys | 1000 | 300 | 0 | inval | size | EntityGroupImpl, LocalGroupsCacheAuthenticationListener | Ehcache |
 | `org.apereo.portal.groups.RDBMEntityGroupStore.search` / `parentGroupEntity` / `parentGroupEntityGroup` | query or member → group keys | 500 | 300 | 0 | no | size | RDBMEntityGroupStore | Ehcache |
 | `...pags.dao.EntityPersonAttributesGroupStore.entityGroup` / `pagsGroup` | group key → group | 625 | 300 | 0 | no | size | EntityPersonAttributesGroupStore | Ehcache |
-| `...pags.dao.EntityPersonAttributesGroupStore.membership` | `MembershipCacheKey` → `Boolean`, searchable on `memberId` | 312500 | 300 | 0 | no | — | EntityPersonAttributesGroupStore, PagsMembershipCacheAuthenticationListener (search API) | Ehcache |
-| `org.apereo.portal.groups.pags.testers.AdHocGroupTester` | person hash → test in progress | 1000 | 60 | 0 | no | — | AdHocGroupTester (`getQuiet`) | Ehcache |
+| `...pags.dao.EntityPersonAttributesGroupStore.membership` | `MembershipCacheKey` → `Boolean`, searchable on `memberId` | 312500 | 300 | 0 | no | none | EntityPersonAttributesGroupStore, PagsMembershipCacheAuthenticationListener (search API) | Ehcache |
+| `org.apereo.portal.groups.pags.testers.AdHocGroupTester` | person hash → test in progress | 1000 | 60 | 0 | no | none | AdHocGroupTester (`getQuiet`) | Ehcache |
 | `...PortletCacheControlServiceImpl.{private,public}Scope{PortletRenderHeaderOutput,PortletRenderOutput,PortletResourceOutput}Cache` (6) | `PublicPortletCacheKey`/`PrivatePortletCacheKey` → `CachedPortletData` | 2500 | 0 | 300 (private) / 600 (public) | no | tag | PortletCacheControlServiceImpl (per-element TTL from portlet `expiration-cache`) | Ehcache |
-| `org.apereo.portal.rendering.STRUCTURE_TRANSFORM` / `THEME_TRANSFORM` | `CacheKey` → `CachedEventReader` / `CachedCharacterEvents` | 500/10000 | 0 | 300 | no | — | RenderingPipelineConfiguration → CachingPipelineComponent, jsonRenderingPipelineContext.xml | Ehcache |
-| `org.apereo.portal.utils.cache.resource.CachingResourceLoader` | resource → `CachedResource` | 500 | 0 | 900 | no | — | CachingResourceLoaderImpl (`SelfPopulatingCache`) | Ehcache |
-| `org.apereo.portal.utils.ResourceLoader.RESOURCE_URL_CACHE` / `RESOURCE_URL_NOT_FOUND_CACHE` | resource name → URL / not-found marker | 250 | 28800/600 | 0 | no | — | ResourceLoader (cacheContext.xml) | Map |
-| `org.apereo.portal.portlets.portletadmin.PortletAdministrationHelper.CPD_CACHE` | portlet type → `PortletPublishingDefinition` | 250 | 28800 | 0 | no | — | channelContainerContext.xml | Map |
-| `org.apereo.portal.utils.cache.ConfigurablePageCachingFilter.PAGE_CACHE` | request → page | 250 | 0 | 900 | no | — | resource-server-utils `ConfigurablePageCachingFilter` (cacheContext.xml) | 3rd party |
-| `...MarketplaceService.marketplacePortletDefinitionCache` / `marketplaceUserPortletDefinitionCache` / `marketplaceCategoryCache` | fname / username / categories → definition / `Future<Set<MarketplaceEntry>>` / list | 1000/1000/20 | 300/300/600 | 0 | no | — | MarketplaceService, PortletMarketplaceController | Ehcache |
-| `org.apereo.portal.skinManager.failureCache` | css instance key → failure | 100 | 60 | 60 | no | — | Abstract/FileSystem/AwsS3DynamicSkinService | Spring |
-| `org.apereo.portal.portlets.sqlquery.SqlQueryPortletController.queryResults` | query → results | 2000 | 300 | 0 | no | — | SqlQueryPortletController (`CacheManager.getInstance()`) | Ehcache |
-| `org.apereo.portlet.soffit.connector.SoffitConnectorController.RESPONSE_CACHE` | `ResponseCacheTuple` → `ResponseWrapper` | 2000 | 0 | 0 | no | — | SoffitConnectorController (per-element TTL from the soffit's Cache-Control) | Ehcache |
-| `org.apereo.portal.web.skin.Resources` / `Resources_DocumentFragment` | — | 50 | 28800 | 0 | no | — | no reference in this repository | unused? |
-| `org.apereo.portal.layout.dlm.NODEREF_CACHE` | — | 2000 | 0 | 180 | no | — | no reference (ehcache.xml: "only used by a command line tool") | unused? |
-| `org.jasig.cas.client.proxy.EhcacheBackedProxyGrantingTicketStorageImpl.cache` | PGT id → PGT | 10000 | 0 | 600 | no | — | CAS client, but `securityContext.xml` wires the non-Ehcache storage | unused? |
-| `org.apereo.portal.utils.cache.DEFAULT_CACHE` (not configured) | — | defaultCache | | | | | `CacheFactory.getCache()` | Map |
+| `org.apereo.portal.rendering.STRUCTURE_TRANSFORM` / `THEME_TRANSFORM` | `CacheKey` → `CachedEventReader` / `CachedCharacterEvents` | 500/10000 | 0 | 300 | no | none | RenderingPipelineConfiguration → CachingPipelineComponent, jsonRenderingPipelineContext.xml | Ehcache |
+| `org.apereo.portal.utils.cache.resource.CachingResourceLoader` | resource → `CachedResource` | 500 | 0 | 900 | no | none | CachingResourceLoaderImpl (`SelfPopulatingCache`) | Ehcache |
+| `org.apereo.portal.utils.ResourceLoader.RESOURCE_URL_CACHE` / `RESOURCE_URL_NOT_FOUND_CACHE` | resource name → URL / not-found marker | 250 | 28800/600 | 0 | no | none | ResourceLoader (cacheContext.xml) | Map |
+| `org.apereo.portal.portlets.portletadmin.PortletAdministrationHelper.CPD_CACHE` | portlet type to `PortletPublishingDefinition` | 250 | 28800 | 0 | no | none | channelContainerContext.xml | Map |
+| `org.apereo.portal.utils.cache.ConfigurablePageCachingFilter.PAGE_CACHE` | request → page | 250 | 0 | 900 | no | none | resource-server-utils `ConfigurablePageCachingFilter` (cacheContext.xml) | 3rd party |
+| `...MarketplaceService.marketplacePortletDefinitionCache` / `marketplaceUserPortletDefinitionCache` / `marketplaceCategoryCache` | fname / username / categories → definition / `Future<Set<MarketplaceEntry>>` / list | 1000/1000/20 | 300/300/600 | 0 | no | none | MarketplaceService, PortletMarketplaceController | Ehcache |
+| `org.apereo.portal.skinManager.failureCache` | css instance key → failure | 100 | 60 | 60 | no | none | Abstract/FileSystem/AwsS3DynamicSkinService | Spring |
+| `org.apereo.portal.portlets.sqlquery.SqlQueryPortletController.queryResults` | query → results | 2000 | 300 | 0 | no | none | SqlQueryPortletController (`CacheManager.getInstance()`) | Ehcache |
+| `org.apereo.portlet.soffit.connector.SoffitConnectorController.RESPONSE_CACHE` | `ResponseCacheTuple` → `ResponseWrapper` | 2000 | 0 | 0 | no | none | SoffitConnectorController (per-element TTL from the soffit's Cache-Control) | Ehcache |
+| `org.apereo.portal.web.skin.Resources` / `Resources_DocumentFragment` | none | 50 | 28800 | 0 | no | none | no reference in this repository | unused? |
+| `org.apereo.portal.layout.dlm.NODEREF_CACHE` | none | 2000 | 0 | 180 | no | none | no reference (ehcache.xml says a command-line tool uses it) | unused? |
+| `org.jasig.cas.client.proxy.EhcacheBackedProxyGrantingTicketStorageImpl.cache` | PGT id → PGT | 10000 | 0 | 600 | no | none | CAS client, but `securityContext.xml` wires the non-Ehcache storage | unused? |
+| `org.apereo.portal.utils.cache.DEFAULT_CACHE` (not configured) | none | defaultCache | | | | | `CacheFactory.getCache()` | Map |
 
 ### Hibernate second-level cache regions
 
@@ -155,7 +155,7 @@ list is in the appendix, because P4-3 renames them. Findings from the inventory:
   collection role is `EvaluatorGroup.evaluators`, because the field is inherited. The
   `Evaluator` subclass entity regions are probably dead too, because a single-table hierarchy
   shares the root region. Not confirmed at runtime.
-* **Four regions carry the Hibernate 4.3 names that 5.3 renamed:** `StandardQueryCache` and
+* **Regions with the Hibernate 4.3 names that 5.3 renamed:** `StandardQueryCache` and
   `UpdateTimestampsCache`, each with and without the `AggrEvents.` prefix.
 
 ## Callers: moved and remaining
@@ -166,7 +166,7 @@ PersonDirectoryConfiguration, PortalSpELServiceImpl, PortletSpELServiceImpl,
 LayoutCachingService, AuthorizationImpl, AnyUnblockedGrantPermissionPolicy, LrsActorService,
 RDBMUserIdentityStore, PortletEntityRegistryImpl, PortletEventCoordinationHelper,
 PortletEventCoordinatationService, CacheHealthReporterService, JpaAggregatedTabLookupDao and
-the three dynamic skin services (Abstract, FileSystem and AwsS3). spring-modules-cache is
+the three skin services (Abstract, FileSystem and AwsS3). spring-modules-cache is
 gone (2 files).
 
 **Remaining, grouped by what each needs:**
@@ -185,7 +185,7 @@ gone (2 files).
      AdHocGroupTester). They look caches up through the static `ApplicationContextLocator`, so
      the change is to fetch the Spring `CacheManager` the same way.
 2. **Self-populating with extra semantics:**
-   * FragmentActivator: the user view loader stores failures in `userViewErrors` and rethrows
+   * FragmentActivator: loading a user view stores failures in `userViewErrors` and rethrows
      them. That maps to `get(key, loader)` plus an explicit error cache.
    * CachingResourceLoaderImpl: a `SelfPopulatingCache` with a `ThreadLocalCacheEntryFactory`.
 3. **Exceptions: things Spring's `Cache` cannot express.** Each needs a thin uPortal interface
@@ -202,8 +202,8 @@ gone (2 files).
      removes the only search use.
    * **Statistics and administration:** `CacheManagementHelper`, used by the Cache Manager
      portlet, reads Ehcache `Statistics` and `CacheConfiguration`. Proposal: a
-     `CacheStatisticsProvider` interface with an Ehcache 2 implementation now, and JCache
-     (`CacheStatisticsMXBean`) or Caffeine (`stats()`) later. `clearCache` and `clearAllCaches`
+     `CacheStatisticsProvider` interface. Ehcache 2 backs it now. After the switch,
+     JCache (`CacheStatisticsMXBean`) or Caffeine (`stats()`) can back it. `clearCache` and `clearAllCaches`
      can already go through Spring (`getCacheNames()` and `clear()`).
    * **Event listeners:** `TagTrackingCacheEventListener` (tag purge),
      `InsufficientSizeCacheEventListener` (health report) and `SpringCacheEventListenerFactory`
@@ -239,15 +239,15 @@ gone (2 files).
 
 | Test | Module | What it shows |
 | --- | --- | --- |
-| `CachingPersonAttributeDaoTest` (8) | uPortal-events | User attributes on a real Ehcache with the tag listener: miss then hit for equal seeds, users cached separately, null results cached as a marker (or not, when disabled), seeds without key attributes not cached, `removeUserAttributes` eviction, the logout purge by username tag, and key equality (equal seeds, empty attributes ignored, username tag present). |
+| `CachingPersonAttributeDaoTest` (8) | uPortal-events | User attributes on a real Ehcache with the tag listener. Equal seeds miss then hit, and each user has an entry. Null results are cached as a marker, or not when disabled; seeds without key attributes not cached, `removeUserAttributes` eviction, the logout purge by username tag, and key equality (equal seeds, empty attributes ignored, username tag present). |
 | `LayoutCachingServiceTest` (4) | uPortal-layout-impl | Hit for an equal user and profile and miss otherwise, eviction on `removeCachedLayout` (the layout update path), the logout purge of only that user's layouts, and fail-fast on a missing cache. |
 | `AuthorizationImplCacheTest` (3) | uPortal-security-permissions | Permission checks cached per principal and target, and purged per user at logout. |
-| `PortalSpELServiceImplTest` (+2) | uPortal-utils-core | Parsed expressions are cached; a missing cache fails fast. |
-| `LrsActorServiceTest` (2) | uPortal-events | An actor is resolved once per user; a missing cache fails fast. |
-| `InsufficientSizeCacheEventListenerTest` (2) | uPortal-utils-core | A too-small cache reports its name on eviction; entries that fit are not reported. |
+| `PortalSpELServiceImplTest` (+2) | uPortal-utils-core | Parsed expressions are cached. A missing cache fails fast. |
+| `LrsActorServiceTest` (2) | uPortal-events | Each user's actor is resolved once, and a missing cache fails fast. |
+| `InsufficientSizeCacheEventListenerTest` (2) | uPortal-utils-core | A too-small cache reports its name on eviction. Entries that fit are not reported. |
 | `CacheConfigurationCoverageTest` (2) | uPortal-webapp | Every cache name used in main sources is in both ehcache files. It finds 45 names: `requireCache` arguments, `@Qualifier`/`@Resource` on Ehcache or Spring Cache injection points, `getCache("…")`, Spring cache annotations and XML `cacheName` properties. |
 
-That is 23 new tests. No existing tests were removed. The Ehcache mocks in
+That is 23 new tests, and every existing test was kept. The Ehcache mocks in
 `PortletEntityRegistryImplTest` and `PortletEventCoordinatationServiceTest` became Spring
 `Cache` mocks.
 
@@ -264,8 +264,8 @@ The integration run (Playwright, three databases) covers these paths end to end.
 
 ### Seeded faults
 
-Each fault was applied to the source, the module's tests were run, and the change was
-reverted; the logs are in the session scratchpad. Every fault made the tests fail:
+For each fault I edited the source and ran the module's tests, then reverted the edit. The logs
+are in the session scratchpad. Every fault made the tests fail:
 
 | Fault | Where | Result |
 | --- | --- | --- |
@@ -279,29 +279,29 @@ reverted; the logs are in the session scratchpad. Every fault made the tests fai
 | Missing cache tolerated: `CacheLookup` returns null instead of failing | CacheLookup | 1 failed |
 | Missing cache configuration: `LAYOUT_CACHE` renamed in ehcache-no-jgroups.xml | ehcache-no-jgroups.xml | coverage test failed and named `LayoutCachingService.java` |
 
-One fault survived at first: the tag was dropped only from the single-valued (`String`) seed
+The tests missed the first version of the tag fault, which dropped the tag only from the single-valued (`String`) seed
 branch of the key generator. `CachingPersonAttributeDao` always passes multivalued seeds, so
 that branch is unreachable through it. The fault was re-seeded in the list branch that
 production uses (third row).
 
-## Gates
+## Checks
 
-**Status at handoff (2026-10-10 22:35 UTC): local gates green; GitHub gates still queued.**
+**Status at handoff (2026-10-10 22:35 UTC): local checks green. GitHub runs still queued.**
 GitHub Actions is saturated across the workstreams; runs on this branch queue for a long time,
 and each new push cancels the older run.
 
-| Gate | Run | Result |
+| Check | Run | Result |
 | --- | --- | --- |
-| uPortal CI, light profile for workstream branches: Linux leg, static analysis, commit messages | [38091362346](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362346) on `066fbd9` | queued |
+| uPortal CI, light profile for workstream branches (Linux leg, SpotBugs and commit messages) | [38091362346](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362346) on `066fbd9` | queued |
 | uPortal DB integration | [38091362114](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362114) | queued |
 | uPortal-start Integration: DB harness and Playwright on three databases | [38091366801](https://github.com/ChristianMurphy/uPortal-start/actions/runs/38091366801), building uPortal `ccr-43ba0785-hzlrj5-cache-seam` | queued |
 | uPortal CI, full matrix, first commit only | [38088762888](https://github.com/ChristianMurphy/uPortal/actions/runs/38088762888) on `6e7d045` | Build and Test green on windows-latest temurin 25 and ubuntu zulu 21; the other legs had not finished |
 | SpotBugs baseline | local `spotbugsMain` on all 14 modules the branch touches | no new findings, baseline unchanged |
-| Unit test count | local, all modules | 1044 tests, 0 failures. No tests removed; 23 added. |
+| Unit test count | local, all modules | 1044 tests, 0 failures. 23 tests added, all existing tests kept. |
 
 **Commit subjects:** `b0e2662` (77 characters), `85a36c8` (73) and `72f8f8b` (74) are over the 72-character
 limit that the integration branch's commit check (`8dee16c`) now enforces. They were pushed
-before that check reached this branch, and history is not rewritten. Later commits pass the
+before that check was merged into this branch, and history is not rewritten. Later commits pass the
 check.
 
 * **Local runs (JDK 21):** all green.
@@ -309,7 +309,7 @@ check.
     rendering, rdbm, groups-core, groups-pags and core, plus `spotlessCheck`.
   * Tests for `uPortal-web`, `uPortal-portlets`, `uPortal-soffit-connector` and
     `uPortal-webapp`, and SpotBugs for web and webapp.
-  * Altogether 1044 tests ran with 0 failures, and no test files were deleted.
+  * Altogether 1044 tests ran with 0 failures, and every test file was kept.
 * **jitpack.io workaround:** jitpack.io (`google-visualization-java`) is denied by this
   environment's network policy. The webapp-side modules ran after the official jar was
   installed into `~/.m2` from the released uPortal 5.17.9 WAR on Maven Central (sha256
@@ -317,7 +317,7 @@ check.
 
 ## Proposed LOG entries
 
-* **MOD-D? (P3-3 seam):** uPortal code gets caches only through Spring's `CacheManager` and
+* **MOD-D? (P3-3 Spring cache layer):** uPortal code gets caches only through Spring's `CacheManager` and
   `CacheLookup.requireCache`, which fails on an unconfigured name. Spring's `Cache` API is
   used where it fits, and `get(key, loader)` replaces `SelfPopulatingCache`. The exceptions
   are listed in `notes/cache-seam.md`: per-entry TTL, search API, statistics, Ehcache
@@ -342,21 +342,21 @@ check.
 * **MOD-I51 (existing):** jitpack.io is blocked. Nothing new to log: this workstream used the
   coordinator's workaround, which installs the jar from the 5.17.9 WAR.
 * **MOD-Q11 update:** the Ehcache expired-element eviction job is Ehcache 2-specific and is
-  deleted at the provider switch (Ehcache 3 and Caffeine expire entries themselves). The cache
-  health report job stays and is fed by provider listeners.
+  deleted at the provider switch (Ehcache 3 and Caffeine expire entries themselves). The job that
+  writes the cache health report is kept, and provider listeners feed it.
 
 ## Plan for P4-3 and the 6.0 provider profiles
 
 P4-3 is the Hibernate 5.6.15 step, with `hibernate-jcache` for the L2 cache, the region renames
-and the provider switch. With the seam in place, it changes configuration rather than callers.
+and the provider switch. With callers on Spring's cache API, it changes configuration rather than callers.
 
 ### What's left before or during P4-3
 
 1. **Finish moving callers** (the remaining list above). Then delete
    `EhcacheManagerBeanConfigurer`, and the only `net.sf.ehcache` imports left are the
    adapters: listeners, statistics, the eviction job and the Hibernate region factory.
-2. **Add the three interfaces from the exceptions list,** each with an Ehcache 2
-   implementation first:
+2. **Add the three interfaces from the exceptions list,** each backed by Ehcache 2
+   first:
    * `ExpiringCache` for per-entry TTL;
    * a tagging decorator that replaces `TagTrackingCacheEventListener`;
    * `CacheStatisticsProvider`.
@@ -393,16 +393,16 @@ and the provider switch. With the seam in place, it changes configuration rather
      JCache, with a local near-cache for the hot regions (layout, permissions, groups, XSLT).
      The Hibernate L2 story for Redisson against Hibernate 7.4 is unverified (MOD-Q10).
 6. **Handle the provider-specific pieces per profile:**
-   * Per-entry TTL: Caffeine `Expiry`, Infinispan `put(k, v, lifespan)`, Redis per-key TTL.
+   * Per-entry TTL uses Caffeine `Expiry`, Infinispan `put(k, v, lifespan)` or a Redis per-key TTL.
    * Listeners:
      * Tag purge moves into the decorator, so it needs nothing from the provider.
-     * Size reports: Caffeine `RemovalCause.SIZE`, Infinispan
-       `@CacheEntriesEvicted`, Redis none.
-   * Statistics: Caffeine `recordStats`, JCache MXBeans.
+     * Size reports come from Caffeine `RemovalCause.SIZE` or Infinispan
+       `@CacheEntriesEvicted`. Redis has no equivalent.
+   * Statistics come from Caffeine `recordStats` or the JCache MXBeans.
    * Delete `ExpiredElementEvictor`.
 7. **`javax.cache` stays `javax`** (research report). Exclude it from the jakarta rewrite.
 
-### What the two-node cluster test must show for the switch
+### Two-node cluster test for the switch
 
 Today, on `ccr-43ba0785-hzlrj5-cluster`, with Ehcache 2 and JGroups, record each check below.
 Then require the same results on profile (b), and on (c) where it applies:
@@ -415,10 +415,10 @@ Then require the same results on profile (b), and on (c) where it applies:
 3. **Portlet definitions:** an admin edits or publishes a portlet on node 1; node 2 shows the
    change. This covers the Hibernate L2 entity regions and the `.Query` regions.
 4. **Entity types:** `EntityTypes` caches (inval) stay consistent.
-5. **Logout purge stays local:** the username tag purge (`listenFor=local`) does not need to
+5. **Logout purge is local:** the username tag purge (`listenFor=local`) does not need to
    cross nodes. A user's cached attributes and permissions on node 2 expire by TTL, as today.
    Record this, so a new provider doesn't "fix" it by surprise.
-6. **No copies of non-replicated caches:** for example, `USER_INFO.merged` and
+6. **No copies of non-replicated caches:** `USER_INFO.merged` and
    `PRINCIPAL_HAS_PERMISSION` entries exist only on the node that computed them.
 7. **Timestamps:** query-cache invalidation through the timestamps region works across nodes
    (the aggregation unit replicates it by copy).
@@ -510,7 +510,7 @@ All 126 regions. Columns: region, kind, maxElementsInMemory, TTL (s), TTI (s), r
 | `org.apereo.portal.layout.dao.jpa.StylesheetUserPreferencesImpl` | hibernate-entity | 1000 | 0 | 3600 | inval |
 | `org.apereo.portal.layout.dlm.Evaluator` | hibernate-entity | 100 | 21600 | 0 | inval |
 | `org.apereo.portal.layout.dlm.FragmentDefinition.Query` | hibernate-query | 100 | 21600 | 0 | inval |
-| `org.apereo.portal.layout.dlm.FragmentDefinition.evaluators` | hibernate-collection (field `evaluators` is inherited from EvaluatorGroup (SINGLE_TABLE hierarchy rooted at Evaluator); Hibernate collection role is EvaluatorGroup.evaluators, so this region is probably never used) | 100 | 21600 | 0 | inval |
+| `org.apereo.portal.layout.dlm.FragmentDefinition.evaluators` | hibernate-collection (field `evaluators` is inherited from EvaluatorGroup (SINGLE_TABLE hierarchy rooted at Evaluator). The Hibernate collection role is EvaluatorGroup.evaluators, so this region is probably never used) | 100 | 21600 | 0 | inval |
 | `org.apereo.portal.layout.dlm.providers.AllUsersEvaluatorFactory` | hibernate-entity | 500 | 21600 | 0 | inval |
 | `org.apereo.portal.layout.dlm.providers.AttributeEvaluator` | hibernate-entity | 500 | 21600 | 0 | inval |
 | `org.apereo.portal.layout.dlm.providers.EvaluatorGroup.evaluators` | hibernate-collection | 1000 | 21600 | 0 | inval |
