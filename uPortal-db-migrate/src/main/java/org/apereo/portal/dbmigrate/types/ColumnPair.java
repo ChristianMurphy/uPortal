@@ -117,6 +117,14 @@ public final class ColumnPair {
                             + source.column().size()
                             + "); longer values fail the copy");
         }
+        if (logical == Family.STRING
+                && target.emptyStringIsNull()
+                && (source == null || !source.emptyStringIsNull())) {
+            notes.add("empty strings become NULL (Oracle stores '' as NULL)");
+        }
+        if (source != null && logical == Family.DOUBLE && source.family() != Family.DOUBLE) {
+            notes.add("copied as a binary double: digits beyond its precision (about 15) are lost");
+        }
         boolean trim = target.padded() || (source != null && source.padded());
         boolean emptyNull =
                 target.emptyStringIsNull() || (source != null && source.emptyStringIsNull());
