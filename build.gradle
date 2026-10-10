@@ -79,8 +79,9 @@ allprojects {
         reportFormat = 'console'
     }
 
-    // Version has to be set directly here, using a variable does not set Java compatability version
-    sourceCompatibility = 11
+    java {
+        sourceCompatibility = JavaVersion.VERSION_11
+    }
 
     gradleLint.criticalRules = [
       'overridden-dependency-version',
@@ -110,6 +111,15 @@ allprojects {
         toolVersion '1.7'
         options style: 'AOSP'
         exclude '**/generated-sources'
+    }
+    // The root verifyGoogleJavaFormat scans the project tree which overlaps with
+    // the webapp's nodeSetup/npmInstall output directory.  Mirror the per-project
+    // fix in uPortal-webapp/build.gradle to satisfy Gradle 8's implicit-dependency
+    // validation.
+    if (project == rootProject) {
+        tasks.named('verifyGoogleJavaFormat') {
+            mustRunAfter ':uPortal-webapp:nodeSetup', ':uPortal-webapp:npmInstall'
+        }
     }
 
     /*======== Aggregate Dependencies Report ========*/
@@ -163,7 +173,7 @@ subprojects {
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url "https://jitpack.io" }
+        maven { url = "https://jitpack.io" }
     }
 
     dependencies {
@@ -201,11 +211,13 @@ subprojects {
         }
     }
     task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier 'sources'
+        archiveClassifier.set('sources')
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from sourceSets.main.allSource
     }
     task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
+        archiveClassifier.set('javadoc')
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         from javadoc.destinationDir
     }
     publishing {
@@ -267,7 +279,7 @@ subprojects {
         // and the modern GnuPG keystore is used. Select the key with the
         // `signing.gnupg.keyName` Gradle property (e.g. in ~/.gradle/gradle.properties).
         useGpgCmd()
-        required { isPublishingToRemote() }
+        required = { isPublishingToRemote() }
         sign publishing.publications.maven
     }
     // `useGpgCmd()` makes the gpg command an always-present signatory, so the Sign
@@ -308,19 +320,17 @@ task jacocoAggregateReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
     getAdditionalSourceDirs().setFrom(files(subprojects.sourceSets.main.allSource.srcDirs))
     getSourceDirectories().setFrom(files(subprojects.sourceSets.main.allSource.srcDirs))
     getClassDirectories().setFrom(files(subprojects.sourceSets.main.output))
-    getExecutionData().setFrom(files(subprojects.jacocoTestReport.executionData))
+    // Use a filtered file tree that lazily excludes non-existent files
+    getExecutionData().setFrom(files(subprojects.collect {
+        fileTree(dir: "${it.buildDir}/jacoco", include: '*.exec')
+    }))
 
     reports {
-        xml.enabled = true
-        html.enabled = true
+        xml.required = true
+        html.required = true
     }
     onlyIf = {
         true
-    }
-    doFirst {
-        getExecutionData().setFrom(files(getExecutionData().findAll {
-            it.exists()
-        }))
     }
 }
 
