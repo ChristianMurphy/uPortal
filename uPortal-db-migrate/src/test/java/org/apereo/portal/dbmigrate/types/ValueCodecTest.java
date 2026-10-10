@@ -160,6 +160,30 @@ public class ValueCodecTest {
         assertEquals(norm(v, p), norm(stored, p));
     }
 
+    /**
+     * SQL Server datetime into a column with whole seconds (MySQL and MariaDB DATETIME under 5.17):
+     * the copy truncates .997 to the second, so verification must compare both sides at the second
+     * too, not on SQL Server's 1/300 s grid. G-migrate run 38080746162 reported five tables of SQL
+     * Server 2019 and 2022 sources as MISMATCH in MariaDB 12.3 and MySQL 9.7.
+     */
+    @Test
+    public void sqlServerDatetimeIntoWholeSeconds() {
+        LocalDateTime v = LocalDateTime.of(2026, 10, 10, 19, 56, 41, 997_000_000);
+        ColumnPair p = pair(SQLSERVER_DATETIME, MARIADB_DATETIME);
+        assertEquals(0, p.fractionDigits());
+        Object stored = ValueCodec.adapt(v, p);
+        assertEquals(v.withNano(0), stored);
+        assertEquals(norm(v, p), norm(stored, p));
+
+        LocalTime time = LocalTime.of(19, 56, 41, 997_000_000);
+        ColumnPair timePair =
+                pair(
+                        type(Vendor.SQLSERVER, Types.TIMESTAMP, "datetime", 23, 3),
+                        type(Vendor.MARIADB, Types.TIME, "TIME", 8, 0));
+        assertEquals(ColumnType.Family.TIME, timePair.logical());
+        assertEquals(norm(time, timePair), norm(ValueCodec.adapt(time, timePair), timePair));
+    }
+
     @Test
     public void dateAndTimeStoredInDatetimeColumns() {
         ColumnType pgDate = type(Vendor.POSTGRESQL, Types.DATE, "date", 13, 0);
