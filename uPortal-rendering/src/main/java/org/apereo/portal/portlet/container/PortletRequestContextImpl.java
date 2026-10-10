@@ -178,7 +178,13 @@ public class PortletRequestContextImpl extends AbstractPortletContextImpl
                             + IPortletRenderer.RENDERER_ATTRIBUTE_PREFIX);
         }
 
-        this.attributes.put(name, value);
+        // Pluto's PortletRequestImpl.removeAttribute(name) calls setAttribute(name, null), and
+        // a removed attribute must leave getAttributeNames() too (PLT.11.1.3)
+        if (value == null) {
+            this.attributes.remove(name);
+        } else {
+            this.attributes.put(name, value);
+        }
     }
 
     /* (non-Javadoc)
