@@ -798,6 +798,36 @@ This supersedes MOD-D24's runtime matrix.
   tokenizing, and resource-phase multipart. Portlet 3.0-only APIs appear
   only in classes we didn't vendor.
 
+### MOD-D27: static analysis as a CI gate — SpotBugs ratchet plus NullAway with JSpecify
+
+* **Finding:**
+  * SpotBugs 4.10.4 with FindSecBugs is applied, but only runs when a
+    SpotBugs task is named explicitly, with `ignoreFailures = true`, so it
+    never runs in CI.
+  * Error Prone 2.50.0 runs on every compile, but 4 ERROR-level checks
+    are disabled, including the security check `BanJNDI`.
+  * The codebase has **zero** nullness annotations.
+* **Decision:**
+  1. **SpotBugs + FindSecBugs as a ratchet in CI.** Record today's
+     findings in a committed exclusion baseline, and fail the build on
+     any NEW finding. Focus on CORRECTNESS (including the `NP_*` null
+     dereference detectors), MT_CORRECTNESS (inconsistent
+     synchronisation, races), SECURITY, and BAD_PRACTICE. Shrink the
+     baseline over time.
+  2. **NullAway (an Error Prone plugin) in JSpecify mode** with
+     `OnlyNullMarked`. Adopt it package by package with `@NullMarked`,
+     starting with new code (WS14 controllers and services, the copy
+     tool) and the hot spots (portlet rendering, preferences, security,
+     where MOD-I90's NPE lives). This follows Spring Framework 7, which
+     annotates its APIs with JSpecify and builds with NullAway (MOD-D22),
+     so after P7 NullAway also understands Spring's nullness.
+  3. **Re-enable the disabled Error Prone checks** (`BanJNDI`,
+     `BoxedPrimitiveEquality`, `DoubleBraceInitialization`,
+     `SelfAssertion`) by fixing their findings, one PR per check.
+* **Limits:** static analysis flags missing null checks, but races like
+  MOD-I90 (a session swapped mid-render) also need a code fix and a
+  regression test. SpotBugs' MT detectors catch only some of them.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
