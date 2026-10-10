@@ -66,9 +66,9 @@ $J -Xmx1g -jar $T -profile=TOMCAT -exclude=icu4j-*.jar -logLevel=FINE src/webapp
 - **Archive mode:** streaming. `-zipInMemory` was never needed.
 - **Default excludes:** left on, so jars such as spring-aop, spring-expression, jackson-core, commons-codec and slf4j-api are copied unchanged. That is 1–14 jars per webapp.
 - **Wall time:** about 5 minutes for all 16 webapps, on 4 loaded CPUs.
-- **Narrow variant:** `scripts/NarrowMigrate.java` drives the same tool as a library with a custom profile. That profile covers servlet+jsp, el, websocket, jaspic and the Tomcat-provided `javax.annotation` classes, and leaves `javax.persistence`, `javax.mail`, `javax.ejb` and `javax.transaction` alone. The CLI cannot express this.
+- **Narrow variant:** `scripts/NarrowMigrate.java.txt` drives the same tool as a library with a custom profile. That profile covers servlet+jsp, el, websocket, jaspic and the Tomcat-provided `javax.annotation` classes, and leaves `javax.persistence`, `javax.mail`, `javax.ejb` and `javax.transaction` alone. The CLI cannot express this.
   ```bash
-  $J -cp $T scripts/NarrowMigrate.java src/webapps/<app> transformed-narrow/webapps/<app> 'icu4j-*.jar'
+  $J -cp $T scripts/NarrowMigrate.java.txt src/webapps/<app> transformed-narrow/webapps/<app> 'icu4j-*.jar'
   ```
 - **Hybrid API:** the TOMCAT-profile output of `portlet-api_2.1.0_spec-1.0.jar` *is* the hybrid API. Exactly 4 classes change (`PortletRequest`, `PortletResponse`, `filter.PortletRequestWrapper`, `filter.PortletResponseWrapper`), and the only change is that `Cookie` now comes from `jakarta.servlet.http`. `javax.portlet` keeps its name.
 - **Pluto:** `pluto-container-api` (8 classes), `pluto-container-driver-api` (4) and `pluto-taglib` (19) are moved to jakarta.servlet the same way. `pluto-container`/`pluto-portal-driver` 2.1.0-M3 inside uPortal's WEB-INF/lib are transformed along with uPortal. `ccpp` changes 1 class and person-directory-api changes 0.
@@ -171,7 +171,7 @@ Severity: **Critical** = portal or most portlets down; **High** = a portlet or a
 ## (c) Removed-Servlet-API scan (prototype of the P5-5 scanner)
 
 ### The script
-- **Script:** `scripts/JakartaLinkScan.java` (single file, run with **JDK 25**, uses the `java.lang.classfile` API, no ASM), plus the wrapper `scripts/scan-removed-api.sh <tomcat lib> <shared-lib> <webapps>`.
+- **Script:** `scripts/JakartaLinkScan.java.txt` (single file, run with **JDK 25**, uses the `java.lang.classfile` API, no ASM), plus the wrapper `scripts/scan-removed-api.sh <tomcat lib> <shared-lib> <webapps>`.
 - **Grep was not enough.** A grep for method names finds the simple cases but misses most of what actually broke. The scanner is therefore a small **linkage checker**:
   - It indexes every class in each webapp (`WEB-INF/classes` and every jar), the transformed `shared/lib`, the target Tomcat's whole `lib/` (spec APIs *and* the Tomcat internals webapps can see), and, lazily, the JDK itself through `jrt:/`.
   - It resolves every `Fieldref`, `Methodref`, `InterfaceMethodref` and `Class` constant by JVM rules, with exact descriptors and walking the class hierarchy. That catches `super.encodeUrl(..)` in a webapp subclass.
@@ -285,7 +285,7 @@ Neither is Jakarta-related.
 - **uPortal-start HEAD `474c66f` (22 specs, 122 tests) on T11/JDK25:** **118/122**.
   - The 4 failures are sandbox-blocked: web-proxy ×2, because MOD-I54's tightened spec now also fails properly offline, and CKEditor ×2.
   - The three new **admin Web Flow specs (portlet manager registration, groups manager, permissions manager) pass on Tomcat 11 with both JDK 21 and JDK 25**.
-- **Narrow-profile WARs** (Bookmarks, Announcements, SimpleContent, Calendar, NewsReader, Feedback, all transformed by `NarrowMigrate.java`) on T11/J21: `ux/portlets` + `ux/smoke` = 78/81, with the same 3 sandbox failures.
+- **Narrow-profile WARs** (Bookmarks, Announcements, SimpleContent, Calendar, NewsReader, Feedback, all transformed by `NarrowMigrate.java.txt`) on T11/J21: `ux/portlets` + `ux/smoke` = 78/81, with the same 3 sandbox failures.
 - **Crawl of all 94 registered portlets**, maximized as admin (`scripts/crawl.sh`): 94 × HTTP 200 and 0 error cards, except the `error` test portlet, which exists to render one.
   - The result is identical on T8.5 ref, T11/J21, T11/J25 min-opens, T11 narrow and T10.1.
   - No exception text appears in any portlet's markup.
@@ -362,7 +362,7 @@ Neither is Jakarta-related.
    - The same JDK change tightens XML entity and depth limits, which could affect large data imports.
 3. **The migration tool's default TOMCAT profile is wider than the report assumes.**
    - It also renames `javax.persistence`, `javax.transaction`, `javax.ejb`, `javax.mail` and the Common Annotations classes, and it renames entry paths, so each WAR ends up with private "jakarta" copies of those APIs. That works, because the rename is consistent within the WAR.
-   - The narrow rule set the report proposes cannot be expressed on the CLI. It needs about 20 lines of Java against the tool's `EESpecProfile` (`scripts/NarrowMigrate.java`). Both rule sets passed.
+   - The narrow rule set the report proposes cannot be expressed on the CLI. It needs about 20 lines of Java against the tool's `EESpecProfile` (`scripts/NarrowMigrate.java.txt`). Both rule sets passed.
    - **Change:** P5-5 should pick one explicitly. I recommend the narrow profile: fewer rewritten classes, and `javax.persistence.*` property keys stay unchanged. The pipeline also needs a per-WAR `-exclude` list and must fail the build on a non-zero exit.
 4. **The P5-5 "removed-Servlet-API scanner" has to be a linkage checker, not a list of method names.**
    - The failures came from removed *classes* that appear in exception tables and method signatures, hit through Jasper's tag introspection. They also came from Tomcat-internal classes reached by Spring Boot, and from `super.` calls in webapp subclasses.
@@ -382,8 +382,8 @@ Neither is Jakarta-related.
 
 ## Files
 - Scripts, in `spike/scripts/`:
-  - `transform-all.sh`, `NarrowMigrate.java`, `deploy.sh`, `fixups.sh`, `hsql.sh`, `tc.sh`.
-  - `JakartaLinkScan.java` (scanner, census and signature search), `scan-removed-api.sh`, `scan-matrix.py`, `census-diff.py`, `FindRefs.java`.
+  - `transform-all.sh`, `NarrowMigrate.java.txt`, `deploy.sh`, `fixups.sh`, `hsql.sh`, `tc.sh`.
+  - `JakartaLinkScan.java.txt` (scanner, census and signature search), `scan-removed-api.sh`, `scan-matrix.py`, `census-diff.py`, `FindRefs.java.txt`.
   - `smoke.sh`, `crawl.sh`, `pluto-testsuite.sh`, `pluto-parse.py`, `pw-run.sh`, `logsum.py`.
 - Logs, in `spike/logs/`:
   - `transform/` (per-webapp migration logs) and `api-diff.txt`.
@@ -392,3 +392,7 @@ Neither is Jakarta-related.
   - `pluto-testsuite-t{85,10,11}.txt` (+ `pluto-t85-pages/`, `pluto-t10-pages/`).
   - `runs/<config>/` (full Tomcat, portal and portlet logs per configuration) and `runs/run2-hang-jstack.txt`.
 - Playwright traces and screenshots: `$SP/spike-pw-<run>-results/`.
+
+> The Java single-file programs in `scripts/` are stored as `*.java.txt` so the
+> repository's Java format check skips them (they use JDK 25 syntax). Rename them back
+> to `*.java` to run them with `java <file>.java`.
