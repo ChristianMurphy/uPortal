@@ -170,6 +170,67 @@ databases upgrading in place.
 * **Still to build:** the one-insert-per-entity check, and coverage of
   portlet tables.
 
+### MOD-D11: 6.0 gets an improved schema and a cross-vendor copy migration
+
+This supersedes the "freeze forever" and Flyway parts of MOD-Q4 and the
+research report.
+
+* **Decision (project owner):** do not carry the 4.3-era schema forever.
+  6.0 ships an improved schema plus a one-command, verified **copy tool**.
+  The tool reads a 5.17 database on any supported vendor and writes a
+  fresh 6.0 schema on any supported vendor (HSQLDB, PostgreSQL, MySQL,
+  MariaDB, SQL Server, Oracle).
+  * The old database is left untouched, which gives free rollback.
+  * Switching vendors during the upgrade comes for free (e.g. MySQL →
+    PostgreSQL).
+  * Event and analytics history is migrated by default, streamed, with an
+    opt-out flag for raw events.
+* **Schema improvements in scope:**
+  1. Native sequences on every vendor. This ends the one-row ID tables on
+     SQL Server/MySQL/MariaDB (MOD-I23) and drops the 49 dead
+     `@TableGenerator`s.
+  2. Proper LOB/text types per vendor. This ends the PostgreSQL OIDs stored
+     in `text` columns and their `vacuumlo` data loss (MOD-I24/I25).
+  3. `java.time`-native timestamp columns with explicit time-zone semantics,
+     replacing Joda/Jadira storage (MOD-I5).
+  4. Clean, consistent constraint and index names; dead objects dropped;
+     missing FK indexes added; no MySQL `lower_case_table_names`
+     requirement (MOD-I73).
+* **How it fits the phases:**
+  * Intermediate phases (P2–P6) still keep **zero drift** against the 5.17
+    baselines, so code regressions stay separate from intentional schema
+    changes. The freeze settings are the *source* contract the copy tool
+    reads.
+  * The 6.0 schema change lands as its own step with Hibernate 7 (after
+    P7-1), and the freeze block is dropped there.
+  * The copy-tool framework is built early as **5.17 → 5.17 cross-vendor
+    copy** (identity mapping). That version is already useful to 5.x
+    adopters, and it proves streaming, LOBs, FK ordering, sequence and
+    ID-table seeding, and verification before the 6.0 transforms are added.
+* **New gate, G-migrate:**
+  * For each source vendor, migrate a 5.17 dump to the same vendor and to
+    at least one other vendor.
+  * The target schema must equal a fresh 6.0 install (zero drift against
+    the fresh-install snapshot).
+  * Per-table row counts and content hashes must match after the
+    documented transforms.
+  * Every ID generator must be seeded above `max(id)`, and one insert per
+    entity must succeed.
+  * The full Playwright suite must pass against the migrated database.
+* **Alternatives considered:**
+  * In-place per-vendor migrations (Flyway, 5 vendors' worth of SQL). No
+    vendor switching, and rollback only by restoring a backup.
+  * Both a copy tool and in-place migrations: the most work.
+  * The XML export/import pipeline: vendor-neutral, but slow, and it
+    doesn't cover event data.
+  * Freeze forever: carries the MOD-I23/I24 cruft indefinitely.
+* **Open details:**
+  * Portlet-owned tables (Announcements, Calendar, …) share the portal
+    database in uPortal-start. The plan is a generic same-structure copy for
+    them, because their schemas don't change in 6.0.
+  * Large-site performance: batching, parallel tables, resumability.
+  * Rehearsal and dry-run reporting.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -255,6 +316,6 @@ databases upgrading in place.
 | MOD-Q1 | Keep an external Tomcat, move to Spring Boot, or move to Jetty 12? | **Proposed:** keep an external Tomcat 11 for 6.0. Spring Boot 4 can come in *inside* the WAR (`SpringBootServletInitializer`, `@ImportResource` for the XML contexts, the Boot BOM), but Boot cannot host the portlet WARs, and embedded Tomcat with extra webapps is undocumented. Jetty 12.1 does support cross-context dispatch from ee11 into ee8 webapps (since 12.0.8). However, a context/classloader bug was only fixed on 2026-09-30, and Pluto passes container objects between contexts, which would need a javax↔jakarta adapter. Treat Jetty as a time-boxed spike, not the plan. |
 | MOD-Q2 | Kotlin DSL / version catalog / convention plugins? | **Proposed:** order is Gradle 9 in Groovy → a `build-logic` included build with convention plugins plus `gradle/libs.versions.toml` (Renovate supports it) → configuration cache (Gradle 9's preferred mode) → Kotlin DSL file by file, last. Kotlin DSL has been the default since 8.2; Groovy is not deprecated. No OpenRewrite recipe exists for Groovy→Kotlin. |
 | MOD-Q3 | Local SSO in uPortal-start? | **Proposed:** default to uPortal local login (`SimpleSecurityContextFactory`, already on). CAS becomes opt-in as a separate CAS 7.3/8.0 Initializr overlay or Docker container. java-cas-client 4.x is used once uPortal is on Jakarta. |
-| MOD-Q4 | Schema management after hbm2ddl? | **Open (licence issue):** Liquibase 5.0 moved to the FSL (not OSI), which Apereo may not accept. Flyway OSS is Apache-2.0 with `baselineOnMigrate`, but needs per-vendor SQL. Candidate: Hibernate 7 `SchemaManager` for fresh installs, plus Flyway versioned migrations (baseline = 5.17 schema) for upgrades, tested on all vendors with Testcontainers. Needs community input. |
+| MOD-Q4 | Schema management after hbm2ddl? (**Superseded by MOD-D11** for the 5.17 → 6.0 path; Flyway vs Liquibase is still open for changes *after* 6.0) | **Open (licence issue):** Liquibase 5.0 moved to the FSL (not OSI), which Apereo may not accept. Flyway OSS is Apache-2.0 with `baselineOnMigrate`, but needs per-vendor SQL. Candidate: Hibernate 7 `SchemaManager` for fresh installs, plus Flyway versioned migrations (baseline = 5.17 schema) for upgrades, tested on all vendors with Testcontainers. Needs community input. |
 | MOD-Q5 | Portlets: transform the WARs, port them, or replace them with web components / Soffit? | **Proposed:** follow Sakai's approach and keep Pluto in-tree on `jakarta.servlet`, with the `javax.portlet` 2.0 API rebuilt against `jakarta.servlet`. Fork Spring Portlet MVC for the 37 built-in portlets. Use build-time conversion of the bundled portlet WARs as a *bridge* only. Move content portlets to web components (Vue 2 is EOL, so Lit or Vue 3) and Soffit over time. The prototype will verify the bridge. |
 | MOD-Q6 | Propose 6.0 as an RFC in `uPortal-Project/community` Discussions before opening the large PRs? | **Recommended** |
