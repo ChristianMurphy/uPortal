@@ -1,0 +1,54 @@
+description = "Apereo uPortal Spring Portlet MVC"
+
+/*
+ * Spring Portlet MVC and the portlet integration of Spring Web Flow, owned by uPortal.
+ *
+ * Spring Framework 5 removed Portlet MVC (spring-webmvc-portlet) and Spring Web Flow 2.5 removed
+ * its portlet support. uPortal's own portlets need both, so the classes it uses are kept here:
+ *
+ *   - src/vendored: the subset of spring-webmvc-portlet 4.3.30.RELEASE and of the
+ *     org.springframework.webflow.{mvc,context}.portlet packages of spring-webflow 2.4.8.RELEASE
+ *     that uPortal uses, copied from the official -sources jars on Maven Central (Apache License
+ *     2.0, see NOTICE). The only change is the package: org.springframework.web.portlet became
+ *     org.apereo.portal.spring.web.portlet, and org.springframework.webflow.*.portlet became
+ *     org.apereo.portal.spring.webflow.*.portlet. These files keep their upstream formatting
+ *     (they are not run through google-java-format), so they can still be diffed against the
+ *     upstream sources.
+ *   - src/main: uPortal's own extensions of the vendored classes.
+ */
+dependencies {
+    // The compile-scope dependencies of spring-webmvc-portlet 4.3.30.RELEASE
+    api "org.springframework:spring-beans:${springVersion}"
+    api "org.springframework:spring-context:${springVersion}"
+    api "org.springframework:spring-core:${springVersion}"
+    api "org.springframework:spring-web:${springVersion}"
+    api "org.springframework:spring-webmvc:${springVersion}"
+    // The portlet integration of Spring Web Flow builds on the rest of Web Flow
+    api "org.springframework.webflow:spring-binding:${springWebflowVersion}"
+    api "org.springframework.webflow:spring-webflow:${springWebflowVersion}"
+    // The vendored classes log through (and expose) the Commons Logging API
+    api "org.slf4j:jcl-over-slf4j:${slf4jVersion}"
+
+    compileOnly "${portletApiDependency}"
+    compileOnly "${servletApiDependency}"
+
+    testImplementation "${portletApiDependency}"
+    testImplementation "${servletApiDependency}"
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src/vendored/java'
+        }
+        resources {
+            srcDir 'src/vendored/resources'
+        }
+    }
+}
+
+spotless {
+    java {
+        targetExclude '**/generated-sources/**', '**/build/**', 'src/vendored/**'
+    }
+}
