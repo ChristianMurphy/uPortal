@@ -16,8 +16,6 @@ import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apache.commons.lang.StringUtils;
 import org.apache.pluto.container.PortletContainerException;
 import org.apache.pluto.container.driver.PortletContextService;
@@ -27,9 +25,11 @@ import org.apereo.portal.portlet.om.*;
 import org.apereo.portal.portlet.registry.IPortletDefinitionRegistry;
 import org.apereo.portal.portlet.registry.IPortletWindowRegistry;
 import org.apereo.portal.utils.Tuple;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.apereo.portal.xml.XmlUtilities;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,9 +39,14 @@ public class PortletEventCoordinationHelper {
     @Autowired private PortletContextService portletContextService;
     @Autowired private IPortletWindowRegistry portletWindowRegistry;
 
+    private Cache supportedEventCache;
+
     @Autowired
-    @Qualifier("org.apereo.portal.portlet.rendering.SupportedEventCache")
-    private Ehcache supportedEventCache;
+    public void setCacheManager(CacheManager cacheManager) {
+        this.supportedEventCache =
+                CacheLookup.requireCache(
+                        cacheManager, "org.apereo.portal.portlet.rendering.SupportedEventCache");
+    }
 
     @Autowired private IPortletDefinitionRegistry portletDefinitionRegistry;
 
@@ -182,9 +187,9 @@ public class PortletEventCoordinationHelper {
                 new Tuple<IPortletDefinitionId, QName>(portletDefinitionId, eventName);
 
         // Check in the cache if the portlet definition supports this event
-        final Element element = this.supportedEventCache.get(key);
-        if (element != null) {
-            final Boolean supported = (Boolean) element.getObjectValue();
+        final Cache.ValueWrapper cached = this.supportedEventCache.get(key);
+        if (cached != null) {
+            final Boolean supported = (Boolean) cached.get();
             if (supported != null) {
                 return supported;
             }
@@ -219,7 +224,7 @@ public class PortletEventCoordinationHelper {
             // See if the supported qname and event qname match explicitly
             // Look for alias names
             if (qualifiedName.equals(eventName) || aliases.contains(qualifiedName)) {
-                this.supportedEventCache.put(new Element(key, Boolean.TRUE));
+                this.supportedEventCache.put(key, Boolean.TRUE);
                 return true;
             }
 
@@ -228,13 +233,13 @@ public class PortletEventCoordinationHelper {
                 final QName namespacedName =
                         new QName(defaultNamespace, qualifiedName.getLocalPart());
                 if (eventName.equals(namespacedName)) {
-                    this.supportedEventCache.put(new Element(key, Boolean.TRUE));
+                    this.supportedEventCache.put(key, Boolean.TRUE);
                     return true;
                 }
             }
         }
 
-        this.supportedEventCache.put(new Element(key, Boolean.FALSE));
+        this.supportedEventCache.put(key, Boolean.FALSE);
         return false;
     }
 }
