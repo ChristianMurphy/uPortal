@@ -56,6 +56,16 @@ jobs:
             url: jdbc:mariadb://localhost:3306/uportal?useMysqlMetadata=true
             # See mysql-8.4
             known-failure: true
+          # Temporary (MOD-D16): the same MySQL with READ COMMITTED, to confirm the cause of the
+          # JpaClusterLockDaoTest failures below. Removed again with the push-only SQL Server
+          # and Oracle trigger.
+          - vendor: mysql-8.4-read-committed
+            image: mysql:8.4@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242
+            port: 3306
+            health: mysqladmin ping -h 127.0.0.1 -u uportal -puportal
+            driver: com.mysql.cj.jdbc.Driver
+            url: "jdbc:mysql://localhost:3306/uportal?useSSL=false&allowPublicKeyRetrieval=true&sessionVariables=transaction_isolation='READ-COMMITTED'"
+            known-failure: false
           - vendor: mysql-8.4
             image: mysql:8.4@sha256:6ea90827b1100f8f2ae306a539f86d2c264a26ed435a2a9f75551dd5c3aeb242
             port: 3306
