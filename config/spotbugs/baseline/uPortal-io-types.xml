@@ -9,7 +9,6 @@
     <Match><Class name="org.apereo.portal.io.xml.crn.SqlPortalDataFunction"/><Method name="apply"/><Bug pattern="SQL_INJECTION_SPRING_JDBC"/></Match>
     <Match><Class name="org.apereo.portal.io.xml.layout.LayoutPortalDataType"/><Field name="userIdentityStore"/><Bug pattern="URF_UNREAD_FIELD"/></Match>
     <Match><Class name="org.apereo.portal.io.xml.portlet.ExternalPortletDefinitionUnmarshaller"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
-    <Match><Class name="org.apereo.portal.io.xml.portlet.ExternalPortletDefinitionUnmarshaller"/><Method name="unmarshallLifecycle"/><Bug pattern="EC_UNRELATED_TYPES"/></Match>
     <Match><Class name="org.apereo.portal.io.xml.portlet.PortletDefinitionImporterExporter"/><Method name="savePortletDefinition"/><Bug pattern="WMI_WRONG_MAP_ITERATOR"/></Match>
     <Match><Class name="~org\.apereo\.portal\.io\.xml\.portlet\.ExternalPortletDefinitionUnmarshaller\$\d+"/><Method name="compareTo"/><Bug pattern="EQ_COMPARETO_USE_OBJECT_EQUALS"/></Match>
 </FindBugsFilter>

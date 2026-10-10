@@ -20,7 +20,6 @@
     <Match><Class name="org.apereo.portal.portlet.registry.PortletCategoryRegistryImpl"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.portlet.registry.PortletDefinitionRegistryImpl"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.portlet.registry.PortletWindowRegistryImpl"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
-    <Match><Class name="org.apereo.portal.portlet.registry.PortletWindowRegistryImpl"/><Method name="getOrCreateStatelessPortletWindow"/><Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/></Match>
     <Match><Class name="org.apereo.portal.portlet.registry.PortletWindowRegistryImpl"/><Method name="getPortletWindow"/><Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/></Match>
     <Match><Class name="org.apereo.portal.portlet.registry.PortletWindowRegistryImpl"/><Method name="isDisablePersistentWindowStates"/><Bug pattern="RC_REF_COMPARISON_BAD_PRACTICE_BOOLEAN"/></Match>
     <Match><Class name="org.apereo.portal.portlet.rendering.worker.GuardingHttpServletResponse"/><Method name="sendError"/><Bug pattern="XSS_SERVLET"/></Match>
