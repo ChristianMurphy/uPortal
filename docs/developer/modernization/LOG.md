@@ -1022,6 +1022,34 @@ This supersedes MOD-D24's runtime matrix.
   * Overlay fixes for the Tomcat 11 blockers and the removed-API scanner
     (`-overlays`).
   * Local login default with CAS opt-in (`-local-login`).
+* **Update (22:15 UTC): GitHub Actions became the bottleneck.** 24 runs
+  were queued with only 3 jobs running. Each workstream push started 20–40
+  jobs (the full OS/JDK matrix, every database, full Playwright).
+  * **Decision (owner):** workstream branches
+    (`ccr-43ba0785-hzlrj5-<topic>`) run a light profile, and a newer push
+    cancels the older run.
+  * master, pull requests and the integration branch keep the full
+    matrices, so every merge is still checked in full. Heavier sets run
+    nightly or on dispatch.
+  * CI.yml has it in both repos (uPortal 87e0b98a5, uPortal-start
+    06cc883f0): one Linux leg plus static analysis, and on uPortal-start
+    no released-uPortal Playwright run, since Integration covers it.
+  * The DB-matrix workstream applies it to `db-integration.yml`,
+    `integration.yml` and `db-harness.yml`. Every new workflow follows
+    the same rule.
+  * Implementation: the branch test is
+    `startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-')`, and the
+    matrices switch with an inline `fromJSON(cond && light || full)`,
+    because `env` isn't available in `strategy`. Prototype only, like
+    the `ccr-*` trigger (MOD-I74).
+* **Shared egress limits in the cloud sessions:** Maven Central (429)
+  and Docker Hub pull limits, and jitpack.io is policy-blocked
+  (MOD-I51).
+  * Each session uses Google's Central mirror and Docker Hub mirror
+    (`mirror.gcr.io`), and installs the jitpack-only
+    `google-visualization-java` jar from the 5.17.9 uPortal WAR, checked
+    by SHA-256. None of this is committed.
+  * The proper MOD-I51 fix, removing the jitpack dependency, is queued.
 
 ### MOD-D31: Lit components model their state explicitly with XState
 
