@@ -7,7 +7,7 @@ approach (MOD-D22), and the Joda half of MOD-I5.
 
 Everything that does not touch a JPA entity, a Hibernate type or a DAO's query is converted:
 configuration, the Marketplace model and JSP, the analytics REST API, and the event jobs'
-settings. What remains is the event-aggregation engine and the portlet cookies. Both are built
+settings. The event-aggregation engine and the portlet cookies remain. Both are built
 on JPA entities that map Joda types through Jadira, so they move with the Hibernate upgrade.
 That remainder is most of the Joda code: the aggregation engine is the bulk of uPortal's date
 handling.
@@ -36,10 +36,11 @@ handling.
 ## What changed, per module
 
 * **uPortal-spring:** new `DurationEditor` and `TemporalAmountEditor`; `ReadableDurationEditor`
-  and `ReadablePeriodEditor` removed. The editors stay property editors registered through
-  `portalPropertyEditorRegistrar`, the mechanism the contexts already use. A Spring
-  `ConversionService` with `DurationFormatter` would be the other Spring route, but there is no
-  application-wide conversion service today, and adding one changes conversion for every bean.
+  and `ReadablePeriodEditor` removed. The new editors are still property editors registered
+  through `portalPropertyEditorRegistrar`, the mechanism the contexts already use. The other
+  Spring route is a `ConversionService` with `DurationFormatter`. The portal has no
+  application-wide conversion service today, and adding one would change conversion for every
+  bean.
   Spring has nothing for a mixed period like `P1DT12H`.
 * **uPortal-utils-core:** `ClusterLockServiceImpl`, `JpaClusterLockDao` (only the
   `abandonedLockAge` setting, not query code) and `DelegatingThreadPoolTaskScheduler` take
@@ -49,7 +50,7 @@ handling.
   `PortalEventSessionPurgerImpl.eventSessionDuration` are `TemporalAmount`.
   `IAnalyticsPortalEventService.getAnalytics` takes `ZonedDateTime`; the controller computes the
   range with `java.time`.
-* **uPortal-marketplace:** `PortletReleaseNotes` dates are `LocalDateTime`;
+* **uPortal-marketplace:** `PortletReleaseNotes` dates are `LocalDateTime`.
   `MarketplacePortletDefinition` parses with a `java.time` formatter.
 * **uPortal-portlets:** `ActivityController` and `PopularPortletsController` compute their
   windows with `ZonedDateTime`.
@@ -61,18 +62,18 @@ handling.
 
 * **Property values:** every value the Joda editors accepted still works, checked value by value
   against Joda in the editor tests.
-  * Durations: Joda accepted only `PTnS` (an optional fraction truncated to milliseconds);
-    `Duration.parse` accepts all of that and more (`PT1M`, `P1D`). One edge case: a fraction
-    with more than nine digits, which Joda truncated, is now rejected.
+  * For durations, Joda accepted only `PTnS` (an optional fraction truncated to milliseconds).
+    `Duration.parse` accepts all of that and more (`PT1M`, `P1D`). A fraction with more than
+    nine digits used to be truncated and is now rejected.
   * Periods: the date part (`PnYnMnWnD`) becomes a `Period` and the time part a `Duration`,
     applied date part first, as Joda's field order did. Days follow the calendar in the value's
     zone (23 or 25 hours across DST), and hours follow elapsed time, as with Joda. Two edges
     differ: a period with both years and months is applied as total months (Joda applied years,
-    then months), and the result is resolved differently when it lands in a repeated or skipped
+    then months), and the result is resolved differently when it falls in a repeated or skipped
     DST hour.
 * **Joda boundary:** `JodaTimeBridge` keeps both the instant and the zone, so a `DateTime` read
   from an entity is shifted in its own zone, as `DateTime.minus(Period)` did.
-* **Default zone:** `ZoneId.systemDefault()` stands in for `DateTimeZone.getDefault()`. Both come
+* **Default zone:** `ZoneId.systemDefault()` replaces `DateTimeZone.getDefault()`. Both come
   from `user.timezone`, and `TimeZoneTestUtils` sets both.
 * **Analytics range:** kept identical, quirk included: the date is parsed as UTC midnight, then
   the end is pushed a calendar day later in the default zone, minus one second.
@@ -81,13 +82,13 @@ handling.
   4.3's `MappingJackson2JsonView` registered `JodaModule`, and would register `JavaTimeModule`,
   which writes `LocalDateTime` as an array.
 * **Marketplace parsing:** as lenient as Joda's `yyyy-MM-dd HH:mm:ss` (short fields, years of
-  1–9 digits) and as strict on invalid dates. A local time in a DST gap now parses; Joda threw,
-  and the date was dropped with a warning.
+  1 to 9 digits) and as strict on invalid dates. A local time in a DST gap now parses. Joda
+  threw, and the date was dropped with a warning.
 * **Marketplace JSP:** `dd-MM-yyyy`, cut from the ISO text with `fn:substring`. This avoids JSTL
   `fmt` (it would format with the request locale's calendar, Buddhist for `th_TH`) and EL 3.0
   method calls.
 * **Behaviour relaxed on purpose:** `dimensionBuffer` now accepts months and years, which Joda
-  rejected with `UnsupportedOperationException`; values under a day are still rejected. The
+  rejected with `UnsupportedOperationException`. Values under a day are still rejected. The
   Activity portlet's "today" works where midnight falls in a DST gap, where Joda's
   `DateMidnight` threw.
 * **Log text:** `ClusterLockServiceImpl` logs `maximumLockDuration` as `PT1H` instead of
@@ -108,7 +109,7 @@ New: `DurationEditorTest`, `TemporalAmountEditorTest`, `JavaTimeEditorRegistrati
 against the Joda computation it replaces, across the 2026 DST changes. The cluster-lock DAO
 tests exercise `DurationEditor` through the test context (`abandonedLockAge=PT0.100S`).
 
-Two default time zones: every affected module's tests ran with `TZ=UTC` and again with
+Every affected module's tests ran with `TZ=UTC` and again with
 `TZ=America/New_York` (counts under Gate results). Gradle passes `TZ` to the test JVMs; a
 throwaway probe test confirmed that `TimeZone.getDefault()` and `DateTimeZone.getDefault()` both
 followed it.
@@ -118,14 +119,14 @@ followed it.
 * **Local, all affected modules:** after installing `google-visualization-java` from the 5.17.9
   war into mavenLocal (the coordinator's MOD-I51 workaround, sha256 checked), every module
   builds here. Tests are green with `TZ=UTC` and again with `TZ=America/New_York`:
-  * uPortal-webapp: 390 run, 78 skipped (existing `@Ignore`s), 0 failures
+  * uPortal-webapp: 390 tests with 0 failures (78 are skipped by existing `@Ignore`s)
   * uPortal-portlets: 32 tests, 0 failures
   * uPortal-web: 10 tests, 0 failures
   * uPortal-spring: 37 tests, 0 failures
   * uPortal-utils-core: 30 tests, 0 failures
   * uPortal-marketplace: 8 tests, 0 failures
 
-  `spotlessCheck` is clean, and SpotBugs reports no new findings in uPortal-utils-core,
+  `spotlessCheck` is clean, and SpotBugs doesn't report new findings in uPortal-utils-core,
   uPortal-spring, uPortal-marketplace, uPortal-events, uPortal-web, uPortal-portlets and
   uPortal-webapp, so the baseline did not grow. `check-commit-messages.sh` passes (5d02277's
   subject is 73 characters; it was pushed before the check existed, and history is not
@@ -148,7 +149,7 @@ followed it.
 * **Doc bug fixed:** the `purgeDelay=P1H` example in `portal.properties` was not a valid Joda
   period and would have failed startup if uncommented.
 * **`PortalEventDimensionPopulatorImplTest` is `@Ignore`d** ("Breaks on move to Gradle"), so the
-  dimension buffer had no running test; there is one now.
+  dimension buffer had no running test. It has one now.
 * **ArchUnit freeze rule (not landed yet):** `JodaTimeBridge` is a new class depending on Joda.
   A frozen "no Joda" rule would report it as new, though the store shrinks overall. The rule
   should exempt `org.apereo.portal.utils.time.JodaTimeBridge`, or freeze it once; it is the
@@ -163,7 +164,7 @@ followed it.
   `EventSessionImpl`, `PersistentPortalEvent`, `PersistentAnalyticsEvent`, `PortalCookieImpl`,
   `PortletCookieImpl`, plus the `global.hbm.xml` Jadira typedefs (`dateTime`, `dateTimeTZ`,
   `localDate`, `localTime`, `monthDay`).
-* **Interfaces the entities implement (public API):** `DateDimension`, `TimeDimension`,
+* **Interfaces of the entities (public API):** `DateDimension`, `TimeDimension`,
   `QuarterDetail`, `AcademicTermDetail`, `BaseAggregation`, `IEventAggregatorStatus`,
   `EventSession`, `IPortalCookie`, `IPortletCookie`.
 * **DAOs, with Joda query parameters:** `JpaBaseAggregationDao` (+ `BaseAggregationDao`,
@@ -211,8 +212,8 @@ the other side is `java.time`:
 2. **Same PR or the next:** convert the entity interfaces, the DAOs' parameters and the
    aggregation engine together (`AggregationInterval` maps onto `ChronoUnit` and
    `TemporalAdjusters`; `DateMidnight` becomes `LocalDate`, with `atStartOfDay(zone)` where an
-   instant is needed). Gate: the analytics goldens (MOD-D29 item 3, across DST, month and year
-   ends, several zones) unchanged.
+   instant is needed). Gate: the analytics goldens (MOD-D29 item 3) unchanged. They cover DST
+   changes and month and year ends in several zones.
 3. **Then:** the statistics portlet (form as `LocalDate` with a `M/d/yyyy` editor), the
    aggregation import/export, the cookie service, and `PortalEvent.getTimestampAsDate()`.
    Delete `JodaTimeBridge`; drop `joda-time`, Jadira and `jackson-datatype-joda`; the ArchUnit
@@ -220,10 +221,10 @@ the other side is `java.time`:
 
 ## Proposed LOG entries
 
-* **MOD-D?: Joda-Time outside the JPA mappings is replaced by `java.time`.** Property editors
-  (`DurationEditor`, `TemporalAmountEditor`) accept every value the Joda editors accepted;
-  periods keep calendar-day semantics in the value's zone. Code still meeting Joda entities goes
-  through the single `JodaTimeBridge`. The Marketplace JSON keeps epoch milliseconds. Remaining:
-  the entities, DAOs and the aggregation engine (61 files), converted with the Hibernate 5.2
-  slice behind the persistence and analytics goldens.
+* **MOD-D?: `java.time` replaces Joda-Time outside the JPA mappings.** The property
+  editors (`DurationEditor`, `TemporalAmountEditor`) accept every value the Joda editors
+  accepted, and periods keep calendar-day semantics in the value's zone. Code still meeting Joda
+  entities goes through `JodaTimeBridge` only. The Marketplace JSON keeps epoch milliseconds.
+  The entities, DAOs and the aggregation engine (61 files) remain, to be converted with the
+  Hibernate 5.2 slice behind the persistence and analytics goldens.
 * **MOD-I?: the `portal.properties` example `purgeDelay=P1H` was invalid** (fixed to `PT1H`).
