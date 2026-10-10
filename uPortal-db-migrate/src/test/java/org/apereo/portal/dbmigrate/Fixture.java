@@ -50,24 +50,53 @@ public final class Fixture {
 
     /** Creates the empty schema. */
     public static void createSchema(Connection c, Vendor v) throws SQLException {
-        String bool = v == Vendor.POSTGRESQL || v == Vendor.HSQLDB ? "BOOLEAN" : "BIT(1)";
-        String ts = v.isMySqlFamily() ? "DATETIME" : "TIMESTAMP";
-        String clob = v == Vendor.POSTGRESQL ? "TEXT" : v.isMySqlFamily() ? "LONGTEXT" : "CLOB(1M)";
+        // 5.17's spelling per vendor (Hibernate 4.3 dialects)
+        boolean sqlServer = v == Vendor.SQLSERVER;
+        boolean oracle = v == Vendor.ORACLE;
+        String bool =
+                v == Vendor.POSTGRESQL || v == Vendor.HSQLDB
+                        ? "BOOLEAN"
+                        : sqlServer ? "BIT" : oracle ? "NUMBER(1)" : "BIT(1)";
+        String ts = v.isMySqlFamily() || sqlServer ? "DATETIME" : "TIMESTAMP";
+        String clob =
+                v == Vendor.POSTGRESQL
+                        ? "TEXT"
+                        : v.isMySqlFamily()
+                                ? "LONGTEXT"
+                                : sqlServer ? "NVARCHAR(MAX)" : oracle ? "CLOB" : "CLOB(1M)";
         String blob =
-                v == Vendor.POSTGRESQL ? "BYTEA" : v.isMySqlFamily() ? "LONGBLOB" : "BLOB(1M)";
-        String dbl = v == Vendor.POSTGRESQL ? "FLOAT8" : "DOUBLE";
+                v == Vendor.POSTGRESQL
+                        ? "BYTEA"
+                        : v.isMySqlFamily()
+                                ? "LONGBLOB"
+                                : sqlServer ? "VARBINARY(MAX)" : oracle ? "BLOB" : "BLOB(1M)";
+        String dbl =
+                v == Vendor.POSTGRESQL
+                        ? "FLOAT8"
+                        : sqlServer ? "FLOAT" : oracle ? "DOUBLE PRECISION" : "DOUBLE";
+        String bigint = oracle ? "NUMBER(19)" : "BIGINT";
+        String time = oracle ? "DATE" : "TIME";
         List<String> ddl = new ArrayList<>();
         ddl.add(
-                "CREATE TABLE UP_THING_TYPE (TYPE_ID BIGINT NOT NULL PRIMARY KEY,"
+                "CREATE TABLE UP_THING_TYPE (TYPE_ID "
+                        + bigint
+                        + " NOT NULL PRIMARY KEY,"
                         + " NAME VARCHAR(100) NOT NULL, ENABLED "
                         + bool
                         + " NOT NULL)");
         ddl.add(
-                "CREATE TABLE UP_THING (THING_ID BIGINT NOT NULL PRIMARY KEY,"
-                        + " TYPE_ID BIGINT NOT NULL, PARENT_ID BIGINT, CODE CHAR(8),"
+                "CREATE TABLE UP_THING (THING_ID "
+                        + bigint
+                        + " NOT NULL PRIMARY KEY, TYPE_ID "
+                        + bigint
+                        + " NOT NULL, PARENT_ID "
+                        + bigint
+                        + ", CODE CHAR(8),"
                         + " TITLE VARCHAR(200), CREATED "
                         + ts
-                        + " NOT NULL, DAY_VALUE DATE, AT_TIME TIME, AMOUNT DECIMAL(12,4),"
+                        + " NOT NULL, DAY_VALUE DATE, AT_TIME "
+                        + time
+                        + ", AMOUNT DECIMAL(12,4),"
                         + " RATIO "
                         + dbl
                         + ", BODY "
@@ -79,12 +108,12 @@ public final class Fixture {
                         + " CONSTRAINT FK_THING_PARENT FOREIGN KEY (PARENT_ID)"
                         + " REFERENCES UP_THING (THING_ID))");
         ddl.add(
-                "CREATE TABLE UP_RAW_EVENTS (EVENT_ID BIGINT NOT NULL PRIMARY KEY, EVENT_DATA "
+                "CREATE TABLE UP_RAW_EVENTS (EVENT_ID "
+                        + bigint
+                        + " NOT NULL PRIMARY KEY, EVENT_DATA "
                         + (v == Vendor.POSTGRESQL ? "TEXT" : clob)
                         + " NOT NULL, "
-                        + (v == Vendor.HSQLDB || v == Vendor.POSTGRESQL
-                                ? "\"TIMESTAMP\""
-                                : "TIMESTAMP")
+                        + timestampColumn(v)
                         + " "
                         + ts
                         + " NOT NULL, AGGREGATED "
@@ -94,7 +123,7 @@ public final class Fixture {
                 "CREATE TABLE UP_SEQUENCE (SEQUENCE_NAME VARCHAR(255) NOT NULL PRIMARY KEY,"
                         + " SEQUENCE_VALUE INTEGER)");
         for (int i = 0; i < GENERATORS.length; i++) {
-            if (v.isMySqlFamily()) {
+            if (usesSequenceTables(v)) {
                 ddl.add("CREATE TABLE " + GENERATORS[i] + " (next_val BIGINT)");
                 ddl.add("INSERT INTO " + GENERATORS[i] + " VALUES (1)");
             } else {
@@ -113,6 +142,16 @@ public final class Fixture {
         if (!c.getAutoCommit()) {
             c.commit();
         }
+    }
+
+    /** 5.17 keeps its ID generators in one-row tables there, not in sequences (MOD-I23). */
+    public static boolean usesSequenceTables(Vendor v) {
+        return v.isMySqlFamily() || v == Vendor.SQLSERVER;
+    }
+
+    /** UP_RAW_EVENTS' column named TIMESTAMP, quoted where the name is a keyword. */
+    public static String timestampColumn(Vendor v) {
+        return v == Vendor.MYSQL || v == Vendor.MARIADB ? "TIMESTAMP" : "\"TIMESTAMP\"";
     }
 
     /** A 100 kB string with characters outside the BMP. */
@@ -165,7 +204,9 @@ public final class Fixture {
                                         .plusMinutes(id * 7)
                                         .plusNanos(id * 1000L));
                 ps.setObject(7, LocalDate.of(2026, 3, 8).plusDays(id));
-                ps.setObject(8, LocalTime.of(id % 24, 15, 30));
+                LocalTime time = LocalTime.of(id % 24, 15, 30);
+                // 5.17 on Oracle keeps a time of day in a DATE, on 1970-01-01
+                ps.setObject(8, v == Vendor.ORACLE ? LocalDate.of(1970, 1, 1).atTime(time) : time);
                 ps.setBigDecimal(
                         9,
                         new java.math.BigDecimal("12.3400")
@@ -173,7 +214,11 @@ public final class Fixture {
                 ps.setDouble(10, id == 2 ? 0.1 + 0.2 : 1.0 / id);
                 ps.setString(11, id == 3 ? longText() : id == 4 ? null : "body " + id);
                 if (id == 5) {
-                    ps.setNull(12, pg ? Types.BINARY : Types.BLOB);
+                    ps.setNull(
+                            12,
+                            pg
+                                    ? Types.BINARY
+                                    : v == Vendor.SQLSERVER ? Types.VARBINARY : Types.BLOB);
                 } else {
                     ps.setBytes(12, payload);
                 }
@@ -185,7 +230,7 @@ public final class Fixture {
                         ? "INSERT INTO UP_RAW_EVENTS (EVENT_ID, EVENT_DATA, \"timestamp\", AGGREGATED)"
                                 + " VALUES (?, CAST(lo_from_bytea(0, ?) AS text), ?, ?)"
                         : "INSERT INTO UP_RAW_EVENTS (EVENT_ID, EVENT_DATA, "
-                                + (v == Vendor.HSQLDB ? "\"TIMESTAMP\"" : "TIMESTAMP")
+                                + timestampColumn(v)
                                 + ", AGGREGATED) VALUES (?, ?, ?, ?)";
         try (PreparedStatement ps = c.prepareStatement(event)) {
             for (int id = 1; id <= 30; id++) {
@@ -231,7 +276,11 @@ public final class Fixture {
                 break;
             case MYSQL:
             case MARIADB:
+            case SQLSERVER:
                 st.execute("UPDATE " + gen + " SET next_val = " + next);
+                break;
+            case ORACLE:
+                st.execute("ALTER SEQUENCE " + gen + " RESTART START WITH " + next);
                 break;
             default:
                 st.execute("ALTER SEQUENCE " + gen + " RESTART WITH " + next);

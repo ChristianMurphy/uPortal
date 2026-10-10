@@ -1,3 +1,4 @@
+import java.time.Duration
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 description = "Apereo uPortal Database Copy Migration Tool"
@@ -114,8 +115,17 @@ def generateGeneratorCatalog = tasks.register('generateGeneratorCatalog', JavaEx
 sourceSets.main.output.dir(generatedResourcesDir, builtBy: generateGeneratorCatalog)
 
 /*
- * Cross-vendor integration tests (Testcontainers: PostgreSQL 16 and MariaDB 11.4). They need
- * Docker, so they are not part of `check`; CI runs `./gradlew :uPortal-db-migrate:integrationTest`.
+ * Cross-vendor integration tests (Testcontainers), with property tests and fault injection
+ * (MOD-D29). They need Docker, so they are not part of `check`; the "DB copy tool" workflow runs
+ * them. -PdbMigrateVendors picks the servers (postgres, mariadb, mysql, sqlserver, oracle; default
+ * postgres,mariadb; HSQLDB in memory always takes part), and each starts once per run. The images
+ * are pinned in src/integrationTest/resources/db-images.properties.
+ *
+ *   ./gradlew :uPortal-db-migrate:integrationTest -PdbMigrateVendors=postgres,mysql
+ *
+ * Property depth: a fixed seed and few tries by default; -PdbMigrateSeed=random (or a seed jqwik
+ * printed, to repeat a failure) and -PdbMigrateTriesFactor=10 for the nightly run;
+ * -PdbMigrateMaxLob sets the largest generated CLOB/BLOB value.
  */
 sourceSets {
     integrationTest {
@@ -130,15 +140,32 @@ configurations {
 dependencies {
     integrationTestImplementation 'org.testcontainers:testcontainers-postgresql'
     integrationTestImplementation 'org.testcontainers:testcontainers-mariadb'
+    integrationTestImplementation 'org.testcontainers:testcontainers-mysql'
+    integrationTestImplementation 'org.testcontainers:testcontainers-mssqlserver'
+    integrationTestImplementation 'org.testcontainers:testcontainers-oracle-free'
     integrationTestRuntimeOnly 'org.postgresql:postgresql'
     integrationTestRuntimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    integrationTestRuntimeOnly 'com.mysql:mysql-connector-j'
+    integrationTestRuntimeOnly 'com.microsoft.sqlserver:mssql-jdbc'
+    integrationTestRuntimeOnly 'com.oracle.database.jdbc:ojdbc11'
 }
 tasks.register('integrationTest', Test) {
     group = 'verification'
-    description = 'Copies a fixture between PostgreSQL and MariaDB containers and verifies it (needs Docker)'
+    description = 'Copies between real database servers in containers: properties, fault injection, the upgrade chain (needs Docker)'
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
     shouldRunAfter tasks.named('test')
+    systemProperty 'dbmigrate.it.vendors', providers.gradleProperty('dbMigrateVendors').getOrElse('postgres,mariadb')
+    // Every container start is a few seconds; the results depend on the servers, not the build
+    outputs.upToDateWhen { false }
+    // A copy that hangs must not hold CI for its full timeout
+    timeout = Duration.ofMinutes(90)
+    maxHeapSize = '1g'
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+        showStandardStreams = providers.gradleProperty('dbMigrateShowOutput').isPresent()
+    }
 }
 
 tasks.withType(Test).configureEach {

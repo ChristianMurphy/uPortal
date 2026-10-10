@@ -15,8 +15,11 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Database images in the workflow matrices, pinned as name:tag@digest (MOD-D25). The github-actions manager reads only literal service and container images, not matrix values.",
-      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "description": "Database images in the workflow matrices and in the copy tool's integration tests, pinned as name:tag@digest (MOD-D25). The github-actions manager reads only literal service and container images, not matrix values.",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/[^/]+\\.ya?ml$/",
+        "/^uPortal-db-migrate/src/integrationTest/resources/db-images\\.properties$/"
+      ],
       "matchStrings": [
         "image: (?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9][A-Za-z0-9._-]*)@(?<currentDigest>sha256:[a-f0-9]{64})"
       ],
