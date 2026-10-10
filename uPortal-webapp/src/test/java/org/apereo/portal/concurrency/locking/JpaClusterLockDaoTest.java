@@ -111,11 +111,18 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
      * instead of matching no row: MariaDB 11.6 and later do that by default under REPEATABLE READ
      * (innodb_snapshot_isolation; "Record has changed since last read in table 'UP_MUTEX'",
      * MOD-I99). The databases that read the latest committed row pass either way.
+     *
+     * <p>B runs inside a transaction of its caller, as the threads of testConcurrentLocking do, so
+     * getLock's own transaction gets a new EntityManager and really reads the row; with an
+     * EntityManager already bound to the thread it would find the mutex in that persistence context
+     * instead, and take no snapshot.
      */
     @Test
     public void testLockTakenBetweenReadAndUpdate() throws Exception {
         reset(portalInfoProvider);
         when(portalInfoProvider.getUniqueServerName()).thenReturn("ServerA");
+        // B only asks for its name after A has locked; MySQL and MariaDB keep LOCK_START in whole
+        // seconds, so the owner tells the two locks apart
         final String mutexName = "testLockTakenBetweenReadAndUpdate";
         execute(() -> clusterLockDao.getClusterMutex(mutexName));
 
@@ -135,7 +142,7 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
                 new Thread(
                         () -> {
                             try {
-                                lockOfB.set(execute(() -> serverB.getLock(mutexName)));
+                                lockOfB.set(executeInTransaction(() -> serverB.getLock(mutexName)));
                             } catch (Throwable t) {
                                 errorOfB.set(t);
                             }
@@ -147,6 +154,7 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
         final ClusterMutex lockOfA = execute(() -> clusterLockDao.getLock(mutexName));
         assertNotNull("A took the free lock", lockOfA);
 
+        when(portalInfoProvider.getUniqueServerName()).thenReturn("ServerB");
         resume.countDown();
         threadB.join(TimeUnit.SECONDS.toMillis(30));
         assertFalse(threadB.isAlive());
@@ -157,7 +165,8 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
 
         final ClusterMutex mutex = execute(() -> clusterLockDao.getClusterMutex(mutexName));
         assertTrue(mutex.isLocked());
-        assertEquals(lockOfA.getLockStart(), mutex.getLockStart());
+        assertEquals("ServerA", mutex.getServerId());
+        when(portalInfoProvider.getUniqueServerName()).thenReturn("ServerA");
         execute(
                 new CallableWithoutResult() {
                     @Override
