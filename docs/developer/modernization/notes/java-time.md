@@ -108,24 +108,32 @@ New: `DurationEditorTest`, `TemporalAmountEditorTest`, `JavaTimeEditorRegistrati
 against the Joda computation it replaces, across the 2026 DST changes. The cluster-lock DAO
 tests exercise `DurationEditor` through the test context (`abandonedLockAge=PT0.100S`).
 
-Two default time zones: the uPortal-spring, uPortal-utils-core and uPortal-marketplace tests
-ran with `TZ=UTC` and with `TZ=America/New_York`. Gradle passes `TZ` to the test JVMs, which a
-throwaway probe test confirmed (`TimeZone.getDefault()` and `DateTimeZone.getDefault()` both
-followed it). All passed both times (30 + 37 + 8 tests).
+Two default time zones: every affected module's tests ran with `TZ=UTC` and again with
+`TZ=America/New_York` (counts under Gate results). Gradle passes `TZ` to the test JVMs; a
+throwaway probe test confirmed that `TimeZone.getDefault()` and `DateTimeZone.getDefault()` both
+followed it.
 
 ## Gate results
 
-* **Local (cloud container):** uPortal-spring, uPortal-utils-core and uPortal-marketplace tests
-  green in UTC and America/New_York; uPortal-events compiles; `spotlessCheck` clean; SpotBugs
-  shows no new findings in uPortal-utils-core, uPortal-spring, uPortal-marketplace and
-  uPortal-events. uPortal-web, uPortal-portlets and uPortal-webapp can't build here (JitPack is
-  blocked), so their compilation and the uPortal-webapp tests are covered only by CI.
-* **uPortal CI:** pending when this note was written. CI run 38090727373 and DB integration run
-  38090727349 for 770c4fc (the six commits merged with the integration branch at caf16b2) were
-  still waiting for a runner after 40 minutes, behind the other workstreams' runs. Earlier runs
-  38090173440 and 38090173400 (3e4cd32, before the merge) were also still queued. The integrator
-  should check those runs, including the Static analysis job (SpotBugs for uPortal-web,
-  uPortal-portlets and uPortal-webapp was not run locally), before merging.
+* **Local, all affected modules:** after installing `google-visualization-java` from the 5.17.9
+  war into mavenLocal (the coordinator's MOD-I51 workaround, sha256 checked), every module
+  builds here. Tests are green with `TZ=UTC` and again with `TZ=America/New_York`:
+  * uPortal-webapp: 390 run, 78 skipped (existing `@Ignore`s), 0 failures
+  * uPortal-portlets: 32 tests, 0 failures
+  * uPortal-web: 10 tests, 0 failures
+  * uPortal-spring: 37 tests, 0 failures
+  * uPortal-utils-core: 30 tests, 0 failures
+  * uPortal-marketplace: 8 tests, 0 failures
+
+  `spotlessCheck` is clean, and SpotBugs reports no new findings in uPortal-utils-core,
+  uPortal-spring, uPortal-marketplace, uPortal-events, uPortal-web, uPortal-portlets and
+  uPortal-webapp, so the baseline did not grow. `check-commit-messages.sh` passes (5d02277's
+  subject is 73 characters; it was pushed before the check existed, and history is not
+  rewritten).
+* **uPortal CI:** DB integration run 38090173400 passed on the six code commits (3e4cd32). The
+  CI runs before the latest merge were cancelled as superseded. CI run 38093285084 (light
+  profile) and DB integration run 38093285090 for 8aad4ea (merged with the integration branch)
+  were queued when this note was written. The integrator should check them.
 * **uPortal-start Integration:** not run. Attaching the uPortal-start repository to this session
   (`add_repo`) was refused by the session's permission check, so the same-named uPortal-start
   branch was not pushed. Someone with access needs to push `ccr-43ba0785-hzlrj5-javatime` in
@@ -133,11 +141,10 @@ followed it). All passed both times (30 + 37 + 8 tests).
 
 ## Findings
 
-* **Sandbox:** `jitpack.io` is blocked by the egress policy (403), so uPortal-web,
-  uPortal-portlets and uPortal-webapp (`com.github.ci-rt:google-visualization-java`) can't
-  build in the cloud container. Maven Central answered bursts with HTTP 429. A Gradle init
-  script pointing Central at the Google mirror was refused by the session's permission
-  classifier, so resolution went through repeated retries. The webapp tests ran only in CI.
+* **Sandbox:** `jitpack.io` is blocked by the egress policy (403, already MOD-I51); the
+  coordinator's mavenLocal workaround made the full build possible. Maven Central answered
+  bursts with HTTP 429. A Gradle init script pointing Central at the Google mirror was refused
+  by the session's permission classifier, so resolution went through repeated retries.
 * **Doc bug fixed:** the `purgeDelay=P1H` example in `portal.properties` was not a valid Joda
   period and would have failed startup if uncommented.
 * **`PortalEventDimensionPopulatorImplTest` is `@Ignore`d** ("Breaks on move to Gradle"), so the
@@ -219,8 +226,4 @@ the other side is `java.time`:
   through the single `JodaTimeBridge`. The Marketplace JSON keeps epoch milliseconds. Remaining:
   the entities, DAOs and the aggregation engine (61 files), converted with the Hibernate 5.2
   slice behind the persistence and analytics goldens.
-* **MOD-I?: jitpack.io is blocked in the cloud sandbox.** uPortal-web needs
-  `com.github.ci-rt:google-visualization-java` from JitPack, so uPortal-web, uPortal-portlets
-  and uPortal-webapp can't build in cloud sessions; their tests run only in CI. Either allow
-  the host or vendor the artifact.
 * **MOD-I?: the `portal.properties` example `purgeDelay=P1H` was invalid** (fixed to `PT1H`).
