@@ -30,6 +30,9 @@ plugins {
     // uPortal-db-migrate only: a standalone Spring Boot CLI with its own dependency platform
     // (the plugin's BOM), independent of the portal's Spring 4.3 stack
     id 'org.springframework.boot' version '4.1.1' apply false
+    // Mutation testing (MOD-D29), opt-in: `./gradlew :uPortal-db-migrate:pitest`, see
+    // docs/developer/other/DB_COPY_TOOL_TESTING.md. Not part of `build` or `check`.
+    id 'info.solidsoft.pitest' version '1.19.0' apply false
 }
 
 description = "Apereo uPortal $version"

@@ -180,6 +180,37 @@ tasks.withType(Test).configureEach {
     systemProperty 'jqwik.database', layout.buildDirectory.file("jqwik-${name}.database").get().asFile.path
 }
 
+/*
+ * Mutation testing (MOD-D29), opt-in and not part of `build`/`check`:
+ *   ./gradlew :uPortal-db-migrate:pitest
+ * mutates the core (planning and load order, value conversion and LOB handling, verification,
+ * generator positioning) and runs the unit tests against every mutant; the report is in
+ * build/reports/pitest/. The "DB copy tool" workflow runs it nightly. The build fails when the
+ * mutation score drops below the threshold; docs/developer/other/DB_COPY_TOOL_TESTING.md has the
+ * score, the surviving mutants and the reason for the threshold.
+ */
+apply plugin: 'info.solidsoft.pitest'
+pitest {
+    pitestVersion = project.property('pitestVersion')
+    junit5PluginVersion = project.property('pitestJunit5PluginVersion')
+    targetClasses = [
+        'org.apereo.portal.dbmigrate.plan.*',
+        'org.apereo.portal.dbmigrate.types.*',
+        'org.apereo.portal.dbmigrate.verify.*',
+        'org.apereo.portal.dbmigrate.copy.GeneratorPositioner*',
+        'org.apereo.portal.dbmigrate.copy.PostgresLargeObjects*',
+    ]
+    targetTests = ['org.apereo.portal.dbmigrate.*']
+    threads = 2
+    outputFormats = ['HTML', 'XML']
+    timestampedReports = false
+    mutationThreshold = providers.gradleProperty('pitestThreshold').map { it as int }.getOrElse(80)
+    // The tests' JVM settings, as in tasks.withType(Test) above
+    jvmArgs = ['-Duser.timezone=America/New_York', '-Ddbmigrate.pbt.seed=20261010', '-Xmx768m',
+            "-Djqwik.database=${layout.buildDirectory.file('jqwik-pitest.database').get().asFile}"]
+    exportLineCoverage = true
+}
+
 springBoot {
     mainClass = 'org.apereo.portal.dbmigrate.DbMigrateApplication'
 }
