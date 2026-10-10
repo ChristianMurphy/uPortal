@@ -38,6 +38,9 @@ abstract class Spring53ProbeCompile extends DefaultTask {
     @Classpath
     abstract ConfigurableFileCollection getClasspath()
 
+    @Classpath
+    abstract ConfigurableFileCollection getProcessorPath()
+
     @OutputFile
     abstract RegularFileProperty getReport()
 
@@ -63,9 +66,13 @@ abstract class Spring53ProbeCompile extends DefaultTask {
         def compiler = ToolProvider.getSystemJavaCompiler()
         def diagnostics = new DiagnosticCollector<JavaFileObject>()
         def fileManager = compiler.getStandardFileManager(diagnostics, null, null)
-        def options = ['--release', '11', '-proc:none', '-parameters', '-encoding', 'UTF-8',
+        def generated = new File(classes, 'generated')
+        generated.mkdirs()
+        // Annotation processors run as in the regular build (Lombok, the JPA metamodel)
+        def options = ['--release', '11', '-parameters', '-encoding', 'UTF-8',
                        '-nowarn', '-Xmaxerrs', '100000', '-implicit:none',
-                       '-d', classes.path, '-classpath', classpath.asPath]
+                       '-d', classes.path, '-s', generated.path,
+                       '-classpath', classpath.asPath, '-processorpath', processorPath.asPath]
         compiler.getTask(null, fileManager, diagnostics, options, null,
                 fileManager.getJavaFileObjectsFromFiles(files)).call()
         fileManager.close()
@@ -73,7 +80,7 @@ abstract class Spring53ProbeCompile extends DefaultTask {
         def root = new File(rootPath.get()).toPath()
         def lines = diagnostics.diagnostics.findAll { it.kind == Diagnostic.Kind.ERROR }.collect { d ->
             def path = d.source == null ? '?' : root.relativize(new File(d.source.toUri()).toPath()).toString()
-            "${path.replace('\\', '/')}:${d.lineNumber}: ${d.getMessage(Locale.ROOT).readLines().find() ?: ''}"
+            "${path.replace('\\', '/')}:${d.lineNumber}: ${d.getMessage(Locale.ROOT).readLines().take(2)*.trim().join(' ')}"
         }
         out.text = lines.join('\n') + (lines ? '\n' : '')
         logger.lifecycle("${path}: ${lines.size()} error(s)")
@@ -110,10 +117,17 @@ subprojects {
             def task = tasks.register("spring53Probe${setName.capitalize()}", Spring53ProbeCompile) {
                 group = 'verification'
                 description = "Compiles the ${setName} sources against Spring 5.3 and reports the errors."
-                // Generated sources and the other modules' classes come from the regular build
+                // The other modules' classes come from the regular build
                 dependsOn sourceSet.compileJavaTaskName
-                sources.from(sourceSet.java.srcDirs, sourceSet.output.generatedSourcesDirs)
+                // Without the regular build's annotation-processor output, which some modules add
+                // as a source directory: the processors here generate it again
+                def compileTask = tasks.named(sourceSet.compileJavaTaskName, JavaCompile)
+                sources.from(project.provider {
+                    def generatedDir = compileTask.get().options.generatedSourceOutputDirectory.get().asFile
+                    sourceSet.java.srcDirs.findAll { it != generatedDir }
+                })
                 classpath.from(probe)
+                processorPath.from(sourceSet.annotationProcessorPath)
                 if (setName == 'test') {
                     classpath.from(sourceSets.main.output)
                 }
