@@ -46,8 +46,6 @@
     <Match><Class name="org.apereo.portal.spring.spel.PortalSpELServiceImpl"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.spring.spel.PortalSpELServiceImpl"/><Method name="parseExpression"/><Bug pattern="SPEL_INJECTION"/></Match>
     <Match><Class name="org.apereo.portal.utils.AbstractBeanLocator"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
-    <Match><Class name="org.apereo.portal.utils.ComparableExtractingComparator"/><Method name="compare"/><Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/></Match>
-    <Match><Class name="org.apereo.portal.utils.ComparableExtractingComparator"/><Method name="compare"/><Bug pattern="NP_NULL_ON_SOME_PATH"/></Match>
     <Match><Class name="org.apereo.portal.utils.ConcurrentDirectoryScanner"/><Method name="recurseOnDirectory"/><Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/></Match>
     <Match><Class name="org.apereo.portal.utils.JdbcUtils"/><Method name="dropTableIfExists"/><Bug pattern="SQL_INJECTION_SPRING_JDBC"/></Match>
     <Match><Class name="org.apereo.portal.utils.PortalApplicationContextLocator"/><Method name="contextDestroyed"/><Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/></Match>
