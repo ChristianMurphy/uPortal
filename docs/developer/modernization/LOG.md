@@ -266,6 +266,22 @@ research report.
     anonymised `pg_stat_statements` output (MOD-Q8), but not reproducible in
     CI.
 
+### MOD-D13: fix Tomcat 11 portlet breakage in uPortal-start overlays first
+
+* **Decision (project owner):** handle MOD-I60–I62 (JSTL 1.1.2 in 13 WARs,
+  the Spring 3.x WARs, and NotificationPortlet's Boot auto-config) in
+  uPortal-start's overlay build for 6.0. That means swapping JSTL jars and
+  applying small fixes as each overlay is built. Proper fixes and releases
+  in the individual portlet repositories follow during 6.x.
+
+### MOD-D14: hold upstream; review on branches
+
+* **Decision (project owner):**
+  * Nothing goes upstream for now: no PRs and no RFC post yet.
+  * Review happens on the `ccr-*` branches; no draft PRs.
+  * Upstream candidates keep accumulating in this log, for example the
+    5.17.x fixes MOD-I50/I53/I63 and the P0 test assets.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -354,5 +370,5 @@ research report.
 | MOD-Q4 | Schema management after hbm2ddl? (**Superseded by MOD-D11** for the 5.17 → 6.0 path; Flyway vs Liquibase is still open for changes *after* 6.0) | **Open (licence issue):** Liquibase 5.0 moved to the FSL (not OSI), which Apereo may not accept. Flyway OSS is Apache-2.0 with `baselineOnMigrate`, but needs per-vendor SQL. Candidate: Hibernate 7 `SchemaManager` for fresh installs, plus Flyway versioned migrations (baseline = 5.17 schema) for upgrades, tested on all vendors with Testcontainers. Needs community input. |
 | MOD-Q5 | Portlets: transform the WARs, port them, or replace them with web components / Soffit? | **Proposed:** follow Sakai's approach and keep Pluto in-tree on `jakarta.servlet`, with the `javax.portlet` 2.0 API rebuilt against `jakarta.servlet`. Fork Spring Portlet MVC for the 37 built-in portlets. Use build-time conversion of the bundled portlet WARs as a *bridge* only. Move content portlets to web components (Vue 2 is EOL, so Lit or Vue 3) and Soffit over time. The prototype will verify the bridge. |
 | MOD-Q6 | Propose 6.0 as an RFC in `uPortal-Project/community` Discussions before opening the large PRs? | **Recommended** |
-| MOD-Q7 | What scale defines "high traffic" for G-index (users, concurrent sessions, events per day, retention)? | Asked |
+| MOD-Q7 | What scale defines "high traffic" for G-index (users, concurrent sessions, events per day, retention)? | **Answered:** large campus. About 100k users, 5k concurrent sessions, 5M raw events/day, 30 days of raw events kept, 2 years of aggregations. |
 | MOD-Q8 | Can an adopter share anonymised production query statistics (`pg_stat_statements` or MySQL performance_schema digests)? | Asked |
