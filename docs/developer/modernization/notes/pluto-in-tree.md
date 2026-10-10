@@ -28,8 +28,12 @@ Branches: `ccr-43ba0785-hzlrj5-pluto` in uPortal and in uPortal-start.
 | `521c61b` `test: run the pluto 2.0 test suite through uportal` | `tests/ux/portlets/pluto-testsuite.spec.ts`: drives test-portlet-1 and test-portlet-2 like the spike's `pluto-testsuite.sh` and pins the 5.17 result. |
 | `2921f0a` | Merge of the integration branch. |
 | `f0cfc1a` `test: accept either result of the order-dependent pluto check` | `checkEnumerateAttributes` depends on reflection order (see the test-suite section). |
+| `6e6bf41`, `60e4557` `test: drop the p3-2 pluto test suite spec` | Merge of the integration branch, then the spec is removed: the coordinator kept the end-to-end tests workstream's spec instead. |
 
-No other uPortal-start change: `shared/lib` keeps Apache's jars (see below).
+The branch ends with no uPortal-start change. It doesn't change how the
+testsuite is deployed (`overlays/pluto-testsuite`) or its
+`expectedResults.properties`, and `shared/lib` keeps Apache's jars (see
+below).
 
 ## Inventory: which Pluto artifacts are used where
 
@@ -196,7 +200,7 @@ the coordinates in uPortal-web's dependency.
 ## Pluto 2.0 test suite: baseline and the 16 failing checks
 
 Run locally with uPortal-start (`portalInit` on HSQLDB, Tomcat 9, JDK 11),
-driven by `tests/ux/portlets/pluto-testsuite.spec.ts`, against uPortal built
+driven by this branch's former spec (uPortal-start `521c61b`), against uPortal built
 from the integration branch (`87e0b98`, Apache's Pluto jars in the WAR). The
 result is exactly the spike's 5.17 result: **32 tests: 12 PASSED, 10 FAILED,
 8 MANUAL, 2 WARNING; 144 checks passed, 16 failed.** Both portlets give the
@@ -238,13 +242,13 @@ failed). One "after" deployment first gave 146/14 because
 `checkEnumerateAttributes` passed. Swapping the container jars back and forth,
 and restarting with the same jar, traced that to the check order above, not
 to the jars (Apache's jar and the in-tree one each give either result,
-depending on the JVM start). The spec now accepts either result for that one
-check (uPortal-start `f0cfc1a`).
+depending on the JVM start). The spec accepted either result for that one
+check (uPortal-start `f0cfc1a`) until it was dropped.
 
 The test-suite and config issues each take a one-line fix (the overlay's
 `expectedResults.properties`, and `${pluto.version}` → `2.1.0-M3` in
-uPortal's file); the spec pins today's result, so whoever fixes them updates
-it. The preference deviations are real uPortal bugs that need their own
+uPortal's file). The end-to-end tests workstream's spec, which the coordinator
+kept, fixes several of these checks. The preference deviations are real uPortal bugs that need their own
 issues.
 
 ## Findings
@@ -318,5 +322,5 @@ issues.
   `uPortal-pluto-portlet-api`), and switching uPortal-start's `shared/lib` to
   `uPortal-pluto-*`.
 * **P6-1:** move `uPortal-pluto-*` to `jakarta.servlet` (F1, F2).
-* If the other workstream's Pluto testsuite spec is merged, keep one of the two
-  specs.
+* The Pluto testsuite spec now comes from the end-to-end tests workstream. Its
+  run against this branch is the remaining testsuite check.
