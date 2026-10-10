@@ -74,6 +74,11 @@ dependencies {
     entityScan "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
 
     testImplementation "org.hsqldb:hsqldb:${hsqldbVersion}"
+    // Property tests (MOD-D29). The tests run on the JUnit Platform: jqwik's engine for the
+    // properties, the Vintage engine for the JUnit 4 tests.
+    testImplementation "net.jqwik:jqwik:${jqwikVersion}"
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 /*
@@ -137,8 +142,15 @@ tasks.register('integrationTest', Test) {
 }
 
 tasks.withType(Test).configureEach {
+    useJUnitPlatform()
     // Timestamps must survive a JVM whose zone has DST gaps; the tests use such values
     systemProperty 'user.timezone', 'America/New_York'
+    // Property tests: a fixed seed unless asked otherwise, so a run can be repeated
+    systemProperty 'dbmigrate.pbt.seed', providers.gradleProperty('dbMigrateSeed').getOrElse('20261010')
+    systemProperty 'dbmigrate.pbt.factor', providers.gradleProperty('dbMigrateTriesFactor').getOrElse('1')
+    systemProperty 'dbmigrate.pbt.maxLob', providers.gradleProperty('dbMigrateMaxLob').getOrElse('20000')
+    // jqwik's record of failed seeds stays in the build directory
+    systemProperty 'jqwik.database', layout.buildDirectory.file("jqwik-${name}.database").get().asFile.path
 }
 
 springBoot {
