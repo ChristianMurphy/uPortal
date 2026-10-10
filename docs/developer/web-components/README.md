@@ -324,3 +324,89 @@ A favorite collection or portlet carries its layout `nodeId`, `name`, `url`, `mo
 `deleteAllowed`; a portlet also its `fname`, `description`, `target` and `iconUrl`. The service
 reuses `FavoritesUtils` and the user's layout manager, so the distributed layout manager's rules
 for locked fragments apply.
+
+## Reference conversion: Favorites
+
+The Favorites portlet (Spring Portlet MVC, four JSPs, an EDIT mode) is the first portlet
+converted to a web component, and the pattern for the next ones.
+
+| Portlet | Web component |
+| --- | --- |
+| `FavoritesController` (VIEW) and `FavoritesEditController` (EDIT), `jsp/Favorites/*.jsp` | `<up-favorites>` (`uPortal-webcomponents/src/components/up-favorites`) |
+| Model built from the layout in the controllers | `GET /api/v6-0/favorites` |
+| Unfavorite: a portlet action in EDIT mode, `/api/layout?action=removeFavorite` in VIEW | `DELETE /api/v6-0/favorites/{nodeId}` |
+| Drag-and-drop reordering in EDIT mode (`/api/layout?action=movePortletAjax` / `moveTab`) | "Reorder favorites": move-up and move-down buttons, and Alt+Up / Alt+Down, through `POST /api/v6-0/favorites/{nodeId}/move` |
+| EDIT mode, with lock icons and their legend | The same view, with reordering switched on in place; Escape switches it off |
+| `FavoritesController.maxHeightPixels` preference | `max-height-pixels` attribute, through `webComponent.preferenceAttributes` |
+| `org.apereo.portal.portlets.favorites.MarketplaceFunctionalName` | The same property, returned by the API as `marketplaceUrl` |
+| Messages in `Messages.properties` | The same keys, plus new ones for the new controls |
+
+Adding a favorite stays where it was: the theme's portlet options menu ("Add to my Favorites"),
+which still calls `/api/layout?action=addFavorite`. The API also accepts
+`POST /api/v6-0/favorites` for clients that add favorites themselves.
+
+The component follows the testing bar above. Its browser tests cover the loading, empty, error
+(500, 403, 401, malformed and non-JSON bodies, network failure) and populated states, each
+checked with axe; removing, with focus moving to the next favorite and the outcome announced in
+a live region; reordering with the buttons and the keyboard, focus kept on the moved favorite;
+`max-height-pixels`, the maximized window state and the messages loaded from the portal.
+
+### Converting existing Favorites channels
+
+uPortal-start's quickstart data publishes `favorites` as a Web Component channel. A portal
+upgraded from 5.x still has a channel whose descriptor is the framework portlet `Favorites`, and
+a channel is a Favorites channel by that descriptor, whatever its fname. Convert each one by
+changing, and keeping everything else (fname, ID, title, categories, permissions, layout
+placements):
+
+* the type to `Web Component`, and the descriptor to the framework portlet `WebComponent`;
+* parameters: add `webComponent.tagName=up-favorites` and `webComponent.moduleUrl=up-favorites`,
+  remove `editable` (the component edits in place);
+* if the definition or users set `FavoritesController.maxHeightPixels`, add
+  `webComponent.preferenceAttributes=max-height-pixels=FavoritesController.maxHeightPixels`.
+
+For a deployment that upgrades now, the simplest way is to import the Web Component portlet
+type, then the converted definition, with uPortal-start:
+
+```sh
+./gradlew dataImport -Dfile=data/base/portlet-type/Web_Component.portlet-type.xml
+./gradlew dataImport -Dfile=data/base/portlet-definition/favorites.portlet-definition.xml
+```
+
+The import finds the definition by fname and updates it in place (its ID does not change), so
+layouts that place or favorite the channel keep working.
+
+The automated conversion belongs to the 6.0 data migration (MOD-D11), with one rule per
+converted portlet:
+
+* **Import upgrader.** uPortal only upgrades an import whose data version has no importer, so
+  the rule needs the 6.0 data version of `portlet-definition` files. An `XsltDataUpgrader`
+  from the 5.x version then rewrites definitions with the `Favorites` framework descriptor as
+  above, the same way `channel30DataUpgrader` upgrades older channel files.
+* **Copy-tool rule.** The copy tool's rules map tables and columns; this conversion rewrites
+  rows (`UP_PORTLET_DEF`: type and portlet name; `UP_PORTLET_DEF_PARAM`: added and removed
+  parameters). It needs a new rule kind that runs after the copy, for example
+  `convert-portlet descriptor=Favorites type="Web Component" add-param=... remove-param=editable`,
+  and the copy tool's verification must then expect those differences.
+
+### Deleting the Favorites portlet
+
+The portlet stays in uPortal for now, no longer used by uPortal-start's data, so that portals
+whose data still names the `Favorites` descriptor keep rendering until they convert it. Deleting
+it means removing `AbstractFavoritesController`, `FavoritesController`,
+`FavoritesEditController`, `properties/contexts/portlet/Favorites-portlet.xml`,
+`WEB-INF/jsp/Favorites/*.jsp` and the `Favorites` entry of `WEB-INF/portlet.xml`, and the
+messages only those JSPs use. `FavoritesUtils` and the options-menu script
+(`modern-favorite.js`) stay: the API and the theme use them. Do it once the conversion above
+ships in the 6.0 data migration, and say so in UPGRADING-6.0.
+
+### Converting the next portlet
+
+1. Write the REST API first (`@RestController` under `/api/v6-0/`, a service on the portal's
+   existing services, MockMvc and unit tests).
+2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its API client and
+   validators, its messages, and its tests; add the tag to `components` in `vite.config.ts`.
+3. Turn portlet modes into in-place states, preferences into `webComponent.preferenceAttributes`,
+   and portlet actions into REST calls.
+4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
+   and document how existing definitions are converted.

@@ -1,4 +1,4 @@
-import { LitElement, type PropertyValues } from 'lit';
+import { LitElement, type PropertyDeclarations, type PropertyValues } from 'lit';
 import { ApiClient } from './api-client';
 import { createEvent } from './events';
 import { formatMessage, loadMessages, type Messages } from './i18n';
@@ -20,7 +20,7 @@ import { bootstrapStyles, hostStyles } from './styles/shared-styles';
  * `Messages.properties`) and read them with {@link msg}; they announce changes with {@link emit}.
  */
 export abstract class UpElement extends LitElement {
-    static override properties = {
+    static override properties: PropertyDeclarations = {
         locale: { reflect: true },
         windowState: { attribute: 'window-state', reflect: true },
         contextPath: { attribute: 'context-path', reflect: true },
