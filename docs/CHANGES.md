@@ -31,6 +31,21 @@
   `./gradlew goJF` commands keep working. Seven stray no-op empty
   statements (`;` after a closing brace) were removed so the switch
   does not reformat anything else.
+- **Classes are compiled with `--release 11` and `-parameters`.** The
+  bytecode level stays Java 11, and the compiler now also rejects Java
+  12+ APIs whichever JDK runs the build. `-parameters` records method
+  parameter names in the class files (needed by Spring 6.1+); Spring 4.3
+  resolves the same names as before.
+- **Test libraries:** Mockito 4.11 → 5.24 (loaded as a `-javaagent` by
+  the test tasks; `mockito-inline` is no longer needed), and the Groovy
+  tests in `uPortal-webapp` now compile and run on Groovy 4.0 with Spock
+  2.4 (`groovyTestVersion`). The Groovy shipped in the war and used by
+  `uPortal-tools` stays at 3.0 (`groovyVersion`).
+- **Java sources were reformatted with google-java-format 1.24.0**
+  (javadoc and blank-line layout only; 409 files). Rebase open branches
+  with `./gradlew spotlessApply` before resolving conflicts, and run
+  `git config blame.ignoreRevsFile .git-blame-ignore-revs` so `git blame`
+  skips the reformat.
 
 ## v5.17.3
 
