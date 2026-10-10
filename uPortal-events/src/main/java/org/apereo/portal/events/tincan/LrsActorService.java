@@ -14,21 +14,23 @@
  */
 package org.apereo.portal.events.tincan;
 
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apereo.portal.events.tincan.om.LrsActor;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.apereo.services.persondir.IPersonAttributeDao;
 import org.apereo.services.persondir.IPersonAttributes;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 /** Create a LrsActor object based on the username. */
 @Service("lrsActorService")
 public class LrsActorService implements ILrsActorService {
+    static final String LRS_ACTOR_CACHE_NAME = "org.apereo.portal.events.tincan.LrsActorCache";
+
     private IPersonAttributeDao personAttributeDao;
-    private Ehcache lrsActorCache;
+    private Cache lrsActorCache;
 
     private String emailAttributeName = "mail";
     private String displayNameAttributeName = "displayName";
@@ -39,8 +41,11 @@ public class LrsActorService implements ILrsActorService {
     }
 
     @Autowired
-    @Qualifier("org.apereo.portal.events.tincan.LrsActorCache")
-    public void setLrsActorCache(Ehcache lrsActorCache) {
+    public void setCacheManager(CacheManager cacheManager) {
+        this.setLrsActorCache(CacheLookup.requireCache(cacheManager, LRS_ACTOR_CACHE_NAME));
+    }
+
+    public void setLrsActorCache(Cache lrsActorCache) {
         this.lrsActorCache = lrsActorCache;
     }
 
@@ -57,9 +62,9 @@ public class LrsActorService implements ILrsActorService {
 
     @Override
     public LrsActor getLrsActor(String userName) {
-        Element element = this.lrsActorCache.get(userName);
-        if (element != null) {
-            return (LrsActor) element.getObjectValue();
+        final LrsActor cached = this.lrsActorCache.get(userName, LrsActor.class);
+        if (cached != null) {
+            return cached;
         }
 
         final String email;
@@ -74,7 +79,7 @@ public class LrsActorService implements ILrsActorService {
         }
 
         final LrsActor lrsActor = new LrsActor("mailto:" + email, name);
-        this.lrsActorCache.put(new Element(userName, lrsActor));
+        this.lrsActorCache.put(userName, lrsActor);
         return lrsActor;
     }
 
