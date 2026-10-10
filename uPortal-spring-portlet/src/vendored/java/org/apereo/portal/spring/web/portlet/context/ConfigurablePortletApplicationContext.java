@@ -49,6 +49,14 @@ public interface ConfigurablePortletApplicationContext
 	String APPLICATION_CONTEXT_ID_PREFIX = WebApplicationContext.class.getName() + ":";
 
 	/**
+	 * Scope identifier for global session scope: "globalSession".
+	 * Supported in addition to the standard scopes "singleton" and "prototype".
+	 * <p>uPortal: from PortletMVC4Spring 5.3.4, because Spring Framework 5
+	 * removed {@code WebApplicationContext.SCOPE_GLOBAL_SESSION}.
+	 */
+	String SCOPE_GLOBAL_SESSION = "globalSession";
+
+	/**
 	 * Name of the PortletContext environment bean in the factory.
 	 * @see javax.portlet.PortletContext
 	 */

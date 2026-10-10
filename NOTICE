@@ -27,13 +27,19 @@ This project includes:
  The Font Awesome icon set under the CC BY 3.0 license
  http://fortawesome.github.com/Font-Awesome
 
- Source code from Spring Framework 4.3.30.RELEASE (spring-webmvc-portlet),
+ Source code from Spring Framework 4.3.30.RELEASE (spring-webmvc-portlet,
+ spring-webmvc and spring-web),
  Copyright (c) 2002-2020 Pivotal, Inc., and from Spring Web Flow 2.4.8.RELEASE,
  Copyright (c) 2002-2018 SpringSource, a division of VMware, Inc., under the
  Apache License, Version 2.0, with changed package names, in the
  uPortal-spring-portlet module
  https://github.com/spring-projects/spring-framework
  https://github.com/spring-projects/spring-webflow
+
+ Source code from PortletMVC4Spring 5.3.4, Copyright (c) 2000-2020 the
+ original author or authors, under the Apache License, Version 2.0, with
+ changed package names, in the uPortal-spring-portlet module
+ https://github.com/liferay/portletmvc4spring
 
   A Hibernate O/RM Module under GNU Lesser General Public License
   An open source csv parser for Java. under The Apache Software License, Version 2.0
