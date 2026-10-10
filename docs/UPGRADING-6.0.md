@@ -96,3 +96,16 @@ If your overlay adds or replaces Spring contexts, make the same change there. It
 files that use the `security` namespace: Spring Security 5 refuses to load a file that names
 `spring-security-4.2.xsd` or an older version. For the other namespaces it is recommended; Spring
 still maps the old versioned names to the current schema.
+
+## The view-rendering servlet moved into uPortal
+
+`WEB-INF/web.xml` declares the servlet that renders the views of uPortal's own portlets. Spring
+Framework 5 removed its class, so uPortal now has its own copy:
+
+| Old name | New name |
+| --- | --- |
+| `org.springframework.web.servlet.ViewRendererServlet` | `org.apereo.portal.spring.web.servlet.ViewRendererServlet` |
+
+If your overlay replaces `web.xml`, change the `servlet-class` of the `ViewRendererServlet`
+servlet. Keep the servlet name and its mapping (`/WEB-INF/servlet/view`): uPortal's portlets
+forward to that path.

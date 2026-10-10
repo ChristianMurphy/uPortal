@@ -150,6 +150,25 @@ public class SpringXmlContextsTest {
                 loaded.size());
     }
 
+    /** Every servlet, filter and listener class that web.xml names can be loaded. */
+    @Test
+    public void webXmlClasses() throws Exception {
+        final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setNamespaceAware(true);
+        final Document document = factory.newDocumentBuilder().parse(new File(WEBAPP + "web.xml"));
+        final List<String> missing = new ArrayList<>();
+        for (final String element : List.of("servlet-class", "filter-class", "listener-class")) {
+            final NodeList nodes = document.getElementsByTagNameNS("*", element);
+            for (int i = 0; i < nodes.getLength(); i++) {
+                final String name = nodes.item(i).getTextContent().trim();
+                if (!ClassUtils.isPresent(name, SpringXmlContextsTest.class.getClassLoader())) {
+                    missing.add(element + " " + name);
+                }
+            }
+        }
+        assertNoProblems(missing);
+    }
+
     @Test
     public void webFlowDefinitions() throws Exception {
         final List<String> problems = new ArrayList<>();

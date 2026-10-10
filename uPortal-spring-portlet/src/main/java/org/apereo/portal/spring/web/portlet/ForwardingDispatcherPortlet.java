@@ -17,8 +17,8 @@ package org.apereo.portal.spring.web.portlet;
 import java.util.Map;
 import javax.portlet.MimeResponse;
 import javax.portlet.PortletRequest;
+import org.apereo.portal.spring.web.servlet.ViewRendererServlet;
 import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.ViewRendererServlet;
 
 public class ForwardingDispatcherPortlet extends DispatcherPortlet {
     /** URL that points to the ViewRendererServlet */

@@ -14,6 +14,10 @@ description = "Apereo uPortal Spring Portlet MVC"
  *     org.apereo.portal.spring.webflow.*.portlet. These files keep their upstream formatting
  *     (they are not run through google-java-format), so they can still be diffed against the
  *     upstream sources.
+ *     Classes of Spring Framework 4.3.30.RELEASE that the portlet code needs and Spring 5 removed
+ *     are copied the same way, from the v4.3.30.RELEASE tag: org.springframework.web.servlet.
+ *     ViewRendererServlet (spring-webmvc) became org.apereo.portal.spring.web.servlet, gaining
+ *     imports for the two classes it used from its old package.
  *   - src/main: uPortal's own extensions of the vendored classes.
  */
 dependencies {
