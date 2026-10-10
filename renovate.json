@@ -12,6 +12,17 @@
     "dependencyDashboardApproval": true
   },
   "forkProcessing": "enabled",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Database images in the workflow matrices, pinned as name:tag@digest (MOD-D25). The github-actions manager reads only literal service and container images, not matrix values.",
+      "managerFilePatterns": ["/^\\.github/workflows/[^/]+\\.ya?ml$/"],
+      "matchStrings": [
+        "image: (?<depName>[a-z0-9][a-z0-9./_-]*):(?<currentValue>[A-Za-z0-9][A-Za-z0-9._-]*)@(?<currentDigest>sha256:[a-f0-9]{64})"
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
   "packageRules": [
     {
       "matchPackageNames": [
@@ -105,6 +116,18 @@
     {
       "groupName": "Jadira Usertype",
       "matchPackageNames": ["/^org.jadira.usertype/"]
+    },
+    {
+      "groupName": "database images",
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["docker"]
+    },
+    {
+      "description": "A new major database server is a decision about the supported matrix (MOD-D25) and needs a new baseline in uPortal-start; only digests and versions within the major are updated automatically.",
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ]
 }
