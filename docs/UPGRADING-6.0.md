@@ -226,3 +226,36 @@ If your overlay defines its own caching person attribute DAO:
   `CacheKeyGenerator`.
 * The `cacheKeyAttributes`, `nullResultsObject`, `getQueries()` and `getMisses()` members are not
   carried over. Cache hit and miss counts are in the Cache Manager portlet.
+
+## uPortal's caches are looked up through Spring's cache manager
+
+uPortal is moving its own caching onto Spring's cache abstraction, so that a later release can
+switch the cache provider without changing code. The provider is still Ehcache 2, and
+`ehcache.xml` (or the file named by `org.apereo.portal.ehcache.filename`) still defines every
+cache. Cache names, sizes, expiry and JGroups replication are unchanged.
+
+What is different is how some classes find their caches. They no longer inject an Ehcache bean
+named after the cache. Instead they look the cache up by name in the `ehCacheManager` bean, the
+`EhCacheCacheManager` in `cacheContext.xml`, and startup fails if `ehcache.xml` has no cache of
+that name. This applies to these classes and caches:
+
+| Class | Cache |
+| --- | --- |
+| `PortalSpELServiceImpl` | `SpELExpressionCache` |
+| `PortletSpELServiceImpl` | `portletSpELExpressionCache` |
+| `LayoutCachingService` | `org.apereo.portal.layout.dlm.LAYOUT_CACHE` |
+| `AuthorizationImpl` | `...AuthorizationImpl.AUTH_PRINCIPAL_CACHE`, `...ENTITY_PARENTS_CACHE`, `...PRINCIPAL_HAS_PERMISSION` |
+| `AnyUnblockedGrantPermissionPolicy` | `...AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT` |
+| `LrsActorService` | `org.apereo.portal.events.tincan.LrsActorCache` |
+| `RDBMUserIdentityStore` | `org.apereo.portal.RDBMUserIdentityStore.userLockCache` |
+| `PortletEntityRegistryImpl` | `org.apereo.portal.portlet.dao.jpa.PortletEntityImpl.idParseCache` |
+| `PortletEventCoordinationHelper`, `PortletEventCoordinatationService` | `org.apereo.portal.portlet.rendering.SupportedEventCache` |
+
+If your overlay has its own `ehcache.xml`, keep these cache names in it. If it replaced one of
+these caches by defining a bean with the cache's name, that bean is no longer used: configure
+the cache in `ehcache.xml` instead. In Java code, the `setXCache` setters of these classes now
+take an `org.springframework.cache.Cache`.
+
+`CacheHealthReporterService.reportCacheSizeNotLargeEnough` now takes the cache name instead of
+the Ehcache `Cache` and `Element`. This matters only if you wrote your own cache event listener
+that reports to it.
