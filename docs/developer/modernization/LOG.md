@@ -110,6 +110,12 @@ databases upgrading in place.
 | MOD-I30 | Spring | From Spring 6.1, `-parameters` is required, or name-based XML `<constructor-arg name=...>` and implicit `@RequestParam` / `@PathVariable` names fail at runtime. | Add `-parameters` to the compiler options in phase 1; it is harmless on Spring 4.3. |
 | MOD-I31 | Spring | Spring 7 makes Jackson 3 (`tools.jackson`) the default. Jackson 2 support is deprecated in 7.0 and slated for removal in 7.2. uPortal uses Jackson 2 in UserTypes, REST and JSON views. | Move to Jackson 3 in the Spring 7 step. Keep the persisted JSON format byte-compatible (`JacksonType` columns). |
 | MOD-I32 | Spring | Spring Session 1.3 → 2.0 changes the JDBC schema and the module layout. uPortal uses the data-redis store. | Sessions are transient; document that they are dropped at upgrade. |
+| MOD-I33 | CI | `actions/setup-java@v6` removed the `adopt-hotspot` distribution that both CI matrices use. | Switch to temurin, zulu and corretto in the phase 1 CI change. |
+| MOD-I34 | Logging | Possible latent bug, still to verify: SLF4J 1.7.36 is declared, but Logback 1.6.3 needs SLF4J 2.0.x. If 1.7.36 wins resolution, logging can silently do nothing. | Check with `dependencyInsight`, then fix in its own PR. |
+| MOD-I35 | Runtime | Tomcat 9.0.x support ends 2027-03-31. A 9.1.x branch (no APR) gets releases until 2030-12-31. Tomcat 11.0.x needs Java 17. | uPortal-start moves to 9.0.x now (javax), then straight to 11 together with the Jakarta switch. |
+| MOD-I36 | uPortal-start | No CAS server can share a Tomcat with javax uPortal: CAS 3.6 can't run on Jakarta Tomcat, and current CAS (7.3/8.0) is Jakarta-only. | Candidate: default to uPortal's local login (`SimpleSecurityContextFactory`, already enabled) and make CAS opt-in, run as a separate CAS Initializr overlay or container (MOD-Q3). |
+| MOD-I37 | Search | Lucene 8 → 10.5 needs Java 21 and a reindex; Lucene 11 will need Java 25. | Rebuild the index on first start after upgrade. Document it. |
+| MOD-I38 | Libraries | person-directory 3.0.1 (Spring 6, Java 17) has been dormant since 2022. jasypt has been unmaintained since 2019. commons-fileupload2 is still milestone-only. | Watch list. Plan Apereo-side releases or replacements. |
 
 ## Open questions
 
