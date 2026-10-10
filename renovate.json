@@ -2,7 +2,8 @@
   "extends": [
     "config:recommended",
     ":preserveSemverRanges",
-    ":dependencyDashboard"
+    ":dependencyDashboard",
+    "helpers:pinGitHubActionDigests"
   ],
   "gradle": {
     "enabled": true
