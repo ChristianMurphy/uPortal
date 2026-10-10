@@ -23,7 +23,7 @@ import javax.portlet.PortletRequest;
 
 import org.apereo.portal.spring.web.portlet.DispatcherPortlet;
 import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.ViewRendererServlet;
+import org.apereo.portal.spring.web.servlet.ViewRendererServlet;
 import org.springframework.webflow.context.ExternalContext;
 import org.springframework.webflow.execution.RequestContext;
 import org.springframework.webflow.mvc.view.AbstractMvcView;

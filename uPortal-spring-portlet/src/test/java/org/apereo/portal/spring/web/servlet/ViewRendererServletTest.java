@@ -15,14 +15,20 @@
 package org.apereo.portal.spring.web.servlet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import javax.servlet.ServletException;
+import org.apereo.portal.spring.web.portlet.DispatcherPortlet;
+import org.apereo.portal.spring.web.portlet.ForwardingDispatcherPortlet;
+import org.apereo.portal.spring.webflow.mvc.portlet.PortletMvcView;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -55,6 +61,29 @@ public class ViewRendererServletTest {
             fail("expected ServletException");
         } catch (ServletException e) {
             assertTrue(e.getMessage().contains("View is null"));
+        }
+    }
+
+    /**
+     * The classes that put the view and model into the request must use this servlet's attribute
+     * names; with Spring's servlet class they would hand the view to a name nobody reads.
+     */
+    @Test
+    public void portletViewsUseThisServletsAttributes() throws Exception {
+        for (final Class<?> type :
+                new Class<?>[] {
+                    DispatcherPortlet.class, ForwardingDispatcherPortlet.class, PortletMvcView.class
+                }) {
+            final String classFile;
+            try (InputStream in = type.getResourceAsStream(type.getSimpleName() + ".class")) {
+                classFile = new String(in.readAllBytes(), StandardCharsets.ISO_8859_1);
+            }
+            assertFalse(
+                    type.getName(),
+                    classFile.contains("org/springframework/web/servlet/ViewRendererServlet"));
+            assertTrue(
+                    type.getName(),
+                    classFile.contains("org/apereo/portal/spring/web/servlet/ViewRendererServlet"));
         }
     }
 
