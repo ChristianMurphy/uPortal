@@ -55,23 +55,23 @@ public class WebComponentChannelRendererTest {
     private WebComponentChannelRenderer renderer;
     private MockHttpServletRequest request;
     private LocaleManager localeManager;
+    private IUserInstance userInstance;
+    private IUserInstanceManager userInstanceManager;
 
     @Before
     public void setUp() {
         localeManager = mock(LocaleManager.class);
         when(localeManager.getLocales())
                 .thenReturn(Collections.singletonList(Locale.CANADA_FRENCH));
-        final IUserInstance userInstance = mock(IUserInstance.class);
+        userInstance = mock(IUserInstance.class);
         when(userInstance.getLocaleManager()).thenReturn(localeManager);
-        final IUserInstanceManager userInstanceManager = mock(IUserInstanceManager.class);
+        userInstanceManager = mock(IUserInstanceManager.class);
 
         request = new MockHttpServletRequest();
         request.setContextPath("/uPortal");
         when(userInstanceManager.getUserInstance(request)).thenReturn(userInstance);
 
-        renderer = new WebComponentChannelRenderer();
-        renderer.setUserInstanceManager(userInstanceManager);
-        renderer.setModuleResolver(moduleResolver(MANIFEST));
+        renderer = new WebComponentChannelRenderer(userInstanceManager, moduleResolver(MANIFEST));
     }
 
     private static Map<String, String> favoritesParameters() {
@@ -183,10 +183,7 @@ public class WebComponentChannelRendererTest {
         // A new request (the next page) loads the module again
         final MockHttpServletRequest nextRequest = new MockHttpServletRequest();
         nextRequest.setContextPath("/uPortal");
-        final IUserInstanceManager userInstanceManager = mock(IUserInstanceManager.class);
-        final IUserInstance userInstance = mock(IUserInstance.class);
         when(userInstanceManager.getUserInstance(nextRequest)).thenReturn(userInstance);
-        renderer.setUserInstanceManager(userInstanceManager);
         assertTrue(
                 renderer.render(nextRequest, window(parameters, WindowState.NORMAL))
                         .startsWith(SCRIPT));

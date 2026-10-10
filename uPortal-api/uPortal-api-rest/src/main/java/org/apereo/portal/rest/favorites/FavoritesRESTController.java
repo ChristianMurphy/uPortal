@@ -18,6 +18,7 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -61,35 +62,35 @@ public class FavoritesRESTController {
 
     /** Body of {@code POST /api/v6-0/favorites}. */
     public static class AddRequest {
-        private String fname;
+        private @Nullable String fname;
 
-        public String getFname() {
+        public @Nullable String getFname() {
             return fname;
         }
 
-        public void setFname(String fname) {
+        public void setFname(@Nullable String fname) {
             this.fname = fname;
         }
     }
 
     /** Body of {@code POST /api/v6-0/favorites/{nodeId}/move}. */
     public static class MoveRequest {
-        private String before;
-        private String after;
+        private @Nullable String before;
+        private @Nullable String after;
 
-        public String getBefore() {
+        public @Nullable String getBefore() {
             return before;
         }
 
-        public void setBefore(String before) {
+        public void setBefore(@Nullable String before) {
             this.before = before;
         }
 
-        public String getAfter() {
+        public @Nullable String getAfter() {
             return after;
         }
 
-        public void setAfter(String after) {
+        public void setAfter(@Nullable String after) {
             this.after = after;
         }
     }

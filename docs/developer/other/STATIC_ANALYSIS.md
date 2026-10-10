@@ -100,5 +100,8 @@ To adopt it in a package:
    prefer constructor injection there.
 
 Null-marked so far: `org.apereo.portal.security.oauth`,
-`org.apereo.portal.security.firewall` and
-`org.apereo.portal.portlet.session`.
+`org.apereo.portal.security.firewall`,
+`org.apereo.portal.portlet.session`, and the web component packages
+`org.apereo.portal.portlet.rendering.webcomponent`,
+`org.apereo.portal.portlets.webcomponent`,
+`org.apereo.portal.rest.favorites` and `org.apereo.portal.rest.i18n`.

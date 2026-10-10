@@ -100,9 +100,8 @@ public class WebComponentChannelExecutionTest {
                                                 .getBytes(StandardCharsets.UTF_8)));
         final WebComponentModuleResolver moduleResolver = new WebComponentModuleResolver();
         moduleResolver.setServletContext(servletContext);
-        final WebComponentChannelRenderer channelRenderer = new WebComponentChannelRenderer();
-        channelRenderer.setUserInstanceManager(userInstanceManager);
-        channelRenderer.setModuleResolver(moduleResolver);
+        final WebComponentChannelRenderer channelRenderer =
+                new WebComponentChannelRenderer(userInstanceManager, moduleResolver);
 
         final PortletWorkerFactoryImpl workerFactory = new PortletWorkerFactoryImpl();
         workerFactory.setPortletWindowRegistry(windowRegistry);

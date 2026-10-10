@@ -25,6 +25,7 @@ import org.apereo.portal.portlet.om.IPortletWindowId;
 import org.apereo.portal.portlet.rendering.IPortletRenderer;
 import org.apereo.portal.portlet.rendering.PortletRenderResult;
 import org.apereo.portal.portlet.rendering.worker.IPortletRenderExecutionWorker;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Renders a web-component channel for the portlet execution manager, without the portlet container
@@ -52,9 +53,9 @@ public class WebComponentRenderExecutionWorker implements IPortletRenderExecutio
     private volatile long started;
     private volatile long complete;
     private volatile boolean retrieved;
-    private String output;
-    private PortletRenderResult result;
-    private RuntimeException failure;
+    // Set once, by render(), under the lock
+    private @Nullable Rendered rendered;
+    private @Nullable RuntimeException failure;
 
     public WebComponentRenderExecutionWorker(
             WebComponentChannelRenderer renderer,
@@ -81,45 +82,50 @@ public class WebComponentRenderExecutionWorker implements IPortletRenderExecutio
     }
 
     @Override
-    public PortletRenderResult get(long timeout) throws Exception {
+    public synchronized PortletRenderResult get(long timeout) throws Exception {
         retrieved = true;
-        render();
-        if (failure != null) {
-            throw failure;
-        }
-        return result;
+        return render().result;
     }
 
     @Override
-    public String getOutput(long timeout) throws Exception {
-        get(timeout);
-        return output;
+    public synchronized String getOutput(long timeout) throws Exception {
+        retrieved = true;
+        return render().output;
     }
 
-    private synchronized void render() throws IOException {
-        if (complete > 0) {
-            return;
+    /** Renders the channel the first time it is asked for; later calls repeat the outcome. */
+    private synchronized Rendered render() throws IOException {
+        final RuntimeException failed = failure;
+        if (failed != null) {
+            throw failed;
+        }
+        final Rendered done = rendered;
+        if (done != null) {
+            return done;
         }
         if (submitted == 0) {
             throw new IllegalStateException(this + " has not been submitted");
         }
         started = System.currentTimeMillis();
+        final String output;
         try {
             output = renderer.render(request, portletWindow);
         } catch (RuntimeException e) {
             failure = e;
+            throw e;
         } finally {
             complete = System.currentTimeMillis();
         }
-        if (failure == null) {
-            result = new PortletRenderResult(null, null, 0, complete - started);
-            if (IPortletRenderer.EXCLUSIVE.equals(portletWindow.getWindowState())) {
-                writeExclusiveOutput();
-            }
+        final Rendered result =
+                new Rendered(output, new PortletRenderResult(null, null, 0, complete - started));
+        rendered = result;
+        if (IPortletRenderer.EXCLUSIVE.equals(portletWindow.getWindowState())) {
+            writeExclusiveOutput(output);
         }
+        return result;
     }
 
-    private void writeExclusiveOutput() throws IOException {
+    private void writeExclusiveOutput(String output) throws IOException {
         if (response.getContentType() == null) {
             response.setContentType("text/html;charset=UTF-8");
         }
@@ -148,14 +154,14 @@ public class WebComponentRenderExecutionWorker implements IPortletRenderExecutio
     }
 
     @Override
-    public Object setExecutionAttribute(String name, Object value) {
+    public @Nullable Object setExecutionAttribute(String name, @Nullable Object value) {
         return value == null
                 ? executionAttributes.remove(name)
                 : executionAttributes.put(name, value);
     }
 
     @Override
-    public Object getExecutionAttribute(String name) {
+    public @Nullable Object getExecutionAttribute(String name) {
         return executionAttributes.get(name);
     }
 
@@ -220,5 +226,16 @@ public class WebComponentRenderExecutionWorker implements IPortletRenderExecutio
         return "WebComponentRenderExecutionWorker [portletWindowId="
                 + portletWindow.getPortletWindowId()
                 + "]";
+    }
+
+    /** The markup a successful render produced, and its result. */
+    private static final class Rendered {
+        private final String output;
+        private final PortletRenderResult result;
+
+        private Rendered(String output, PortletRenderResult result) {
+            this.output = output;
+            this.result = result;
+        }
     }
 }
