@@ -46,6 +46,30 @@
   with `./gradlew spotlessApply` before resolving conflicts, and run
   `git config blame.ignoreRevsFile .git-blame-ignore-revs` so `git blame`
   skips the reformat.
+- **JDK 21 or newer is required to build uPortal; CI builds and tests
+  on JDK 21 and 25.** The classes are still compiled for Java 11
+  (`--release 11`), so deployments can stay on Java 11. `.sdkmanrc` now
+  pins Temurin 25. Error Prone moved to 2.50.0 (four new checks that flag
+  existing code are disabled for now: `BanJNDI`, `BoxedPrimitiveEquality`,
+  `DoubleBraceInitialization`, `SelfAssertion`) and the formatter to
+  google-java-format 1.36.1 via Spotless 8.10.4 (no formatting change).
+- **Running the portal on JDK 24 or newer needs
+  `-Djdk.xml.enableExtensionFunctions=true`** (for example in
+  `CATALINA_OPTS`). Since JDK 24 the JDK's default `jaxp.properties`
+  disables XSLT extension functions, which uPortal's theme, security
+  helper and import-upgrade stylesheets call; without the flag rendering
+  fails with "The first argument to the non-static Java function
+  'getUrlString' is not a valid object reference". The test JVMs set it.
+  JDK 11–21 need nothing.
+- **Gradle wrapper bumped from 8.14.6 to 9.8.1.** Plugins: `nebula.lint`
+  → 21.3.0 (its `duplicate-dependency-class` rule is no longer run),
+  CodeNarc → 3.7.0-groovy-4.0, JaCoCo pinned to 0.8.15. The unmaintained
+  `com.github.kt3k.coveralls` plugin was removed, so there is no
+  `./gradlew coveralls` task any more: CI runs
+  `./gradlew build jacocoAggregateReport` and uploads the aggregate
+  JaCoCo report with the Coveralls GitHub Action. Jars are now built
+  reproducibly (fixed entry dates); the war keeps real file dates so
+  servlet containers still notice changed JSPs.
 
 ## v5.17.3
 
