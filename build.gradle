@@ -18,16 +18,16 @@ plugins {
     // Top level plugins
     id 'com.github.kt3k.coveralls' version '2.12.2'
     id 'com.github.node-gradle.node' version '7.1.0'
-    id 'net.researchgate.release' version '3.1.0'
+    id 'net.researchgate.release' version '3.2.0'
     // Records all tasks in task graph, generates `build/reports/visteg.dot`
     // dot file can be converted to an image using graphviz. `dot -Tsvg -O -v visteg.dot`
     // id 'cz.malohlava.visteg' version '1.0.5'
 
     // Sub project plugins
     id 'com.github.sherter.google-java-format' version '0.9' apply false
-    id 'nebula.lint' version '17.8.0' apply false
-    id 'net.ltgt.errorprone' version '4.4.0' apply false
-    id 'com.github.spotbugs' version '4.8.0' apply false
+    id 'nebula.lint' version '20.6.2' apply false
+    id 'net.ltgt.errorprone' version '5.1.1' apply false
+    id 'com.github.spotbugs' version '6.5.12' apply false
 }
 
 description = "Apereo uPortal $version"
@@ -71,7 +71,6 @@ allprojects {
 
     dependencies {
         errorprone 'com.google.errorprone:error_prone_core:2.3.4'
-        errorproneJavac "com.google.errorprone:javac:9+181-r4173-1"
     }
 
     codenarc {
@@ -101,8 +100,8 @@ allprojects {
         enabled = gradle.startParameter.taskNames.contains(it.name)
         reports {
             html {
-                enabled = true
-                destination = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+                required = true
+                outputLocation = file("$buildDir/reports/spotbugs/main/spotbugs.html")
                 stylesheet = 'fancy-hist.xsl'
             }
         }
