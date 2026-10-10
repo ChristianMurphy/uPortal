@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.io.Serializable;
+import java.time.Duration;
+import java.time.temporal.TemporalAmount;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -48,6 +50,7 @@ import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.BaseRawEventsJpaDao.RawEventsTransactional;
 import org.apereo.portal.spring.context.ApplicationEventFilter;
 import org.apereo.portal.utils.cache.CacheKey;
+import org.apereo.portal.utils.time.JodaTimeBridge;
 import org.hibernate.Cache;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -55,8 +58,6 @@ import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.Type;
 import org.joda.time.DateTime;
-import org.joda.time.Period;
-import org.joda.time.ReadablePeriod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.AopProxyUtils;
@@ -92,7 +93,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
     private int intervalAggregationBatchSize = 5;
     private int cleanUnclosedAggregationsBatchSize = 1000;
     private int cleanUnclosedIntervalsBatchSize = 315;
-    private ReadablePeriod aggregationDelay = Period.seconds(30);
+    private TemporalAmount aggregationDelay = Duration.ofSeconds(30);
 
     private final Map<Class<?>, List<String>> entityCollectionRoles = new HashMap<>();
     private volatile boolean shutdown = false;
@@ -183,7 +184,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
     }
 
     @Value("${org.apereo.portal.events.aggr.PortalRawEventsAggregatorImpl.aggregationDelay:PT30S}")
-    public void setAggregationDelay(ReadablePeriod aggregationDelay) {
+    public void setAggregationDelay(TemporalAmount aggregationDelay) {
         this.aggregationDelay = aggregationDelay;
     }
 
@@ -545,7 +546,9 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         }
 
         final DateTime newestEventTime =
-                DateTime.now().minus(this.aggregationDelay).secondOfMinute().roundFloorCopy();
+                JodaTimeBridge.minus(DateTime.now(), this.aggregationDelay)
+                        .secondOfMinute()
+                        .roundFloorCopy();
 
         final Thread currentThread = Thread.currentThread();
         final String currentName = currentThread.getName();

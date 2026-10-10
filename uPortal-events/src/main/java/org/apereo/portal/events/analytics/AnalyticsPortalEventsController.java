@@ -17,6 +17,8 @@ package org.apereo.portal.events.analytics;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.text.ParseException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +28,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apereo.portal.events.PortalEvent;
 import org.apereo.portal.rest.utils.ErrorResponse;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,9 +96,9 @@ public class AnalyticsPortalEventsController {
             @RequestParam(name = "endDate") String endDateStr,
             @RequestParam(name = "eventType", required = false) String eventType,
             @RequestParam(name = "userId", required = false) String userId) {
-        DateTime startDate = parseDateTime(startDateStr);
+        ZonedDateTime startDate = parseDateTime(startDateStr);
         // by default a new date will be midnight; this goes to the last second of the day instead
-        DateTime endDate = parseDateTime(endDateStr).plusDays(1).minusSeconds(1);
+        ZonedDateTime endDate = parseDateTime(endDateStr).plusDays(1).minusSeconds(1);
         List<PortalEvent> response = service.getAnalytics(startDate, endDate, eventType, userId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -108,10 +109,10 @@ public class AnalyticsPortalEventsController {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    private DateTime parseDateTime(String dateTimeStr) {
+    private ZonedDateTime parseDateTime(String dateTimeStr) {
         try {
             Date date = df.parse(dateTimeStr);
-            return new DateTime(date);
+            return ZonedDateTime.ofInstant(date.toInstant(), ZoneId.systemDefault());
         } catch (ParseException e) {
             throw new IllegalArgumentException(
                     "Query Date ["

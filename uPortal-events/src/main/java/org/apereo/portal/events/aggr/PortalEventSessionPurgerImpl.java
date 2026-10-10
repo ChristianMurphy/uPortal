@@ -14,13 +14,14 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import org.apereo.portal.concurrency.locking.IClusterLockService;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.session.EventSessionDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao.AggrEventsTransactional;
+import org.apereo.portal.utils.time.JodaTimeBridge;
 import org.joda.time.DateTime;
-import org.joda.time.Period;
-import org.joda.time.ReadablePeriod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,7 @@ public class PortalEventSessionPurgerImpl implements PortalEventSessionPurger {
     private EventSessionDao eventSessionDao;
     private IClusterLockService clusterLockService;
 
-    private ReadablePeriod eventSessionDuration = Period.days(1);
+    private TemporalAmount eventSessionDuration = Period.ofDays(1);
 
     @Autowired
     public void setEventSessionDao(EventSessionDao eventSessionDao) {
@@ -55,7 +56,7 @@ public class PortalEventSessionPurgerImpl implements PortalEventSessionPurger {
 
     @Value(
             "${org.apereo.portal.events.aggr.session.PortalEventSessionPurgerImpl.eventSessionDuration:P1D}")
-    public void setEventSessionDuration(ReadablePeriod eventSessionDuration) {
+    public void setEventSessionDuration(TemporalAmount eventSessionDuration) {
         this.eventSessionDuration = eventSessionDuration;
     }
 
@@ -77,7 +78,7 @@ public class PortalEventSessionPurgerImpl implements PortalEventSessionPurger {
         }
 
         final DateTime lastEventDate = eventAggregatorStatus.getLastEventDate();
-        final DateTime sessionPurgeDate = lastEventDate.minus(eventSessionDuration);
+        final DateTime sessionPurgeDate = JodaTimeBridge.minus(lastEventDate, eventSessionDuration);
         final int purgeCount = eventSessionDao.purgeEventSessionsBefore(sessionPurgeDate);
 
         return new EventProcessingResult(purgeCount, null, sessionPurgeDate, true);

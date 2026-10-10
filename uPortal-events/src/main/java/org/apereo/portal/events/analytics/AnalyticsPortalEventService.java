@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.events.analytics;
 
+import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ import org.apereo.portal.events.PortalEvent;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
-import org.joda.time.DateTime;
+import org.apereo.portal.utils.time.JodaTimeBridge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,11 +86,11 @@ public class AnalyticsPortalEventService implements IAnalyticsPortalEventService
 
     @Override
     public List<PortalEvent> getAnalytics(
-            DateTime startDate, DateTime endDate, String eventType, String userId) {
+            ZonedDateTime startDate, ZonedDateTime endDate, String eventType, String userId) {
         final List<PortalEvent> portalEvents = new LinkedList<PortalEvent>();
         portalEventDao.getAnalyticsEvents(
-                startDate,
-                endDate,
+                JodaTimeBridge.toDateTime(startDate),
+                JodaTimeBridge.toDateTime(endDate),
                 -1,
                 eventType,
                 userId,

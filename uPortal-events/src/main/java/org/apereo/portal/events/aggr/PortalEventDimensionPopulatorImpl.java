@@ -14,6 +14,9 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.temporal.TemporalAmount;
 import java.util.List;
 import org.apereo.portal.concurrency.locking.IClusterLockService;
 import org.apereo.portal.events.aggr.dao.DateDimensionDao;
@@ -21,11 +24,10 @@ import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
+import org.apereo.portal.utils.time.JodaTimeBridge;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
-import org.joda.time.Period;
-import org.joda.time.ReadablePeriod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -45,7 +47,7 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
     private IEventAggregationManagementDao eventAggregationManagementDao;
     private IClusterLockService clusterLockService;
 
-    private ReadablePeriod dimensionBuffer = Period.days(30);
+    private TemporalAmount dimensionBuffer = Period.ofDays(30);
 
     private volatile boolean checkedDimensions = false;
     private volatile boolean shutdown = false;
@@ -83,11 +85,11 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
 
     @Value(
             "${org.apereo.portal.events.aggr.PortalEventDimensionPopulatorImpl.dimensionBuffer:P30D}")
-    public void setDimensionBuffer(ReadablePeriod dimensionBuffer) {
-        if (new Period(dimensionBuffer).toStandardDays().getDays() < 1) {
+    public void setDimensionBuffer(TemporalAmount dimensionBuffer) {
+        final LocalDateTime base = LocalDateTime.of(2000, 1, 1, 0, 0);
+        if (base.plus(dimensionBuffer).isBefore(base.plusDays(1))) {
             throw new IllegalArgumentException(
-                    "dimensionBuffer must be at least 1 day. Is: "
-                            + new Period(dimensionBuffer).toStandardDays().getDays());
+                    "dimensionBuffer must be at least 1 day. Is: " + dimensionBuffer);
         }
         this.dimensionBuffer = dimensionBuffer;
     }
@@ -194,12 +196,13 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
         if (oldestPortalEventTimestamp == null || now.isBefore(oldestPortalEventTimestamp)) {
             startIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
-                            AggregationInterval.YEAR, now.minus(this.dimensionBuffer));
+                            AggregationInterval.YEAR,
+                            JodaTimeBridge.minus(now, this.dimensionBuffer));
         } else {
             startIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            oldestPortalEventTimestamp.minus(this.dimensionBuffer));
+                            JodaTimeBridge.minus(oldestPortalEventTimestamp, this.dimensionBuffer));
         }
 
         final AggregationIntervalInfo endIntervalInfo;
@@ -208,12 +211,13 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
         if (newestPortalEventTimestamp == null || now.isAfter(newestPortalEventTimestamp)) {
             endIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
-                            AggregationInterval.YEAR, now.plus(this.dimensionBuffer));
+                            AggregationInterval.YEAR,
+                            JodaTimeBridge.plus(now, this.dimensionBuffer));
         } else {
             endIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            newestPortalEventTimestamp.plus(this.dimensionBuffer));
+                            JodaTimeBridge.plus(newestPortalEventTimestamp, this.dimensionBuffer));
         }
 
         final DateMidnight start = startIntervalInfo.getStart().toDateMidnight();

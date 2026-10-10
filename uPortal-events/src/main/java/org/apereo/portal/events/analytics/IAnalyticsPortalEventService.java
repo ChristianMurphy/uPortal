@@ -14,11 +14,11 @@
  */
 package org.apereo.portal.events.analytics;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.events.PortalEvent;
-import org.joda.time.DateTime;
 
 public interface IAnalyticsPortalEventService {
 
@@ -27,5 +27,5 @@ public interface IAnalyticsPortalEventService {
     String getLogLevel();
 
     List<PortalEvent> getAnalytics(
-            DateTime startDate, DateTime endDate, String eventType, String userId);
+            ZonedDateTime startDate, ZonedDateTime endDate, String eventType, String userId);
 }
