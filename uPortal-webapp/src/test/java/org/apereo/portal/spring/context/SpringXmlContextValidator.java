@@ -100,9 +100,11 @@ public final class SpringXmlContextValidator {
                         final BeanDefinitionRegistryPostProcessor processor =
                                 beanFactory.getBean(
                                         name, BeanDefinitionRegistryPostProcessor.class);
+                        // Only the registry phase: postProcessBeanFactory would CGLIB-enhance the
+                        // @Configuration classes, which needs --add-opens on JDK 17+ and adds
+                        // nothing to the definitions
                         processor.postProcessBeanDefinitionRegistry(
                                 (BeanDefinitionRegistry) beanFactory);
-                        processor.postProcessBeanFactory(beanFactory);
                     }
                 }
             }
@@ -419,7 +421,9 @@ public final class SpringXmlContextValidator {
                 // Same merge that the bean factory does for an inner bean with a parent
                 final RootBeanDefinition merged =
                         new RootBeanDefinition(
-                                beanFactory.getMergedBeanDefinition(definition.getParentName()));
+                                (RootBeanDefinition)
+                                        beanFactory.getMergedBeanDefinition(
+                                                definition.getParentName()));
                 merged.overrideFrom(definition);
                 checkDefinition(name, merged);
             } catch (RuntimeException e) {
