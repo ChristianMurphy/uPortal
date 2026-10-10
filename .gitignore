@@ -443,3 +443,7 @@ uPortal-webapp/out/
 !**/src/test/**/*.zip
 plans/
 .claude/settings.local.json
+
+### Vale (MOD-D35): downloaded by .github/scripts/vale.sh ###
+.github/vale/bin/
+.github/vale/styles/
