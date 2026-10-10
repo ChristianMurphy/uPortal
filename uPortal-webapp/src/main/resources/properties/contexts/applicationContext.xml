@@ -57,7 +57,7 @@
         <context:exclude-filter type="regex" expression="org\.apereo\.portal\.health\..+"/>
     </context:component-scan>
 
-    <bean id="primaryPropertyPlaceholderConfigurer" class="org.springframework.context.support.PortalPropertySourcesPlaceholderConfigurer">
+    <bean id="primaryPropertyPlaceholderConfigurer" class="org.apereo.portal.spring.context.support.PortalPropertySourcesPlaceholderConfigurer">
         <property name="locations">
             <list>
                 <value>classpath:/properties/portal.properties</value>
