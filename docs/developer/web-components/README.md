@@ -169,6 +169,7 @@ uPortal-webcomponents/
   tsconfig.json           strict TypeScript for the browser
   vite.config.ts          Vite+ config: build, Vitest projects, lint, format
   src/lib/                the base library every component uses
+  src/state/              ActorController: XState actors in Lit elements
   src/components/<tag>/   one directory per component; <tag>.ts is its entry
   src/test-support/       test helpers (fetch stub, fixtures, axe)
 ```
@@ -179,6 +180,10 @@ tasks are up to date unless its own files change, and `./gradlew :uPortal-webcom
 checks it alone. Its jar is a webjar (the modules under `META-INF/resources/webcomponents`);
 `uPortal-webapp` unpacks it into the war, so the modules are served from `/uPortal/webcomponents/`
 whatever the servlet container's jar scanning settings.
+
+Libraries that several components use go into shared chunks (`output.codeSplitting.groups` in
+`vite.config.ts`): XState is one, `assets/xstate-<hash>.js`, which each component's entry imports,
+so a page loads it once however many components it shows.
 
 ### Toolchain and Gradle tasks
 
@@ -273,6 +278,73 @@ Consequences:
 The browser tests check that the sheet is shared, that tokens and components apply inside the
 shadow root, that the page can theme a component, and that the color scheme follows the page.
 
+### State machines (MOD-D31)
+
+**Rule:** a component with more than trivial state models it as an
+[XState v5](https://stately.ai/docs/xstate) state machine and runs it through
+`ActorController`. Trivial means one or two independent flags, such as a disclosure that is open
+or closed; anything with loading, failures, requests in flight or modes is not trivial.
+
+* **The machine** is a pure module next to the component, `<tag>.machine.ts`, built with
+  `setup({ types, actors, guards, actions }).createMachine(...)`. It has no DOM access. Side
+  effects such as REST calls are `fromPromise` actors declared in `setup` (pass their `signal`
+  to `ApiClient`), so tests replace them with `machine.provide({ actors })`. Outcomes the
+  element shows but the machine should not format, such as notices, focus targets and live
+  region text, are plain data in the context; the element turns them into messages and DOM.
+* **The template** renders from the snapshot: `snapshot.matches(...)` for states,
+  `snapshot.hasTag(...)` for cross-cutting facts such as `busy` (rendered as `aria-busy`), and
+  context data. No ad hoc boolean properties duplicate the machine's state. User actions send
+  events; a key handler calls `preventDefault()` only when `snapshot.can(event)`.
+* **The adapter**, `src/state/actor-controller.ts`, is a Lit `ReactiveController` used by
+  composition, `new ActorController(this, machine, options)`, on any `LitElement`. It depends on
+  `lit` and `xstate` only, so it could be published on its own. Snapshot, selected value and
+  events are inferred from the machine (sending an event the machine does not define is a type
+  error).
+
+```ts
+readonly #favorites = new ActorController(this, favoritesMachine, {
+    input: () => ({ api: this.api }),                       // properties in, at the first connect
+    events: { 'favorite.removed': 'up-favorite-removed' },  // emitted events out, as DOM events
+    // selector: (snapshot) => ..., compare: (a, b) => ...  // re-render only when this changes
+});
+
+protected override willUpdate(changed: PropertyValues<this>): void {
+    super.willUpdate(changed);
+    // Later property changes reach the machine as explicit events; no two-way binding
+    if (this.hasUpdated && changed.has('csrfToken')) {
+        this.#favorites.send({ type: 'api.changed', api: this.api });
+    }
+}
+```
+
+What the adapter guarantees:
+
+| Concern | Behaviour |
+| --- | --- |
+| First connect | Creates the actor with `input()` and starts it. Its first snapshot joins the element's first update, so the element renders once. |
+| Disconnect | Unsubscribes, keeps `getPersistedSnapshot()` and stops the actor. The host gets no update afterwards. |
+| Reconnect (the element moved) | Restores the actor from that snapshot, so the state survives the move. |
+| A promise in flight across a move | Stopping aborts it (its `signal` fires) and ignores its result; the restored actor starts it again with the same input. Invoked requests must therefore be safe to repeat; the favorites API's DELETE (404 counts as removed) and move (no-op when in place) are. |
+| Events sent while disconnected | Queued and delivered in order once the actor runs. |
+| Rendering | `requestUpdate()` only when the selected value changes (`Object.is`, or `compare`). |
+| Machine `emit` | Mapped emitted events become bubbling, composed `CustomEvent`s on the host whose `detail` is the emitted event without its `type` (`toCustomEvent`). |
+
+Alternatives considered:
+
+* **Robot3 with lit-robot:** smaller, but a second state vocabulary next to the statecharts that
+  the model-based tests and the Stately tooling understand.
+* **@xstate/store:** event-driven stores, not statecharts: no hierarchy, parallel regions,
+  guards, invoked actors or the graph tooling.
+* **Plain reactive properties:** the states stay implicit, spread over flags such as `busy` and
+  `editing`, and nothing enumerates them for tests.
+* **`xstate-lit` 2.0.5:** rejected. It was last published in January 2024 and lists no
+  repository or licence.
+* There is no official `@xstate/lit`. Lit's template compiler (`@lit-labs/compiler` 1.1.2) also
+  stays out, because it is still a Labs prototype.
+
+Development-time inspection (`@statelyai/inspect`) is not wired in. Adding it would need a
+dev-only import that production bundles leave out.
+
 ### Testing
 
 `vp test` runs two Vitest projects:
@@ -289,6 +361,19 @@ including 401, 403, 500, network failures and malformed bodies. REST calls are s
 replacing `fetch` with a small router of real `Response` objects (`src/test-support/fetch-stub.ts`)
 rather than with MSW: there is no service worker to install in the browser runner, and the stub
 records each request for assertions. Snapshots are only for small, stable markup.
+
+A component with a machine adds two kinds of tests:
+
+* **Machine tests** (`<tag>.machine.unit.test.ts`, Node): every transition, guard, action and
+  error path, with the REST actors replaced through `machine.provide({ actors })` by promises
+  the test settles.
+* **Model-based tests** (`<tag>.model.browser.test.ts`, Chromium): `@xstate/graph`'s
+  `getShortestPaths` (and `getSimplePaths` where the graph is small) generate paths through the
+  machine. The test mounts the real element for each path, plays each step as a user action or
+  as the REST response the step stands for (`xstate.done.actor.*`, `xstate.error.actor.*`), and
+  checks that the rendered output and its accessibility attributes match the state after every
+  step, with axe in the state the path reaches. The state key passed as `serializeState` must
+  include all the context the element renders, not only the state value.
 
 Coverage (V8) must stay at 90% or more of lines, branches, functions and statements in every
 source file, not only in total; `vp test` fails below that. The report is in `build/coverage`.
@@ -351,6 +436,14 @@ checked with axe; removing, with focus moving to the next favorite and the outco
 a live region; reordering with the buttons and the keyboard, focus kept on the moved favorite;
 `max-height-pixels`, the maximized window state and the messages loaded from the portal.
 
+Its states are the machine in `up-favorites.machine.ts`: `loading`, `failed.retryable`,
+`failed.sessionExpired`, `empty`, and `list`, which runs two regions in parallel, `mode`
+(`viewing` or `editing`) and `request` (`idle`, `removing` or `moving`; one change at a time).
+Changes are pessimistic: the list changes when the portal confirms, so a failure leaves it as it
+was and adds a notice. The model-based tests reach all ten state values through 41 shortest
+paths. Those paths cover every combination of state, notice and order the test events can
+produce, each checked with axe.
+
 ### Converting existing Favorites channels
 
 uPortal-start's quickstart data publishes `favorites` as a Web Component channel. A portal
@@ -406,8 +499,10 @@ ships in the 6.0 data migration, and say so in UPGRADING-6.0.
 
 1. Write the REST API first (`@RestController` under `/api/v6-0/`, a service on the portal's
    existing services, MockMvc and unit tests).
-2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its API client and
-   validators, its messages, and its tests; add the tag to `components` in `vite.config.ts`.
+2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its machine
+   (`<tag>.machine.ts`, see "State machines"), its API client and validators, its messages, and
+   its tests (machine, model-based and browser); add the tag to `components` in
+   `vite.config.ts`.
 3. Turn portlet modes into in-place states, preferences into `webComponent.preferenceAttributes`,
    and portlet actions into REST calls.
 4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
