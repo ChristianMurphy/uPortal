@@ -23,9 +23,9 @@
   xmlns="http://www.springframework.org/schema/beans"
   xmlns:aop="http://www.springframework.org/schema/aop"
   xmlns:util="http://www.springframework.org/schema/util"
-  xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
-		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
-		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+  xsi:schemaLocation="http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
     <bean id="permissionStore" class="org.apereo.portal.security.provider.RDBMPermissionImpl"/>
 

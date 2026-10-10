@@ -83,3 +83,16 @@ category, now `org.apereo.portal.spring.web.portlet.PageNotFound`.
 
 Portlet applications deployed as separate web applications (Announcements, Calendar and the
 other portlet WARs) are not affected: they bring their own Spring jars.
+
+## Spring XML files use the unversioned schemas
+
+uPortal's Spring XML contexts and Web Flow definitions now name the unversioned schemas, for
+example `http://www.springframework.org/schema/beans/spring-beans.xsd` instead of
+`spring-beans-3.1.xsd`, and `spring-security.xsd` instead of `spring-security-4.2.xsd`. Spring
+resolves an unversioned schema to the one that matches the jar on the classpath, so the files keep
+working as the Spring version moves.
+
+If your overlay adds or replaces Spring contexts, make the same change there. It is required for
+files that use the `security` namespace: Spring Security 5 refuses to load a file that names
+`spring-security-4.2.xsd` or an older version. For the other namespaces it is recommended; Spring
+still maps the old versioned names to the current schema.
