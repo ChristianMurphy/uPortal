@@ -16,7 +16,6 @@ buildscript {
 
 plugins {
     // Top level plugins
-    id 'com.github.kt3k.coveralls' version '2.12.2'
     id 'com.github.node-gradle.node' version '7.1.0'
     id 'net.researchgate.release' version '3.2.0'
     // Records all tasks in task graph, generates `build/reports/visteg.dot`
@@ -25,7 +24,7 @@ plugins {
 
     // Sub project plugins
     id 'com.diffplug.spotless' version '8.10.4' apply false
-    id 'nebula.lint' version '20.6.2' apply false
+    id 'nebula.lint' version '21.3.0' apply false
     id 'net.ltgt.errorprone' version '5.1.1' apply false
     id 'com.github.spotbugs' version '6.5.12' apply false
 }
@@ -43,9 +42,34 @@ node {
     download = true
 }
 
-if (!rootProject.ext.has('testModuleSummaries')) {
-    rootProject.ext.testModuleSummaries = []
+/**
+ * Collects the result of every Test task and prints a per-module summary when the build
+ * finishes (Gradle closes build services at the end of the build).
+ */
+abstract class TestSummaryService implements BuildService<org.gradle.api.services.BuildServiceParameters.None>, AutoCloseable {
+    private final List<Map> summaries = Collections.synchronizedList([])
+
+    void add(Map summary) {
+        summaries << summary
+    }
+
+    @Override
+    void close() {
+        if (summaries.isEmpty()) {
+            return
+        }
+        def failed = summaries.any { it.failed > 0 || it.resultType.toString() == 'FAILURE' }
+        println "=== All Module Test Summaries (${failed ? 'TEST FAILURE' : 'TEST SUCCESS'}) ==="
+        summaries.sort { it.projectPath }.each { s ->
+            println "Module ${s.projectPath} (${s.taskPath}): ${s.resultType} - ${s.executed} executed, ${s.passed} passed, ${s.failed} failed, ${s.skipped} skipped in ${s.durationMs} ms"
+        }
+        def total = summaries.inject([e:0,p:0,f:0,s:0,d:0]) { acc, m ->
+            acc.e += m.executed; acc.p += m.passed; acc.f += m.failed; acc.s += m.skipped; acc.d += m.durationMs; acc
+        }
+        println "=== Aggregate Test Summary: ${total.e} executed, ${total.p} passed, ${total.f} failed, ${total.s} skipped (sum durations ${total.d} ms) ==="
+    }
 }
+def testSummaryService = gradle.sharedServices.registerIfAbsent('testSummary', TestSummaryService) {}
 
 allprojects {
     apply plugin: 'java'
@@ -60,13 +84,15 @@ allprojects {
     apply plugin: 'com.diffplug.spotless'
     apply plugin: 'net.ltgt.errorprone'
 
-    configurations {
-        // Banned dependencies
-        all*.exclude group: 'commons-logging', module: 'commons-logging'
-        all*.exclude group: 'commons-logging', module: 'commons-logging-api'
-        all*.exclude group: 'log4j', module: 'log4j'
-        all*.exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
-        all*.exclude group: 'org.hamcrest', module: 'hamcrest-core'
+    // Banned dependencies. configureEach (rather than all*.exclude, which only reaches the
+    // configurations that exist at this point) also covers configurations that Gradle 9
+    // creates lazily, such as compileClasspath.
+    configurations.configureEach {
+        exclude group: 'commons-logging', module: 'commons-logging'
+        exclude group: 'commons-logging', module: 'commons-logging-api'
+        exclude group: 'log4j', module: 'log4j'
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
+        exclude group: 'org.hamcrest', module: 'hamcrest-core'
     }
 
     dependencies {
@@ -74,8 +100,15 @@ allprojects {
     }
 
     codenarc {
-        toolVersion = '3.7.0'
+        toolVersion = codenarcVersion
         reportFormat = 'console'
+    }
+    tasks.withType(CodeNarc).configureEach {
+        // Gradle 9 hands CodeNarc the compile classpath by default, which switches on its
+        // "enhanced" rules (they were skipped before). Keep the previous rule set here; the
+        // enhanced rules currently flag AnyUnblockedGrantPermissionPolicyTest
+        // (JUnitAssertEqualsConstantActualValue) and can be enabled separately.
+        compilationClasspath = files()
     }
 
     java {
@@ -107,12 +140,14 @@ allprojects {
         }
     }
 
+    // 'duplicate-dependency-class' was dropped with Gradle 9: it resolves every project's
+    // configurations from the root lint task, which Gradle 9 rejects as unsafe
+    // cross-project resolution.
     gradleLint.criticalRules = [
       'overridden-dependency-version',
       'dependency-parentheses',
       'dependency-tuple',
-      'empty-closure',
-      'duplicate-dependency-class'
+      'empty-closure'
     ]
 
     /*======== Static Analysis ========*/
@@ -166,37 +201,30 @@ allprojects {
     }
 
     tasks.withType(Test).configureEach { testTask ->
-        afterSuite { desc, result ->
-            if (!desc.parent) {
-                // Store summary; do not print now
-                rootProject.ext.testModuleSummaries << [
-                        projectPath: project.path,
-                        taskPath   : testTask.path,
-                        resultType : result.resultType,
-                        executed   : result.testCount,
-                        passed     : result.successfulTestCount,
-                        failed     : result.failedTestCount,
-                        skipped    : result.skippedTestCount,
-                        durationMs : (result.endTime - result.startTime)
-                ]
+        usesService(testSummaryService)
+        def projectPath = project.path
+        def taskPath = testTask.path
+        addTestListener(new TestListener() {
+            void beforeSuite(TestDescriptor suite) {}
+            void beforeTest(TestDescriptor test) {}
+            void afterTest(TestDescriptor test, TestResult result) {}
+            void afterSuite(TestDescriptor suite, TestResult result) {
+                if (!suite.parent) {
+                    // Store summary; it is printed when the build finishes
+                    testSummaryService.get().add([
+                            projectPath: projectPath,
+                            taskPath   : taskPath,
+                            resultType : result.resultType,
+                            executed   : result.testCount,
+                            passed     : result.successfulTestCount,
+                            failed     : result.failedTestCount,
+                            skipped    : result.skippedTestCount,
+                            durationMs : (result.endTime - result.startTime)
+                    ])
+                }
             }
-        }
+        })
     }
-}
-
-gradle.buildFinished { buildResult ->
-    def summaries = rootProject.ext.has('testModuleSummaries') ? rootProject.ext.testModuleSummaries : []
-    if (!summaries || summaries.isEmpty()) {
-        return
-    }
-    println "=== All Module Test Summaries (${buildResult.failure ? 'BUILD FAILURE' : 'BUILD SUCCESS'}) ==="
-    summaries.sort { it.projectPath }.each { s ->
-        println "Module ${s.projectPath} (${s.taskPath}): ${s.resultType} - ${s.executed} executed, ${s.passed} passed, ${s.failed} failed, ${s.skipped} skipped in ${s.durationMs} ms"
-    }
-    def total = summaries.inject([e:0,p:0,f:0,s:0,d:0]) { acc, m ->
-        acc.e += m.executed; acc.p += m.passed; acc.f += m.failed; acc.s += m.skipped; acc.d += m.durationMs; acc
-    }
-    println "=== Aggregate Test Summary: ${total.e} executed, ${total.p} passed, ${total.f} failed, ${total.s} skipped (sum durations ${total.d} ms) ==="
 }
 
 /** Passes a Java agent jar to a forked JVM, tracking the jar as a task input. */
@@ -399,11 +427,6 @@ task jacocoAggregateReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
     }
 }
 
-coveralls {
-    jacocoReportPath = "${buildDir}/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml"
-    sourceDirs = files(allprojects.sourceSets.main.allSource.srcDirs).files.absolutePath
-}
-
 /**
  * CRAP Score Analysis Task
  * ========================
@@ -440,7 +463,7 @@ task crapAnalysis {
         // Load the Jacoco XML as text and remove any DOCTYPE to avoid parser restrictions
         def xmlText = jacocoXml.getText('UTF-8')
         xmlText = xmlText.replaceAll(/(?s)<!DOCTYPE.*?>/, '')
-        def report = new XmlSlurper(false, false).parseText(xmlText)
+        def report = new groovy.xml.XmlSlurper(false, false).parseText(xmlText)
         def methods = []
         def packageStats = [:]
         

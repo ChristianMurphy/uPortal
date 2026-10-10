@@ -202,6 +202,11 @@ processResources.dependsOn(aggregateRespondrSkins)
 
 war {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    // Gradle 9 makes archives reproducible by default, giving every entry the same fixed
+    // date. Keep the real file dates in the war, as before: servlet containers compare JSP
+    // and compiled-class dates to decide whether to recompile a JSP, so constant dates could
+    // leave stale compiled JSPs in use after a redeploy.
+    preserveFileTimestamps = true
     // Add generated CSS for Respondr skins to the war file
     with {
         from "${buildDir}/generated-sources/skin/main/webapp"

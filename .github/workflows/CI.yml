@@ -49,7 +49,14 @@ jobs:
         with:
           cache-provider: basic
       - name: Build and Test
-        run: ./gradlew -S --stacktrace --no-daemon --no-parallel build jacocoAggregateReport coveralls
+        run: ./gradlew -S --stacktrace --no-daemon --no-parallel build jacocoAggregateReport
+      - name: Upload coverage to Coveralls
+        if: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
+        with:
+          file: build/reports/jacoco/jacocoAggregateReport/jacocoAggregateReport.xml
+          format: jacoco
+          fail-on-error: false
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
