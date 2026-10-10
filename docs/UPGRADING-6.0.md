@@ -4,6 +4,23 @@ uPortal 6.0 moves the persistence, Spring and servlet stacks forward in steps. T
 what adopters have to check or change when they upgrade an existing portal. Sections are added
 as the steps land.
 
+## Database servers
+
+uPortal 6.0 runs on, and is tuned for, current database servers:
+
+| Database | Minimum version |
+| --- | --- |
+| PostgreSQL | 18 |
+| MySQL | 9.7 LTS |
+| MariaDB | 12.3 LTS |
+| SQL Server | 2025 |
+| Oracle | 23.26 |
+| HSQLDB | 2.7.4, for development only |
+
+If your 5.17 database runs on an older server, use it as a migration source. The copy tool
+(`uPortal-db-migrate`, run with `./gradlew dbMigrate` in uPortal-start) copies 5.17 data from it
+into a new server of any supported vendor and checks every table after the copy.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
