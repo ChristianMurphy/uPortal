@@ -21,7 +21,6 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.concurrent.Callable;
 import javax.servlet.http.HttpServletRequest;
-import net.sf.ehcache.Ehcache;
 import org.apereo.portal.IUserPreferencesManager;
 import org.apereo.portal.layout.IUserLayoutManager;
 import org.apereo.portal.layout.node.IUserLayoutChannelDescription;
@@ -50,6 +49,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -98,7 +98,7 @@ public class PortletEntityRegistryImplTest extends BasePortalJpaDaoTest {
 
     @Mock private IPortalRequestUtils portalRequestUtils;
     @Mock private IPortletDefinitionRegistry portletDefinitionRegistry;
-    @Mock private Ehcache entityIdParseCache;
+    @Mock private Cache entityIdParseCache;
     @Mock private IUserInstanceManager userInstanceManager;
     @Mock private IUserInstance userInstance;
     @Mock private IUserPreferencesManager preferencesManager;
