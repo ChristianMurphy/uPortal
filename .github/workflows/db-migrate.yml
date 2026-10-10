@@ -1,0 +1,188 @@
+name: DB copy tool
+#
+# Tests the cross-vendor database copy tool (uPortal-db-migrate, MOD-D28) on real database servers
+# (MOD-D29): property tests that copy every kind of value between every pair of servers, fault
+# injection (target sessions killed, the target server stopped, the JVM killed or interrupted mid
+# copy, corrupted target rows, plans the target cannot take, generators behind the data), and the
+# PostgreSQL 16 -> MariaDB 12.3 -> PostgreSQL 18 upgrade chain. Testcontainers starts the servers;
+# their images are pinned by digest in
+# uPortal-db-migrate/src/integrationTest/resources/db-images.properties (Renovate updates them).
+#
+# Every push and pull request: one job, PostgreSQL 18, MariaDB 12.3 and MySQL 9.7 (every pair,
+# HSQLDB as a source too), with the property tests' fixed seed. Nightly and on workflow_dispatch
+# only, to spare the account's runners (MOD-D30): ten times the tries with a random seed and larger
+# LOBs, the pairs with SQL Server 2025 and Oracle Free 23.26, and mutation testing (PIT) of the
+# tool's core and of JpaClusterLockDao. Nothing here is allowed to fail.
+#
+# Prototype only (MOD-D30): a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs the push job
+# with PostgreSQL and MariaDB only; master, pull requests, the integration branch and the schedule
+# run MySQL too.
+#
+on:
+  push:
+    branches:
+      - master
+      # Prototype only (MOD-I74): run on the modernization
+      # integration branches. Drop this line before upstreaming.
+      - 'ccr-*'
+  pull_request:
+    branches:
+      - master
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Prototype only (MOD-D30): a newer push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>)
+  # cancels the older run.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') }}
+
+jobs:
+  copy-tool:
+    name: "Copy tool on real servers"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      # Prototype only (MOD-D30): the light profile on workstream branches
+      VENDORS: ${{ startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && 'postgres,mariadb' || 'postgres,mariadb,mysql' }}
+      SEED: '20261010'
+      FACTOR: '1'
+      MAX_LOB: '20000'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+      - name: Copy between ${{ env.VENDORS }}
+        run: >-
+          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-db-migrate:integrationTest
+          "-PdbMigrateVendors=$VENDORS" "-PdbMigrateSeed=$SEED"
+          "-PdbMigrateTriesFactor=$FACTOR" "-PdbMigrateMaxLob=$MAX_LOB"
+      # Artifacts cannot be downloaded everywhere (e.g. behind a proxy): the results, the property
+      # tests' seeds and each failure are shown on the run itself
+      - name: Report
+        if: always()
+        run: python3 .github/scripts/junit-summary.py uPortal-db-migrate/build/test-results/integrationTest
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-migrate-${{ github.job }}-${{ strategy.job-index }}
+          path: |
+            uPortal-db-migrate/build/reports/tests/
+            uPortal-db-migrate/build/test-results/
+
+  # Ten times the tries with a random seed and larger LOBs, and the commercial servers: the two
+  # legs with SQL Server and Oracle cover every cross-vendor pair the push leg does not
+  copy-tool-nightly:
+    name: "Copy tool nightly: ${{ matrix.vendors }}"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - vendors: postgres,mariadb,mysql
+            factor: '10'
+            max-lob: '1000000'
+          - vendors: postgres,sqlserver,oracle
+            factor: '3'
+            max-lob: '200000'
+          - vendors: mariadb,mysql,sqlserver,oracle
+            factor: '3'
+            max-lob: '200000'
+    env:
+      VENDORS: ${{ matrix.vendors }}
+      SEED: random
+      FACTOR: ${{ matrix.factor }}
+      MAX_LOB: ${{ matrix.max-lob }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+      - name: Copy between ${{ env.VENDORS }}
+        run: >-
+          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-db-migrate:integrationTest
+          "-PdbMigrateVendors=$VENDORS" "-PdbMigrateSeed=$SEED"
+          "-PdbMigrateTriesFactor=$FACTOR" "-PdbMigrateMaxLob=$MAX_LOB"
+      # Artifacts cannot be downloaded everywhere (e.g. behind a proxy): the results, the property
+      # tests' seeds and each failure are shown on the run itself
+      - name: Report
+        if: always()
+        run: python3 .github/scripts/junit-summary.py uPortal-db-migrate/build/test-results/integrationTest
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: db-migrate-${{ github.job }}-${{ strategy.job-index }}
+          path: |
+            uPortal-db-migrate/build/reports/tests/
+            uPortal-db-migrate/build/test-results/
+
+  mutation:
+    name: "Mutation testing: ${{ matrix.name }}"
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: copy tool core
+            task: ':uPortal-db-migrate:pitest'
+            report: uPortal-db-migrate/build/reports/pitest
+          - name: JpaClusterLockDao
+            task: ':uPortal-webapp:pitest'
+            report: uPortal-webapp/build/reports/pitest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Java
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          cache-provider: basic
+      # Fails when the mutation score is below the threshold in the module's build file
+      - name: PIT
+        env:
+          TASK: ${{ matrix.task }}
+        run: ./gradlew -S --stacktrace --no-daemon --no-parallel "$TASK"
+      - name: Report
+        if: always()
+        env:
+          REPORT: ${{ matrix.report }}
+        run: python3 .github/scripts/pit-summary.py "$REPORT/mutations.xml"
+      - name: Upload the PIT report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pitest-${{ matrix.name }}
+          path: ${{ matrix.report }}
