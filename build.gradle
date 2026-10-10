@@ -90,6 +90,14 @@ allprojects {
     tasks.withType(GroovyCompile).configureEach {
         options.release = 11
     }
+    // Record method parameter names in the class files (javac -parameters). Spring 6.1+ no
+    // longer reads them from debug info, and needs them for name-based
+    // <constructor-arg name="..."> wiring and implicit @RequestParam/@PathVariable names.
+    // Spring 4.3 already prefers these names when present and otherwise reads the same
+    // names from the debug info, so its behaviour does not change.
+    tasks.withType(JavaCompile).configureEach {
+        options.compilerArgs.add('-parameters')
+    }
 
     gradleLint.criticalRules = [
       'overridden-dependency-version',
