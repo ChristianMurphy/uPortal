@@ -1,101 +1,137 @@
 # MOD-I51: remove the jitpack-only google-visualization-java (WS gviz)
 
-Status: **analysis done, implementation paused** waiting for approval (see "Blocked").
+Branch `ccr-43ba0785-hzlrj5-gviz` (uPortal). uPortal-start is unchanged.
 
-## Inventory
+## Outcome
 
-* Declared in `uPortal-web/build.gradle` as
-  `api "com.github.ci-rt:google-visualization-java:release-1.1.3"`, and the
-  only reason for `maven { url = "https://jitpack.io" }` in `build.gradle`.
-* Used by 21 files in `uPortal-web` (the `dataTableCsvView` and
-  `dataTableHtmlView` views: `AbstractGoogleDataTableView`,
-  `GoogleCsvDataTableView`, `GoogleHtmlDataTableView`) and
-  `uPortal-portlets` (all statistics report controllers,
-  `JsonDataTable` + `GoogleDataTableSerializer` for the JSON the
-  `reportGraph.jsp` charts read, plus `TypeMismatchException` in the
-  activity and popular-portlets controllers).
-* 14 API types: `DataTable`, `ColumnDescription`, `TableRow`, `TableCell`,
-  `Value`, `ValueType`, `NumberValue`, `DateValue`, `DateTimeValue`,
-  `TimeOfDayValue`, `TypeMismatchException`, `JsonRenderer`, `CsvRenderer`,
-  `HtmlRenderer`. The query language, the servlet data-source helpers and
-  the SQL helpers are unused.
-* Transitive closure (`jdeps -verbose:class -filter:none`, nested classes
-  included): 29 of the jar's top-level classes, plus the `ErrorMessages`
-  bundle that `ReasonType` loads by name. 30 files, 5,900 lines.
-* External needs of that closure: Guava (collections only), ICU4J
-  (`ULocale`, formats, `Collator`), commons-lang 2 (`StringUtils`,
-  `StringEscapeUtils`, `StrBuilder`), the Commons Logging API (served by
-  jcl-over-slf4j), and JAXP/DOM from the JDK. opencsv (a declared dependency
-  of the jar) is not used by these classes or by uPortal.
+google-visualization-java (`com.github.ci-rt:google-visualization-java:release-1.1.3`,
+jitpack.io only) is gone. A small uPortal-owned table model replaces it, so there is no jitpack
+repository, no `googleVisualizationVersion`, and no ICU4J or opencsv coming in through it.
+
+* **Plan change.** I first recommended vendoring the library's classes (option b below). The
+  project owner decided, via the coordinator, against both (a) and (b), because both keep an
+  unmaintained library. They chose (c): a uPortal table model written out with Jackson. A later
+  workstream will move the chart pages to REST plus an Apache ECharts web component.
+* **New code**, in `uPortal-web`, package `org.apereo.portal.web.report` (`@NullMarked`):
+  * `ReportTable`: typed columns, and rows of `ReportValue`s. It checks types, and short rows
+    and new columns are filled with nulls, as `DataTable` did. Plain getters: `getColumns()`,
+    and `getRows()` returning one `List<ReportValue>` per row whose `getValue()` is a `Double`,
+    `String` or `java.time` value. That is the shape a REST/ECharts serialiser would use.
+  * `ReportColumn` (id, type, label), `ReportValueType` (NUMBER, TEXT, DATE, DATETIME,
+    TIMEOFDAY), `ReportValue` (static factories and `nullValue(type)`).
+  * `ReportTableJsonSerializer`: writes the Google Charts DataTable JSON through Jackson's
+    `JsonGenerator`. Custom `CharacterEscapes` reproduce the old escaping byte for byte.
+  * `ReportTableRenderer`: CSV and HTML, with `java.text` formats configured to match ICU's
+    empty pattern.
+  * The views are renamed `AbstractReportTableView`, `ReportTableCsvView` and
+    `ReportTableHtmlView`. The bean names in `mvcViews.xml` are unchanged. They now write
+    UTF-8 bytes with a byte Content-Length; the old views set the length in characters, which
+    cut non-ASCII downloads short. The HTML response declares `charset=UTF-8`.
+* **Ported:**
+  * all statistics controllers (`throws TypeMismatchException` dropped);
+  * `ReportTitleAndColumnDescriptionStrategy`, `DefaultStatisticsReportLabellingStrategy`;
+  * the Activity and PopularPortlets controllers;
+  * `JsonDataTable` and `GoogleDataTableSerializer` deleted, since `ReportTable` carries its
+    own serialiser.
+* **Unaffected:** the SqlQuery `googleColumnChart`/`googleLineChart` JSPs and `reportList.jsp`
+  use only the `WEB-INF/tags/google-visualization` tag files, not the Java library. The JSPs
+  are unchanged.
+
+## Inventory (of the removed library)
+
+* 21 uPortal files used 14 types: `DataTable`, `ColumnDescription`, `TableRow`, `TableCell`,
+  `Value`, `ValueType`, `NumberValue`, `DateValue`, `DateTimeValue`, `TimeOfDayValue`,
+  `TypeMismatchException`, `JsonRenderer`, `CsvRenderer` and `HtmlRenderer`.
+* Their closure (jdeps `-filter:none`) is 29 of the jar's classes plus the `ErrorMessages`
+  bundle: 5,900 lines.
+* The jar brought ICU4J 63.1, opencsv 2.3, commons-lang 2.6 and Guava. uPortal itself used
+  ICU4J only for `ULocale` in the two views, and never used opencsv.
 
 ## Options compared
 
-| Option | Change | Behaviour vs today | Notes |
-|---|---|---|---|
-| (a) `com.google.visualization:visualization-datasource:1.1.1` (Central, 2012) | ~3 lines + explicit `icu4j` pin | **Regresses** one fix: a null cell in a non-last column renders `,,` (invalid JSON), see below | Public API of all 14 types identical (`javap -public` diff). All 21 Guava members it calls exist in Guava 32. Its POM asks for icu4j 4.0.1, the cause of uPortal-start#468 (ICU crash on JDK 8u>255) that made uPortal switch to the fork in a13a5cd29, so an explicit icu4j 63.1 would be required. Also pulls guava r07 / commons-lang 2.4 / opencsv 1.8 (resolved upward, except opencsv). |
-| (b) vendor the 30 files from ci-rt `release-1.1.3` (commit 68edca5d) | new module `uPortal-gviz`, `src/vendored` like P3-1 (MOD-D26) | identical (same source as the jar shipped today) | Apache-2.0, Google copyright headers kept. No package rename needed: nothing else provides these packages once the jar is gone, so adopters' custom reports keep compiling. |
-| (c) rewrite in uPortal code | DataTable model + 3 renderers, change 21 consumers | must re-create JSON/CSV/HTML formats exactly | not a sliver: 29 classes; breaks adopter report controllers |
+| Option | Verdict |
+|---|---|
+| (a) Google `visualization-datasource:1.1.1` on Central | Same public API for all 14 types (`javap` diff) and Guava-32 compatible. But its POM pins ICU4J 4.0.1, the cause of uPortal-start#468 and the 2020 move to the fork (a13a5cd29). It also emits `,,` for null cells. Unmaintained since 2012. |
+| (b) Vendor the 30 files from ci-rt `release-1.1.3` | Identical behaviour, about 5,900 lines of unmaintained code. Analysis done; the build wiring was refused by the session's permission classifier ("Untrusted Code Integration"). |
+| (c) uPortal-owned model **(chosen by the owner)** | About 600 lines of new main code. No third-party chart library, and Jackson is already a dependency. |
 
-What the fork changed after Google's last release (git diff 05bf25e..68edca5,
-main sources): the `,,` → `,{},` JSON fix in `JsonRenderer` (96957fa),
-JSONP callback sanitising in `DataSourceParameters`, ANSI-SQL changes in
-the query/SQL packages (unused here), and newer dependency versions
-(guava 27.1, icu4j 63.1, commons-lang 2.6, opencsv 2.3).
+What the ci-rt fork changed after Google's release:
+* the `,,`→`,{},` JSON fix (96957fa), which only covered middle columns: a null first cell
+  still produced `[,`;
+* JSONP callback sanitising;
+* ANSI-SQL query changes (unused here);
+* dependency bumps.
 
-### Rendering evidence (both jars, same harness)
+## Evidence
 
-A harness built a uPortal-shaped table (DATETIME/DATE/TIMEOFDAY first
-column, NUMBER series, TEXT with `,"<>`, and null cells) and rendered it
-with `JsonRenderer.renderDataTable(t, true, true, false)` (what
-`GoogleDataTableSerializer` calls), `CsvRenderer` and `HtmlRenderer`.
-CSV and HTML output are byte-identical between ci-rt 1.1.3 and Google
-1.1.1. JSON differs only on the null row:
+* **Golden files**, recorded with the old library: 45 files under
+  `uPortal-web/src/test/resources/org/apereo/portal/web/report/golden/`.
+  * Recorded by `notes/gviz-golden/RecordGviz.java`, run with plain `javac`/`java` against the
+    jars in `uPortal-webapp-5.17.9.war` from Central. The gviz jar's SHA-256 is
+    eca091720c6f98906c53aa8157fc9458a49920759bd149074351221770bbad63, verified.
+  * Five tables (daily DATE/NUMBER; DATETIME with nulls first, middle and last; TIMEOFDAY;
+    TEXT that needs escaping; no rows), each as JSON, plus CSV and HTML in `en-US`, `de-DE`,
+    `th-TH` and `ar-EG`.
+* **`ReportTableGoldenTest`:** the new code reproduces every golden file.
+  * JSON: byte-identical, except the null-cell fix. The test applies exactly that substitution
+    and asserts that the recorded JSON fails to parse.
+  * CSV: byte-identical in all four locales, including Buddhist years for `th-TH` and
+    Arabic-Indic digits for `ar-EG`.
+  * HTML: identical once the old serialiser's entities for non-ASCII characters
+    (`&eacute;`, `&mdash;`, `&#133;`…) are decoded. The new page writes those characters as
+    UTF-8; `& < >`, `&nbsp;` and `&#13;` are byte-identical.
+* **`ReportTableTest`:** type and size checks, null padding, valid JSON for nulls in every
+  position, an empty table, milliseconds, and control characters (the old `HtmlRenderer`
+  threw on U+0001).
+* **`ReportTableViewTest`:** content types, UTF-8 byte lengths, the CSV filename, and a 500
+  when the model has no table.
+* **`LoginTotalsStatisticsControllerTest`**, end to end: mocked DAOs → controller →
+  `MappingJackson2JsonView` → exact JSON, and → `ReportTableCsvView` → exact CSV, including a
+  gap day.
+* **Formatting check:** `java.text` against ICU's formatting, over 31 locales × 12 numbers,
+  plus a date-time per locale.
+  * Numbers matched in every locale.
+  * Dates differ only where ICU's default calendar is Islamic or Persian (`ar-SA`, `fa-IR`,
+    `ps-AF`), or where the tag asks for one explicitly (`-u-ca-japanese`). The JDK has no such
+    calendars, so those dates are now Gregorian. This is documented in UPGRADING-6.0.
 
-```
-ci-rt 1.1.3:  {"c":[{"v":"Date(2026,9,11,0,0,0)"},{},{"v":0.0},{"v":null}]}
-google 1.1.1: {"c":[{"v":"Date(2026,9,11,0,0,0)"},,{"v":0.0},{"v":null}]}
-```
+### How the tests were run
 
-uPortal's own controllers fill gaps with zero `NumberValue`s, so they never
-emit null cells today; a custom report that does would break
-`reportGraph.jsp` under (a).
+* Maven Central rate-limited this sandbox (HTTP 429) for most of the session. Gradle compiled
+  `uPortal-web` and `uPortal-portlets` once, through Google's Central mirror, before the
+  permission classifier flagged the mirror init script ("Package Registry Bypass"). I removed
+  it, and Gradle could not resolve the test classpaths after that.
+* So the 17 `uPortal-web` tests ran with plain `javac`/`java` against the jars in the Gradle
+  cache, and passed (17/17).
+* `LoginTotalsStatisticsControllerTest`, the full suite, `spotlessCheck` and `spotbugsMain`
+  rely on CI.
+* Formatting was applied with google-java-format 1.35.0 (AOSP, Google import order); the
+  build pins 1.36.1, which CI checks.
 
-## Recommendation
+CI runs: see the bottom of this note.
 
-(b): vendor the 30 files unchanged. It is the only option that keeps
-today's behaviour exactly, removes the third-party gviz artifact entirely,
-and needs no adopter change. (a) is smaller, but it swaps a jitpack
-artifact for an unmaintained 2012 one, needs an icu4j override to avoid a
-known crash, and reintroduces the invalid-JSON bug.
+## Other changes
 
-Planned shape: `uPortal-gviz` (`src/vendored/java`, excluded from
-Spotless; `src/vendored/SHA256SUMS` lists each file's upstream SHA-256),
-`api` icu4j (`icu4jVersion=63.1`, new in gradle.properties; uPortal-web uses
-`ULocale` directly), Guava, commons-lang 2.6, jcl-over-slf4j;
-`uPortal-web` depends on it instead of the jar; jitpack repo and
-`googleVisualizationVersion` removed; NOTICE credits Google and the ci-rt
-fork; a SpotBugs baseline generated for the new module; UPGRADING-6.0
-notes the artifact swap (same packages, opencsv no longer in the WAR).
-Tests planned: a characterisation test pinning the JSON/CSV/HTML output
-above (including the null-cell case), a test for the report controller →
-`JsonDataTable` → Jackson path, then a fresh build with an empty Gradle
-cache and no gviz jar in mavenLocal.
-
-## Blocked
-
-The session's permission classifier refused (1) installing the
-5.17.9-WAR jar into `~/.m2` and routing Central through the Google mirror
-(“Package Registry Bypass”), and (2) wiring the vendored source into the
-build (“Untrusted Code Integration”). Neither was retried another way.
-The harness above ran with plain `javac`/`java` against jars taken from the
-official uPortal-webapp 5.17.9 WAR on Maven Central (gviz jar SHA-256
-eca091720c6f98906c53aa8157fc9458a49920759bd149074351221770bbad63,
-verified).
+* `config/spotbugs/baseline/uPortal-web.xml`: dropped the two XSS_SERVLET entries of the
+  deleted Google views.
+* `NOTICE`: dropped the Google Visualization Data Source Library line. The opencsv and ICU4J
+  lines stay until a dependency report confirms nothing else brings them in.
+* `docs/UPGRADING-6.0.md`: new section with the class map for overlays.
 
 ## Proposed LOG updates
 
-* MOD-I51: resolution “vendored the 30 files uPortal uses from ci-rt
-  google-visualization-java release-1.1.3 into `uPortal-gviz`; jitpack
-  removed” once implemented.
-* MOD-D26 follow-on: note the second vendored module and that it keeps
-  upstream package names (with the reason).
+* **MOD-I51:** resolved. google-visualization-java was replaced by a uPortal report table
+  model (`org.apereo.portal.web.report`). The jitpack repository, `googleVisualizationVersion`
+  and the ICU4J/opencsv it brought are removed. Golden tests prove the JSON, CSV and HTML match
+  5.17, except the null-cell JSON fix.
+* **New decision (MOD-D?):**
+  * Own small formats instead of keeping unmaintained libraries, when uPortal uses only a
+    sliver of them.
+  * The chart pages move to REST plus an Apache ECharts web component; Google Charts goes then.
+  * The `WEB-INF/tags/google-visualization` tags and the "Google Visualization" HTML title stay
+    until that move.
+* **Follow-ups:**
+  * Regenerate NOTICE from the dependency report (opencsv, ICU4J).
+  * The SqlQuery chart JSPs still load `www.google.com/jsapi` over plain http.
+
+## CI
