@@ -19,13 +19,13 @@ import javax.portlet.ActionResponse;
 import javax.portlet.PortletPreferences;
 import javax.portlet.RenderRequest;
 import org.apereo.portal.rest.AjaxSuccessController;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ActionMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.portlet.bind.annotation.ActionMapping;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
 
 @Controller
 @RequestMapping("VIEW")

@@ -20,11 +20,11 @@ import javax.portlet.PortletPreferences;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import org.apereo.portal.spring.spel.IPortalSpELService;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.context.PortletWebRequest;
+import org.apereo.portal.spring.web.portlet.mvc.AbstractController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.context.PortletWebRequest;
-import org.springframework.web.portlet.mvc.AbstractController;
 
 /**
  * A simple portlet which renders an image along with an optional caption and subcaption.

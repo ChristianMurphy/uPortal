@@ -27,6 +27,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
 import org.apereo.portal.spring.context.support.PortalPropertySourcesPlaceholderConfigurer;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.apereo.portal.url.IPortalUrlProvider;
 import org.slf4j.Logger;
@@ -36,8 +38,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
 
 /**
  * Provides a very simple, Spring Portlet MVC portlet implementation that renders a JSP at a

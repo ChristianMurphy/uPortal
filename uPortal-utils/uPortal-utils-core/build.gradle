@@ -7,6 +7,7 @@ ext {
 dependencies {
     api project(':uPortal-concurrency')
     api project(':uPortal-hibernate:uPortal-hibernate4-dialects')
+    api project(':uPortal-spring-portlet')
 
     api "com.fasterxml.jackson.core:jackson-annotations:${jacksonAnnotationsVersion}"
     api "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
@@ -39,7 +40,6 @@ dependencies {
     api "org.springframework:spring-context:${springVersion}"
     api "org.springframework:spring-orm:${springVersion}"
     api "org.springframework:spring-web:${springVersion}"
-    api "org.springframework:spring-webmvc-portlet:${springVersion}"
     api "org.springframework.ldap:spring-ldap-core:${springLdapVersion}"
     api "org.springframework.security:spring-security-web:${springSecurityVersion}"
     api "org.springframework.webflow:spring-binding:${springWebflowVersion}"

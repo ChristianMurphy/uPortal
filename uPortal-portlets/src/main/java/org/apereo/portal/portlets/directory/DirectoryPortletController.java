@@ -44,6 +44,10 @@ import org.apereo.portal.search.SearchResult;
 import org.apereo.portal.search.SearchResults;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ActionMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.EventMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.apereo.services.persondir.IPersonAttributes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,10 +56,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.ActionMapping;
-import org.springframework.web.portlet.bind.annotation.EventMapping;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
 
 @Controller
 @RequestMapping("VIEW")

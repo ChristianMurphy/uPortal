@@ -43,14 +43,14 @@ import org.apereo.portal.events.aggr.portlets.AggregatedPortletLookupDao;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMappingNameComparator;
 import org.apereo.portal.portlets.statistics.ReportTitleAndColumnDescriptionStrategy.TitleAndCount;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 /** Portlet Execution reports */
 @Controller

@@ -26,12 +26,12 @@
     http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
     
     <!-- Enables FlowHandlers -->
-    <bean class="org.springframework.webflow.mvc.portlet.FlowHandlerAdapter">
+    <bean class="org.apereo.portal.spring.webflow.mvc.portlet.FlowHandlerAdapter">
         <property name="flowExecutor" ref="flowExecutor"/>
     </bean>
     
     <!-- Maps portlet modes to handlers --> 
-    <bean id="portletModeHandlerMapping" class="org.springframework.web.portlet.handler.PortletModeHandlerMapping">
+    <bean id="portletModeHandlerMapping" class="org.apereo.portal.spring.web.portlet.handler.PortletModeHandlerMapping">
         <property name="interceptors" ref="minimizedStateHandlerInterceptor" />
         <property name="portletModeMap">
             <map>

@@ -17,6 +17,7 @@ package org.apereo.portal.url;
 import javax.portlet.PortletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apereo.portal.spring.web.portlet.context.PortletRequestAttributes;
 import org.apereo.portal.utils.web.PortletHttpServletRequestWrapper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.NativeWebRequest;
@@ -24,7 +25,6 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.portlet.context.PortletRequestAttributes;
 
 /**
  * Provides access to the original portal and portlet requests using the {@link

@@ -25,6 +25,9 @@ import javax.portlet.ReadOnlyException;
 import javax.portlet.ResourceRequest;
 import javax.portlet.ValidatorException;
 import org.apereo.portal.portlets.PortletPreferencesJsonDao;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ActionMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +35,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.portlet.bind.annotation.ActionMapping;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 @Controller
 @RequestMapping("CONFIG")

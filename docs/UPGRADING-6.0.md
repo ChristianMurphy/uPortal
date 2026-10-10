@@ -19,3 +19,50 @@ code in your overlay names one of them, use the new name:
 
 Bean ids, such as `primaryPropertyPlaceholderConfigurer`, are unchanged. The classes log under
 their new names.
+
+## Spring Portlet MVC is now part of uPortal
+
+Spring Framework 5 dropped Spring Portlet MVC, and Spring Web Flow 2.5 dropped its portlet
+support. uPortal's own portlets use both, so uPortal now keeps the parts it uses in a module of
+its own, `uPortal-spring-portlet`. The code is copied from `spring-webmvc-portlet`
+4.3.30.RELEASE and from the portlet packages of `spring-webflow` 2.4.8.RELEASE, with only the
+package names changed. The `spring-webmvc-portlet` jar is no longer in the uPortal web
+application.
+
+This affects what runs inside the uPortal web application: `WEB-INF/portlet.xml`, the portlet
+Spring contexts in `properties/contexts/portlet`, and Java code in your uPortal overlay. Replace
+the package prefixes as follows:
+
+| Old package prefix | New package prefix |
+| --- | --- |
+| `org.springframework.web.portlet` | `org.apereo.portal.spring.web.portlet` |
+| `org.springframework.webflow.mvc.portlet` | `org.apereo.portal.spring.webflow.mvc.portlet` |
+| `org.springframework.webflow.context.portlet` | `org.apereo.portal.spring.webflow.context.portlet` |
+
+For example, `org.springframework.web.portlet.DispatcherPortlet` becomes
+`org.apereo.portal.spring.web.portlet.DispatcherPortlet`, and
+`org.springframework.webflow.mvc.portlet.FlowHandlerAdapter` becomes
+`org.apereo.portal.spring.webflow.mvc.portlet.FlowHandlerAdapter`. uPortal's two
+`DispatcherPortlet` subclasses moved into the same package:
+
+| Old name | New name |
+| --- | --- |
+| `org.springframework.web.portlet.ForwardingDispatcherPortlet` | `org.apereo.portal.spring.web.portlet.ForwardingDispatcherPortlet` |
+| `org.springframework.web.portlet.HeaderHandlingDispatcherPortlet` | `org.apereo.portal.spring.web.portlet.HeaderHandlingDispatcherPortlet` |
+
+Only the classes uPortal uses were copied. These classes of `spring-webmvc-portlet` have no
+counterpart: `PortletRequestUtils`, `StaticPortletApplicationContext`,
+`ParameterHandlerMapping`, `ParameterMappingInterceptor`,
+`PortletModeParameterHandlerMapping`, `PortletModeParameterLookupKey`,
+`SimpleMappingExceptionResolver`, `SimplePortletHandlerAdapter`, `SimplePortletPostProcessor`,
+`UserRoleAuthorizationInterceptor`, `CommonsPortletMultipartResolver`,
+`DefaultMultipartActionRequest`, `ParameterizableViewController`,
+`PortletModeNameViewController` and `PortletWrappingController`; nor does Web Flow's
+`PortletMvcViewFactory`.
+
+The copied classes log under their new package names. If your logging configuration sets
+levels for the old packages, change it to the new ones. This includes the "page not found"
+category, now `org.apereo.portal.spring.web.portlet.PageNotFound`.
+
+Portlet applications deployed as separate web applications (Announcements, Calendar and the
+other portlet WARs) are not affected: they bring their own Spring jars.

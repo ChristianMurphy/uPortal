@@ -12,7 +12,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.web.portlet;
+package org.apereo.portal.spring.web.portlet;
 
 import java.io.IOException;
 import javax.portlet.PortletException;
@@ -20,7 +20,8 @@ import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 
 /**
- * This Dispatcher extends the capability of <code>org.springframework.web.portlet.DispatcherPortlet
+ * This Dispatcher extends the capability of <code>
+ * org.apereo.portal.spring.web.portlet.DispatcherPortlet
  * </code> to add ability to process the <code>RENDER_HEADERS</code> portion of the two-phase render
  * process.
  */

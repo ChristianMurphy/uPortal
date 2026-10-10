@@ -31,7 +31,7 @@
         <context:exclude-filter type="regex" expression="org\.apereo\.portal\.portlets\.dynamicskin\.storage\.s3\..*"/>
     </context:component-scan>
 
-    <bean class="org.springframework.web.portlet.mvc.annotation.DefaultAnnotationHandlerMapping">
+    <bean class="org.apereo.portal.spring.web.portlet.mvc.annotation.DefaultAnnotationHandlerMapping">
         <property name="interceptors"><bean class="org.apereo.portal.portlets.MinimizedStateHandlerInterceptor"/></property>
     </bean>
 

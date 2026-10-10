@@ -36,12 +36,12 @@ import org.apereo.portal.events.aggr.concuser.ConcurrentUserAggregationKey;
 import org.apereo.portal.events.aggr.concuser.ConcurrentUserAggregationKeyImpl;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupLookupDao;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
+import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.portlet.ModelAndView;
-import org.springframework.web.portlet.bind.annotation.RenderMapping;
-import org.springframework.web.portlet.bind.annotation.ResourceMapping;
 
 /** Concurrent User Reports */
 @Controller
