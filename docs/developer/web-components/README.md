@@ -290,8 +290,8 @@ replacing `fetch` with a small router of real `Response` objects (`src/test-supp
 rather than with MSW: there is no service worker to install in the browser runner, and the stub
 records each request for assertions. Snapshots are only for small, stable markup.
 
-Coverage (V8) must stay at 90% or more of lines, branches, functions and statements; `vp test`
-fails below that. The report is in `build/coverage`.
+Coverage (V8) must stay at 90% or more of lines, branches, functions and statements in every
+source file, not only in total; `vp test` fails below that. The report is in `build/coverage`.
 
 ## REST APIs for web components
 

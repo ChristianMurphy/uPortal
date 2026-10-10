@@ -61,7 +61,9 @@ export default defineConfig({
             exclude: ['src/**/*.test.ts', 'src/test-support/**'],
             reportsDirectory: 'build/coverage',
             reporter: ['text', 'html', 'lcov', 'json-summary'],
+            // Every file, not just the total, as MOD-D20 asks per package
             thresholds: {
+                perFile: true,
                 lines: 90,
                 branches: 90,
                 functions: 90,
