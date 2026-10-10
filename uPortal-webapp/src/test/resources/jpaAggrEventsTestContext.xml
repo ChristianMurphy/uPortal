@@ -59,9 +59,21 @@
         <qualifier value="PortalDb" />
         <constructor-arg value="org.springframework.jdbc.core.JdbcOperations" />
     </bean>
-    <bean id="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver" class="org.apereo.portal.spring.MockitoFactoryBean" >
-        <qualifier value="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver"/>
-        <constructor-arg value="net.sf.ehcache.Ehcache" />
+    <!--
+     | Spring CacheManager for the beans that look their caches up through CacheLookup. It is
+     | backed by a real Ehcache so that keys behave as in the portal (the tab DAO caches a null
+     | layout node id, which Ehcache ignores).
+     +-->
+    <bean id="testEhcacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+        <!-- unique per context: several test contexts load this file, and Ehcache 2 rejects duplicate manager names -->
+        <property name="cacheManagerName" value="jpaAggrEventsTestContext-#{T(java.util.UUID).randomUUID()}" />
+    </bean>
+    <bean id="testLayoutNodeIdNameResolverCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+        <property name="cacheManager" ref="testEhcacheManager" />
+        <property name="cacheName" value="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver" />
+    </bean>
+    <bean id="ehCacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager" depends-on="testLayoutNodeIdNameResolverCache">
+        <property name="cacheManager" ref="testEhcacheManager" />
     </bean>
     
     <bean class="org.apereo.portal.spring.beans.factory.ObjectMapperFactoryBean" />
