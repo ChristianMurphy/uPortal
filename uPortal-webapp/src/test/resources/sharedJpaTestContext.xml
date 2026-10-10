@@ -58,6 +58,8 @@
             <props>
                 <prop key="hibernate.cache.use_query_cache">false</prop>
                 <prop key="hibernate.cache.use_second_level_cache">false</prop>
+                <!-- Empty (the default in dataSource.properties): resolved from the JDBC metadata -->
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
                 <prop key="persistenceUnitName">${persistenceUnitName}</prop>
                 <!-- Uncomment for testing with a cache
                 <prop key="hibernate.cache.provider_class">org.hibernate.cache.HashtableCacheProvider</prop>
