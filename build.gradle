@@ -40,6 +40,8 @@ repositories {
 node {
     version = nodejsVersion
     download = true
+    // Install exactly what package-lock.json pins and never rewrite it
+    npmInstallCommand = 'ci'
 }
 
 /**
