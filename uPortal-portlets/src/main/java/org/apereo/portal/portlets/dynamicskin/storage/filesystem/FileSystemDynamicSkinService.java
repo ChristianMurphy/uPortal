@@ -15,14 +15,14 @@
 package org.apereo.portal.portlets.dynamicskin.storage.filesystem;
 
 import java.io.File;
-import net.sf.ehcache.Cache;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinException;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinInstanceData;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinUniqueTokenGenerator;
 import org.apereo.portal.portlets.dynamicskin.storage.AbstractDynamicSkinService;
 import org.apereo.portal.portlets.dynamicskin.storage.DynamicSkinCssFileNamer;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 /**
@@ -37,8 +37,11 @@ public class FileSystemDynamicSkinService extends AbstractDynamicSkinService {
     public FileSystemDynamicSkinService(
             final DynamicSkinUniqueTokenGenerator uniqueTokenGenerator,
             final DynamicSkinCssFileNamer namer,
-            @Qualifier("org.apereo.portal.skinManager.failureCache") final Cache failureCache) {
-        super(uniqueTokenGenerator, namer, failureCache);
+            final CacheManager cacheManager) {
+        super(
+                uniqueTokenGenerator,
+                namer,
+                CacheLookup.requireCache(cacheManager, FAILURE_CACHE_NAME));
     }
 
     @Override

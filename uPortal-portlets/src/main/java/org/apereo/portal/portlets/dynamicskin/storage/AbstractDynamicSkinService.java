@@ -30,8 +30,6 @@ import javax.portlet.PortletRequest;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.Element;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apereo.portal.portlets.dynamicskin.DynamicRespondrSkinConstants;
@@ -43,6 +41,7 @@ import org.lesscss.LessException;
 import org.lesscss.LessSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.Cache;
 import org.springframework.util.Assert;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -66,6 +65,9 @@ public abstract class AbstractDynamicSkinService implements DynamicSkinService {
      * reads and inserts.
      */
     private Set<String> instanceKeysForExistingCss = new CopyOnWriteArraySet<>();
+
+    /** Remembers CSS files that failed to compile, so they are not retried for a while. */
+    public static final String FAILURE_CACHE_NAME = "org.apereo.portal.skinManager.failureCache";
 
     private Cache cssSkinFailureCache;
     private DynamicSkinUniqueTokenGenerator uniqueTokenGenerator;
@@ -178,7 +180,7 @@ public abstract class AbstractDynamicSkinService implements DynamicSkinService {
                 return;
             }
             try {
-                if (!cssSkinFailureCache.getKeysWithExpiryCheck().contains(cssInstanceKey)) {
+                if (cssSkinFailureCache.get(cssInstanceKey) == null) {
                     createLessIncludeFile(data);
                     processLessFile(data);
                     if (!supportsRetainmentOfNonCurrentCss()) {
@@ -198,7 +200,7 @@ public abstract class AbstractDynamicSkinService implements DynamicSkinService {
                             cssInstanceKey);
                 }
             } catch (Exception e) {
-                cssSkinFailureCache.put(new Element(cssInstanceKey, cssInstanceKey));
+                cssSkinFailureCache.put(cssInstanceKey, cssInstanceKey);
                 throw new RuntimeException(
                         "Error compiling the LESS file to create:  " + cssInstanceKey, e);
             }
