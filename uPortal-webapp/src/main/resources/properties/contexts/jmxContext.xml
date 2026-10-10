@@ -69,9 +69,8 @@
     +-->
 
     <!-- Hibernate persistence statistics -->
-    <bean id="hibernateSessionFactory" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="PortalDbEntityManagerFactory" />
-        <property name="targetMethod" value="getSessionFactory" />
+    <bean id="hibernateSessionFactory" factory-bean="PortalDbEntityManagerFactory" factory-method="unwrap">
+        <constructor-arg value="org.hibernate.SessionFactory" />
     </bean>
     <bean id="hibernateStatisticsMBean" factory-bean="hibernateSessionFactory" factory-method="getStatistics" />
     <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
@@ -81,9 +80,8 @@
     </bean>
 
     <!-- Hibernate Raw Events persistence statistics -->
-    <bean id="rawEventsSessionFactory" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="RawEventsDbEntityManagerFactory" />
-        <property name="targetMethod" value="getSessionFactory" />
+    <bean id="rawEventsSessionFactory" factory-bean="RawEventsDbEntityManagerFactory" factory-method="unwrap">
+        <constructor-arg value="org.hibernate.SessionFactory" />
     </bean>
     <bean id="rawEventsHibernateStatisticsMBean" factory-bean="rawEventsSessionFactory" factory-method="getStatistics" />
     <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
@@ -93,9 +91,8 @@
     </bean>
 
     <!-- Hibernate Aggr Events persistence statistics -->
-    <bean id="aggrEventsSessionFactory" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-        <property name="targetObject" ref="AggrEventsDbEntityManagerFactory" />
-        <property name="targetMethod" value="getSessionFactory" />
+    <bean id="aggrEventsSessionFactory" factory-bean="AggrEventsDbEntityManagerFactory" factory-method="unwrap">
+        <constructor-arg value="org.hibernate.SessionFactory" />
     </bean>
     <bean id="aggrEventsHibernateStatisticsMBean" factory-bean="aggrEventsSessionFactory" factory-method="getStatistics" />
     <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">

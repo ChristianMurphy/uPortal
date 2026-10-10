@@ -49,7 +49,7 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
+import org.hibernate.annotations.MapKeyType;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.Type;
 
@@ -91,7 +91,11 @@ class StylesheetUserPreferencesImpl implements IStylesheetUserPreferences {
     @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyColumn(name = "PROP_NAME", nullable = false, length = 500)
     @Column(name = "PROP_VALUE", nullable = false, length = 2000)
-    @Type(type = "nullSafeString") // only applies to map values
+    // Hibernate 4.3 applied this @Type to the map keys as well, so existing rows store the keys
+    // with NullSafeStringType's "_" prefix too (e.g. "_externalId"). Hibernate 5 applies @Type
+    // to the values only; @MapKeyType keeps the keys in the stored format.
+    @MapKeyType(@Type(type = "nullSafeString"))
+    @Type(type = "nullSafeString")
     @CollectionTable(
             name = "UP_SS_USER_PREF_OUTPUT_PROP",
             joinColumns = @JoinColumn(name = "SS_USER_PREF_ID", nullable = false))
@@ -102,7 +106,9 @@ class StylesheetUserPreferencesImpl implements IStylesheetUserPreferences {
     @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyColumn(name = "PARAM_NAME", nullable = false, length = 500)
     @Column(name = "PARAM_VALUE", nullable = false, length = 2000)
-    @Type(type = "nullSafeString") // only applies to map values
+    // Keys keep the "_" prefix, as for outputProperties
+    @MapKeyType(@Type(type = "nullSafeString"))
+    @Type(type = "nullSafeString")
     @CollectionTable(
             name = "UP_SS_USER_PREF_PARAM",
             joinColumns = @JoinColumn(name = "SS_USER_PREF_ID", nullable = false))
@@ -115,7 +121,6 @@ class StylesheetUserPreferencesImpl implements IStylesheetUserPreferences {
             cascade = CascadeType.ALL,
             fetch = FetchType.EAGER,
             orphanRemoval = true)
-    @Index(name = "IDX_SS_USER_PREF_ID")
     @MapKey(name = "nodeId")
     @JoinColumn(name = "SS_USER_PREF_ID", nullable = false)
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

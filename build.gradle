@@ -101,6 +101,10 @@ allprojects {
         exclude group: 'log4j', module: 'log4j'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
         exclude group: 'org.hamcrest', module: 'hamcrest-core'
+        // Hibernate 5.2.18 moved from dom4j:dom4j 1.6.1 to org.dom4j:dom4j 2.1.1 without changing
+        // the code that uses it (identical to 5.2.17, which ran on 1.6.1). Both jars hold
+        // org.dom4j, and uPortal's own dom4j code is written against 1.6.1, so only that one stays.
+        exclude group: 'org.dom4j', module: 'dom4j'
     }
 
     dependencies {
@@ -447,6 +451,12 @@ subprojects {
         // extension functions. A portal running on JDK 24+ needs this flag too; on JDK 21 it is
         // already the default.
         systemProperty 'jdk.xml.enableExtensionFunctions', 'true'
+        // Hibernate 5.2's BatchFetchQueueHelper asserts that a batch load returned one row per
+        // requested id. A batch-loaded entity with a join-fetched collection (PortletPreferencesImpl)
+        // returns one row per collection element, so the assertion fails whenever such a batch load
+        // happens, depending on what the second-level cache holds. Production runs without -ea;
+        // test with this assertion off as well.
+        jvmArgs '-da:org.hibernate.engine.internal.BatchFetchQueueHelper'
     }
 
     /* Release Management

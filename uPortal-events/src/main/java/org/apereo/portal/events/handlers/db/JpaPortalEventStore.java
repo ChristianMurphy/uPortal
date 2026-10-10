@@ -249,8 +249,9 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
             int maxEvents,
             Function<PortalEvent, Boolean> handler) {
         final Session session = this.getEntityManager().unwrap(Session.class);
-        session.setFlushMode(FlushMode.COMMIT);
-        final org.hibernate.Query query = session.createQuery(this.selectUnaggregatedQuery);
+        session.setHibernateFlushMode(FlushMode.COMMIT);
+        final org.hibernate.query.Query<?> query =
+                session.createQuery(this.selectUnaggregatedQuery);
         query.setParameter(this.startTimeParameter.getName(), startTime);
         query.setParameter(this.endTimeParameter.getName(), endTime);
         if (maxEvents > 0) {
@@ -330,7 +331,7 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
             int maxEvents,
             FunctionWithoutResult<PortalEvent> handler) {
         final Session session = this.getEntityManager().unwrap(Session.class);
-        final org.hibernate.Query query = session.createQuery(this.selectQuery);
+        final org.hibernate.query.Query<?> query = session.createQuery(this.selectQuery);
         query.setParameter(this.startTimeParameter.getName(), startTime);
         query.setParameter(this.endTimeParameter.getName(), endTime);
         if (maxEvents > 0) {

@@ -373,7 +373,19 @@ public class JpaClusterLockDao extends BasePortalJpaDao implements IClusterLockD
     protected <T> T executeIgnoreRollback(TransactionCallback<T> action, T rollbackValue) {
         try {
             // Try to create the mutex in a new TX
-            return this.newTransactionTemplate.execute(action);
+            return this.newTransactionTemplate.execute(
+                    status -> {
+                        final T result = action.doInTransaction(status);
+                        if (status.isRollbackOnly()) {
+                            // A flush failed and the transaction can only roll back. Roll it back
+                            // here: committing it fails, with an exception that depends on the
+                            // Hibernate version (Hibernate 5.2 no longer raises the
+                            // RollbackException handled below).
+                            status.setRollbackOnly();
+                            return rollbackValue;
+                        }
+                        return result;
+                    });
         } catch (TransactionSystemException e) {
             if (e.getCause() instanceof RollbackException) {
                 // Ignore rollbacks

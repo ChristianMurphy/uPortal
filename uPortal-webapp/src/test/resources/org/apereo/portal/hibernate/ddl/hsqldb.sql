@@ -119,7 +119,7 @@ create table UP_PORTLET_LIST_ITEM (ID varchar(255) not null, ENTITY_ID varchar(2
 create table UP_PORTLET_PREF (PORTLET_PREF_ID bigint not null, ENTITY_VERSION bigint, PREF_NAME varchar(100000), NULL_VALUES boolean not null, READ_ONLY boolean not null, PORTLET_PREFS_ID bigint, PREF_ORDER integer, primary key (PORTLET_PREF_ID))
 create table UP_PORTLET_PREFS (PORTLET_PREFS_ID bigint not null, ENTITY_VERSION bigint, primary key (PORTLET_PREFS_ID))
 create table UP_PORTLET_PREF_VALUES (PORTLET_PREF_ID bigint not null, PREF_VALUE varchar(100000), VALUE_ORDER integer not null, primary key (PORTLET_PREF_ID, VALUE_ORDER))
-create table UP_PORTLET_RATING (USER_NAME varchar(255) not null, RATING integer, REVIEW varchar(160), PORTLET_ID bigint, primary key (PORTLET_ID, USER_NAME))
+create table UP_PORTLET_RATING (USER_NAME varchar(255) not null, RATING integer, REVIEW varchar(160), PORTLET_ID bigint not null, primary key (PORTLET_ID, USER_NAME))
 create table UP_PORTLET_TYPE (TYPE_ID integer not null, TYPE_DEF_URI varchar(255) not null, TYPE_DESCR varchar(2000), ENTITY_VERSION bigint, TYPE_NAME varchar(70), primary key (TYPE_ID))
 create table UP_PROFILE_SELECTION (SELECTION_ID integer not null, ENTITY_VERSION bigint, PROFILE_FNAME varchar(70) not null, USERNAME varchar(70) not null, primary key (SELECTION_ID))
 create table UP_SS_DESC (SS_DESC_ID bigint not null, DESCRIPTION varchar(2000), ENTITY_VERSION bigint, SS_NAME varchar(100) not null, STYLESHEET varchar(2000) not null, URL_SYNTAX_HELPER_NAME varchar(100), primary key (SS_DESC_ID))
@@ -170,34 +170,34 @@ alter table UP_SS_USER_PREF_LAY_ATTR_VAL drop constraint FK_esn4u5yf4875do543qas
 alter table UP_SS_USER_PREF_OUTPUT_PROP drop constraint FK_jvv6wrfl6y7g4p0so63i4hujq
 alter table UP_SS_USER_PREF_PARAM drop constraint FK_532664n0k0c9ckj13e7gpya08
 alter table UP_TENANT_ATTRIBUTES drop constraint FK_egnmdn482aeixi5ww8ieo41jk
-drop sequence UP_DLM_EVALUATOR_SEQ
-drop sequence UP_MESSAGE_SEQ
-drop sequence UP_MUTEX_SEQ
-drop sequence UP_PAGS_GROUP_SEQ
-drop sequence UP_PAGS_TEST_GROUP_SEQ
-drop sequence UP_PAGS_TEST_SEQ
-drop sequence UP_PERMISSION_ACTIVITY_SEQ
-drop sequence UP_PERMISSION_OWNER_SEQ
-drop sequence UP_PERSON_ATTR_SEQ
-drop sequence UP_PERSON_DIR_SEQ
-drop sequence UP_PORTAL_COOKIES_SEQ
-drop sequence UP_PORTLET_COOKIES_SEQ
-drop sequence UP_PORTLET_DEF_PARAM_SEQ
-drop sequence UP_PORTLET_DEF_SEQ
-drop sequence UP_PORTLET_ENT_SEQ
-drop sequence UP_PORTLET_LIFECYCLE_SEQ
-drop sequence UP_PORTLET_PREFS_SEQ
-drop sequence UP_PORTLET_PREF_SEQ
-drop sequence UP_PORTLET_TYPE_SEQ
-drop sequence UP_PROFILE_SELECTION_SEQ
-drop sequence UP_SS_DESC_LAY_ATTR_SEQ
-drop sequence UP_SS_DESC_OUTPUT_PROP_SEQ
-drop sequence UP_SS_DESC_PARAM_SEQ
-drop sequence UP_SS_DESC_SEQ
-drop sequence UP_SS_USER_PREF_LAY_ATTR_SEQ
-drop sequence UP_SS_USER_PREF_SEQ
-drop sequence UP_TENANT_SEQ
-drop sequence UP_VERSION_SEQ
+drop sequence UP_DLM_EVALUATOR_SEQ if exists
+drop sequence UP_MESSAGE_SEQ if exists
+drop sequence UP_MUTEX_SEQ if exists
+drop sequence UP_PAGS_GROUP_SEQ if exists
+drop sequence UP_PAGS_TEST_GROUP_SEQ if exists
+drop sequence UP_PAGS_TEST_SEQ if exists
+drop sequence UP_PERMISSION_ACTIVITY_SEQ if exists
+drop sequence UP_PERMISSION_OWNER_SEQ if exists
+drop sequence UP_PERSON_ATTR_SEQ if exists
+drop sequence UP_PERSON_DIR_SEQ if exists
+drop sequence UP_PORTAL_COOKIES_SEQ if exists
+drop sequence UP_PORTLET_COOKIES_SEQ if exists
+drop sequence UP_PORTLET_DEF_PARAM_SEQ if exists
+drop sequence UP_PORTLET_DEF_SEQ if exists
+drop sequence UP_PORTLET_ENT_SEQ if exists
+drop sequence UP_PORTLET_LIFECYCLE_SEQ if exists
+drop sequence UP_PORTLET_PREFS_SEQ if exists
+drop sequence UP_PORTLET_PREF_SEQ if exists
+drop sequence UP_PORTLET_TYPE_SEQ if exists
+drop sequence UP_PROFILE_SELECTION_SEQ if exists
+drop sequence UP_SS_DESC_LAY_ATTR_SEQ if exists
+drop sequence UP_SS_DESC_OUTPUT_PROP_SEQ if exists
+drop sequence UP_SS_DESC_PARAM_SEQ if exists
+drop sequence UP_SS_DESC_SEQ if exists
+drop sequence UP_SS_USER_PREF_LAY_ATTR_SEQ if exists
+drop sequence UP_SS_USER_PREF_SEQ if exists
+drop sequence UP_TENANT_SEQ if exists
+drop sequence UP_VERSION_SEQ if exists
 drop table UP_DLM_EVALUATOR if exists
 drop table UP_DLM_EVALUATOR_PAREN if exists
 drop table UP_JGROUPS_AUTH if exists
@@ -257,8 +257,8 @@ create sequence UP_RAW_EVENTS_SEQ start with 1 increment by 1000
 create table UP_ANALYTICS_EVENTS (EVENT_ID bigint not null, EVENT_DATA clob(10000) not null, SESSION_ID varchar(500) not null, EVENT_TYPE varchar(200) not null, SERVER_ID varchar(200) not null, TIMESTAMP timestamp not null, USER_NAME varchar(100) not null, primary key (EVENT_ID))
 create table UP_RAW_EVENTS (EVENT_ID bigint not null, AGGREGATED boolean, ERROR_AGGR boolean, EVENT_DATA clob(10000) not null, SESSION_ID varchar(500) not null, EVENT_TYPE varchar(200) not null, SERVER_ID varchar(200) not null, TIMESTAMP timestamp not null, USER_NAME varchar(100) not null, primary key (EVENT_ID))
 -- RawEventsDb drop
-drop sequence UP_ANALYTICS_EVENTS_SEQ
-drop sequence UP_RAW_EVENTS_SEQ
+drop sequence UP_ANALYTICS_EVENTS_SEQ if exists
+drop sequence UP_RAW_EVENTS_SEQ if exists
 drop table UP_ANALYTICS_EVENTS if exists
 drop table UP_RAW_EVENTS if exists
 -- AggrEventsDb create
@@ -423,25 +423,25 @@ alter table UP_TAB_RENDER_AGGR drop constraint FK_fg956a15thl835b0q60w24w3q
 alter table UP_TAB_RENDER_AGGR drop constraint FK_qi52trj4gl7a8p53yyl4scsy9
 alter table UP_UNIQUE_STR_SEGMENT drop constraint FK_e3lqm10qhd0u7mu10assdfxx8
 alter table UP_UNIQUE_STR_SEGMENT__UIDS drop constraint FK_et6ttoxrppodvhd4gb3mm1ypt
-drop sequence UP_ACADEMIC_TERM_DETAIL_SEQ
-drop sequence UP_AGGR_GROUP_MAPPING_SEQ
-drop sequence UP_AGGR_PORTLET_MAPPING_SEQ
-drop sequence UP_AGGR_TAB_MAPPING_SEQ
-drop sequence UP_CONCURRENT_USER_AGGR_SEQ
-drop sequence UP_DATE_DIMENSION_SEQ
-drop sequence UP_EVENT_AGGR_CONF_GROUPS_SEQ
-drop sequence UP_EVENT_AGGR_CONF_INTRVL_SEQ
-drop sequence UP_EVENT_AGGR_STATUS_SEQ
-drop sequence UP_EVENT_SESSION_SEQ
-drop sequence UP_LOGIN_EVENT_AGGR_SEQ
-drop sequence UP_PORTLET_EXEC_AGGR_SEQ
-drop sequence UP_PORTLET_LAYOUT_AGGR_SEQ
-drop sequence UP_QUARTER_DETAIL_SEQ
-drop sequence UP_SEARCH_REQ_AGGR_SEQ
-drop sequence UP_TAB_RENDER_AGGR_SEQ
-drop sequence UP_TIME_DIMENSION_SEQ
-drop sequence UP_UNIQUE_STR_SEGMENT_SEQ
-drop sequence UP_UNIQUE_STR_SEQ
+drop sequence UP_ACADEMIC_TERM_DETAIL_SEQ if exists
+drop sequence UP_AGGR_GROUP_MAPPING_SEQ if exists
+drop sequence UP_AGGR_PORTLET_MAPPING_SEQ if exists
+drop sequence UP_AGGR_TAB_MAPPING_SEQ if exists
+drop sequence UP_CONCURRENT_USER_AGGR_SEQ if exists
+drop sequence UP_DATE_DIMENSION_SEQ if exists
+drop sequence UP_EVENT_AGGR_CONF_GROUPS_SEQ if exists
+drop sequence UP_EVENT_AGGR_CONF_INTRVL_SEQ if exists
+drop sequence UP_EVENT_AGGR_STATUS_SEQ if exists
+drop sequence UP_EVENT_SESSION_SEQ if exists
+drop sequence UP_LOGIN_EVENT_AGGR_SEQ if exists
+drop sequence UP_PORTLET_EXEC_AGGR_SEQ if exists
+drop sequence UP_PORTLET_LAYOUT_AGGR_SEQ if exists
+drop sequence UP_QUARTER_DETAIL_SEQ if exists
+drop sequence UP_SEARCH_REQ_AGGR_SEQ if exists
+drop sequence UP_TAB_RENDER_AGGR_SEQ if exists
+drop sequence UP_TIME_DIMENSION_SEQ if exists
+drop sequence UP_UNIQUE_STR_SEGMENT_SEQ if exists
+drop sequence UP_UNIQUE_STR_SEQ if exists
 drop table UP_ACADEMIC_TERM_DETAIL if exists
 drop table UP_AGGR_GROUP_MAPPING if exists
 drop table UP_AGGR_PORTLET_MAPPING if exists
