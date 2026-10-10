@@ -645,9 +645,18 @@ chosen per portlet.
   * Drift and failed specs are published as GitHub annotations, because
     artifacts can't be downloaded through the sandbox proxy.
   * CAS now follows the harness database.
-* **Real bugs found:** MOD-I82 (product) and MOD-I86 (tests).
-* **Still to do:** remove the `continue-on-error` markings once
-  MOD-I82–I84 are fixed (in progress).
+* **Real bugs found:** MOD-I82 and MOD-I97 (product), MOD-I86 (tests).
+* **Done (2026-10-10):** MOD-I82–I85 are fixed, and both repos'
+  workflows no longer carry `continue-on-error`, `known-failure` or
+  `known-drift`. With drift fixed, the Oracle harness reached the API
+  specs for the first time and found MOD-I97.
+  * uPortal 7ded7362d: CI 38072747439 and DB integration 38072747374
+    (PostgreSQL, MariaDB, MySQL) green. DB integration 38068704548 green on
+    all 5 vendors including SQL Server and Oracle (a one-off push run,
+    then back to nightly). Workflow lint 38069434024 green.
+  * uPortal-start 3695a5927: CI 38072765561 green. Integration
+    38072765632 green: harness on all 7 vendors, Playwright on HSQLDB,
+    PostgreSQL and MariaDB.
 
 ### MOD-D24: database version matrix covers oldest supported, latest, and next
 
@@ -691,7 +700,8 @@ chosen per portlet.
     *latest* versions as targets, which mirrors how adopters upgrade.
 * **Status:** this is a proposed default; the project owner can adjust
   the floors. It gets implemented after the MOD-I82–I84 fixes land, so
-  workflow edits don't collide.
+  workflow edits don't collide. (Those fixes landed on 2026-10-10;
+  MOD-D25 is now being implemented.)
 
 ### MOD-D25: old database versions are migration sources only; 6.0 runs on and is tuned for current servers
 
@@ -962,10 +972,10 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I79 | Dev DB | The HSQLDB `uPortal.lobs` file grows past 3 GB over repeated `dataInit` runs. | Have `dataInit` (or a clean task) remove the HSQLDB files. Small uPortal-start fix. |
 | MOD-I80 | Runtime | Since JDK 24, `jaxp.properties` disables XSLT extension functions. `TemplatesBuilder` is fixed in code (MOD-I63), but 7 tests that build their own TransformerFactory need `-Djdk.xml.enableExtensionFunctions=true`, which Phase 1 sets on every test JVM. | Before the runtime moves to JDK 25 (P6), route those through `TemplatesBuilder` (MOD-I70) so adopters don't need the JVM flag. |
 | MOD-I81 | Environment | The sandbox egress policy blocks `getbootstrap.com` (and `blog.getbootstrap.com`), including the LLM docs at `https://getbootstrap.com/llms-full.txt`. | Not routed around. The same content was rebuilt from the official source repo on GitHub (`twbs/bootstrap` main @ `5c8346d`, package version 6.0.0-alpha.1): `site/src/pages/llms-full.txt.ts` concatenates the sidebar-ordered MDX docs, and a scratchpad script mirrors that by reading the files without running repo code. Result: 140 pages, 1.3 MB, at `scratchpad/bootstrap-docs/llms-full.txt`. WS14 and skin agents use it together with the Bootstrap skills. CI and developers can fetch the canonical URL directly. |
-| MOD-I82 | Concurrency | **Found by multi-DB CI.** `JpaClusterLockDao.getClusterMutex` reads in the caller's transaction, creates the mutex in REQUIRES_NEW, then re-reads in the caller's snapshot. Under InnoDB REPEATABLE READ (the MySQL/MariaDB default) the new row isn't visible, so it throws "Failed to find or create ClusterMutex". 5 tests fail on mysql-8.4 and mariadb-11.4 but pass with READ COMMITTED. Real portals on MySQL/MariaDB hit this the first time each mutex is used. | Fix in progress: create the row outside the caller's snapshot. Upstream candidate. |
-| MOD-I83 | DB harness | HSQLDB 2.7.4 (uPortal-start P1) names constraint-backing indexes after the constraint, where 2.5.1 used `SYS_IDX_*`. That shows up as 111 NAMES drift; STRUCTURE, DATA and GENERATORS are clean. | Re-record the hsqldb baseline under 2.7.4. |
-| MOD-I84 | DB harness | Oracle sequences are cached, so the current values read from metadata vary between runs (e.g. 1201/546/931 against a max id of 403). | For Oracle, compare generators by invariant: next value > max(id), and increment = allocationSize. Keep exact values for the deterministic vendors (they caught MOD-I72). |
-| MOD-I85 | uPortal-start | The CAS overlay hard-coded HSQLDB in `deployerConfigContext.xml`, so CAS login failed on other databases. The harness now drives it from `-PdbVendor`, but adopters switching databases still have to edit it by hand. | Document it. Goes away with MOD-Q3 (local login default, CAS external). |
+| MOD-I82 | Concurrency | **Found by multi-DB CI.** `JpaClusterLockDao.getClusterMutex` reads in the caller's transaction, creates the mutex in REQUIRES_NEW, then re-reads in the caller's snapshot. Under InnoDB REPEATABLE READ (the MySQL/MariaDB default) the new row isn't visible, so it throws "Failed to find or create ClusterMutex". 5 tests fail on mysql-8.4 and mariadb-11.4 but pass with READ COMMITTED. Real portals on MySQL/MariaDB hit this the first time each mutex is used. | **Fixed** (e9d76ba87): `getClusterMutex` finds or creates the row in its own REQUIRES_NEW transaction (and looks again in a new one after losing a creation race); `getLock`/`updateLock`/`releaseLock` call it before opening their own transaction and only read inside it. A locking read was rejected: PostgreSQL REPEATABLE READ and Oracle SERIALIZABLE still read from the snapshot. A losing insert now rolls back explicitly; before, the DAO could return an id that was never committed. Tests: an HSQLDB MVCC/REPEATABLE READ regression test (all 4 cases fail on the old code) and `testLostCreationRace`. `testConcurrentLocking` now uses the default 60 s abandonment window, because MySQL stores lock timestamps in whole seconds (978fe4168). Upstream candidate. |
+| MOD-I83 | DB harness | HSQLDB 2.7.4 (uPortal-start P1) names constraint-backing indexes after the constraint, where 2.5.1 used `SYS_IDX_*`. That shows up as 111 NAMES drift; STRUCTURE, DATA and GENERATORS are clean. | **Fixed** (uPortal-start 95ab621df): re-recorded; only names changed (111 constraint-backing indexes: 67 FK, 42 UK, 2 named). The harness doc records this as the one exception to "never re-record 5.17". |
+| MOD-I84 | DB harness | Oracle sequences are cached, so the current values read from metadata vary between runs (e.g. 1201/546/931 against a max id of 403). | **Fixed** (uPortal-start ac964c280): Oracle alone checks value > max(id) and increment = allocationSize; the other vendors stay exact (no other vendor showed changing values). |
+| MOD-I85 | uPortal-start | The CAS overlay hard-coded HSQLDB in `deployerConfigContext.xml`, so CAS login failed on other databases. The harness now drives it from `-PdbVendor`, but adopters switching databases still have to edit it by hand. | **Documented** (uPortal-start fee61ae52): README note plus a pointer from the harness doc. Goes away with MOD-Q3 (local login default, CAS external). |
 | MOD-I86 | Tests | `JpaVersionDaoTest` used `ALTER TABLE` forms that SQL Server and Oracle reject. | **Fixed** (portable DDL). No test is vendor-skipped. |
 | MOD-I87 | Portlets | `ScopingPortletSessionImpl`'s SPR-9287 workaround matched on Spring's `DispatcherPortlet` class name. It serves every portlet, so after vendoring it has to match both names (uPortal's vendored class and Spring's class inside external portlet WARs). | **Fixed** in P3-1. Without the fix it would have stopped working silently for uPortal's own portlets. |
 | MOD-I88 | Portlets | Web Flow 2.4.8 recognises portlet contexts only by Spring's own context class. Harmless today, because the flow executor lives in the root servlet context. | Goes away when the flows are replaced (MOD-D18). |
@@ -977,6 +987,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I94 | Portlets/data | Notification and SimpleContent also store data in PostgreSQL OID LOB columns, so the `vacuumlo` risk (MOD-I24) extends to portlet tables. | Include them in the adopter warning. The copy tool handles them. |
 | MOD-I95 | Persistence | On MySQL/MariaDB, 5.17 timestamp columns have no fractional seconds (34 columns), so PostgreSQL → MariaDB loses sub-second precision. The tool reports it. | The 6.0 schema uses `DATETIME(6)` / `TIMESTAMP(6)` on MySQL/MariaDB. |
 | MOD-I96 | Tooling | With externally supplied drivers, a driver also bundled in the jar caused a sealed-package error, and `DriverManager` rejected the class-loader-loaded drivers. | **Fixed:** drivers stay out of the jar and are instantiated directly. |
+| MOD-I97 | Persistence | **Found by the Oracle harness.** `SQLNextExceptionLoggerAspect` called `initCause` on Oracle's `BatchUpdateException`, whose cause is already set (to null). That threw `IllegalStateException` and hid the ORA-00001 constraint error, so two duplicate-name portlet-list API specs got 500 instead of 400. | **Fixed** (7ded7362d): the aspect logs the next exception instead of chaining it. A unit test reproduces the exact CI error on the old code. Upstream candidate. |
 
 ## Open questions
 
