@@ -145,6 +145,26 @@ jobs:
           ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           "-Duportal.test.db.username=$DB_USERNAME" "-Duportal.test.db.password=$DB_PASSWORD"
+      # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on
+      # the run itself
+      - name: Show failed tests as annotations
+        if: failure()
+        run: |
+          python3 - <<'EOF'
+          import glob
+          import xml.etree.ElementTree as ET
+          failed = []
+          for path in sorted(glob.glob('uPortal-webapp/build/test-results/test/*.xml')):
+              for case in ET.parse(path).getroot().iter('testcase'):
+                  for problem in case.findall('failure') + case.findall('error'):
+                      text = ((problem.get('message') or '') + '\n' + (problem.text or '')).strip()
+                      failed.append((case.get('classname') + '.' + case.get('name'), text))
+          print(f'{len(failed)} failed tests')
+          for title, text in failed[:10]:
+              text = '\n'.join(text.splitlines()[:30])
+              text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::error title={title}::{text}')
+          EOF
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -232,6 +252,26 @@ jobs:
           ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           -Duportal.test.db.username=uportal -Duportal.test.db.password=uportal
+      # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on
+      # the run itself
+      - name: Show failed tests as annotations
+        if: failure()
+        run: |
+          python3 - <<'EOF'
+          import glob
+          import xml.etree.ElementTree as ET
+          failed = []
+          for path in sorted(glob.glob('uPortal-webapp/build/test-results/test/*.xml')):
+              for case in ET.parse(path).getroot().iter('testcase'):
+                  for problem in case.findall('failure') + case.findall('error'):
+                      text = ((problem.get('message') or '') + '\n' + (problem.text or '')).strip()
+                      failed.append((case.get('classname') + '.' + case.get('name'), text))
+          print(f'{len(failed)} failed tests')
+          for title, text in failed[:10]:
+              text = '\n'.join(text.splitlines()[:30])
+              text = text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print(f'::error title={title}::{text}')
+          EOF
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
