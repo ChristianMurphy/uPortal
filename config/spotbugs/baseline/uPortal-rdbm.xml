@@ -8,5 +8,4 @@
 <FindBugsFilter>
     <Match><Class name="org.apereo.portal.dao.usertype.JacksonColumnMapper"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.hibernate.DelegatingHibernateIntegrator"/><Method name="integrate"/><Bug pattern="NP_LOAD_OF_KNOWN_NULL_VALUE"/></Match>
-    <Match><Class name="org.apereo.portal.jpa.cache.EntityManagerCacheImpl"/><Method name="onApplicationEvent"/><Bug pattern="NP_NULL_ON_SOME_PATH"/></Match>
 </FindBugsFilter>

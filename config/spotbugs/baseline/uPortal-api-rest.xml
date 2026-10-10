@@ -43,7 +43,6 @@
     <Match><Class name="org.apereo.portal.rest.PortletsRESTController$PortletTuple"/><Bug pattern="SE_BAD_FIELD_INNER_CLASS"/></Match>
     <Match><Class name="org.apereo.portal.rest.RemoteCookieCheckController"/><Method name="verifyCookiesEnabled"/><Bug pattern="UNVALIDATED_REDIRECT"/></Match>
     <Match><Class name="org.apereo.portal.rest.SessionRESTController"/><Method name="isAuthenticated"/><Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/></Match>
-    <Match><Class name="org.apereo.portal.rest.group.EntityService"/><Method name="lookupEntityName"/><Bug pattern="NP_NULL_ON_SOME_PATH"/></Match>
     <Match><Class name="org.apereo.portal.rest.oauth.OidcUserInfoController"/><Method name="oauthToken"/><Bug pattern="CRLF_INJECTION_LOGS"/></Match>
     <Match><Class name="org.apereo.portal.rest.oauth.OidcUserInfoController"/><Method name="userInfo"/><Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/></Match>
     <Match><Class name="org.apereo.portal.rest.oauth.OidcUserInfoController"/><Method name="userInfo"/><Bug pattern="SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING"/></Match>
