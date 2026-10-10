@@ -123,10 +123,10 @@
       "matchDatasources": ["docker"]
     },
     {
-      "description": "A new major database server is a decision about the supported matrix (MOD-D25) and needs a new baseline in uPortal-start; only digests and versions within the major are updated automatically.",
+      "description": "A database server's release series (PostgreSQL 18, MySQL 9.7, MariaDB 12.3) is a decision about the supported matrix (MOD-D25) and needs a new baseline in uPortal-start; only digests and patch versions are updated automatically.",
       "matchManagers": ["custom.regex"],
       "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": ["major", "minor"],
       "enabled": false
     }
   ]
