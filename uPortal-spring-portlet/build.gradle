@@ -17,7 +17,10 @@ description = "Apereo uPortal Spring Portlet MVC"
  *     Classes of Spring Framework 4.3.30.RELEASE that the portlet code needs and Spring 5 removed
  *     are copied the same way, from the v4.3.30.RELEASE tag: org.springframework.web.servlet.
  *     ViewRendererServlet (spring-webmvc) became org.apereo.portal.spring.web.servlet, gaining
- *     imports for the two classes it used from its old package.
+ *     imports for the two classes it used from its old package, and HandlerMethodInvoker,
+ *     HandlerMethodResolver and HandlerMethodInvocationException (spring-web) moved from
+ *     org.springframework.web.bind.annotation.support to
+ *     org.apereo.portal.spring.web.bind.annotation.support.
  *   - src/main: uPortal's own extensions of the vendored classes.
  */
 dependencies {

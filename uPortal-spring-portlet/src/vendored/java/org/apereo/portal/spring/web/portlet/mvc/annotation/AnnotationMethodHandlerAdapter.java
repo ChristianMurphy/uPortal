@@ -435,7 +435,7 @@ public class AnnotationMethodHandlerAdapter extends PortletContentGenerator
 	 * Portlet-specific subclass of {@code HandlerMethodResolver}.
 	 */
 	@SuppressWarnings("deprecation")
-	private static class PortletHandlerMethodResolver extends org.springframework.web.bind.annotation.support.HandlerMethodResolver {
+	private static class PortletHandlerMethodResolver extends org.apereo.portal.spring.web.bind.annotation.support.HandlerMethodResolver {
 
 		private final Map<Method, RequestMappingInfo> mappings = new HashMap<Method, RequestMappingInfo>();
 
@@ -547,9 +547,9 @@ public class AnnotationMethodHandlerAdapter extends PortletContentGenerator
 	 * Portlet-specific subclass of {@code HandlerMethodInvoker}.
 	 */
 	@SuppressWarnings("deprecation")
-	private class PortletHandlerMethodInvoker extends org.springframework.web.bind.annotation.support.HandlerMethodInvoker {
+	private class PortletHandlerMethodInvoker extends org.apereo.portal.spring.web.bind.annotation.support.HandlerMethodInvoker {
 
-		public PortletHandlerMethodInvoker(org.springframework.web.bind.annotation.support.HandlerMethodResolver resolver) {
+		public PortletHandlerMethodInvoker(org.apereo.portal.spring.web.bind.annotation.support.HandlerMethodResolver resolver) {
 			super(resolver, webBindingInitializer, sessionAttributeStore,
 					parameterNameDiscoverer, customArgumentResolvers, null);
 		}
