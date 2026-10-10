@@ -29,7 +29,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apache.commons.lang.Validate;
 import org.hibernate.annotations.Cache;
@@ -49,10 +48,6 @@ import org.hibernate.annotations.Type;
 @SequenceGenerator(
         name = "UP_SS_USER_PREF_LAY_ATTR_GEN",
         sequenceName = "UP_SS_USER_PREF_LAY_ATTR_SEQ",
-        allocationSize = 5)
-@TableGenerator(
-        name = "UP_SS_USER_PREF_LAY_ATTR_GEN",
-        pkColumnValue = "UP_SS_USER_PREF_LAY_ATTR",
         allocationSize = 5)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

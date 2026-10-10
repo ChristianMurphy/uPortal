@@ -22,17 +22,16 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.apereo.portal.events.aggr.TimeDimension;
 import org.apereo.portal.events.aggr.login.LoginAggregationImpl;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Immutable;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
 import org.hibernate.annotations.Type;
@@ -40,14 +39,16 @@ import org.joda.time.LocalTime;
 
 /** */
 @Entity
-@Table(name = "UP_TIME_DIMENSION")
+@Table(
+        name = "UP_TIME_DIMENSION",
+        indexes = {
+            @Index(name = "IDX_UP_TD_HOUR", columnList = "TD_HOUR"),
+            @Index(name = "IDX_UP_TD_FIVE_MIN_INCR", columnList = "TD_FIVE_MINUTE_INCREMENT"),
+            @Index(name = "IDX_UP_TD_MINUTE", columnList = "TD_MINUTE")
+        })
 @SequenceGenerator(
         name = "UP_TIME_DIMENSION_GEN",
         sequenceName = "UP_TIME_DIMENSION_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_TIME_DIMENSION_GEN",
-        pkColumnValue = "UP_TIME_DIMENSION_PROP",
         allocationSize = 1)
 @Immutable
 @NaturalIdCache(region = "org.apereo.portal.events.aggr.dao.jpa.TimeDimensionImpl-NaturalId")
@@ -66,15 +67,12 @@ public final class TimeDimensionImpl implements TimeDimension, Serializable {
     @Type(type = "localTime")
     private final LocalTime time;
 
-    @Index(name = "IDX_UP_TD_HOUR")
     @Column(name = "TD_HOUR", nullable = false)
     private final int hour;
 
-    @Index(name = "IDX_UP_TD_FIVE_MIN_INCR")
     @Column(name = "TD_FIVE_MINUTE_INCREMENT", nullable = false)
     private final int fiveMinuteIncrement;
 
-    @Index(name = "IDX_UP_TD_MINUTE")
     @Column(name = "TD_MINUTE", nullable = false)
     private final int minute;
 

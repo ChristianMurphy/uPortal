@@ -21,13 +21,13 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.BaseAggregationImpl;
@@ -39,34 +39,24 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalIdCache;
 
 /** */
 @Entity
-@Table(name = "UP_CONCURRENT_USER_AGGR")
+@Table(
+        name = "UP_CONCURRENT_USER_AGGR",
+        indexes = {
+            @Index(
+                    name = "IDX_UP_CONC_USER_AGGR_DTI",
+                    columnList = "DATE_DIMENSION_ID, TIME_DIMENSION_ID, AGGR_INTERVAL"),
+            @Index(name = "IDX_UP_CONC_USER_INTRVL", columnList = "AGGR_INTERVAL"),
+            @Index(name = "IDX_UP_CONC_USER_GRP", columnList = "AGGR_GROUP_ID")
+        })
 @Inheritance(strategy = InheritanceType.JOINED)
 @SequenceGenerator(
         name = "UP_CONCURRENT_USER_AGGR_GEN",
         sequenceName = "UP_CONCURRENT_USER_AGGR_SEQ",
         allocationSize = 1000)
-@TableGenerator(
-        name = "UP_CONCURRENT_USER_AGGR_GEN",
-        pkColumnValue = "UP_CONCURRENT_USER_AGGR_PROP",
-        allocationSize = 1000)
-@org.hibernate.annotations.Table(
-        appliesTo = "UP_CONCURRENT_USER_AGGR",
-        indexes = {
-            @Index(
-                    name = "IDX_UP_CONC_USER_AGGR_DTI",
-                    columnNames = {"DATE_DIMENSION_ID", "TIME_DIMENSION_ID", "AGGR_INTERVAL"}),
-            @Index(
-                    name = "IDX_UP_CONC_USER_INTRVL",
-                    columnNames = {"AGGR_INTERVAL"}),
-            @Index(
-                    name = "IDX_UP_CONC_USER_GRP",
-                    columnNames = {"AGGR_GROUP_ID"})
-        })
 @NaturalIdCache(
         region = "org.apereo.portal.events.aggr.concuser.ConcurrentUserAggregationImpl-NaturalId")
 @Cacheable

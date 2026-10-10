@@ -26,7 +26,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -43,7 +42,6 @@ import org.hibernate.annotations.NaturalIdCache;
 @Entity
 @Table(name = "UP_PAGS_TEST")
 @SequenceGenerator(name = "UP_PAGS_TEST_GEN", sequenceName = "UP_PAGS_TEST_SEQ", allocationSize = 5)
-@TableGenerator(name = "UP_PAGS_TEST_GEN", pkColumnValue = "UP_PAGS_TEST", allocationSize = 5)
 @NaturalIdCache(
         region =
                 "org.apereo.portal.groups.pags.dao.jpa.PersonAttributesGroupTestDefinitionImpl-NaturalId")

@@ -22,7 +22,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apache.commons.lang.builder.CompareToBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -41,10 +40,6 @@ import org.hibernate.annotations.Type;
 @SequenceGenerator(
         name = "UP_PERMISSION_ACTIVITY_GEN",
         sequenceName = "UP_PERMISSION_ACTIVITY_SEQ",
-        allocationSize = 5)
-@TableGenerator(
-        name = "UP_PERMISSION_ACTIVITY_GEN",
-        pkColumnValue = "UP_PERMISSION_ACTIVITY",
         allocationSize = 5)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

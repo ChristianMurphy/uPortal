@@ -29,7 +29,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
@@ -41,7 +40,6 @@ import org.hibernate.annotations.Type;
 @Entity
 @Table(name = "UP_TENANT")
 @SequenceGenerator(name = "UP_TENANT_GEN", sequenceName = "UP_TENANT_SEQ", allocationSize = 1)
-@TableGenerator(name = "UP_TENANT_GEN", pkColumnValue = "UP_TENANT", allocationSize = 1)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 /* package-private */ class JpaTenant implements ITenant {
