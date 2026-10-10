@@ -8,20 +8,20 @@ dependencies {
 
     implementation "org.apache.httpcomponents:httpcore:${httpcomponentsVersion}"
     implementation "org.apache.commons:commons-pool2:${commonsPoolVersion}"
-    api("org.apache.portals.pluto:pluto-container:${plutoVersion}") {
+    api(project(':uPortal-pluto:uPortal-pluto-container')) {
         exclude group: 'javax.xml.bind', module: 'jaxb-api'
         exclude group: 'com.sun.xml.bind', module: 'jaxb-impl'
         exclude group: 'stax', module: 'stax'
     }
-    api "org.apache.portals.pluto:pluto-portal-driver:${plutoVersion}"
+    api project(':uPortal-pluto:uPortal-pluto-portal-driver')
 
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    testImplementation "${portletApiDependency}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
 
     compileOnly "javax.ccpp:ccpp:${ccppVersion}"
-    compileOnly "org.apache.portals.pluto:pluto-container-driver-api:${plutoVersion}"
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-driver-api')
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 }
 

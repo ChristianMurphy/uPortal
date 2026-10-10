@@ -8,9 +8,9 @@ dependencies {
     implementation project(':uPortal-rendering')
     api project(':uPortal-security:uPortal-security-services')
 
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
 }

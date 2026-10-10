@@ -85,12 +85,12 @@ dependencies {
     compileOnly "org.apereo.service.persondir:person-directory-api:${personDirectoryVersion}"
     compileOnly "${servletApiDependency}"
 
-    testImplementation "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
-    testImplementation "org.apache.portals.pluto:pluto-container-driver-api:${plutoVersion}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-driver-api')
     testImplementation "org.skyscreamer:jsonassert:${jsonassertVersion}"
     testImplementation "org.apache.groovy:groovy-test:${groovyTestVersion}"
     testImplementation "org.spockframework:spock-core:${spockVersion}"
-    testImplementation "${portletApiDependency}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
 
     runtimeOnly "ch.qos.logback:logback-classic:${logbackVersion}"

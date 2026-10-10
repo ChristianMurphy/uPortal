@@ -13,9 +13,9 @@ dependencies {
     // match, but apparently this version is correct.
     implementation "org.apache.httpcomponents:httpclient:${httpclientVersion}"
 
-    compileOnly "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
     annotationProcessor "org.hibernate:hibernate-jpamodelgen:${hibernateJpamodelgenVersion}"
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 }
 

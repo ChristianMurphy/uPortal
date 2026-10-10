@@ -39,10 +39,10 @@ dependencies {
     // The vendored classes log through (and expose) the Commons Logging API
     api "org.slf4j:jcl-over-slf4j:${slf4jVersion}"
 
-    compileOnly "${portletApiDependency}"
+    compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
 
-    testImplementation "${portletApiDependency}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
 }
 
