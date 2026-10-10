@@ -114,8 +114,10 @@ CI runs: see the bottom of this note.
 
 * `config/spotbugs/baseline/uPortal-web.xml`: dropped the two XSS_SERVLET entries of the
   deleted Google views.
-* `NOTICE`: dropped the Google Visualization Data Source Library line. The opencsv and ICU4J
-  lines stay until a dependency report confirms nothing else brings them in.
+* `NOTICE`: dropped the Google Visualization Data Source Library and ICU4J lines. The
+  `uPortal-webapp` runtimeClasspath report (881 lines, fully resolved) no longer contains
+  ICU4J or opencsv. NOTICE had no opencsv line; "An open source csv parser for Java" is a
+  different library and stays.
 * `docs/UPGRADING-6.0.md`: new section with the class map for overlays.
 
 ## Proposed LOG updates
@@ -131,7 +133,6 @@ CI runs: see the bottom of this note.
   * The `WEB-INF/tags/google-visualization` tags and the "Google Visualization" HTML title stay
     until that move.
 * **Follow-ups:**
-  * Regenerate NOTICE from the dependency report (opencsv, ICU4J).
   * The SqlQuery chart JSPs still load `www.google.com/jsapi` over plain http.
 
 ## CI
