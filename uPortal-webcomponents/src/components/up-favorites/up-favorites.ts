@@ -1,65 +1,42 @@
-import {
-    css,
-    html,
-    nothing,
-    type PropertyDeclarations,
-    type PropertyValues,
-    type TemplateResult,
-} from 'lit';
+import { css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
+import type { PropertyDeclarations } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
-import { ApiError, type ApiErrorKind } from '../../lib/api-client';
+import { waitFor } from 'xstate';
 import type { Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
-import {
-    fetchFavorites,
-    moveFavorite,
-    removeFavorite,
-    type Favorite,
-    type FavoritesData,
-} from './favorites-api';
+import { ActorController } from '../../state/actor-controller';
+import type { Favorite, FavoritesData } from './favorites-api';
 import { arrowDownIcon, arrowUpIcon, folderIcon, lockIcon, portletIcon, starIcon } from './icons';
 import { FAVORITES_MESSAGES } from './messages';
-
-type ViewState =
-    | { status: 'loading' }
-    | { status: 'error'; kind: ApiErrorKind }
-    | { status: 'ready'; favorites: FavoritesData };
-
-interface Notice {
-    theme: 'success' | 'danger';
-    text: string;
-}
-
-/** The focusable parts of a favorite, marked with `data-control`. */
-type Control = 'link' | 'up' | 'down' | 'remove';
-
-type FocusRequest = { nodeId: string; controls: Control[] } | { selector: string };
+import {
+    allFavorites,
+    favoritesMachine,
+    siblingsOf,
+    type Announcement,
+    type Control,
+    type FavoritesEmitted,
+    type FocusRequest,
+    type Notice,
+} from './up-favorites.machine';
 
 /** Details of the `up-favorite-removed` event. */
-export interface FavoriteRemovedDetail {
-    nodeId: string;
-    name: string;
-    kind: Favorite['kind'];
-}
+export type FavoriteRemovedDetail = Omit<
+    Extract<FavoritesEmitted, { type: 'favorite.removed' }>,
+    'type'
+>;
 
 /** Details of the `up-favorite-moved` event. */
-export interface FavoriteMovedDetail {
-    nodeId: string;
-    name: string;
-    /** The favorite's new place among favorites of its kind, from 0. */
-    position: number;
-}
+export type FavoriteMovedDetail = Omit<
+    Extract<FavoritesEmitted, { type: 'favorite.moved' }>,
+    'type'
+>;
 
 /** Details of the `up-favorites-loaded` event. */
-export interface FavoritesLoadedDetail {
-    collections: number;
-    portlets: number;
-}
-
-function errorKind(error: unknown): ApiErrorKind {
-    return error instanceof ApiError ? error.kind : 'malformed';
-}
+export type FavoritesLoadedDetail = Omit<
+    Extract<FavoritesEmitted, { type: 'favorites.loaded' }>,
+    'type'
+>;
 
 /**
  * The user's favorite collections and portlets, the web-component replacement of the Favorites
@@ -70,6 +47,9 @@ function errorKind(error: unknown): ApiErrorKind {
  * Alt+Down also do; Escape stops reordering. A lock marks favorites the layout does not let the
  * user remove. Maximized, the component also shows each portlet's description.
  *
+ * Its states are the XState machine in `up-favorites.machine.ts`, run by an
+ * {@link ActorController}: the template renders from the snapshot, and user actions are events.
+ *
  * Attributes: those of {@link UpElement}, plus `max-height-pixels`, which limits the height of
  * the list (the Favorites portlet's `FavoritesController.maxHeightPixels` preference).
  *
@@ -78,10 +58,6 @@ function errorKind(error: unknown): ApiErrorKind {
 export class UpFavorites extends UpElement {
     static override properties: PropertyDeclarations = {
         maxHeightPixels: { attribute: 'max-height-pixels', type: Number, reflect: true },
-        view: { state: true },
-        editing: { state: true },
-        notice: { state: true },
-        announcement: { state: true },
     };
 
     static override styles = [
@@ -178,100 +154,115 @@ export class UpFavorites extends UpElement {
     ];
 
     declare maxHeightPixels: number | undefined;
-    declare protected view: ViewState;
-    declare protected editing: boolean;
-    declare protected notice: Notice | undefined;
-    declare protected announcement: string;
 
-    #busy = false;
-    #focusRequest: FocusRequest | undefined;
+    readonly #favorites = new ActorController(this, favoritesMachine, {
+        // Properties in: the API client at the first connect, later changes as events (willUpdate)
+        input: () => ({ api: this.api }),
+        // Events out
+        events: {
+            'favorites.loaded': 'up-favorites-loaded',
+            'favorite.removed': 'up-favorite-removed',
+            'favorite.moved': 'up-favorite-moved',
+        },
+    });
 
-    constructor() {
-        super();
-        this.view = { status: 'loading' };
-        this.editing = false;
-        this.announcement = '';
-    }
+    /** The focus request applied last, so each one moves focus once. */
+    #focused = 0;
 
     protected override get defaultMessages(): Messages {
         return FAVORITES_MESSAGES;
     }
 
-    override connectedCallback(): void {
-        super.connectedCallback();
-        void this.reload();
+    /**
+     * Loads the favorites again, showing the loading state meanwhile. Resolves once they are
+     * loaded (or failed to load), or when the element leaves the page first.
+     */
+    async reload(): Promise<void> {
+        this.#favorites.send({ type: 'reload' });
+        const actor = this.#favorites.actorRef;
+        if (actor === undefined) {
+            return;
+        }
+        try {
+            await waitFor(actor, (snapshot) => !snapshot.matches('loading'));
+        } catch {
+            // The element was disconnected (its actor stopped) before the favorites arrived
+        }
     }
 
-    /** Loads the favorites again, showing the loading state meanwhile. */
-    async reload(): Promise<void> {
-        this.view = { status: 'loading' };
-        try {
-            const favorites = await fetchFavorites(this.api);
-            this.view = { status: 'ready', favorites };
-            this.emit('up-favorites-loaded', {
-                collections: favorites.collections.length,
-                portlets: favorites.portlets.length,
-            } satisfies FavoritesLoadedDetail);
-        } catch (error) {
-            this.view = { status: 'error', kind: errorKind(error) };
+    protected override willUpdate(changed: PropertyValues<this>): void {
+        super.willUpdate(changed);
+        if (
+            this.hasUpdated &&
+            (changed.has('contextPath') || changed.has('csrfHeader') || changed.has('csrfToken'))
+        ) {
+            this.#favorites.send({ type: 'api.changed', api: this.api });
         }
     }
 
     override render(): TemplateResult {
-        const view = this.view;
-        if (view.status === 'error') {
-            return this.#renderError(view.kind);
+        const snapshot = this.#favorites.snapshot;
+        if (snapshot.matches('loading')) {
+            return html`<div class="loading" role="status">
+                <span class="spinner-border" aria-hidden="true"></span>
+                <span>${this.msg('loading')}</span>
+            </div>`;
         }
-        if (view.status === 'ready') {
-            return this.#renderFavorites(view.favorites);
-        }
-        return html`<div class="loading" role="status">
-            <span class="spinner-border" aria-hidden="true"></span>
-            <span>${this.msg('loading')}</span>
-        </div>`;
-    }
-
-    protected override updated(changed: PropertyValues<this>): void {
-        super.updated(changed);
-        const request = this.#focusRequest;
-        this.#focusRequest = undefined;
-        if (request !== undefined) {
-            this.#focus(request);
-        }
-    }
-
-    #renderError(kind: ApiErrorKind): TemplateResult {
-        if (kind === 'unauthorized') {
+        if (snapshot.matches({ failed: 'sessionExpired' })) {
             return html`<div class="alert theme-warning" role="alert">
                 <p>${this.msg('favorites.session.expired')}</p>
             </div>`;
         }
-        return html`<div class="alert theme-danger" role="alert">
-            <p>${this.msg('favorites.load.fail')}</p>
-            <button
-                type="button"
-                class="btn-solid theme-danger btn-sm retry"
-                @click=${() => void this.reload()}
-            >
-                ${this.msg('favorites.try.again')}
-            </button>
-        </div>`;
-    }
-
-    #renderFavorites(favorites: FavoritesData): TemplateResult {
-        const items: Favorite[] = [...favorites.collections, ...favorites.portlets];
-        if (items.length === 0) {
+        if (snapshot.matches('failed')) {
+            return html`<div class="alert theme-danger" role="alert">
+                <p>${this.msg('favorites.load.fail')}</p>
+                <button
+                    type="button"
+                    class="btn-solid theme-danger btn-sm retry"
+                    @click=${this.#reloadClicked}
+                >
+                    ${this.msg('favorites.try.again')}
+                </button>
+            </div>`;
+        }
+        const { favorites, notice, announcement } = snapshot.context;
+        if (snapshot.matches('empty')) {
             return html`<div class="favorites">
-                ${this.#renderNotice()}
+                ${this.#renderNotice(notice)}
                 <div class="alert theme-warning empty" tabindex="-1">
                     <p>${this.msg('favorites.have.none')}</p>
                     <p>${this.msg('favorites.instruction.add.via.contextual.menu')}</p>
                 </div>
                 ${this.#renderMarketplaceLink(favorites.marketplaceUrl)}
-                ${this.#renderAnnouncement()}
+                ${this.#renderAnnouncement(announcement)}
             </div>`;
         }
+        return this.#renderList(
+            favorites,
+            snapshot.matches({ list: { mode: 'editing' } }),
+            snapshot.hasTag('busy'),
+            notice,
+            announcement,
+        );
+    }
 
+    protected override updated(changed: PropertyValues<this>): void {
+        super.updated(changed);
+        const focus = this.#favorites.snapshot.context.focus;
+        if (focus !== undefined && focus.id !== this.#focused) {
+            this.#focused = focus.id;
+            this.#focus(focus);
+        }
+    }
+
+    #renderList(
+        favorites: FavoritesData,
+        editing: boolean,
+        busy: boolean,
+        notice: Notice | undefined,
+        announcement: Announcement | undefined,
+    ): TemplateResult {
+        const items = allFavorites(favorites);
         const movable = items.some((item) => item.moveAllowed);
         const locked = items.some((item) => !item.deleteAllowed);
         const listStyle =
@@ -290,7 +281,7 @@ export class UpFavorites extends UpElement {
                               @click=${this.#toggleEditing}
                           >
                               ${
-                                  this.editing
+                                  editing
                                       ? this.msg('favorites.stop.editing')
                                       : this.msg('favorites.edit.order')
                               }
@@ -298,25 +289,26 @@ export class UpFavorites extends UpElement {
                       </div>`
                     : nothing
             }
-            ${this.#renderNotice()}
+            ${this.#renderNotice(notice)}
             ${
-                this.editing && movable
+                editing && movable
                     ? html`<p class="help">${this.msg('favorites.move.keyboard.help')}</p>`
                     : nothing
             }
             <ul
                 class="list-group favorites-list"
                 aria-label=${this.msg('favorites')}
+                aria-busy=${busy ? 'true' : nothing}
                 style=${styleMap(listStyle)}
             >
                 ${repeat(
                     items,
                     (item) => item.nodeId,
-                    (item) => this.#renderItem(item, favorites),
+                    (item) => this.#renderItem(item, favorites, editing),
                 )}
             </ul>
             ${
-                this.editing && locked
+                editing && locked
                     ? html`<p class="legend">
                           ${lockIcon} ${this.msg('favorites.lock.icon.legend')}
                       </p>`
@@ -328,13 +320,13 @@ export class UpFavorites extends UpElement {
                 </p>
                 ${this.#renderMarketplaceLink(favorites.marketplaceUrl)}
             </div>
-            ${this.#renderAnnouncement()}
+            ${this.#renderAnnouncement(announcement)}
         </div>`;
     }
 
-    #renderItem(item: Favorite, favorites: FavoritesData): TemplateResult {
-        const siblings = item.kind === 'collection' ? favorites.collections : favorites.portlets;
-        const index = siblings.findIndex((sibling) => sibling.nodeId === item.nodeId);
+    #renderItem(item: Favorite, favorites: FavoritesData, editing: boolean): TemplateResult {
+        const siblings = siblingsOf(favorites, item);
+        const index = siblings.indexOf(item);
         const description =
             item.kind === 'portlet' && this.isMaximized && item.description !== null
                 ? html`<p class="favorite-description">${item.description}</p>`
@@ -347,7 +339,7 @@ export class UpFavorites extends UpElement {
             ${this.#renderLink(item)}
             <span class="favorite-actions">
                 ${
-                    this.editing && item.moveAllowed
+                    editing && item.moveAllowed
                         ? html`<button
                                   type="button"
                                   class="btn-text theme-secondary btn-icon btn-sm"
@@ -356,7 +348,9 @@ export class UpFavorites extends UpElement {
                                   title=${this.msg('favorites.move.up', item.name)}
                                   aria-keyshortcuts="Alt+ArrowUp"
                                   ?disabled=${index === 0}
-                                  @click=${() => void this.#move(item, -1, 'up')}
+                                  @click=${() => {
+                                      this.#move(item.nodeId, -1, 'up');
+                                  }}
                               >
                                   ${arrowUpIcon}
                               </button>
@@ -368,13 +362,15 @@ export class UpFavorites extends UpElement {
                                   title=${this.msg('favorites.move.down', item.name)}
                                   aria-keyshortcuts="Alt+ArrowDown"
                                   ?disabled=${index === siblings.length - 1}
-                                  @click=${() => void this.#move(item, 1, 'down')}
+                                  @click=${() => {
+                                      this.#move(item.nodeId, 1, 'down');
+                                  }}
                               >
                                   ${arrowDownIcon}
                               </button>`
                         : nothing
                 }
-                ${this.#renderRemove(item)}
+                ${this.#renderRemove(item, editing)}
             </span>
             ${description}
         </li>`;
@@ -408,7 +404,7 @@ export class UpFavorites extends UpElement {
         >`;
     }
 
-    #renderRemove(item: Favorite): TemplateResult | typeof nothing {
+    #renderRemove(item: Favorite, editing: boolean): TemplateResult | typeof nothing {
         if (item.deleteAllowed) {
             return html`<button
                 type="button"
@@ -416,12 +412,14 @@ export class UpFavorites extends UpElement {
                 data-control="remove"
                 aria-label=${this.msg('favorites.remove.parameterized', item.name)}
                 title=${this.msg('remove.from.my.favorites')}
-                @click=${() => void this.#remove(item)}
+                @click=${() => {
+                    this.#favorites.send({ type: 'remove', nodeId: item.nodeId });
+                }}
             >
                 ${starIcon}
             </button>`;
         }
-        if (!this.editing) {
+        if (!editing) {
             return nothing;
         }
         const reason = this.msg(
@@ -434,26 +432,39 @@ export class UpFavorites extends UpElement {
         >`;
     }
 
-    #renderNotice(): TemplateResult | typeof nothing {
-        const notice = this.notice;
+    #renderNotice(notice: Notice | undefined): TemplateResult | typeof nothing {
         if (notice === undefined) {
             return nothing;
         }
+        const failed = notice.kind !== 'removed';
         // The live region announces successes; failures are alerts of their own
         return html`<div
-            class="alert theme-${notice.theme} notice"
-            role=${notice.theme === 'danger' ? 'alert' : nothing}
+            class="alert theme-${failed ? 'danger' : 'success'} notice"
+            role=${failed ? 'alert' : nothing}
         >
-            <p>${notice.text}</p>
+            <p>${this.#noticeText(notice)}</p>
             <button
                 type="button"
                 class="btn-close"
                 aria-label=${this.msg('close')}
-                @click=${() => {
-                    this.notice = undefined;
-                }}
+                @click=${this.#dismissNotice}
             ></button>
         </div>`;
+    }
+
+    #noticeText(notice: Notice): string {
+        if (notice.kind === 'removed') {
+            return this.msg('favorites.unfavorite.success.parameterized', notice.name);
+        }
+        if (notice.reason === 'unauthorized') {
+            return this.msg('favorites.session.expired');
+        }
+        if (notice.kind === 'move-failed') {
+            return this.msg('favorites.move.fail.parameterized', notice.name);
+        }
+        return notice.reason === 'forbidden'
+            ? this.msg('favorites.unfavorite.fail.lack.permission.parameterized', notice.name)
+            : this.msg('favorites.unfavorite.fail.parameterized', notice.name);
     }
 
     #renderMarketplaceLink(url: string | null): TemplateResult | typeof nothing {
@@ -464,163 +475,79 @@ export class UpFavorites extends UpElement {
               >`;
     }
 
-    #renderAnnouncement(): TemplateResult {
-        return html`<div class="visually-hidden" role="status" aria-live="polite">
-            ${this.announcement}
-        </div>`;
+    #renderAnnouncement(announcement: Announcement | undefined): TemplateResult {
+        const text =
+            announcement === undefined
+                ? ''
+                : announcement.kind === 'removed'
+                  ? this.msg('favorites.unfavorite.success.parameterized', announcement.name)
+                  : this.msg(
+                        'favorites.moved',
+                        announcement.name,
+                        announcement.position,
+                        announcement.total,
+                    );
+        return html`<div class="visually-hidden" role="status" aria-live="polite">${text}</div>`;
     }
 
-    #toggleEditing = (): void => {
-        this.editing = !this.editing;
+    #reloadClicked = (): void => {
+        this.#favorites.send({ type: 'reload' });
     };
 
+    #toggleEditing = (): void => {
+        this.#favorites.send({ type: 'edit.toggle' });
+    };
+
+    #dismissNotice = (): void => {
+        this.#favorites.send({ type: 'notice.dismiss' });
+    };
+
+    #move(nodeId: string, direction: -1 | 1, control: Control): void {
+        this.#favorites.send({ type: 'move', nodeId, direction, control });
+    }
+
     #onKeydown = (event: KeyboardEvent): void => {
-        if (event.key === 'Escape' && this.editing) {
-            event.preventDefault();
-            this.editing = false;
-            this.#focusRequest = { selector: '.edit-toggle' };
-            return;
-        }
-        if (!this.editing || !event.altKey || this.view.status !== 'ready') {
+        const snapshot = this.#favorites.snapshot;
+        if (event.key === 'Escape') {
+            if (snapshot.can({ type: 'edit.stop' })) {
+                event.preventDefault();
+                this.#favorites.send({ type: 'edit.stop' });
+            }
             return;
         }
         const direction = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : 0;
+        if (!event.altKey || direction === 0) {
+            return;
+        }
         const origin = event.composedPath()[0];
         const row = origin instanceof Element ? origin.closest('li[data-node-id]') : null;
-        const { collections, portlets } = this.view.favorites;
-        const item = [...collections, ...portlets].find(
-            (favorite) => favorite.nodeId === row?.getAttribute('data-node-id'),
-        );
-        if (direction === 0 || item === undefined || !item.moveAllowed) {
+        const nodeId = row?.getAttribute('data-node-id');
+        if (nodeId === null || nodeId === undefined) {
             return;
         }
-        event.preventDefault();
         const control = origin instanceof Element ? origin.getAttribute('data-control') : null;
-        void this.#move(
-            item,
+        const move = {
+            type: 'move',
+            nodeId,
             direction,
-            control === 'link' || control === 'remove' ? control : direction < 0 ? 'up' : 'down',
-        );
+            control:
+                control === 'link' || control === 'remove'
+                    ? control
+                    : direction < 0
+                      ? 'up'
+                      : 'down',
+        } as const;
+        if (snapshot.can(move)) {
+            event.preventDefault();
+            this.#favorites.send(move);
+        }
     };
 
-    async #move(item: Favorite, direction: -1 | 1, control: Control): Promise<void> {
-        if (this.#busy || this.view.status !== 'ready') {
-            return;
-        }
-        const favorites = this.view.favorites;
-        const siblings = item.kind === 'collection' ? favorites.collections : favorites.portlets;
-        const index = siblings.findIndex((sibling) => sibling.nodeId === item.nodeId);
-        const neighbour = siblings[index + direction];
-        if (neighbour === undefined) {
-            return;
-        }
-
-        this.#busy = true;
-        try {
-            const moved = await moveFavorite(
-                this.api,
-                item.nodeId,
-                direction < 0 ? { before: neighbour.nodeId } : { after: neighbour.nodeId },
-            );
-            this.view = { status: 'ready', favorites: moved };
-            this.notice = undefined;
-            const movedSiblings = item.kind === 'collection' ? moved.collections : moved.portlets;
-            const position = movedSiblings.findIndex((sibling) => sibling.nodeId === item.nodeId);
-            this.announcement = this.msg(
-                'favorites.moved',
-                item.name,
-                position + 1,
-                movedSiblings.length,
-            );
-            this.emit('up-favorite-moved', {
-                nodeId: item.nodeId,
-                name: item.name,
-                position,
-            } satisfies FavoriteMovedDetail);
-        } catch (error) {
-            this.notice = {
-                theme: 'danger',
-                text:
-                    errorKind(error) === 'unauthorized'
-                        ? this.msg('favorites.session.expired')
-                        : this.msg('favorites.move.fail.parameterized', item.name),
-            };
-        } finally {
-            this.#busy = false;
-        }
-        // The same control keeps focus if it still applies, else the nearest one that does
-        this.#focusRequest = {
-            nodeId: item.nodeId,
-            controls: [control, direction < 0 ? 'down' : 'up', 'link'],
-        };
-    }
-
-    async #remove(item: Favorite): Promise<void> {
-        if (this.#busy || this.view.status !== 'ready') {
-            return;
-        }
-        const favorites = this.view.favorites;
-        const items = [...favorites.collections, ...favorites.portlets];
-        const index = items.indexOf(item);
-
-        this.#busy = true;
-        try {
-            await removeFavorite(this.api, item.nodeId);
-            this.#removed(item, favorites);
-        } catch (error) {
-            const kind = errorKind(error);
-            if (kind === 'not-found') {
-                // Already gone, for example removed in another window
-                this.#removed(item, favorites);
-            } else {
-                this.notice = {
-                    theme: 'danger',
-                    text:
-                        kind === 'unauthorized'
-                            ? this.msg('favorites.session.expired')
-                            : kind === 'forbidden'
-                              ? this.msg(
-                                    'favorites.unfavorite.fail.lack.permission.parameterized',
-                                    item.name,
-                                )
-                              : this.msg('favorites.unfavorite.fail.parameterized', item.name),
-                };
-                this.#focusRequest = { nodeId: item.nodeId, controls: ['remove'] };
-                return;
-            }
-        } finally {
-            this.#busy = false;
-        }
-        // Focus the next favorite, else the previous one, else the empty state
-        const next = items[index + 1] ?? items[index - 1];
-        this.#focusRequest =
-            next === undefined
-                ? { selector: '.empty' }
-                : { nodeId: next.nodeId, controls: ['link', 'remove'] };
-    }
-
-    #removed(item: Favorite, favorites: FavoritesData): void {
-        this.view = {
-            status: 'ready',
-            favorites: {
-                ...favorites,
-                collections: favorites.collections.filter((c) => c.nodeId !== item.nodeId),
-                portlets: favorites.portlets.filter((p) => p.nodeId !== item.nodeId),
-            },
-        };
-        const text = this.msg('favorites.unfavorite.success.parameterized', item.name);
-        this.notice = { theme: 'success', text };
-        this.announcement = text;
-        this.emit('up-favorite-removed', {
-            nodeId: item.nodeId,
-            name: item.name,
-            kind: item.kind,
-        } satisfies FavoriteRemovedDetail);
-    }
-
     #focus(request: FocusRequest): void {
-        if ('selector' in request) {
-            this.renderRoot.querySelector<HTMLElement>(request.selector)?.focus();
+        if ('element' in request) {
+            this.renderRoot
+                .querySelector<HTMLElement>(request.element === 'empty' ? '.empty' : '.edit-toggle')
+                ?.focus();
             return;
         }
         const row = this.renderRoot.querySelector(

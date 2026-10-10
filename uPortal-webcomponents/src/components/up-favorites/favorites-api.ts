@@ -1,7 +1,7 @@
 /**
  * Client for the favorites REST API (FavoritesRESTController in uPortal-api-rest).
  */
-import { ApiError, type ApiClient } from '../../lib/api-client';
+import { ApiError, type ApiClient, type RequestOptions } from '../../lib/api-client';
 
 export const FAVORITES_PATH = '/api/v6-0/favorites';
 
@@ -137,12 +137,25 @@ export function validateFavorites(body: unknown): FavoritesData {
     };
 }
 
-export function fetchFavorites(api: ApiClient): Promise<FavoritesData> {
-    return api.get(FAVORITES_PATH, validateFavorites);
+export function fetchFavorites(
+    api: ApiClient,
+    options: RequestOptions = {},
+): Promise<FavoritesData> {
+    return api.get(FAVORITES_PATH, validateFavorites, options);
 }
 
-export async function removeFavorite(api: ApiClient, nodeId: string): Promise<void> {
-    await api.send('DELETE', `${FAVORITES_PATH}/${encodeURIComponent(nodeId)}`);
+export async function removeFavorite(
+    api: ApiClient,
+    nodeId: string,
+    options: RequestOptions = {},
+): Promise<void> {
+    await api.send(
+        'DELETE',
+        `${FAVORITES_PATH}/${encodeURIComponent(nodeId)}`,
+        undefined,
+        undefined,
+        options,
+    );
 }
 
 /** Moves a favorite and resolves to the favorites in their new order. */
@@ -150,12 +163,14 @@ export async function moveFavorite(
     api: ApiClient,
     nodeId: string,
     position: MovePosition,
+    options: RequestOptions = {},
 ): Promise<FavoritesData> {
     const favorites = await api.send(
         'POST',
         `${FAVORITES_PATH}/${encodeURIComponent(nodeId)}/move`,
         position,
         validateFavorites,
+        options,
     );
     if (favorites === undefined) {
         throw new ApiError('malformed', 204, 'The move returned no favorites');

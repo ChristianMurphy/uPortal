@@ -703,3 +703,75 @@ describe('up-favorites reordering', () => {
         expect(activeElement(element)).toBe(control(element, 'u12l1n20', 'down'));
     });
 });
+
+describe('up-favorites lifecycle', () => {
+    it('keeps its favorites and reorder mode when it moves in the page', async () => {
+        const element = await render();
+        await startEditing(element);
+        const other = document.createElement('section');
+        document.body.append(other);
+
+        other.append(element);
+        await element.updateComplete;
+
+        // Restored from its snapshot: no new request, still reordering
+        expect(server.requestsTo(API).filter((r) => r.method === 'GET')).toHaveLength(1);
+        expect(names(element)).toEqual(['News', 'Calendar', 'Mail', 'Courses']);
+        expect(control(element, 'u12l1n20', 'down')).toBeTruthy();
+        other.remove();
+    });
+
+    it('sends a removal again after a move that interrupted it', async () => {
+        let answers = 0;
+        server.on('DELETE', `${API}/u12l1n21`, () => {
+            answers += 1;
+            // The first request never answers: the element moves meanwhile
+            return answers === 1 ? new Promise<Response>(() => undefined) : noContent();
+        });
+        const element = await render();
+        await userEvent.click(control(element, 'u12l1n21', 'remove'));
+        const parent = element.parentElement;
+
+        element.remove();
+        parent?.append(element);
+
+        await expect.poll(() => names(element)).toEqual(['News', 'Calendar', 'Courses']);
+        expect(answers).toBe(2);
+    });
+
+    it('resolves a reload when the element leaves the page before the favorites arrive', async () => {
+        const element = await render();
+        server.on('GET', API, () => new Promise<Response>(() => undefined));
+
+        const reloaded = element.reload();
+        element.remove();
+
+        await expect(reloaded).resolves.toBeUndefined();
+    });
+
+    it('queues a reload asked for while the element is out of the page', async () => {
+        const element = await render();
+        const parent = element.parentElement;
+        element.remove();
+
+        await element.reload();
+        parent?.append(element);
+
+        await expect
+            .poll(() => server.requestsTo(API).filter((r) => r.method === 'GET'))
+            .toHaveLength(2);
+    });
+
+    it('calls the portal with the new CSRF token after the attribute changes', async () => {
+        server.on('DELETE', `${API}/u12l1n20`, noContent());
+        const element = await render();
+
+        element.setAttribute('csrf-token', 'token-2');
+        await element.updateComplete;
+        await userEvent.click(control(element, 'u12l1n20', 'remove'));
+
+        await expect
+            .poll(() => server.requestsTo(`${API}/u12l1n20`)[0]?.headers['X-CSRF-TOKEN'])
+            .toBe('token-2');
+    });
+});
