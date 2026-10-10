@@ -27,18 +27,17 @@ import java.util.stream.Stream;
 import javax.annotation.Resource;
 import javax.servlet.Filter;
 import javax.sql.DataSource;
-import net.sf.ehcache.Cache;
 import org.apereo.portal.persondir.ILocalAccountDao;
 import org.apereo.portal.persondir.ImpersonationStatusPersonAttributeDao;
 import org.apereo.portal.persondir.LocalAccountPersonAttributeDao;
 import org.apereo.portal.persondir.PortalRootPersonAttributeDao;
 import org.apereo.portal.persondir.support.PersonManagerCurrentUserProvider;
-import org.apereo.portal.utils.cache.MapCacheProvider;
+import org.apereo.portal.utils.cache.CacheLookup;
+import org.apereo.portal.utils.cache.CachingPersonAttributeDao;
 import org.apereo.portal.utils.cache.PersonDirectoryCacheKeyGenerator;
 import org.apereo.services.persondir.IPersonAttributeDao;
 import org.apereo.services.persondir.support.AdditionalDescriptors;
 import org.apereo.services.persondir.support.AdditionalDescriptorsPersonAttributeDao;
-import org.apereo.services.persondir.support.CachingPersonAttributeDaoImpl;
 import org.apereo.services.persondir.support.IAdditionalDescriptors;
 import org.apereo.services.persondir.support.ICurrentUserProvider;
 import org.apereo.services.persondir.support.IUsernameAttributeProvider;
@@ -51,11 +50,12 @@ import org.apereo.services.persondir.support.merger.ReplacingAttributeAdder;
 import org.apereo.services.persondir.support.web.RequestAttributeSourceFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
-import org.springmodules.cache.key.CacheKeyGenerator;
 
 /**
  * This @Configuration class sets up (roughly) the same beans that personDirectoryContext.xml did in
@@ -79,9 +79,7 @@ public class PersonDirectoryConfiguration {
     private static final String USER_LOGIN_ID_ATTRIBUTE = "user.login.id";
     private static final String USERNAME_COLUMN_NAME = "USER_NAME";
 
-    @Autowired
-    @Qualifier(value = USER_INFO_CACHE_NAME)
-    private Cache userInfoCache;
+    @Autowired private CacheManager cacheManager;
 
     @Resource(name = "localAccountDao")
     private ILocalAccountDao localAccountDao;
@@ -104,7 +102,7 @@ public class PersonDirectoryConfiguration {
     }
 
     @Bean(name = "userAttributeCacheKeyGenerator")
-    public CacheKeyGenerator getUserAttributeCacheKeyGenerator() {
+    public KeyGenerator getUserAttributeCacheKeyGenerator() {
         final PersonDirectoryCacheKeyGenerator result = new PersonDirectoryCacheKeyGenerator();
         result.setIgnoreEmptyAttributes(true);
         return result;
@@ -225,11 +223,11 @@ public class PersonDirectoryConfiguration {
     @Bean(name = "cachingPersonAttributeDao")
     @Qualifier("uPortalInternal")
     public IPersonAttributeDao getCachingPersonAttributeDao() {
-        final CachingPersonAttributeDaoImpl result = new CachingPersonAttributeDaoImpl();
+        final CachingPersonAttributeDao result = new CachingPersonAttributeDao();
         result.setUsernameAttributeProvider(getUsernameAttributeProvider());
         result.setCacheNullResults(true);
         result.setCacheKeyGenerator(getUserAttributeCacheKeyGenerator());
-        result.setUserInfoCache(new MapCacheProvider<>(userInfoCache));
+        result.setUserInfoCache(CacheLookup.requireCache(cacheManager, USER_INFO_CACHE_NAME));
         result.setCachedPersonAttributesDao(getMergingPersonAttributeDao());
         return result;
     }

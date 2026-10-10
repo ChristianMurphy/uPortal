@@ -204,3 +204,25 @@ The Joda-Time JSP tag library (`joda-time-jsptags`) is no longer in the web appl
 `WEB-INF/jsp/include.jsp` no longer declares the `joda` prefix. If a JSP in your overlay uses
 `<joda:format>` or another `joda:` tag, format the value another way, such as with
 `fn:substring` on a `java.time` value's ISO text, or by formatting it in the controller.
+
+## spring-modules-cache is gone; the user attribute cache uses Spring's cache API
+
+uPortal no longer ships spring-modules-cache 0.8. Person Directory's
+`CachingPersonAttributeDaoImpl` needs that library, so uPortal's `cachingPersonAttributeDao`
+bean is now an `org.apereo.portal.utils.cache.CachingPersonAttributeDao`. It caches the same
+results under the same keys in the same cache, `org.apereo.services.persondir.USER_INFO.merged`,
+and still caches "not found" results. Logging out still purges the user's entries.
+
+If your overlay defines its own caching person attribute DAO:
+
+* Replace `org.apereo.services.persondir.support.CachingPersonAttributeDaoImpl` with
+  `org.apereo.portal.utils.cache.CachingPersonAttributeDao`.
+* Its `userInfoCache` property now takes a Spring `org.springframework.cache.Cache`, not a `Map`.
+  Look it up from the `ehCacheManager` bean, for example
+  `<property name="userInfoCache" value="#{ehCacheManager.getCache('your.cache.name')}" />`,
+  and make sure the cache is defined in `ehcache.xml`.
+* The `userAttributeCacheKeyGenerator` bean is now a Spring
+  `org.springframework.cache.interceptor.KeyGenerator`. It is no longer a spring-modules
+  `CacheKeyGenerator`.
+* The `cacheKeyAttributes`, `nullResultsObject`, `getQueries()` and `getMisses()` members are not
+  carried over. Cache hit and miss counts are in the Cache Manager portlet.
