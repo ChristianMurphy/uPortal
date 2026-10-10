@@ -1107,6 +1107,42 @@ This supersedes MOD-D24's runtime matrix.
 * **Status:** the WS14 foundation agent adds the adapter, converts
   `<up-favorites>` and adds the model-based tests before its merge.
 
+### MOD-D32: Conventional Commits are checked in CI, and work lands as linear history
+
+* **Context (project owner):** "We use conventional commits on uportal."
+  An audit of the integration branches since `master` found:
+  * all 181 non-merge commits had valid types and scopes;
+  * 13 subjects exceeded AGENTS.md's 72-character limit, mostly because
+    `(MOD-I…)` references went in the subject;
+  * there were 21 git merge commits ("Merge branch 'wip-…' into ccr-…");
+  * one unpushed `wip:` commit sat in an agent's worktree.
+* **Changes:**
+  * `.github/scripts/check-commit-messages.sh`, in both repos, checks
+    every non-merge commit a push or pull request adds:
+    `type(scope)!: description`, a lowercase description, no trailing
+    period, at most 72 characters. A Commit messages job in CI runs it
+    (uPortal 8dee16c72, uPortal-start 12fe42e97), and AGENTS.md lists
+    the command.
+  * Commits older than the script aren't checked, and pushed history is
+    not rewritten.
+  * Issue IDs go in a `Refs MOD-…` footer.
+  * uPortal upstream has no commit linter and squash-merges PRs with
+    Conventional titles, so the script is an upstream candidate. A PR
+    title check would complement it there.
+* **Decision (owner): linear history.** Workstreams land by rebasing
+  their non-merge commits onto the integration branch and
+  fast-forwarding, with no merge commits. Existing merge commits stay,
+  because rewriting the shared branch would break every worker's
+  branch.
+  * Cloud workstreams push topic branches, and the integrator lands
+    them.
+  * Local agents rebase their unpushed branch and push as a
+    fast-forward.
+* **Alternatives considered:**
+  * Squash per workstream: loses the one-commit-per-future-PR split.
+  * Keep merge commits: commitlint ignores them, but the history doesn't
+    read as upstream-shaped PRs.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
