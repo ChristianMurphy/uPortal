@@ -1,8 +1,10 @@
 import { html } from 'lit';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
+import { axeViolations } from '../test-support/axe';
 import { cleanupFixtures, fixture } from '../test-support/fixture';
 import { FetchStub, json, noContent } from '../test-support/fetch-stub';
 import { clearMessageCache, MESSAGES_PATH } from './i18n';
+import { bootstrapStyles } from './styles/shared-styles';
 import { UpElement } from './up-element';
 
 class TestElement extends UpElement {
@@ -238,6 +240,25 @@ describe('UpElement styles', () => {
         expect(getComputedStyle(element).getPropertyValue('--primary-base').trim()).not.toBe('');
         expect(getComputedStyle(button).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
         expect(getComputedStyle(element).display).toBe('block');
+    });
+
+    it('meets WCAG AA contrast with the shared sheet', async () => {
+        const host = document.createElement('div');
+        document.body.append(host);
+        try {
+            const root = host.attachShadow({ mode: 'open' });
+            root.adoptedStyleSheets = [bootstrapStyles.styleSheet as CSSStyleSheet];
+            root.innerHTML = `<p><a href="#a">A link</a></p>
+                <button type="button" class="btn-solid theme-danger">Danger</button>
+                <button type="button" class="btn-solid theme-primary">Primary</button>
+                ${['success', 'danger', 'warning', 'info']
+                    .map((theme) => `<div class="alert theme-${theme}"><p>${theme}</p></div>`)
+                    .join('')}`;
+
+            expect(await axeViolations(host)).toEqual([]);
+        } finally {
+            host.remove();
+        }
     });
 
     it('lets the page theme a component through its tokens', async () => {

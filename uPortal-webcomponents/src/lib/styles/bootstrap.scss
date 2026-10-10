@@ -20,3 +20,19 @@
 @use 'bootstrap/scss/helpers/theme-colors';
 @use 'bootstrap/scss/helpers/visually-hidden';
 @use 'bootstrap/scss/helpers/focus-ring';
+
+// Accessibility fixes. In light mode Bootstrap 6.0.0-alpha.1 falls below the 4.5:1 contrast that
+// WCAG 2.2 AA asks of text: links (3.6:1), white on solid primary and danger buttons (3.6:1 and
+// 4.4:1), and theme text on subtle alerts (3.1:1 to 3.7:1). Revisit when Bootstrap or the skin
+// changes these colors.
+:host {
+    --link-color: var(--primary-fg);
+    --primary-bg: light-dark(var(--blue-600), var(--blue-500));
+    --danger-bg: light-dark(var(--red-600), var(--red-500));
+}
+
+@layer custom {
+    .alert {
+        color: var(--theme-fg-emphasis, var(--alert-color));
+    }
+}

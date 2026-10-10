@@ -135,3 +135,21 @@ whole path within the servlet, not just the part the pattern's wildcards matched
 on `/resources/*`. It served static files packaged in jars such as `spring-js`, nothing in uPortal
 requested them, and Web Flow 2.5 removed the class. If your overlay links to files under
 `/uPortal/resources/`, serve them from the web application instead.
+
+## Favorites is a web component
+
+The Favorites channel (`favorites`) was the Favorites portlet. It is now a **Web Component**
+channel that renders `<up-favorites>`, with its data from the new REST API
+`/api/v6-0/favorites`. Users see the same list; reordering and removing happen in place instead
+of in the portlet's EDIT mode.
+
+Existing portals keep their Favorites portlet definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/favorites.portlet-definition.xml` (or your copy of it), which
+updates the channel in place; see
+[Converting existing Favorites channels](developer/web-components/README.md#converting-existing-favorites-channels)
+for definitions with another fname or customized preferences. The Favorites portlet itself will
+be removed in a later release.
+
+Unsafe requests to the new `/api/v6-0/` REST APIs need Spring Security's CSRF token (or an OIDC
+bearer token), unlike the older APIs under `/api`.
