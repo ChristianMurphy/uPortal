@@ -39,7 +39,7 @@ the package prefixes as follows:
 | `org.springframework.webflow.mvc.portlet` | `org.apereo.portal.spring.webflow.mvc.portlet` |
 | `org.springframework.webflow.context.portlet` | `org.apereo.portal.spring.webflow.context.portlet` |
 
-For example, `org.springframework.web.portlet.DispatcherPortlet` becomes
+With these prefixes, `org.springframework.web.portlet.DispatcherPortlet` becomes
 `org.apereo.portal.spring.web.portlet.DispatcherPortlet`, and
 `org.springframework.webflow.mvc.portlet.FlowHandlerAdapter` becomes
 `org.apereo.portal.spring.webflow.mvc.portlet.FlowHandlerAdapter`. uPortal's two
@@ -57,8 +57,8 @@ counterpart: `PortletRequestUtils`, `StaticPortletApplicationContext`,
 `SimpleMappingExceptionResolver`, `SimplePortletHandlerAdapter`, `SimplePortletPostProcessor`,
 `UserRoleAuthorizationInterceptor`, `CommonsPortletMultipartResolver`,
 `DefaultMultipartActionRequest`, `ParameterizableViewController`,
-`PortletModeNameViewController` and `PortletWrappingController`; nor does Web Flow's
-`PortletMvcViewFactory`.
+`PortletModeNameViewController` and `PortletWrappingController`. Web Flow's
+`PortletMvcViewFactory` has no counterpart either.
 
 The copied classes log under their new package names. If your logging configuration sets
 levels for the old packages, change it to the new ones. This includes the "page not found"
