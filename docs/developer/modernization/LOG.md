@@ -1011,6 +1011,15 @@ This supersedes MOD-D24's runtime matrix.
     assigns the numbers.
 * **Upstream note:** the `MaxHeapSize=32g` override is worth raising
   upstream. It makes `-Xmx2048M` meaningless on developer machines.
+* **Update (21:25 UTC):** after a usage reset the owner said to go full
+  speed ("go ham"), so the cloud cap rose to six. Six sessions are running.
+  * HTTP replay and security matrix (`-http-replay`).
+  * Cluster, browsers, accessibility and budgets (`-cluster`).
+  * P3-2 Pluto in-tree (`-pluto`).
+  * P4 preparation on Spring 4.3 (`-spring53-prep`).
+  * Overlay fixes for the Tomcat 11 blockers and the removed-API scanner
+    (`-overlays`).
+  * Local login default with CAS opt-in (`-local-login`).
 
 ## Issues
 
