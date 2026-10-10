@@ -534,6 +534,26 @@ chosen per portlet.
     `modal.ts` or `offcanvas.ts` any more. They appear to be replaced by
     menu, dialog and drawer, but this is inferred from file names and
     still to be confirmed against the v6 migration guide.
+  * **Confirmed by Bootstrap's own migration skill** (`npx skills add
+    twbs/bootstrap`, installed in `~/.claude/skills`: 11 markdown-only
+    skills, reviewed before use):
+    * Modal → **Dialog**: a native `<dialog>`; the `.modal-dialog` and
+      `.modal-content` wrappers are removed; `.dialog-open` goes on
+      `<html>`.
+    * Offcanvas → **Drawer**; Dropdown → **Menu** (no `.dropdown`
+      wrapper or `.dropdown-toggle`).
+    * `.btn-primary` → `btn-solid theme-primary`, and every variant moves
+      to theme tokens.
+    * Responsive prefixes become `md:`-style (`.navbar-expand-md` →
+      `.md:navbar-expand`).
+    * Utility, font-size and spacer-scale renames; form validation
+      becomes `data-bs-validate`.
+    * The JS is ESM-only, Popper is replaced by Floating UI, and
+      lifecycle methods return promises.
+    * Sass uses `@use` only, with renamed variables and functions.
+  * Every WS14 and skin-migration task should use the
+    `bootstrap-v5-v6-migration`, `bootstrap-vite`,
+    `bootstrap-color-system` and `bootstrap-component` skills.
 * **Impact on uPortal** (file counts in uPortal-webapp and
   uPortal-portlets):
   * `dropdown` 20, `modal` 15, `offcanvas` 7, `data-bs-` 15, `tooltip` 3,
