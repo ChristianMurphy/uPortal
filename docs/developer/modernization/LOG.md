@@ -127,6 +127,37 @@ databases upgrading in place.
 * **Still open:** filter CKEditor's version-check request by URL in
   visual-resource-server, so the gate is fully green offline.
 
+### MOD-D9: the portlet WAR bridge works; move Tomcat 11 portlet fixes into P5
+
+* **Evidence:** the non-merging spike converted the whole built 5.17
+  portal (uPortal, all 12 portlet WARs including pluto-testsuite,
+  resource-server, CAS 3.6 and shared/lib) with Tomcat's jakartaee-migration
+  tool.
+  * It passed the same 116/119 Playwright tests as the javax baseline on
+    Tomcat 11.0.26 + JDK 21, Tomcat 11.0.26 + JDK 25, and Tomcat 10.1.60
+    + JDK 21.
+  * The new admin specs pass too.
+  * All 94 registered portlets render, and the Pluto testsuite results
+    match Tomcat 8.5 exactly.
+* **The hybrid portlet API** is the tool's own output: 4 classes change
+  (`Cookie` moves to jakarta, `javax.portlet` keeps its name). Cross-context
+  `getCookies()` returns `jakarta.servlet.http.Cookie[]`.
+* **Where portlets break:** Tomcat 11 (Pages 4.0 removals: MOD-I60–I62)
+  and JDK 25 (XSLT extension functions: MOD-I63) break things. The jakarta
+  rename itself does not.
+* **Decision:**
+  * MOD-Q5's bridge is validated for the bundled portlets.
+  * Move the JSTL upgrade, the Spring 3.x WAR upgrades/retirements and the
+    Notification Boot fix into P5 as javax-side pre-steps.
+  * Fix MOD-I63 in code before the JDK 25 runtime move.
+  * The JDK 25 runtime can be decoupled from P6, since the javax-era stack
+    ran every exercised path on JDK 25 once MOD-I63 was handled.
+  * Reword the risk register: Tomcat 11 dispatch and wrapping are fine;
+    JSP verification of EOL tag libraries is the risk.
+* **Evidence location:**
+  [research/spike-jakarta/README.md](research/spike-jakarta/README.md)
+  and its scripts.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -190,6 +221,15 @@ databases upgrading in place.
 | MOD-I57 | Admin UI | **Found by the new specs.** User Administration "Create a User" saves, but the next page throws an NPE. A null lookup for the new username is cached for 15 minutes, so the account can't be opened and edited attributes look stale. | The spec flushes that cache through Cache Manager. Upstream bug. |
 | MOD-I58 | Admin UI | **Found by the new specs.** The editPermission breadcrumbs are action URLs used as plain links, so following one returns HTTP 405. Import/Export `delete.jsp` has broken markup that leaves the form covered and unclickable. | The specs work around both (keyboard submit). Upstream bugs. |
 | MOD-I59 | API | `/api/entity` cannot delete groups or local accounts. | Spec cleanup goes through the UI. Possible API gap. |
+| MOD-I60 | Portlets | **Spike B3 (Tomcat 11 only, critical).** 13 of 16 WARs ship JSTL 1.1.2, which uses `javax/jakarta.servlet.jsp.el`, removed in Pages 4.0. Any JSP using `<c:set>` fails on Tomcat 11. Tomcat 10.1 is fine. | P5: upgrade JSTL to Apache Taglibs 1.2.5 / Jakarta Tags in uPortal and every bundled portlet before P7-1. |
+| MOD-I61 | Portlets | **Spike B4 (Tomcat 11 only).** Spring 3.x WARs (Feedback, CAS 3.6, ResourceServingWebapp, esup-filemanager) fail on Tomcat 11 for the same reason. | P5: upgrade or retire them. A shared/lib shim jar worked in the spike. |
+| MOD-I62 | Portlets | **Spike B2 (Tomcat 11 only).** NotificationPortlet (Spring Boot 1.5) fails to deploy: Boot references `AbstractHttp11JsseProtocol`, which Tomcat 11 removed. | P5: one property that excludes Boot's embedded-container auto-config. |
+| MOD-I63 | Runtime | **Spike B5 (JDK 25, critical).** JDK 25 disables XSLT extension functions by default, and uPortal's theme pipeline depends on them, so the portal is down on JDK 25. JDK 25 also tightens XML entity and depth limits. | Workaround: `-Djdk.xml.enableExtensionFunctions=true`. Real fix: set the feature on uPortal's TransformerFactory in code, test it on the JDK 25 CI leg, and test large imports. |
+| MOD-I64 | Tooling | **Spike B1.** `icu4j-2.6.1.jar` (in Calendar and NewsReader) contains a corrupt class, so the migration tool aborts the whole WAR. Tomcat's `legacyAppBase` deploy-time conversion therefore can't handle these two WARs. | The transform pipeline needs a per-WAR `-exclude` list and must fail the build on a non-zero exit. |
+| MOD-I65 | Tooling | The jakartaee-migration default TOMCAT profile also renames `javax.persistence`, `javax.transaction`, `javax.ejb`, `javax.mail` and the annotation classes. Each WAR stays self-consistent, so it works. A narrow profile needs about 20 lines of Java (`NarrowMigrate.java`), and it passed too. | P5-5: use the narrow profile. It rewrites fewer classes and leaves `javax.persistence.*` property keys unchanged. |
+| MOD-I66 | Tooling | A removed-Servlet-API scanner must check linkage, not grep method names. The hard failures came from removed *classes* in signatures and exception tables, reached through Jasper tag introspection and Tomcat internals. | Prototype `JakartaLinkScan.java` (in research/spike-jakarta/scripts). Class-level hits predicted every hard failure. |
+| MOD-I67 | Correction | MOD-I36 said CAS 3.6 cannot run on Jakarta Tomcat. In fact, once transformed it runs on 10.1 as-is, and on 11 with the jsp.el shim. | CAS 3.6 can be a stop-gap through P6. Making CAS opt-in or external (MOD-Q3) is still right because CAS 3.6 is EOL. |
+| MOD-I68 | Runtime | Tomcat 10.1/11 silently ignore `compressableMimeType` (uPortal-start `server.xml`) and `disableURLRewriting` (Feedback). Several WARs ship `spring-test` and two JSTL implementations. | Fix in the P6-2 overlays. Dependency hygiene in P5. |
 
 ## Open questions
 
