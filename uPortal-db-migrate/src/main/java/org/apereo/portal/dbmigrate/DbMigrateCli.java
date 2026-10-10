@@ -66,7 +66,11 @@ public final class DbMigrateCli {
                     "  --report FILE           write a JSON report there, and a summary as .txt",
                     "",
                     "Exit status: 0 copied and verified, 1 copy or verification failed,",
-                    "2 plan errors or bad arguments (nothing written).");
+                    "2 plan errors or bad arguments (nothing written).",
+                    "",
+                    "A copy that stops part-way (status 1, or a killed process) leaves the chunks it",
+                    "committed in the target and the ID generators unpositioned; it cannot resume.",
+                    "Run it again with --clear-target.");
 
     private DbMigrateCli() {}
 
