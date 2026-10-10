@@ -27,15 +27,17 @@ import java.nio.file.Files;
 import java.util.Collections;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
-import net.sf.ehcache.Cache;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinInstanceData;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinUniqueTokenGenerator;
+import org.apereo.portal.portlets.dynamicskin.storage.AbstractDynamicSkinService;
 import org.apereo.portal.portlets.dynamicskin.storage.DynamicSkinCssFileNamer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
@@ -52,6 +54,7 @@ public class AwsS3DynamicSkinServiceTest {
     @Mock private DynamicSkinUniqueTokenGenerator tokenGenerator;
     @Mock private DynamicSkinCssFileNamer namer;
     @Mock private Cache failureCache;
+    @Mock private CacheManager cacheManager;
     @Mock private DynamicSkinInstanceData data;
     @Mock private PortletRequest portletRequest;
     @Mock private PortletPreferences preferences;
@@ -67,13 +70,15 @@ public class AwsS3DynamicSkinServiceTest {
         given(this.tokenGenerator.generateToken(this.data)).willReturn(TOKEN);
         given(this.data.getPortletRequest()).willReturn(this.portletRequest);
         given(this.portletRequest.getPreferences()).willReturn(this.preferences);
+        given(this.cacheManager.getCache(AbstractDynamicSkinService.FAILURE_CACHE_NAME))
+                .willReturn(this.failureCache);
         this.service =
                 new AwsS3DynamicSkinService(
                         this.s3Client,
                         this.config,
                         this.tokenGenerator,
                         this.namer,
-                        this.failureCache);
+                        this.cacheManager);
     }
 
     @Test

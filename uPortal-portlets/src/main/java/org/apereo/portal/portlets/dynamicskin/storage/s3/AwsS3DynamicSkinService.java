@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import net.sf.ehcache.Cache;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
@@ -32,10 +31,11 @@ import org.apereo.portal.portlets.dynamicskin.DynamicSkinUniqueTokenGenerator;
 import org.apereo.portal.portlets.dynamicskin.storage.AbstractDynamicSkinService;
 import org.apereo.portal.portlets.dynamicskin.storage.DynamicSkinCssFileNamer;
 import org.apereo.portal.portlets.dynamicskin.storage.DynamicSkinService;
+import org.apereo.portal.utils.cache.CacheLookup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
@@ -78,8 +78,11 @@ public class AwsS3DynamicSkinService extends AbstractDynamicSkinService {
             final DynamicSkinAwsS3BucketConfig config,
             final DynamicSkinUniqueTokenGenerator uniqueTokenGenerator,
             final DynamicSkinCssFileNamer namer,
-            @Qualifier("org.apereo.portal.skinManager.failureCache") final Cache failureCache) {
-        super(uniqueTokenGenerator, namer, failureCache);
+            final CacheManager cacheManager) {
+        super(
+                uniqueTokenGenerator,
+                namer,
+                CacheLookup.requireCache(cacheManager, FAILURE_CACHE_NAME));
         Assert.notNull(client);
         Assert.notNull(config);
         this.amazonS3Client = client;
