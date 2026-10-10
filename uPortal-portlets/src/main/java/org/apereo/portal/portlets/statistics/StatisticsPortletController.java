@@ -14,7 +14,6 @@
  */
 package org.apereo.portal.portlets.statistics;
 
-import com.google.visualization.datasource.base.TypeMismatchException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
@@ -70,7 +69,7 @@ public class StatisticsPortletController {
     }
 
     @RenderMapping
-    public String getReportList() throws TypeMismatchException {
+    public String getReportList() {
         return "jsp/Statistics/reportList";
     }
 
@@ -88,8 +87,7 @@ public class StatisticsPortletController {
     public ModelAndView getIntervalCount(
             @RequestParam("interval") AggregationInterval interval,
             @RequestParam("start") DateMidnight start,
-            @RequestParam("end") DateMidnight end)
-            throws TypeMismatchException {
+            @RequestParam("end") DateMidnight end) {
         final int intervalsBetween =
                 this.intervalHelper.intervalsBetween(
                         interval, start.toDateTime(), end.plusDays(1).toDateTime().minusSeconds(1));

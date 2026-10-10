@@ -1,0 +1,1 @@
+{"cols":[{"id":"time","label":"Time","type":"timeofday","pattern":""},{"id":"Concurrent users","label":"Concurrent users","type":"number","pattern":""}],"rows":[{"c":[{"v":[0,0,0,0]},{"v":5.0}]},{"c":[{"v":[23,59,0,0]},{"v":1.23456789012345E14}]},{"c":[{"v":[13,5,7,0]},{"v":null}]}]}

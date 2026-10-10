@@ -17,16 +17,10 @@ package org.apereo.portal.portlets.statistics;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
-import com.google.visualization.datasource.base.TypeMismatchException;
-import com.google.visualization.datasource.datatable.ColumnDescription;
-import com.google.visualization.datasource.datatable.DataTable;
-import com.google.visualization.datasource.datatable.TableCell;
-import com.google.visualization.datasource.datatable.TableRow;
-import com.google.visualization.datasource.datatable.value.DateTimeValue;
-import com.google.visualization.datasource.datatable.value.DateValue;
-import com.google.visualization.datasource.datatable.value.TimeOfDayValue;
-import com.google.visualization.datasource.datatable.value.Value;
-import com.google.visualization.datasource.datatable.value.ValueType;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -49,6 +43,10 @@ import org.apereo.portal.events.aggr.groups.AggregatedGroupLookupDao;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMappingNameComparator;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
+import org.apereo.portal.web.report.ReportColumn;
+import org.apereo.portal.web.report.ReportTable;
+import org.apereo.portal.web.report.ReportValue;
+import org.apereo.portal.web.report.ReportValueType;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
@@ -64,7 +62,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
  * Base class for reporting on portal statistics. Does most of the heavy lifting for reporting
  * against {@link BaseAggregation} subclasses. Implementations should call {@link
  * #renderAggregationReport(BaseReportForm)} from their resource request handling method. This will
- * generate the {@link DataTable} of the results and render the correct view.
+ * generate the {@link ReportTable} of the results and render the correct view.
  *
  * @param <T> The type of aggregation being reported on
  * @param <K> The aggregation query key
@@ -165,8 +163,8 @@ public abstract class BaseStatisticsReportController<
     public abstract String getReportName();
 
     /**
-     * @return The {@link ResourceURL#setResourceID(String)} value used to get the {@link DataTable}
-     *     for the report
+     * @return The {@link ResourceURL#setResourceID(String)} value used to get the {@link
+     *     ReportTable} for the report
      */
     @ModelAttribute("reportDataResourceId")
     public abstract String getReportDataResourceId();
@@ -299,7 +297,7 @@ public abstract class BaseStatisticsReportController<
      * @param form The original query form
      * @return List of column descriptors for the group
      */
-    protected abstract List<ColumnDescription> getColumnDescriptions(D group, F form);
+    protected abstract List<ReportColumn> getColumnDescriptions(D group, F form);
 
     /**
      * Get a discriminator comparator for the appropriate type of statistics data we are reporting
@@ -329,14 +327,14 @@ public abstract class BaseStatisticsReportController<
      * @param form The original query form
      * @return List of row values for the aggregation
      */
-    protected abstract List<Value> createRowValues(T aggr, F form);
+    protected abstract List<ReportValue> createRowValues(T aggr, F form);
 
     /**
      * @param form The form submitted by the user
      * @return The model and view to render
      */
-    protected final ModelAndView renderAggregationReport(F form) throws TypeMismatchException {
-        final DataTable table = buildAggregationReport(form);
+    protected final ModelAndView renderAggregationReport(F form) {
+        final ReportTable table = buildAggregationReport(form);
 
         final String view;
         switch (form.getFormat()) {
@@ -408,8 +406,8 @@ public abstract class BaseStatisticsReportController<
         return showFullHeaderDescriptions;
     }
 
-    /** Build the aggregation {@link DataTable} */
-    protected final DataTable buildAggregationReport(F form) throws TypeMismatchException {
+    /** Build the aggregation {@link ReportTable} */
+    protected final ReportTable buildAggregationReport(F form) {
         // Pull data out of form for per-group fetching
         final AggregationInterval interval = form.getInterval();
         final DateMidnight start = form.getStart();
@@ -426,45 +424,45 @@ public abstract class BaseStatisticsReportController<
 
         final Map<D, SortedSet<T>> groupedAggregations = createColumnDiscriminatorMap(form);
 
-        // Determine the ValueType of the date/time column. Use the most specific column type
+        // Determine the ReportValueType of the date/time column. Use the most specific column type
         // possible
-        final ValueType dateTimeColumnType;
+        final ReportValueType dateTimeColumnType;
         if (interval.isHasTimePart()) {
             // If start/end are the same day just display the time
             if (startDateTime.toDateMidnight().equals(endDateTime.toDateMidnight())) {
-                dateTimeColumnType = ValueType.TIMEOFDAY;
+                dateTimeColumnType = ReportValueType.TIMEOFDAY;
             }
             // interval has time data and start/end are on different days, show full date time
             else {
-                dateTimeColumnType = ValueType.DATETIME;
+                dateTimeColumnType = ReportValueType.DATETIME;
             }
         }
         // interval is date only
         else {
-            dateTimeColumnType = ValueType.DATE;
+            dateTimeColumnType = ReportValueType.DATE;
         }
 
         // Setup the date/time column description
-        final ColumnDescription dateTimeColumn;
+        final ReportColumn dateTimeColumn;
         switch (dateTimeColumnType) {
             case TIMEOFDAY:
                 {
-                    dateTimeColumn = new ColumnDescription("time", dateTimeColumnType, "Time");
+                    dateTimeColumn = new ReportColumn("time", dateTimeColumnType, "Time");
                     break;
                 }
             default:
                 {
-                    dateTimeColumn = new ColumnDescription("date", dateTimeColumnType, "Date");
+                    dateTimeColumn = new ReportColumn("date", dateTimeColumnType, "Date");
                 }
         }
 
-        final DataTable table = new JsonDataTable();
+        final ReportTable table = new ReportTable();
         table.addColumn(dateTimeColumn);
 
-        // Setup columns in the DataTable
+        // Setup columns in the ReportTable
         final Set<D> columnGroups = groupedAggregations.keySet();
         for (final D columnMapping : columnGroups) {
-            final Collection<ColumnDescription> columnDescriptions =
+            final Collection<ReportColumn> columnDescriptions =
                     this.getColumnDescriptions(columnMapping, form);
             table.addColumns(columnDescriptions);
         }
@@ -504,46 +502,50 @@ public abstract class BaseStatisticsReportController<
          */
         for (final DateTime rowTime : reportTimes) {
             // create the row
-            final TableRow row = new TableRow();
+            final List<ReportValue> row = new ArrayList<>();
 
             // add the date to the first cell
-            final Value dateTimeValue;
+            final ReportValue dateTimeValue;
             switch (dateTimeColumnType) {
                 case DATE:
                     {
                         dateTimeValue =
-                                new DateValue(
-                                        rowTime.getYear(),
-                                        rowTime.getMonthOfYear() - 1,
-                                        rowTime.getDayOfMonth());
+                                ReportValue.date(
+                                        LocalDate.of(
+                                                rowTime.getYear(),
+                                                rowTime.getMonthOfYear(),
+                                                rowTime.getDayOfMonth()));
                         break;
                     }
                 case TIMEOFDAY:
                     {
                         dateTimeValue =
-                                new TimeOfDayValue(
-                                        rowTime.getHourOfDay(), rowTime.getMinuteOfHour(), 0);
+                                ReportValue.timeOfDay(
+                                        LocalTime.of(
+                                                rowTime.getHourOfDay(),
+                                                rowTime.getMinuteOfHour(),
+                                                0));
                         break;
                     }
                 default:
                     {
                         dateTimeValue =
-                                new DateTimeValue(
-                                        rowTime.getYear(),
-                                        rowTime.getMonthOfYear() - 1,
-                                        rowTime.getDayOfMonth(),
-                                        rowTime.getHourOfDay(),
-                                        rowTime.getMinuteOfHour(),
-                                        0,
-                                        0);
+                                ReportValue.dateTime(
+                                        LocalDateTime.of(
+                                                rowTime.getYear(),
+                                                rowTime.getMonthOfYear(),
+                                                rowTime.getDayOfMonth(),
+                                                rowTime.getHourOfDay(),
+                                                rowTime.getMinuteOfHour(),
+                                                0));
                         break;
                     }
             }
-            row.addCell(new TableCell(dateTimeValue));
+            row.add(dateTimeValue);
 
             for (final PeekingIterator<T> groupedAggregationIteratorEntry :
                     groupedAggregationIterators.values()) {
-                List<Value> values = null;
+                List<ReportValue> values = null;
 
                 if (groupedAggregationIteratorEntry.hasNext()) {
                     final T aggr = groupedAggregationIteratorEntry.peek();
@@ -561,9 +563,7 @@ public abstract class BaseStatisticsReportController<
                 }
 
                 // Add the values to the row
-                for (final Value value : values) {
-                    row.addCell(value);
-                }
+                row.addAll(values);
             }
 
             table.addRow(row);

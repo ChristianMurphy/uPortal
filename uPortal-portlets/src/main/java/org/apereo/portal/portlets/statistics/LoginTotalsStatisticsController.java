@@ -15,11 +15,6 @@
 package org.apereo.portal.portlets.statistics;
 
 import com.google.common.collect.ImmutableList;
-import com.google.visualization.datasource.base.TypeMismatchException;
-import com.google.visualization.datasource.datatable.ColumnDescription;
-import com.google.visualization.datasource.datatable.value.NumberValue;
-import com.google.visualization.datasource.datatable.value.Value;
-import com.google.visualization.datasource.datatable.value.ValueType;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -40,6 +35,9 @@ import org.apereo.portal.events.aggr.login.LoginAggregationKeyImpl;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
+import org.apereo.portal.web.report.ReportColumn;
+import org.apereo.portal.web.report.ReportValue;
+import org.apereo.portal.web.report.ReportValueType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,13 +60,12 @@ public class LoginTotalsStatisticsController
     @Autowired private AggregatedGroupLookupDao aggregatedGroupDao;
 
     @RenderMapping(value = "MAXIMIZED", params = "report=" + REPORT_NAME)
-    public String getLoginView() throws TypeMismatchException {
+    public String getLoginView() {
         return "jsp/Statistics/reportGraph";
     }
 
     @ResourceMapping(DATA_TABLE_RESOURCE_ID)
-    public ModelAndView renderLoginAggregationReport(LoginReportForm form)
-            throws TypeMismatchException {
+    public ModelAndView renderLoginAggregationReport(LoginReportForm form) {
         return renderAggregationReport(form);
     }
 
@@ -117,7 +114,7 @@ public class LoginTotalsStatisticsController
      * @return Map of report column discriminators to sorted set of time-based aggregation data
      */
     @Override
-    protected List<ColumnDescription> getColumnDescriptions(
+    protected List<ReportColumn> getColumnDescriptions(
             LoginAggregationDiscriminator columnDiscriminator, LoginReportForm form) {
         final String groupName = columnDiscriminator.getAggregatedGroup().getGroupName();
 
@@ -125,31 +122,31 @@ public class LoginTotalsStatisticsController
             return ImmutableList.of(
                     // THE ORDER OF RETURNED COLUMNS HERE MUST MATCH THE ORDER OF THE VALUES
                     // RETURNED IN createRowValues
-                    new ColumnDescription(
+                    new ReportColumn(
                             groupName + "-uniqueLogins",
-                            ValueType.NUMBER,
+                            ReportValueType.NUMBER,
                             groupName + " - Unique Logins"),
-                    new ColumnDescription(
+                    new ReportColumn(
                             groupName + "-totalLogins",
-                            ValueType.NUMBER,
+                            ReportValueType.NUMBER,
                             groupName + " - Total Logins"));
         } else if (form.isUniqueLogins()) {
             return Collections.singletonList(
-                    new ColumnDescription(
+                    new ReportColumn(
                             groupName + "-uniqueLogins",
-                            ValueType.NUMBER,
+                            ReportValueType.NUMBER,
                             groupName + " - Unique Logins"));
         } else {
             return Collections.singletonList(
-                    new ColumnDescription(
+                    new ReportColumn(
                             groupName + "-totalLogins",
-                            ValueType.NUMBER,
+                            ReportValueType.NUMBER,
                             groupName + " - Total Logins"));
         }
     }
 
     @Override
-    protected List<Value> createRowValues(LoginAggregation aggr, LoginReportForm form) {
+    protected List<ReportValue> createRowValues(LoginAggregation aggr, LoginReportForm form) {
         final int loginCount;
         final int uniqueLoginCount;
         if (aggr == null) {
@@ -161,14 +158,14 @@ public class LoginTotalsStatisticsController
         }
 
         if (form.isTotalLogins() && form.isUniqueLogins()) {
-            return ImmutableList.<Value>of(
+            return ImmutableList.<ReportValue>of(
                     // THE ORDER OF RETURNED VALUES HERE MUST MATCH THE ORDER OF THE COLUMNS
                     // RETURNED IN getColumnDescriptions
-                    new NumberValue(uniqueLoginCount), new NumberValue(loginCount));
+                    ReportValue.number(uniqueLoginCount), ReportValue.number(loginCount));
         } else if (form.isUniqueLogins()) {
-            return Collections.<Value>singletonList(new NumberValue(uniqueLoginCount));
+            return Collections.<ReportValue>singletonList(ReportValue.number(uniqueLoginCount));
         } else {
-            return Collections.<Value>singletonList(new NumberValue(loginCount));
+            return Collections.<ReportValue>singletonList(ReportValue.number(loginCount));
         }
     }
 

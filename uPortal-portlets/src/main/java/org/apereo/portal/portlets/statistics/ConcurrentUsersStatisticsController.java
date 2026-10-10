@@ -14,11 +14,6 @@
  */
 package org.apereo.portal.portlets.statistics;
 
-import com.google.visualization.datasource.base.TypeMismatchException;
-import com.google.visualization.datasource.datatable.ColumnDescription;
-import com.google.visualization.datasource.datatable.value.NumberValue;
-import com.google.visualization.datasource.datatable.value.Value;
-import com.google.visualization.datasource.datatable.value.ValueType;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -39,6 +34,9 @@ import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
+import org.apereo.portal.web.report.ReportColumn;
+import org.apereo.portal.web.report.ReportValue;
+import org.apereo.portal.web.report.ReportValueType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,13 +60,12 @@ public class ConcurrentUsersStatisticsController
     @Autowired private AggregatedGroupLookupDao aggregatedGroupDao;
 
     @RenderMapping(value = "MAXIMIZED", params = "report=" + REPORT_NAME)
-    public String getConcurrentUserView() throws TypeMismatchException {
+    public String getConcurrentUserView() {
         return "jsp/Statistics/reportGraph";
     }
 
     @ResourceMapping(DATA_TABLE_RESOURCE_ID)
-    public ModelAndView renderConcurrentUserAggregationReport(ConcurrentUserReportForm form)
-            throws TypeMismatchException {
+    public ModelAndView renderConcurrentUserAggregationReport(ConcurrentUserReportForm form) {
         return renderAggregationReport(form);
     }
 
@@ -120,15 +117,15 @@ public class ConcurrentUsersStatisticsController
     }
 
     @Override
-    protected List<ColumnDescription> getColumnDescriptions(
+    protected List<ReportColumn> getColumnDescriptions(
             ConcurrentUserAggregationDiscriminator discriminator, ConcurrentUserReportForm form) {
         final String groupName = discriminator.getAggregatedGroup().getGroupName();
         return Collections.singletonList(
-                new ColumnDescription(groupName, ValueType.NUMBER, groupName));
+                new ReportColumn(groupName, ReportValueType.NUMBER, groupName));
     }
 
     @Override
-    protected List<Value> createRowValues(
+    protected List<ReportValue> createRowValues(
             ConcurrentUserAggregation aggr, ConcurrentUserReportForm form) {
         final int concurrentUsers;
         if (aggr == null) {
@@ -137,7 +134,7 @@ public class ConcurrentUsersStatisticsController
             concurrentUsers = aggr.getConcurrentUsers();
         }
 
-        return Collections.<Value>singletonList(new NumberValue(concurrentUsers));
+        return Collections.<ReportValue>singletonList(ReportValue.number(concurrentUsers));
     }
 
     @Override

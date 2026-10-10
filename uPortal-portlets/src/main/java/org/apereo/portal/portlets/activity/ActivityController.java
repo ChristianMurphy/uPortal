@@ -14,7 +14,6 @@
  */
 package org.apereo.portal.portlets.activity;
 
-import com.google.visualization.datasource.base.TypeMismatchException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -98,7 +97,7 @@ public class ActivityController {
     }
 
     @RenderMapping
-    public ModelAndView summary(PortletRequest request) throws TypeMismatchException {
+    public ModelAndView summary(PortletRequest request) {
         final Map<String, Object> model = new HashMap<String, Object>();
         final PortalActivity now = buildPortalActivity(request, NOW);
         final PortalActivity today = buildPortalActivity(request, TODAY);

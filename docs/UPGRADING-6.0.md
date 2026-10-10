@@ -262,3 +262,35 @@ constructors take the Spring `CacheManager` instead of the failure cache.
 `CacheHealthReporterService.reportCacheSizeNotLargeEnough` now takes the cache name instead of
 the Ehcache `Cache` and `Element`. This matters only if you wrote your own cache event listener
 that reports to it.
+
+## Statistics reports use uPortal's own table model
+
+The statistics reports used to build their data with google-visualization-java, a library that
+was only published on jitpack.io. uPortal now has a small table model of its own in
+`org.apereo.portal.web.report`, and the library is no longer in the uPortal web application.
+
+The report pages, their charts and the CSV and HTML downloads look and work as before. The JSON
+the charts read is unchanged, except that a missing value is now always `{"v":null}`; the
+library wrote invalid JSON for a missing value that wasn't in a row's last column.
+
+If your overlay has Java code that extends the statistics controllers, or a Spring context that
+names the table views, change it as follows:
+
+| Old | New |
+| --- | --- |
+| `com.google.visualization.datasource.datatable.DataTable` (and uPortal's `JsonDataTable`) | `org.apereo.portal.web.report.ReportTable` |
+| `com.google.visualization.datasource.datatable.ColumnDescription` | `org.apereo.portal.web.report.ReportColumn` |
+| `com.google.visualization.datasource.datatable.value.ValueType` | `org.apereo.portal.web.report.ReportValueType` (`TEXT`, `NUMBER`, `DATE`, `DATETIME`, `TIMEOFDAY`) |
+| `new NumberValue(n)`, `new DateValue(...)`, `new DateTimeValue(...)`, `new TimeOfDayValue(...)`, `new TextValue(s)` | `ReportValue.number(n)`, `ReportValue.date(LocalDate)`, `ReportValue.dateTime(LocalDateTime)`, `ReportValue.timeOfDay(LocalTime)`, `ReportValue.text(s)` (months count from 1, as in `java.time`) |
+| `Value.getNullValueFromValueType(type)` | `ReportValue.nullValue(type)` |
+| `List<Value> createRowValues(...)`, `List<ColumnDescription> getColumnDescriptions(...)` | `List<ReportValue> createRowValues(...)`, `List<ReportColumn> getColumnDescriptions(...)` |
+| `org.apereo.portal.web.view.GoogleCsvDataTableView` | `org.apereo.portal.web.view.ReportTableCsvView` |
+| `org.apereo.portal.web.view.GoogleHtmlDataTableView` | `org.apereo.portal.web.view.ReportTableHtmlView` |
+| `org.apereo.portal.web.view.AbstractGoogleDataTableView` | `org.apereo.portal.web.view.AbstractReportTableView` |
+
+The controllers no longer declare `throws TypeMismatchException`; adding a row with a value of
+the wrong type throws `IllegalArgumentException` instead. The view bean names,
+`dataTableCsvView` and `dataTableHtmlView`, are unchanged.
+
+The CSV and HTML downloads format numbers and dates as before. In locales whose default calendar
+isn't Gregorian or Buddhist (for example `ar-SA` and `fa-IR`), dates in them are now Gregorian.

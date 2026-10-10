@@ -14,15 +14,13 @@
  */
 package org.apereo.portal.portlets.statistics;
 
-import com.google.visualization.datasource.base.TypeMismatchException;
-import com.google.visualization.datasource.datatable.value.NumberValue;
-import com.google.visualization.datasource.datatable.value.Value;
 import java.util.Collections;
 import java.util.List;
 import org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregation;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
+import org.apereo.portal.web.report.ReportValue;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -35,14 +33,13 @@ public class PortletDeleteStatisticsController
 
     @Override
     @RenderMapping(value = "MAXIMIZED", params = "report=" + REPORT_NAME)
-    public String getLoginView() throws TypeMismatchException {
+    public String getLoginView() {
         return super.getLoginView();
     }
 
     @Override
     @ResourceMapping(DATA_TABLE_RESOURCE_ID)
-    public ModelAndView renderPortletAddAggregationReport(PortletDeleteReportForm form)
-            throws TypeMismatchException {
+    public ModelAndView renderPortletAddAggregationReport(PortletDeleteReportForm form) {
         return super.renderPortletAddAggregationReport(form);
     }
 
@@ -57,9 +54,9 @@ public class PortletDeleteStatisticsController
     }
 
     @Override
-    protected List<Value> createRowValues(
+    protected List<ReportValue> createRowValues(
             PortletLayoutAggregation aggr, PortletDeleteReportForm form) {
         int count = aggr != null ? aggr.getDeleteCount() : 0;
-        return Collections.<Value>singletonList(new NumberValue(count));
+        return Collections.<ReportValue>singletonList(ReportValue.number(count));
     }
 }

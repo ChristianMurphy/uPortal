@@ -63,6 +63,4 @@
     <Match><Class name="org.apereo.portal.web.skin.AggregationAwareFilterBean"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.web.skin.ResourcesAggregationHelper"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.web.skin.ResourcesElementsXsltcHelper"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
-    <Match><Class name="org.apereo.portal.web.view.GoogleCsvDataTableView"/><Method name="renderDataTable"/><Bug pattern="XSS_SERVLET"/></Match>
-    <Match><Class name="org.apereo.portal.web.view.GoogleHtmlDataTableView"/><Method name="renderDataTable"/><Bug pattern="XSS_SERVLET"/></Match>
 </FindBugsFilter>
