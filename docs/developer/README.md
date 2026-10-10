@@ -7,4 +7,5 @@ uPortal Framework sources and content modules for uPortal.
 * [API Documentation](other/API.md)
 * [uPortal Soffits](soffits/README.md)
 * [IDE Integration](other/IDE_INTEGRATION.md)
+* [Static Analysis](other/STATIC_ANALYSIS.md)
 * [Releasing uPortal](other/RELEASE.md)
