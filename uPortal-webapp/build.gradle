@@ -153,6 +153,13 @@ tasks.withType(Test).configureEach {
             systemProperty name, value
         }
     }
+    // In GitHub Actions, print the whole message of a failed test in the job log: the golden
+    // tests put their diff there, and the test reports cannot always be downloaded
+    if (providers.environmentVariable('GITHUB_ACTIONS').isPresent()) {
+        testLogging {
+            exceptionFormat = 'full'
+        }
+    }
 }
 
 /*
