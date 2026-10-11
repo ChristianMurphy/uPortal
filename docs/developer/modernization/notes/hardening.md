@@ -58,6 +58,11 @@ integration branch once the cluster branch is merged, and group its entries by r
 skin file that makes the markup. The shared skin and the admin pages come first. Each commit
 removes the entries it fixes from the baseline. Check with the coordinator before touching `#webSearchSubmit` (Search conversion).
 
+A message key added for these fixes (labels, alt text, landmark names) gets Spanish and French
+text in `Messages_es.properties` and `Messages_fr.properties` in the same commit as the English
+(MOD-D50). Each apostrophe is written twice, because the portal formats messages with
+MessageFormat. Accents are `\u` escapes until the i18n branch is merged.
+
 ## Proposed LOG rows
 
 | ID | Area | Finding | Resolution |
