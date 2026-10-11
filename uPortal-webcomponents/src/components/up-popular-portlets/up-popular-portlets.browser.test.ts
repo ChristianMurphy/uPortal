@@ -90,8 +90,9 @@ function fnames(element: UpPopularPortlets): string[] {
     );
 }
 
+/** The paging text, as screen readers and text matching get it: without surrounding space. */
 function info(element: UpPopularPortlets): string {
-    return find(element, '.info').textContent?.trim() ?? '';
+    return find(element, '.info').textContent ?? '';
 }
 
 function view(element: UpPopularPortlets) {
