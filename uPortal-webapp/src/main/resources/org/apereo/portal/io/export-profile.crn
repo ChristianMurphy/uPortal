@@ -55,8 +55,8 @@
                                 <parameter value="${PROFILE_FNAME}"/>
                                 <subtasks>
                                     <with>
-                                        <attribute key="structureStylesheetDesc">${groovy(stylesheetDescriptorDao.getStylesheetDescriptor(STRUCTURE_SS_ID))}</attribute>
-                                        <attribute key="themeStylesheetDesc">${groovy(stylesheetDescriptorDao.getStylesheetDescriptor(THEME_SS_ID))}</attribute>
+                                        <attribute key="structureStylesheetDesc">${groovy(stylesheetDescriptorDao.getStylesheetDescriptor(STRUCTURE_SS_ID.longValue()))}</attribute>
+                                        <attribute key="themeStylesheetDesc">${groovy(stylesheetDescriptorDao.getStylesheetDescriptor(THEME_SS_ID.longValue()))}</attribute>
                                         <subtasks>
                                             <append-node>
                                                 <name>${PROFILE_NAME}</name>
@@ -66,8 +66,8 @@
                                                 <theme name="${groovy(themeStylesheetDesc.getName())}"/> 
                                             </append-node>
                                             <with>
-                                                <attribute key="structureStylesheetPrefs">${groovy(stylesheetUserPreferencesDao.getStylesheetUserPreferences(structureStylesheetDesc, USER_ID, PROFILE_ID))}</attribute>
-                                                <attribute key="themeStylesheetPrefs">${groovy(stylesheetUserPreferencesDao.getStylesheetUserPreferences(themeStylesheetDesc, USER_ID, PROFILE_ID))}</attribute>
+                                                <attribute key="structureStylesheetPrefs">${groovy(stylesheetUserPreferencesDao.getStylesheetUserPreferences(structureStylesheetDesc, USER_ID.intValue(), PROFILE_ID.intValue()))}</attribute>
+                                                <attribute key="themeStylesheetPrefs">${groovy(stylesheetUserPreferencesDao.getStylesheetUserPreferences(themeStylesheetDesc, USER_ID.intValue(), PROFILE_ID.intValue()))}</attribute>
                                                 <subtasks>
                                                     <if test="${groovy(structureStylesheetPrefs != null)}">
                                                         <for-each attribute-name="paramEntry" items="${groovy(structureStylesheetPrefs.populateStylesheetParameters(new org.apereo.portal.utils.MapPopulator()).getMap().entrySet())}">
