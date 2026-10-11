@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vite-plus/test';
 import { ApiClient, ApiError } from '../../lib/api-client';
+import { UNICODE_QUERY, UNICODE_QUERY_ENCODED } from '../../test-support/unicode';
 import {
     fetchSearchResults,
     fetchSuggestions,
@@ -119,6 +120,17 @@ describe('fetchSearchResults', () => {
 
         expect(fetch).toHaveBeenCalledWith(
             `/uPortal${SEARCH_PATH}?q=a%26b&type=people&type=portlets&submitted=true`,
+            expect.objectContaining({ method: 'GET' }),
+        );
+    });
+
+    it('sends a Unicode query encoded once, as UTF-8', async () => {
+        const { fetch, client } = api(Response.json(BODY));
+
+        await fetchSearchResults(client, UNICODE_QUERY, []);
+
+        expect(fetch).toHaveBeenCalledWith(
+            `/uPortal${SEARCH_PATH}?q=${UNICODE_QUERY_ENCODED}&submitted=true`,
             expect.objectContaining({ method: 'GET' }),
         );
     });

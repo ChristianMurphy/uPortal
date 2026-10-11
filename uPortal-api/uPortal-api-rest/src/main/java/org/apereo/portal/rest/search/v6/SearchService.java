@@ -41,7 +41,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class SearchService {
 
-    /** The longest query accepted, as the search boxes allow. */
+    /**
+     * The longest query accepted, in characters (Unicode code points, so a four-byte character such
+     * as an emoji counts once), as the search boxes allow.
+     */
     public static final int MAX_QUERY_LENGTH = 200;
 
     private static final String URL_ATTRIBUTE = "url";
@@ -85,7 +88,7 @@ public class SearchService {
         if (trimmed.isEmpty()) {
             throw new SearchException(HttpStatus.BAD_REQUEST, "Enter something to search for");
         }
-        if (trimmed.length() > MAX_QUERY_LENGTH) {
+        if (trimmed.codePointCount(0, trimmed.length()) > MAX_QUERY_LENGTH) {
             throw new SearchException(
                     HttpStatus.BAD_REQUEST,
                     "Search for at most " + MAX_QUERY_LENGTH + " characters");
