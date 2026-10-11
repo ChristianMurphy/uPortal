@@ -74,6 +74,10 @@ dependencies {
     entityScan "${portletApiDependency}"
     entityScan "org.apache.portals.pluto:pluto-container-api:${plutoVersion}"
 
+    // @SuppressFBWarnings, with the reason, where a finding is checked and safe (class retention:
+    // needed to compile only)
+    compileOnly "com.github.spotbugs:spotbugs-annotations:${spotbugsVersion}"
+
     testImplementation "org.hsqldb:hsqldb:${hsqldbVersion}"
     // Property tests (MOD-D29). The tests run on the JUnit Platform: jqwik's engine for the
     // properties, the Vintage engine for the JUnit 4 tests.
