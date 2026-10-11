@@ -30,7 +30,14 @@ public class HealthCheckController {
 
     @Autowired private List<? extends IHealthChecker> checkers;
 
-    @RequestMapping(method = RequestMethod.GET, produces = "application/json")
+    /*
+     * web.xml maps this servlet to exactly /health-check, which is the path the mapping sees.
+     * Spring 4.3 matched a mapping without a path against any path; Spring 5.3 only against "".
+     */
+    @RequestMapping(
+            value = "/health-check",
+            method = RequestMethod.GET,
+            produces = "application/json")
     public Map<String, Map<String, Object>> healthCheck(
             @RequestParam(required = false) List<String> detail) throws RuntimeException {
         Map<String, Map<String, Object>> map = new HashMap<>();

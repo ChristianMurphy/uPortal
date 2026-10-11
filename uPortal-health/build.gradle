@@ -4,4 +4,6 @@ dependencies {
     implementation project(':uPortal-spring')
 
     compileOnly "${servletApiDependency}"
+
+    testImplementation "${servletApiDependency}"
 }
