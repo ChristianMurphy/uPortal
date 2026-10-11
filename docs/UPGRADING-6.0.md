@@ -562,6 +562,16 @@ The cost falls on a portal with one server that restarts after a crash. Its old 
 starts on its own: about 8.6 s with the new setting, 4.3 s before. A clean shutdown removes the
 row, and the restarted server then starts at once.
 
+**Caches are emptied when a split heals.** Servers split by the network, or by a server that
+failed to join, drop each other's cache invalidations. JGroups doesn't resend them when the two
+sides merge again, and in uPortal 5 an entry read during the split kept its old value until it
+expired. In 6.0 each server empties every cache that has a JGroups replicator in `ehcache.xml`
+when JGroups installs a MergeView, and logs one INFO line from `ReplicatedCachesMergeClearer`
+with the view and the number of caches. The servers then read those entries again from the
+database, which costs a short burst of load right after the heal. A plain view change, such as a
+server joining or leaving, clears nothing. The setting
+`org.apereo.portal.cache.clearReplicatedCachesOnMerge` (default `true`) switches it off.
+
 ## Deep links and failed logins with local login
 
 The new setting `login.refUrlEncoder` (in `security.properties`) says how uPortal sends a guest
