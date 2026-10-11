@@ -18,6 +18,7 @@
  */
 package org.apereo.portal.portlets.search;
 
+import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.portlet.PortletUtils;
 import org.apereo.portal.portlet.om.IPortletDefinition;
@@ -67,13 +68,13 @@ public class PortletRegistryUtil {
          * insensitive comparison here anyway;  for safety, we will make certain
          * it is insensitive.
          */
-        final String lcQuery = query.toLowerCase();
-        final boolean titleMatch = portlet.getTitle().toLowerCase().contains(lcQuery);
-        final boolean nameMatch = portlet.getName().toLowerCase().contains(lcQuery);
+        final String lcQuery = query.toLowerCase(Locale.ROOT);
+        final boolean titleMatch = portlet.getTitle().toLowerCase(Locale.ROOT).contains(lcQuery);
+        final boolean nameMatch = portlet.getName().toLowerCase(Locale.ROOT).contains(lcQuery);
         final boolean descMatch =
                 portlet.getDescription() != null
-                        && portlet.getDescription().toLowerCase().contains(lcQuery);
-        final boolean fnameMatch = portlet.getFName().toLowerCase().contains(lcQuery);
+                        && portlet.getDescription().toLowerCase(Locale.ROOT).contains(lcQuery);
+        final boolean fnameMatch = portlet.getFName().toLowerCase(Locale.ROOT).contains(lcQuery);
         return titleMatch || nameMatch || descMatch || fnameMatch;
     }
 
