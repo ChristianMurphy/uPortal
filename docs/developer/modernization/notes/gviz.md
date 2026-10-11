@@ -149,3 +149,15 @@ Light profile on `ccr-43ba0785-hzlrj5-gviz`:
 * CI run 38099582058 on `fce3bb7`: the Spotless check passed. Both `LoginTotalsStatisticsControllerTest`
   tests failed with `UnfinishedStubbingException`: the test built its aggregation mocks
   inside the `thenReturn` of the DAO stub. The next commit builds them first.
+* CI run 38101149669 on `d6e525f`: passed. Build and Test (all module tests, including the
+  new report tests and `LoginTotalsStatisticsControllerTest`), Spotless, SpotBugs, the
+  JavaScript lint and the commit-message checks all passed.
+* DB integration run 38101149658 on `d6e525f`: running at the 01:38 UTC checkpoint. The two
+  earlier DB integration runs on this branch passed.
+
+## Status at the checkpoint (2026-10-11 01:38 UTC)
+
+* Done: the code change, its tests and docs. Light-profile CI is green on `d6e525f`.
+* Running: DB integration run 38101149658.
+* Next step: when that run passes, add its result above and tell the coordinator the branch
+  is ready to land. If it fails, read its job logs and fix the cause.
