@@ -70,17 +70,37 @@ public class PortletListTest {
         }
     }
 
+    /** Owners are user names, often email-style with single sign-on (MOD-I270) */
     @Test
-    public void ownersStayIdentifiersAndTheMessageSaysWhichCharacters() {
-        final PortletList list = named("Favorites");
-        list.setOwnerUsername("bad owner");
-        try {
+    public void ownersAcceptAnyUserName() {
+        for (final String owner :
+                new String[] {
+                    "admin",
+                    "jane.doe@example.edu",
+                    "Jos\u00e9.N\u00fa\u00f1ez",
+                    "\u674e\u5c0f\u9f8d"
+                }) {
+            final PortletList list = named("Favorites");
+            list.setOwnerUsername(owner);
             list.prepareForPersistence(requester());
-            fail("Accepted the owner \"bad owner\"");
-        } catch (IllegalArgumentException expected) {
-            assertTrue(
-                    expected.getMessage(),
-                    expected.getMessage().contains("A-Z, a-z, 0-9, _ and -"));
+            assertEquals(owner, list.getOwnerUsername());
+        }
+    }
+
+    @Test
+    public void ownersRefuseSpacesAndTheMessageSaysWhy() {
+        for (final String owner :
+                new String[] {"bad owner", new String(new char[101]).replace('\0', 'x')}) {
+            final PortletList list = named("Favorites");
+            list.setOwnerUsername(owner);
+            try {
+                list.prepareForPersistence(requester());
+                fail("Accepted the owner \"" + owner + "\"");
+            } catch (IllegalArgumentException expected) {
+                assertTrue(
+                        expected.getMessage(),
+                        expected.getMessage().contains("1 to 100 characters and no spaces"));
+            }
         }
     }
 }
