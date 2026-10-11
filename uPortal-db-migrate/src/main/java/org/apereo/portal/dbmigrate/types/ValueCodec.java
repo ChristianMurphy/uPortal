@@ -286,7 +286,12 @@ public final class ValueCodec {
                 }
                 break;
             case TIME:
-                if (c.family() == Family.TIME) {
+                if (c.family() == Family.TIME && c.vendor() == Vendor.SQLSERVER) {
+                    // mssql-jdbc sends a time as a datetime unless told otherwise
+                    // (sendTimeAsDatetime), which rounds it to 1/300 s and 23:59:59.999999 to
+                    // midnight; TIME(7) takes the text exactly
+                    ps.setString(i, v.toString());
+                } else if (c.family() == Family.TIME) {
                     ps.setObject(i, v);
                 } else {
                     // Hibernate stores a java.sql.Time in a datetime/DATE column on 1970-01-01
