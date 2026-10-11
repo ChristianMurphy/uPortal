@@ -4,10 +4,10 @@
  * `saveAccount` actors, which tests replace with `machine.provide({ actors })`.
  *
  * Passwords stay in the context only while the form is open: leaving the form, saving and a failed
- * or refused save all empty them. A password and a confirmation that differ are refused before
- * anything is sent.
+ * or refused save all empty them. A password and a confirmation that differ, and a new password
+ * without the current one, are refused before anything is sent.
  */
-import { assign, emit, fromPromise, setup } from 'xstate';
+import { assign, emit, fromPromise, not, setup } from 'xstate';
 import { ApiError, type ApiClient, type ApiErrorKind } from '../../lib/api-client';
 import { fetchAccount, saveAccount, type AccountChanges, type AccountData } from './account-api';
 
@@ -15,9 +15,13 @@ import { fetchAccount, saveAccount, type AccountChanges, type AccountData } from
 export type Notice =
     | { kind: 'save-failed'; reason: ApiErrorKind }
     /** The password and its confirmation differ, so nothing was sent. */
-    | { kind: 'passwords-differ' };
+    | { kind: 'passwords-differ' }
+    /** A new password without the current one, so nothing was sent. */
+    | { kind: 'current-password-missing' }
+    /** The portal refused the current password. */
+    | { kind: 'current-password-wrong' };
 
-export type PasswordField = 'password' | 'confirmPassword';
+export type PasswordField = 'currentPassword' | 'password' | 'confirmPassword';
 
 export interface SelfEditAccountContext {
     api: ApiClient;
@@ -26,6 +30,7 @@ export interface SelfEditAccountContext {
     loadError: ApiErrorKind | undefined;
     /** The form's attribute values, by name. */
     draft: Record<string, string>;
+    currentPassword: string;
     password: string;
     confirmPassword: string;
     notice: Notice | undefined;
@@ -50,10 +55,21 @@ export type SelfEditAccountEmitted = { type: 'account.updated'; passwordChanged:
 
 const NO_ACCOUNT: AccountData = { username: '', details: [], canEdit: false, editable: [] };
 
-const NO_PASSWORDS = { password: '', confirmPassword: '' };
+const NO_PASSWORDS = { currentPassword: '', password: '', confirmPassword: '' };
 
 export function errorKind(error: unknown): ApiErrorKind {
     return error instanceof ApiError ? error.kind : 'malformed';
+}
+
+/**
+ * The notice for a failed save. The element refuses differing passwords and a missing current
+ * password before sending, so the one 400 the portal answers it is a wrong current password.
+ */
+export function saveFailedNotice(error: unknown): Notice {
+    if (error instanceof ApiError && error.status === 400) {
+        return { kind: 'current-password-wrong' };
+    }
+    return { kind: 'save-failed', reason: errorKind(error) };
 }
 
 export const selfEditAccountMachine = setup({
@@ -79,6 +95,9 @@ export const selfEditAccountMachine = setup({
         passwordsMatch: ({ context }) =>
             (context.password.trim() === '' && context.confirmPassword.trim() === '') ||
             context.password === context.confirmPassword,
+        // A new password needs the current one
+        hasCurrentPassword: ({ context }) =>
+            context.password.trim() === '' || context.currentPassword.trim() !== '',
         isEditable: ({ context }, { name }: { name: string }) =>
             context.account.editable.some((attribute) => attribute.name === name),
     },
@@ -160,13 +179,20 @@ export const selfEditAccountMachine = setup({
                         },
                         cancel: { target: '#selfEditAccount.viewing', actions: 'closeForm' },
                         submit: [
-                            { guard: 'passwordsMatch', target: 'saving' },
                             {
+                                guard: not('passwordsMatch'),
                                 actions: assign({
                                     ...NO_PASSWORDS,
                                     notice: { kind: 'passwords-differ' as const },
                                 }),
                             },
+                            {
+                                guard: not('hasCurrentPassword'),
+                                actions: assign({
+                                    notice: { kind: 'current-password-missing' as const },
+                                }),
+                            },
+                            { target: 'saving' },
                         ],
                     },
                 },
@@ -181,6 +207,7 @@ export const selfEditAccountMachine = setup({
                                 attributes: context.draft,
                                 password: context.password,
                                 confirmPassword: context.confirmPassword,
+                                currentPassword: context.currentPassword,
                             },
                         }),
                         onDone: {
@@ -198,10 +225,7 @@ export const selfEditAccountMachine = setup({
                             target: 'idle',
                             actions: assign(({ event }) => ({
                                 ...NO_PASSWORDS,
-                                notice: {
-                                    kind: 'save-failed' as const,
-                                    reason: errorKind(event.error),
-                                },
+                                notice: saveFailedNotice(event.error),
                             })),
                         },
                     },

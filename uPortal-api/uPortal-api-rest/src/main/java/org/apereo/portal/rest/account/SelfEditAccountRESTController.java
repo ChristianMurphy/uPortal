@@ -36,7 +36,8 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>{@code GET /api/v6-0/account}: the user's details, whether they may edit their account, and
  *       the attributes they may edit with their values (see {@link Account}).
  *   <li>{@code PUT /api/v6-0/account} with {@code {"attributes": {"department": "..."}, "password":
- *       "...", "confirmPassword": "..."}}: saves the changes; 204. Every field is optional.
+ *       "...", "confirmPassword": "...", "currentPassword": "..."}}: saves the changes; 204. Every
+ *       field is optional, but a new password needs the current one.
  * </ul>
  *
  * <p>Both act on the user of the portal session only; guests get 401. PUT needs Spring Security's
@@ -60,6 +61,7 @@ public class SelfEditAccountRESTController {
         private @Nullable Map<String, String> attributes;
         private @Nullable String password;
         private @Nullable String confirmPassword;
+        private @Nullable String currentPassword;
 
         public @Nullable Map<String, String> getAttributes() {
             return attributes;
@@ -84,6 +86,14 @@ public class SelfEditAccountRESTController {
         public void setConfirmPassword(@Nullable String confirmPassword) {
             this.confirmPassword = confirmPassword;
         }
+
+        public @Nullable String getCurrentPassword() {
+            return currentPassword;
+        }
+
+        public void setCurrentPassword(@Nullable String currentPassword) {
+            this.currentPassword = currentPassword;
+        }
     }
 
     @GetMapping(value = ACCOUNT_URI, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -101,7 +111,10 @@ public class SelfEditAccountRESTController {
         accountService.updateAccount(
                 request,
                 new SelfEditAccountService.Update(
-                        attributes, body.getPassword(), body.getConfirmPassword()));
+                        attributes,
+                        body.getPassword(),
+                        body.getConfirmPassword(),
+                        body.getCurrentPassword()));
         return ResponseEntity.noContent().build();
     }
 

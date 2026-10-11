@@ -39,12 +39,16 @@ import java.util.Map;
 import org.apereo.portal.i18n.ILocaleStore;
 import org.apereo.portal.i18n.LocaleManager;
 import org.apereo.portal.i18n.LocaleManagerFactory;
+import org.apereo.portal.persondir.ILocalAccountDao;
+import org.apereo.portal.persondir.ILocalAccountPerson;
 import org.apereo.portal.portletpublishing.xml.Preference;
 import org.apereo.portal.portlets.StringListAttribute;
 import org.apereo.portal.portlets.account.PersonForm;
 import org.apereo.portal.portlets.account.UserAccountHelper;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
+import org.apereo.portal.security.IPortalPasswordService;
+import org.jspecify.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -59,10 +63,14 @@ import org.springframework.mock.web.MockHttpServletRequest;
 public class SelfEditAccountServiceTest {
 
     private static final String SECRET = "n3w-Secret!";
+    private static final String CURRENT = "0ld-Secret!";
+    private static final String CURRENT_HASH = "(SHA256)hash-of-the-current-password";
 
     private IPersonManager personManager;
     private UserAccountHelper helper;
     private MessageSource messageSource;
+    private ILocalAccountPerson localAccount;
+    private IPortalPasswordService passwordService;
     private SelfEditAccountService service;
     private MockHttpServletRequest request;
     private IPerson student;
@@ -89,9 +97,22 @@ public class SelfEditAccountServiceTest {
         when(messageSource.getMessage(anyString(), isNull(), anyString(), eq(Locale.FRANCE)))
                 .thenAnswer(invocation -> "fr:" + invocation.getArgument(0));
 
+        final ILocalAccountDao localAccountDao = mock(ILocalAccountDao.class);
+        localAccount = mock(ILocalAccountPerson.class);
+        when(localAccount.getPassword()).thenReturn(CURRENT_HASH);
+        when(localAccountDao.getPerson("student")).thenReturn(localAccount);
+        passwordService = mock(IPortalPasswordService.class);
+        when(passwordService.validatePassword(CURRENT, CURRENT_HASH)).thenReturn(true);
+
         service =
                 new SelfEditAccountService(
-                        personManager, helper, messageSource, localeStore, localeManagerFactory);
+                        personManager,
+                        helper,
+                        messageSource,
+                        localeStore,
+                        localeManagerFactory,
+                        localAccountDao,
+                        passwordService);
         final Map<String, String> display = new LinkedHashMap<>();
         display.put("title", "GENERIC");
         display.put("mail", "EMAIL");
@@ -125,7 +146,7 @@ public class SelfEditAccountServiceTest {
     }
 
     private SelfEditAccountService.Update update(Map<String, String> attributes) {
-        return new SelfEditAccountService.Update(attributes, null, null);
+        return new SelfEditAccountService.Update(attributes, null, null, null);
     }
 
     private PersonForm savedForm() {
@@ -196,7 +217,10 @@ public class SelfEditAccountServiceTest {
                         service.updateAccount(
                                 request,
                                 new SelfEditAccountService.Update(
-                                        Collections.<String, String>emptyMap(), SECRET, SECRET)));
+                                        Collections.<String, String>emptyMap(),
+                                        SECRET,
+                                        SECRET,
+                                        CURRENT)));
         verify(helper, never()).updateAccount(any(), any());
     }
 
@@ -215,7 +239,10 @@ public class SelfEditAccountServiceTest {
                         service.updateAccount(
                                 request,
                                 new SelfEditAccountService.Update(
-                                        Collections.<String, String>emptyMap(), SECRET, SECRET)));
+                                        Collections.<String, String>emptyMap(),
+                                        SECRET,
+                                        SECRET,
+                                        CURRENT)));
         verify(helper).canEditUser(student, "student");
         verify(helper, never()).updateAccount(any(), any());
     }
@@ -267,7 +294,7 @@ public class SelfEditAccountServiceTest {
         service.updateAccount(
                 request,
                 new SelfEditAccountService.Update(
-                        Collections.<String, String>emptyMap(), SECRET, SECRET));
+                        Collections.<String, String>emptyMap(), SECRET, SECRET, CURRENT));
 
         final PersonForm saved = savedForm();
         assertEquals(SECRET, saved.getPassword());
@@ -286,7 +313,8 @@ public class SelfEditAccountServiceTest {
                         new SelfEditAccountService.Update(
                                 Collections.<String, String>emptyMap(),
                                 passwords[0],
-                                passwords[1]));
+                                passwords[1],
+                                CURRENT));
                 fail("Expected a refusal");
             } catch (AccountException e) {
                 assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
@@ -295,5 +323,58 @@ public class SelfEditAccountServiceTest {
             }
         }
         verify(helper, never()).updateAccount(any(), any());
+    }
+
+    private void expectPasswordRefusal(String code, @Nullable String currentPassword) {
+        try {
+            service.updateAccount(
+                    request,
+                    new SelfEditAccountService.Update(
+                            Collections.<String, String>emptyMap(),
+                            SECRET,
+                            SECRET,
+                            currentPassword));
+            fail("Expected a refusal");
+        } catch (AccountException e) {
+            assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+            assertEquals(code, e.getCode());
+            assertFalse(String.valueOf(e.getMessage()).contains(SECRET));
+            assertFalse(String.valueOf(e.getMessage()).contains(CURRENT));
+        }
+        verify(helper, never()).updateAccount(any(), any());
+    }
+
+    @Test
+    public void refusesANewPasswordWithoutTheCurrentOne() {
+        when(helper.canEditUser(student, "student")).thenReturn(true);
+
+        expectPasswordRefusal("please.enter.current.password", null);
+        expectPasswordRefusal("please.enter.current.password", " ");
+    }
+
+    @Test
+    public void refusesANewPasswordWithAWrongCurrentOne() {
+        when(helper.canEditUser(student, "student")).thenReturn(true);
+
+        expectPasswordRefusal("current.password.doesnt.match", "wrong");
+        verify(passwordService).validatePassword("wrong", CURRENT_HASH);
+    }
+
+    @Test
+    public void refusesANewPasswordForAnAccountWithoutAPassword() {
+        when(helper.canEditUser(student, "student")).thenReturn(true);
+        when(localAccount.getPassword()).thenReturn(null);
+
+        expectPasswordRefusal("current.password.doesnt.match", CURRENT);
+    }
+
+    @Test
+    public void needsNoCurrentPasswordToChangeOnlyAttributes() {
+        when(helper.canEditUser(student, "student")).thenReturn(true);
+
+        service.updateAccount(request, update(Collections.singletonMap("department", "Physics")));
+
+        verify(passwordService, never()).validatePassword(anyString(), anyString());
+        assertNull(savedForm().getPassword());
     }
 }
