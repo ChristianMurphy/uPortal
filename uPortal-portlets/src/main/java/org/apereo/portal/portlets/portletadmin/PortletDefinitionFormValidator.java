@@ -40,6 +40,13 @@ public class PortletDefinitionFormValidator {
     private static final FastDateFormat edf = FastDateFormat.getInstance("M/d/yyyy HH:mmZ");
     private static final String MIDNIGHT = "00:00";
 
+    /** The sizes of the PortletDefinitionImpl columns */
+    private static final int FNAME_MAX_LENGTH = 255;
+
+    private static final int TITLE_MAX_LENGTH = 128;
+    private static final int NAME_MAX_LENGTH = 128;
+    private static final int DESCRIPTION_MAX_LENGTH = 255;
+
     private IChannelPublishingDefinitionDao channelPublishingDefinitionDao;
     private IPortletDefinitionRegistry portletDefinitionRegistry;
 
@@ -95,7 +102,7 @@ public class PortletDefinitionFormValidator {
      * Private Methods (break validation work into smaller parts)
      */
 
-    private void doBasicInfo(PortletDefinitionForm def, MessageContext context) {
+    void doBasicInfo(PortletDefinitionForm def, MessageContext context) {
 
         // fname
         if (StringUtils.isEmpty(def.getFname())) {
@@ -115,6 +122,8 @@ public class PortletDefinitionFormValidator {
                     new MessageBuilder().error().source("fName").code("fname.in.use").build());
         }
 
+        checkLength(def.getFname(), FNAME_MAX_LENGTH, "fName", context);
+
         // Title
         if (StringUtils.isEmpty(def.getTitle())) {
             context.addMessage(
@@ -124,6 +133,8 @@ public class PortletDefinitionFormValidator {
                             .code("please.enter.title")
                             .build());
         }
+
+        checkLength(def.getTitle(), TITLE_MAX_LENGTH, "title", context);
 
         // Name
         if (StringUtils.isEmpty(def.getName())) {
@@ -135,6 +146,26 @@ public class PortletDefinitionFormValidator {
             // This is a new portlet and the name is already taken
             context.addMessage(
                     new MessageBuilder().error().source("name").code("name.in.use").build());
+        }
+        checkLength(def.getName(), NAME_MAX_LENGTH, "name", context);
+
+        checkLength(def.getDescription(), DESCRIPTION_MAX_LENGTH, "description", context);
+    }
+
+    /**
+     * Adds an error when {@code value} has more characters (code points) than its column holds
+     * (MOD-I272)
+     */
+    private static void checkLength(
+            String value, int maxLength, String source, MessageContext context) {
+        if (value != null && value.codePointCount(0, value.length()) > maxLength) {
+            context.addMessage(
+                    new MessageBuilder()
+                            .error()
+                            .source(source)
+                            .code("field.too.long")
+                            .arg(maxLength)
+                            .build());
         }
     }
 
