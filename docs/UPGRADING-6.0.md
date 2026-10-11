@@ -470,30 +470,34 @@ token, or stop using those calls.
 In 5.x each of uPortal's three pools (`PortalDb`, `RawEventsDb`, `AggrEventsDb`) could open 100
 connections, and the bundled portlets opened their own pools on top. Together they could ask for
 about 370 connections, against PostgreSQL's default `max_connections` of 100. The web application
-that asked last then failed with "too many clients".
+that asked last then failed with "too many clients". Under load this happens today: with 16 people
+using a portal at once, the 5.x pool sizes opened 127 connections.
 
 uPortal-start now sets the pool sizes in `etc/portal/global.properties` so that the portal and its
-bundled portlets open at most 80 connections:
+bundled portlets open at most 110 connections, and recommends **`max_connections=150` on
+PostgreSQL**:
 
 | Property | 5.x default | uPortal-start 6.0 |
 | --- | ---: | ---: |
-| `tomcat.jdbc.pool.PortalDb.maxActive` / `maxIdle` | 100 / 50 | 30 / 10 |
+| `tomcat.jdbc.pool.PortalDb.maxActive` / `maxIdle` | 100 / 50 | 60 / 20 |
 | `tomcat.jdbc.pool.rawEventsDataSource.maxActive` / `maxIdle` | 100 / 50 | 5 / 2 |
 | `tomcat.jdbc.pool.aggrEventsDataSource.maxActive` / `maxIdle` | 100 / 50 | 5 / 2 |
 | `tomcat.jdbc.pool.newsReaderDataSource.maxActive` / `maxIdle` | 50 / 15 | 8 / 4 |
 
-**If your portal has more people signed in at once than the quickstart, size `PortalDb` from your
-own peak instead of taking 30.** Too small a `maxActive` makes requests wait for a connection and
-then fail with "Pool empty. Unable to fetch a connection", where 5.x would have opened more. Read
-the peak during your busiest hour from the pool's JMX bean `uPortal:section=DataSource,name=PortalDb`
-(`Active` is in use now, `WaitCount` above 0 means requests are waiting), and set `maxActive` to
-about one and a half times it. uPortal-start `docs/connection-budget.md` describes this and a
-PostgreSQL query that gives the same number.
+`PortalDb` needs 60 because each page keeps a connection open while its portlets render, and each
+portlet render takes another. At 16 people using the portal at once, 50 still left requests
+waiting.
+
+**If more people use your portal at once, size `PortalDb` from your own peak instead of taking
+60.** Too small a `maxActive` makes requests wait for a connection and then fail with "Pool empty.
+Unable to fetch a connection". The page still loads, with an error in the portlet that failed.
+Read the peak during your busiest hour from the pool's JMX bean
+`uPortal:section=DataSource,name=PortalDb` (`Active` is in use now, `WaitCount` above 0 means
+requests are waiting), and set `maxActive` to about one and a half times it. uPortal-start
+`docs/connection-budget.md` describes this and a PostgreSQL query that gives the same number.
 
 uPortal's own defaults in `datasourceContext.xml` are unchanged. If your `global.properties` comes
 from an older uPortal-start, copy the block or size the pools yourself. The database's connection
 limit has to cover the sum of every pool's `maxActive` on every portal node, plus room for
-administrators. uPortal-start `docs/connection-budget.md` lists every
-pool, what each property controls, and how to size a site. If `PortalDb` runs out under load
-(requests wait, then fail with a "Pool empty" timeout), raise its `maxActive` and the database's
-limit together.
+administrators. uPortal-start `docs/connection-budget.md` lists every pool, what each property
+controls, and how to size a site.
