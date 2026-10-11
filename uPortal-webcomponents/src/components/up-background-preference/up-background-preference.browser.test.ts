@@ -237,6 +237,36 @@ describe('up-background-preference list', () => {
 
         expect(escape.defaultPrevented).toBe(false);
     });
+
+    it('leaves Escape to an input method that is composing', async () => {
+        const element = await opened();
+        const escape = new KeyboardEvent('keydown', {
+            key: 'Escape',
+            isComposing: true,
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+        });
+
+        (button(element, 'Galaxy').element() as HTMLElement).dispatchEvent(escape);
+        await element.updateComplete;
+
+        expect(escape.defaultPrevented).toBe(false);
+        expect(shadow(element).querySelector('#choices')).not.toBeNull();
+    });
+
+    it('wraps a caption too long for its width', async () => {
+        const caption = 'Mountain'.repeat(30);
+        server.on('GET', API, json({ ...NONE_CHOSEN, images: [{ ...IMAGES[1], caption }] }));
+        const element = await render(`${ATTRIBUTES} style="inline-size: 200px"`);
+        await button(element, 'Change Background Image').click();
+        await expect.poll(() => shadow(element).textContent).toContain(caption);
+
+        // The list is as wide as the element, and its caption inside it
+        const choices = shadow(element).querySelector<HTMLElement>('#choices');
+        expect(choices?.getBoundingClientRect().width).toBeLessThanOrEqual(200);
+        expect(choices?.scrollWidth).toBeLessThanOrEqual(choices?.clientWidth ?? 0);
+    });
 });
 
 describe('up-background-preference choosing', () => {
