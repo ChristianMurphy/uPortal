@@ -473,7 +473,11 @@ describe('up-popular-portlets right to left', () => {
         const element = await render(ATTRIBUTES.replace('locale="en-US"', `locale="${locale}"`));
         for (const control of shadow(element).querySelectorAll('select')) {
             const style = getComputedStyle(control);
-            expect(style.backgroundPosition.startsWith(side), control.id).toBe(true);
+            // Chromium writes the right edge as "right 7.5px" or "calc(100% - 7.5px)"
+            const arrowAt = /(?:^right\b)|(?:100%)/.test(style.backgroundPositionX)
+                ? 'right'
+                : 'left';
+            expect(arrowAt, `${control.id}: ${style.backgroundPositionX}`).toBe(side);
             // The padding that leaves room for the arrow is on the same side
             const [arrowSide, valueSide] =
                 side === 'left'
