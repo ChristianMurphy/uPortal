@@ -37,8 +37,7 @@ public class RedisSessionInitializer extends AbstractHttpSessionApplicationIniti
     }
 
     @Override
-    public void onStartup(javax.servlet.ServletContext servletContext)
-            throws javax.servlet.ServletException {
+    public void onStartup(javax.servlet.ServletContext servletContext) {
         if (REDIS_STORE_TYPE.equals(this.getStoreTypeConfiguredValue())) {
             super.onStartup(servletContext);
         }
