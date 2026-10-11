@@ -297,9 +297,10 @@ public class EntityRoundTripGoldenTest {
     }
 
     /**
-     * What {@code EntityManager#remove} alone, as the portal's code deletes, leaves of the entities
-     * the round trip stored: on Oracle the owners of '' elements (MOD-I144), elsewhere nothing. The
-     * test then deletes the rest with SQL.
+     * {@code EntityManager#remove} alone, as the portal's code deletes, deletes every entity the
+     * round trip stored on every database. On Oracle that includes the owners of '' elements, which
+     * Oracle stores as NULL and Hibernate loads as missing (MOD-I144). The test then deletes
+     * anything left with SQL.
      */
     private void checkRemoval(EntityManagerFactory emf, DatabaseVendor vendor) {
         final Map<String, String> left = new TreeMap<>();
@@ -315,7 +316,7 @@ public class EntityRoundTripGoldenTest {
                         + ", JVM zone "
                         + zone
                         + "; MOD-I144)",
-                VendorDifferences.leftByRemove(vendor, persistenceUnit),
+                Collections.emptyMap(),
                 left);
     }
 

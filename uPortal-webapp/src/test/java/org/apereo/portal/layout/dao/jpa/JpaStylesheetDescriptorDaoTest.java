@@ -18,6 +18,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -346,6 +347,65 @@ public class JpaStylesheetDescriptorDaoTest extends BasePortalJpaDaoTest {
                             stylesheetUserPreferencesDao.getStylesheetUserPreferences(supId);
                     assertEquals("1", preferences.getStylesheetParameter("activeTab"));
                     assertEquals("welcome", preferences.getLayoutAttribute("s1000", "externalId"));
+                    return null;
+                });
+    }
+
+    /**
+     * A layout attribute whose target element names Hibernate loads as empty, because the only row
+     * holds NULL (Oracle stores '' as NULL), is deleted with its rows: before MOD-I144 was fixed
+     * the rows stayed and the delete failed on the foreign key.
+     */
+    @Test
+    public void testDeleteRemovesNullTargetElementNames() throws Exception {
+        final long ssId =
+                this.execute(
+                        () -> {
+                            final IStylesheetDescriptor stylesheetDescriptor =
+                                    stylesheetDescriptorDao.createStylesheetDescriptor(
+                                            "columns", "classpath:/layout/struct/columns.xsl");
+                            final LayoutAttributeDescriptorImpl attribute =
+                                    new LayoutAttributeDescriptorImpl("hidden", Scope.PERSISTENT);
+                            attribute.setTargetElementNames(new HashSet<>());
+                            stylesheetDescriptor.setLayoutAttributeDescriptors(
+                                    Collections.singleton(attribute));
+                            stylesheetDescriptorDao.updateStylesheetDescriptor(
+                                    stylesheetDescriptor);
+                            return stylesheetDescriptor.getId();
+                        });
+
+        this.execute(
+                () ->
+                        getEntityManager()
+                                .createNativeQuery(
+                                        "INSERT INTO UP_SS_DESC_LAY_ATTR_ELMS (ATTR_ID,"
+                                                + " ELEMENT_NAME) SELECT SS_DESC_LAYOUT_ATTR_ID,"
+                                                + " CAST(NULL AS VARCHAR(255)) FROM"
+                                                + " UP_SS_DESC_LAY_ATTR")
+                                .executeUpdate());
+
+        this.execute(
+                () -> {
+                    final IStylesheetDescriptor stylesheetDescriptor =
+                            stylesheetDescriptorDao.getStylesheetDescriptor(ssId);
+                    assertEquals(
+                            Collections.emptySet(),
+                            stylesheetDescriptor
+                                    .getLayoutAttributeDescriptor("hidden")
+                                    .getTargetElementNames());
+                    stylesheetDescriptorDao.deleteStylesheetDescriptor(stylesheetDescriptor);
+                    return null;
+                });
+
+        this.execute(
+                () -> {
+                    assertNull(stylesheetDescriptorDao.getStylesheetDescriptor(ssId));
+                    assertEquals(
+                            0,
+                            getEntityManager()
+                                    .createNativeQuery("SELECT * FROM UP_SS_DESC_LAY_ATTR_ELMS")
+                                    .getResultList()
+                                    .size());
                     return null;
                 });
     }
