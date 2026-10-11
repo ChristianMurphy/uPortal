@@ -114,7 +114,7 @@ public class PortletList implements IPortletList {
         }
 
         if (!StringUtils.isEmpty(this.ownerUsername)) {
-            InputValidator.validateAsWordCharacters(this.ownerUsername, "ownerUsername");
+            InputValidator.validateAsUserName(this.ownerUsername, "ownerUsername");
         }
 
         if (this.items != null) {
