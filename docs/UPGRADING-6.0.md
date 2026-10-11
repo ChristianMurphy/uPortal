@@ -646,3 +646,22 @@ calls (uPortal-home's `addPortlet`, `removeByFName` and `movePortletAjax` with `
 on), Marketplace rating (`saveRating`), skin (`chooseSkin`) and add-to-home calls fail against
 6.0. Adopters still running them must change their own copies to send the token or a Bearer
 token, or stop using those calls.
+
+## Respondr fixes for the accessibility checks
+
+The accessibility check (axe-core, WCAG 2.1 A and AA) found these problems on the portal's key
+pages. Respondr and the portlets in uPortal now avoid them:
+
+* Cards and title bars of the uPortal portlets and of Respondr's portlet chrome had
+  `role="section"` or `role="sectionhead"`. Both are abstract ARIA roles, which a page must not
+  use. The attributes are gone. A skin or script that selects on `[role="section"]` or
+  `[role="sectionhead"]` must select on the classes instead, such as `.portlet` and
+  `.portlet-titlebar`.
+* `#portalNavigation` and each region portlet's `section` had `aria-selected="false"`, which
+  their roles don't allow. The attribute is gone.
+* Links in paragraphs and in the footer regions are underlined. Before, only their colour marked
+  them, and they were underlined only on hover. To keep the old look, a skin overrides
+  `p a` and `footer a` in Respondr's `tags.scss` (the colour must then give a contrast of at
+  least 3:1 with the text around it).
+* The Permissions search inputs and the Portlet Manager's State and Category filters have
+  accessible names.
