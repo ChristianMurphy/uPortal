@@ -9,8 +9,8 @@ import {
     type UserLocaleMachine,
 } from './up-user-locale.machine';
 
-const ENGLISH = { code: 'en_US', tag: 'en-US', name: 'English' };
-const FRENCH = { code: 'fr_FR', tag: 'fr-FR', name: 'French' };
+const ENGLISH = { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' };
+const FRENCH = { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' };
 const IN_ENGLISH: UserLocaleData = { selected: 'en_US', locales: [ENGLISH, FRENCH] };
 const NONE_CHOSEN: UserLocaleData = { selected: null, locales: [ENGLISH, FRENCH] };
 const IN_FRENCH: UserLocaleData = {

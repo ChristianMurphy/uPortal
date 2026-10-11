@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vite-plus/test';
 import { ApiClient, ApiError } from '../../lib/api-client';
 import { fetchUserLocale, LOCALE_PATH, saveUserLocale, validateUserLocale } from './locale-api';
 
-const ENGLISH = { code: 'en_US', tag: 'en-US', name: 'English' };
-const FRENCH = { code: 'fr_FR', tag: 'fr-FR', name: 'French' };
+const ENGLISH = { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' };
+const FRENCH = { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' };
 const body = { selected: 'fr_FR', locales: [ENGLISH, FRENCH] };
 
 function client(respond: () => Response) {
@@ -39,6 +39,11 @@ describe('validateUserLocale', () => {
         ['a body without locales', { selected: null }, 'locales is not an array'],
         ['a locale that is not an object', { locales: ['en_US'] }, 'a locale is not an object'],
         ['a locale without a name', { locales: [{ ...ENGLISH, name: ' ' }] }, 'name is not'],
+        [
+            'a locale without its own name',
+            { locales: [{ ...ENGLISH, nativeName: undefined }] },
+            'nativeName is not',
+        ],
         ['a locale with a numeric code', { locales: [{ ...ENGLISH, code: 1 }] }, 'code is not'],
         ['a choice that is not offered', { selected: 'de_DE', locales: [ENGLISH] }, 'selected'],
         ['a choice that is not a string', { selected: 1, locales: [ENGLISH] }, 'selected'],

@@ -191,9 +191,13 @@ The PopularPortlets portlet itself will be removed in a later release.
 
 The User Locales Selector channel (`user-locales-selector`) was the `UserLocale` portlet, a Web
 Flow. It is now a **Web Component** channel that renders `<up-user-locale>`, with its data from
-the new REST API `/api/v6-0/locale`. Users see the same list of the portal's languages, named in
-their current language, and Update still reloads the page in the chosen language. A signed-in
-user's choice is stored, and a guest's lasts the session, as before. What changed:
+the new REST API `/api/v6-0/locale`. Users see the same list of the portal's languages, and
+Update still reloads the page in the chosen language. A signed-in user's choice is stored, and a
+guest's lasts the session, as before. What changed:
+
+* Each language is named in its own language, then in the user's current language when that reads
+  differently: "Français (French)" for an English user, "English (anglais)" for a French one. A
+  user who can't read the current language can still find their own.
 
 * The flag icons next to the languages are gone. A flag stands for a country, and several
   countries share a language.

@@ -4,8 +4,17 @@ import { waitFor } from 'xstate';
 import type { Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
+import type { LocaleOption } from './locale-api';
 import { USER_LOCALE_MESSAGES } from './messages';
 import { userLocaleMachine, type UserLocaleEmitted } from './up-user-locale.machine';
+
+/** Whether a language's own name is the name the user would read anyway, as English is in English. */
+function sameName(locale: LocaleOption): boolean {
+    return (
+        locale.nativeName.toLocaleLowerCase(locale.tag) ===
+        locale.name.toLocaleLowerCase(locale.tag)
+    );
+}
 
 /** Details of the `up-locale-changed` event. */
 export type LocaleChangedDetail = Omit<UserLocaleEmitted, 'type'>;
@@ -22,8 +31,8 @@ export const page = {
  * The user's language, the web-component replacement of the User Locales Selector portlet. It
  * reads and sets it through `/api/v6-0/locale`.
  *
- * It lists the portal's languages as radio buttons, each named in the user's current language,
- * with the current one checked. Update saves the chosen one and reloads the page, which the
+ * It lists the portal's languages as radio buttons, each named in its own language and, when that
+ * differs, in the user's current one ("Français (French)"), with the current one checked. Update saves the chosen one and reloads the page, which the
  * portal then renders in that language. A signed-in user's choice is kept for their next
  * session; a guest's lasts this session.
  *
@@ -163,7 +172,11 @@ export class UpUserLocale extends UpElement {
                                     this.#locale.send({ type: 'choose', code: locale.code });
                                 }}
                             />
-                            <label for=${`locale-${locale.code}`}>${locale.name}</label>
+                            <label for=${`locale-${locale.code}`}
+                                ><span lang=${locale.tag}>${locale.nativeName}</span>${
+                                    sameName(locale) ? nothing : ` (${locale.name})`
+                                }</label
+                            >
                         </div>`,
                 )}
             </div>

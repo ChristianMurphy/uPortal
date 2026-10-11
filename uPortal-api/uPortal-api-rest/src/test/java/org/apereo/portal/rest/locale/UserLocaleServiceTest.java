@@ -112,6 +112,19 @@ public class UserLocaleServiceTest {
         assertEquals("fr_FR", userLocale.getSelected());
         assertEquals("anglais", userLocale.getLocales().get(0).getName());
         assertEquals("français", userLocale.getLocales().get(1).getName());
+        assertEquals("English", userLocale.getLocales().get(0).getNativeName());
+        assertEquals("Français", userLocale.getLocales().get(1).getNativeName());
+        assertEquals("日本語", userLocale.getLocales().get(2).getNativeName());
+    }
+
+    @Test
+    public void namesEachLanguageInItsOwnLanguage() {
+        assertEquals("Español", UserLocaleService.nativeName(new Locale("es", "ES")));
+        assertEquals("Français", UserLocaleService.nativeName(FRENCH));
+        assertEquals("Deutsch", UserLocaleService.nativeName(Locale.GERMANY));
+        assertEquals("Македонски", UserLocaleService.nativeName(new Locale("mk", "MK")));
+        assertEquals("日本語", UserLocaleService.nativeName(Locale.JAPAN));
+        assertEquals("", UserLocaleService.nativeName(Locale.ROOT));
     }
 
     @Test

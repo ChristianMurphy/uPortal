@@ -143,7 +143,8 @@ public class UserLocaleApiTest {
                                 .json(
                                         "{\"selected\":\"fr_FR\",\"locales\":["
                                                 + "{\"code\":\"en_US\",\"name\":\"anglais\"},"
-                                                + "{\"code\":\"fr_FR\",\"name\":\"français\"}]}"));
+                                                + "{\"code\":\"fr_FR\",\"name\":\"français\","
+                                                + "\"nativeName\":\"Français\"}]}"));
 
         assertEquals(List.of(FRENCH), localeManager.getSessionLocales());
         verify(localeStore).updateUserLocales(any(), any());
