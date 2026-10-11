@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -159,7 +160,10 @@ public class HandlerMethodInvoker {
 				if (debug) {
 					logger.debug("Invoking model attribute method: " + attributeMethodToInvoke);
 				}
-				String attrName = AnnotationUtils.findAnnotation(attributeMethod, ModelAttribute.class).value();
+				// getModelAttributeMethods holds only methods with @ModelAttribute (MOD-I225)
+				String attrName = Objects.requireNonNull(
+						AnnotationUtils.findAnnotation(attributeMethod, ModelAttribute.class),
+						"No @ModelAttribute on " + attributeMethod).value();
 				if (!"".equals(attrName) && implicitModel.containsAttribute(attrName)) {
 					continue;
 				}
@@ -398,7 +402,10 @@ public class HandlerMethodInvoker {
 				boolean debug = logger.isDebugEnabled();
 				for (Method initBinderMethod : initBinderMethods) {
 					Method methodToInvoke = BridgeMethodResolver.findBridgedMethod(initBinderMethod);
-					String[] targetNames = AnnotationUtils.findAnnotation(initBinderMethod, InitBinder.class).value();
+					// getInitBinderMethods holds only methods with @InitBinder (MOD-I225)
+					String[] targetNames = Objects.requireNonNull(
+							AnnotationUtils.findAnnotation(initBinderMethod, InitBinder.class),
+							"No @InitBinder on " + initBinderMethod).value();
 					if (targetNames.length == 0 || Arrays.asList(targetNames).contains(attrName)) {
 						Object[] initBinderArgs =
 								resolveInitBinderArguments(handler, methodToInvoke, binder, webRequest);
@@ -587,7 +594,9 @@ public class HandlerMethodInvoker {
 			}
 			for (Iterator<String> iterator = webRequest.getHeaderNames(); iterator.hasNext();) {
 				String headerName = iterator.next();
-				for (String headerValue : webRequest.getHeaderValues(headerName)) {
+				// The name comes from getHeaderNames, so it has values (MOD-I225)
+				for (String headerValue : Objects.requireNonNull(webRequest.getHeaderValues(headerName),
+						"No values for header " + headerName)) {
 					result.add(headerName, headerValue);
 				}
 			}

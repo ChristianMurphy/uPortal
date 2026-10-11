@@ -19,6 +19,7 @@ package org.apereo.portal.spring.web.portlet.handler;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import javax.portlet.PortletRequest;
 
 import org.springframework.beans.BeansException;
@@ -214,7 +215,9 @@ public abstract class AbstractHandlerMapping extends ApplicationObjectSupport im
 		// Bean name or resolved handler?
 		if (handler instanceof String) {
 			String handlerName = (String) handler;
-			handler = getApplicationContext().getBean(handlerName);
+			// Spring sets the context before the mapping handles a request (MOD-I225)
+			handler = Objects.requireNonNull(getApplicationContext(), "Handler mapping has no ApplicationContext")
+					.getBean(handlerName);
 		}
 		return getHandlerExecutionChain(handler, request);
 	}

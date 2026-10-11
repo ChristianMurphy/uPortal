@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.Objects;
 import javax.portlet.ActionRequest;
 import javax.portlet.ClientDataRequest;
 import javax.portlet.Event;
@@ -106,7 +107,9 @@ public class DefaultAnnotationHandlerMapping extends AbstractMapBasedHandlerMapp
 	 * @throws org.springframework.beans.BeansException if the handler couldn't be registered
 	 */
 	protected void detectHandlers() throws BeansException {
-		ApplicationContext context = getApplicationContext();
+		// Spring sets the context before handlers are detected (MOD-I225)
+		ApplicationContext context = Objects.requireNonNull(getApplicationContext(),
+				"Handler mapping has no ApplicationContext");
 		String[] beanNames = context.getBeanNamesForType(Object.class);
 		for (String beanName : beanNames) {
 			Class<?> handlerType = context.getType(beanName);
