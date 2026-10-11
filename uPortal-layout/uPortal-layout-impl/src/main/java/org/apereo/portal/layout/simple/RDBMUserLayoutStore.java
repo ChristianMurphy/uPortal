@@ -642,7 +642,7 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
                                                     + userId
                                                     + " AND ULS.LAYOUT_ID="
                                                     + layoutId
-                                                    + " ORDER BY ULS.STRUCT_ID";
+                                                    + " ORDER BY ULS.STRUCT_ID, USP.STRUCT_PARM_NM";
                                     logger.debug("getUserLayout(): {}", sql);
                                     rs = stmt.executeQuery(sql);
 
@@ -832,7 +832,7 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
                                                     + layoutId
                                                     + " AND STRUCT_ID IN ("
                                                     + structIdsSB.toString()
-                                                    + ") ORDER BY STRUCT_ID";
+                                                    + ") ORDER BY STRUCT_ID, STRUCT_PARM_NM";
                                     logger.debug("getUserLayout(): {}", sql);
                                     rs = stmt.executeQuery(sql);
                                     try {

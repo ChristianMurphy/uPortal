@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
@@ -344,18 +345,17 @@ final class EntityGraphComparator {
             final Object unproxied = Proxies.unproxy(element);
             actualById.put(persistenceUnitUtil.getIdentifier(unproxied), unproxied);
         }
+        final List<Object> expectedInOrder = inOrderBy(path, field, expectedList);
         final List<Object> expectedIds = new ArrayList<>();
-        for (final Object element : expectedList) {
+        for (final Object element : expectedInOrder) {
             expectedIds.add(persistenceUnitUtil.getIdentifier(element));
         }
         final List<Object> actualIds = new ArrayList<>();
         for (final Object element : actualList) {
             actualIds.add(persistenceUnitUtil.getIdentifier(Proxies.unproxy(element)));
         }
-        final boolean ordered = isOrdered(field);
-        if (!ordered) {
-            checkOrderBy(path, field, actualList);
-        }
+        final boolean ordered =
+                isOrdered(field) || field.getAnnotation(javax.persistence.OrderBy.class) != null;
         if (ordered
                 ? !expectedIds.equals(actualIds)
                 : !new java.util.HashSet<>(expectedIds).equals(new java.util.HashSet<>(actualIds))
@@ -374,8 +374,8 @@ final class EntityGraphComparator {
                             + actualSymbols);
             return;
         }
-        for (int i = 0; i < expectedList.size(); i++) {
-            final Object element = expectedList.get(i);
+        for (int i = 0; i < expectedInOrder.size(); i++) {
+            final Object element = expectedInOrder.get(i);
             compareManaged(
                     path + "[" + i + "]",
                     element,
@@ -393,45 +393,63 @@ final class EntityGraphComparator {
 
     /**
      * Whether the elements of a collection attribute come back in the order they were stored: a
-     * list with an index column. An {@code @OrderBy} list is ordered by its key only, and elements
-     * with equal keys come back in any order (Oracle returns them differently from HSQLDB), so it
-     * is compared as a multiset and checked by {@link #checkOrderBy}.
+     * list with an index column. An {@code @OrderBy} list comes back sorted instead, see {@link
+     * #inOrderBy}.
      */
     static boolean isOrdered(Field field) {
         return GoldenRenderer.isOrdered(field)
                 && field.getAnnotation(javax.persistence.OrderBy.class) == null;
     }
 
-    /** Checks that a reloaded {@code @OrderBy} list is sorted by the columns it names */
-    private void checkOrderBy(String path, Field field, List<Object> actualList) {
+    /**
+     * The elements of an {@code @OrderBy} list in the order the database returns them: sorted by
+     * every item of the order. Each order ends with a unique key (MOD-I191), so that all databases
+     * return the same order; two elements it leaves tied are reported. Other lists are returned as
+     * they are.
+     */
+    private List<Object> inOrderBy(String path, Field field, List<Object> elements) {
         final javax.persistence.OrderBy orderBy =
                 field.getAnnotation(javax.persistence.OrderBy.class);
-        if (orderBy == null || actualList.size() < 2) {
-            return;
+        if (orderBy == null) {
+            return elements;
         }
-        // Later items only order the ties of the first one, so the first is checked
-        final String[] first = orderBy.value().split(",")[0].trim().split("\\s+");
-        final boolean descending = first.length > 1 && "DESC".equalsIgnoreCase(first[1]);
-        Comparable<Object> previous = null;
-        for (final Object element : actualList) {
-            final Object unproxied = Proxies.unproxy(element);
-            final Field keyField = orderByField(unproxied.getClass(), first[0]);
-            if (keyField == null) {
-                differences.add(path + ": @OrderBy(\"" + orderBy.value() + "\") names no field");
-                return;
+        Comparator<Object> order = null;
+        for (final String item : orderBy.value().split(",")) {
+            final String[] words = item.trim().split("\\s+");
+            Comparator<Object> byItem =
+                    Comparator.comparing(
+                            element -> orderByKey(element, words[0]),
+                            Comparator.nullsFirst(Comparator.naturalOrder()));
+            if (words.length > 1 && "DESC".equalsIgnoreCase(words[1])) {
+                byItem = byItem.reversed();
             }
-            @SuppressWarnings("unchecked")
-            final Comparable<Object> key =
-                    (Comparable<Object>) EntityGraphBuilder.get(keyField, unproxied);
-            if (previous != null && key != null) {
-                final int order = previous.compareTo(key);
-                if (descending ? order < 0 : order > 0) {
-                    differences.add(path + ": not in @OrderBy(\"" + orderBy.value() + "\") order");
-                    return;
-                }
-            }
-            previous = key;
+            order = order == null ? byItem : order.thenComparing(byItem);
         }
+        final List<Object> sorted = new ArrayList<>(elements);
+        sorted.sort(order);
+        for (int i = 1; i < sorted.size(); i++) {
+            if (order.compare(sorted.get(i - 1), sorted.get(i)) == 0) {
+                differences.add(
+                        path
+                                + ": @OrderBy(\""
+                                + orderBy.value()
+                                + "\") leaves elements tied, so their order differs by database");
+                break;
+            }
+        }
+        return sorted;
+    }
+
+    /** The value of the field an {@code @OrderBy} item names */
+    @SuppressWarnings("unchecked")
+    private static Comparable<Object> orderByKey(Object element, String name) {
+        final Object unproxied = Proxies.unproxy(element);
+        final Field keyField = orderByField(unproxied.getClass(), name);
+        if (keyField == null) {
+            throw new IllegalStateException(
+                    "@OrderBy item " + name + " names no field of " + unproxied.getClass());
+        }
+        return (Comparable<Object>) EntityGraphBuilder.get(keyField, unproxied);
     }
 
     /** The field an {@code @OrderBy} item names, by property name or column name */
