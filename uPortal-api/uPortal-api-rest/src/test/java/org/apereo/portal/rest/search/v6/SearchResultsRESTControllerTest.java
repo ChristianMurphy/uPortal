@@ -126,13 +126,15 @@ public class SearchResultsRESTControllerTest {
         when(service.search(eq(query), isNull(), any(HttpServletRequest.class)))
                 .thenReturn(new SearchResults(query, Collections.emptyList()));
 
-        // The browser's encoding: UTF-8, percent-encoded once
+        // UTF-8, percent-encoded once. Spaces as %20: MockMvc does not decode the form's '+' as a
+        // space (Tomcat does; the Playwright test search-v6-0.spec.ts sends the browser's form)
         final java.net.URI uri =
                 new java.net.URI(
                         "/uPortal"
                                 + URI
                                 + "?q="
-                                + URLEncoder.encode(query, StandardCharsets.UTF_8));
+                                + URLEncoder.encode(query, StandardCharsets.UTF_8)
+                                        .replace("+", "%20"));
         mockMvc.perform(api(get(uri)))
                 .andExpect(status().isOk())
                 .andExpect(
