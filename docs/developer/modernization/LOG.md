@@ -1807,8 +1807,12 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   the code, clipped text and layouts that don't mirror. Unit tests check the Polish and Arabic
   plural forms, and a Playwright test runs a component with test bundles for `pl`, `ar` and
   `zh-TW`.
-* **Not covered:** the Respondr theme around the components has no right-to-left layout
-  (MOD-I234).
+* **Languages in the release (project owner, 2026-10-11):** the 6.0 release has English,
+  Spanish and French text for the components. A site can add other languages. The tests use
+  test bundles for them. The release doesn't contain translations that nobody has reviewed.
+* **Theme:** the Respondr theme around the components has no right-to-left layout (MOD-I234).
+  The owner chose to make it right to left after the accessibility fixes (MOD-D47), which
+  change the same skin files.
 * **Work:** `ccr-43ba0785-hzlrj5-i18n` builds the shared code in `lib/i18n.ts` and updates the
   landed components. Each later conversion uses that code.
 
@@ -2003,7 +2007,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Open.** Translate them on `ccr-43ba0785-hzlrj5-i18n`. The MOD-D50 check stops it from happening again. |
 | MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Open.** Read message bundles as UTF-8 after checking that each one is valid UTF-8, and test the French line. Existing `\u` escapes keep working. |
 | MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
-| MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, owner decision.** Make Respondr right to left (`dir` from the locale and mirrored stylesheets), or wait. |
+| MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, decided (project owner, 2026-10-11).** Make Respondr right to left (`dir` from the locale and mirrored stylesheets) after the accessibility fixes (MOD-D47), on `ccr-43ba0785-hzlrj5-hardening`. |
 | MOD-I235 | Web components | `formatMessage` in `lib/i18n.ts` turns numbers into text with `String()`, so counts and positions ignore the locale's digits and separators. Messages have no plural forms. | **Open.** Fix on `ccr-43ba0785-hzlrj5-i18n` (MOD-D51). |
 
 ## Open questions
