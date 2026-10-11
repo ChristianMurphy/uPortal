@@ -5,6 +5,9 @@ dependencies {
     api project(':uPortal-events')
 
     testImplementation "${servletApiDependency}"
+    // LoginControllerTest mocks IPortalUrlBuilder, whose methods use javax.portlet and Pluto types
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
 
     compileOnly "${servletApiDependency}"
     compileOnly "org.springframework:spring-web:${springVersion}"
