@@ -97,6 +97,10 @@ To be filled in from the CI runs.
 * Finding: the Search portlet's header button had no accessible name (the skin hides its
   "Search" text and leaves an icon). The components' button is named "Search" (message
   `search.submit`), and a browser test checks it.
+* Finding: the Search portlet left the People panel showing after a switch to another tab. Its
+  script marked the first tab active on the `li`, where Bootstrap does not look, so Bootstrap
+  never hid that panel. The characterisation spec checks only that the chosen tab's panel shows
+  its message. The components render only the chosen tab's panel.
 * Finding: axe in the model test sometimes measured a tab's color halfway through Bootstrap's
   color transition and reported a contrast failure. `axeViolations` now waits for running
   animations.
