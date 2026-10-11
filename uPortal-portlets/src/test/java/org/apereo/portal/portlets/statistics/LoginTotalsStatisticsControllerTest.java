@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.AggregationIntervalHelper;
@@ -72,13 +73,14 @@ public class LoginTotalsStatisticsControllerTest {
                         eq(AggregationInterval.DAY), any(), any(), anyInt()))
                 .thenReturn(Arrays.asList(DAY1, DAY2, DAY3));
 
-        // Logins on the first and third days, none recorded on the second
+        // Logins on the first and third days, none recorded on the second. The aggregation mocks
+        // are built before the DAO is stubbed, since Mockito can't stub inside another stubbing.
+        final List<LoginAggregation> aggregations =
+                Arrays.asList(
+                        aggregation(everyone, DAY1, 3, 10), aggregation(everyone, DAY3, 1, 2));
         final LoginAggregationDao<LoginAggregation> loginDao = mock(LoginAggregationDao.class);
         when(loginDao.getAggregations(any(), any(), anySet(), any(AggregatedGroupMapping[].class)))
-                .thenReturn(
-                        Arrays.asList(
-                                aggregation(everyone, DAY1, 3, 10),
-                                aggregation(everyone, DAY3, 1, 2)));
+                .thenReturn(aggregations);
 
         controller = new LoginTotalsStatisticsController();
         ReflectionTestUtils.setField(

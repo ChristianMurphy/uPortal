@@ -145,3 +145,7 @@ Light profile on `ccr-43ba0785-hzlrj5-gviz`:
   only in `spotlessJavaCheck`, because google-java-format 1.36.1 indents one string
   concatenation in `LoginTotalsStatisticsControllerTest` four spaces deeper than 1.35.0. The
   next commit re-indents it.
+* DB integration run 38099582073 on `fce3bb7`: passed.
+* CI run 38099582058 on `fce3bb7`: the Spotless check passed. Both `LoginTotalsStatisticsControllerTest`
+  tests failed with `UnfinishedStubbingException`: the test built its aggregation mocks
+  inside the `thenReturn` of the DAO stub. The next commit builds them first.
