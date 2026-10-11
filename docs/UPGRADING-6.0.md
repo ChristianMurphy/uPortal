@@ -461,8 +461,8 @@ The other timestamps (raw events, aggregation, event sessions, cookies) were alr
 UTC, and the analytics date and time dimensions keep their local dates and times.
 
 **Upgrade with the copy tool and the source server's zone.** Copy the 5.17 database into a 6.0
-database with `--target-profile 6.0` and `--source-zone` set to the time zone of the 5.17
-portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
+database with `--target-profile 6.0` (the default) and `--source-zone` set to the time zone of the
+5.17 portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
 
 ```sh
 db-migrate --source-properties 517.properties --target-properties 60.properties \
@@ -471,8 +471,8 @@ db-migrate --source-properties 517.properties --target-properties 60.properties 
 
 The copy converts the columns above from that zone's clock time to UTC. If any of them holds a
 value and `--source-zone` is missing, the copy stops before writing anything and names the
-columns. A copy between two 5.17 databases (the default `--target-profile 5.17`) leaves the values
-as they are.
+columns. A copy between two 5.17 databases (`--target-profile 5.17`) leaves the values as they
+are.
 
 **The repeated hour.** A clock time in the hour that repeats when daylight time ends (01:00 to
 01:59 on the first Sunday of November in New York) can be either of two instants, and 5.17 didn't
