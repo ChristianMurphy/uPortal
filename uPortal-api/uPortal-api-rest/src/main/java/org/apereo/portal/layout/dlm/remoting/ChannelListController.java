@@ -177,8 +177,16 @@ public class ChannelListController {
                     "Moved to PortletRESTController under /api/portlets.json");
         }
 
+        final long started = System.nanoTime();
         final IPerson user = personManager.getPerson(request);
+        final long personFound = System.nanoTime();
         final Map<String, SortedSet<?>> registry = getRegistryOriginal(webRequest, user);
+        // Diagnosis of MOD-I340 (test-speed branch only): how long the registry takes, and where
+        log.info(
+                "MOD-I340 portletList user={} registry={}ms person={}ms",
+                user.getUserName(),
+                (System.nanoTime() - personFound) / 1_000_000,
+                (personFound - started) / 1_000_000);
 
         // Since type=manage was deprecated channels is always empty but retained for backwards
         // compatibility
@@ -262,6 +270,7 @@ public class ChannelListController {
      * the specified user.
      */
     private Map<String, SortedSet<?>> getRegistryOriginal(WebRequest request, IPerson user) {
+        final long started = System.nanoTime();
 
         /*
          * This collection of all the portlets in the portal is for the sake of
@@ -269,6 +278,8 @@ public class ChannelListController {
          */
         Set<IPortletDefinition> portletsNotYetCategorized =
                 new HashSet<>(portletDefinitionRegistry.getAllPortletDefinitions());
+        final long definitionsLoaded = System.nanoTime();
+        final int portletCount = portletsNotYetCategorized.size();
 
         // construct a new channel registry
         Map<String, SortedSet<?>> result = new TreeMap<>();
@@ -280,6 +291,8 @@ public class ChannelListController {
         categories.add(
                 prepareCategoryBean(
                         request, rootCategory, portletsNotYetCategorized, user, locale));
+        final long categoriesBuilt = System.nanoTime();
+        final int uncategorizedCount = portletsNotYetCategorized.size();
 
         /*
          * uPortal historically has provided for a convention that portlets not in any category
@@ -312,6 +325,16 @@ public class ChannelListController {
         }
         // Add even if no portlets in category
         categories.add(uncategorizedPortletsBean);
+        // Diagnosis of MOD-I340 (test-speed branch only)
+        log.info(
+                "MOD-I340 portletList user={} definitions={}ms ({} portlets) categories={}ms"
+                        + " uncategorized={}ms ({} portlets)",
+                user.getUserName(),
+                (definitionsLoaded - started) / 1_000_000,
+                portletCount,
+                (categoriesBuilt - definitionsLoaded) / 1_000_000,
+                (System.nanoTime() - categoriesBuilt) / 1_000_000,
+                uncategorizedCount);
 
         result.put(CATEGORIES_MAP_KEY, categories);
         return result;
