@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -61,27 +62,31 @@ public final class JdbcUtils {
     /** Check if the specified table exists */
     public static boolean doesTableExist(JdbcOperations jdbcOperations, final String table) {
 
+        // The callback returns true or false (MOD-I225)
         final boolean tableExists =
-                jdbcOperations.execute(
-                        new ConnectionCallback<Boolean>() {
-                            @Override
-                            public Boolean doInConnection(Connection con)
-                                    throws SQLException, DataAccessException {
+                Objects.requireNonNull(
+                        jdbcOperations.execute(
+                                new ConnectionCallback<Boolean>() {
+                                    @Override
+                                    public Boolean doInConnection(Connection con)
+                                            throws SQLException, DataAccessException {
 
-                                final DatabaseMetaData metaData = con.getMetaData();
-                                final ResultSet tables =
-                                        metaData.getTables(
-                                                null, null, null, new String[] {"TABLE"});
-                                while (tables.next()) {
-                                    final String dbTableName = tables.getString("TABLE_NAME");
-                                    if (table.equalsIgnoreCase(dbTableName)) {
-                                        return true;
+                                        final DatabaseMetaData metaData = con.getMetaData();
+                                        final ResultSet tables =
+                                                metaData.getTables(
+                                                        null, null, null, new String[] {"TABLE"});
+                                        while (tables.next()) {
+                                            final String dbTableName =
+                                                    tables.getString("TABLE_NAME");
+                                            if (table.equalsIgnoreCase(dbTableName)) {
+                                                return true;
+                                            }
+                                        }
+
+                                        return false;
                                     }
-                                }
-
-                                return false;
-                            }
-                        });
+                                }),
+                        "No answer from the table metadata of " + table);
         return tableExists;
     }
 

@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import org.apereo.portal.spring.beans.factory.ObjectMapperFactoryBean;
@@ -50,7 +51,10 @@ public final class CacheKey implements Serializable, TaggedCacheEntry {
         try {
             final ObjectMapperFactoryBean omfb = new ObjectMapperFactoryBean();
             omfb.afterPropertiesSet();
-            mapper = omfb.getObject();
+            // An initialized factory bean has its mapper (MOD-I225)
+            mapper =
+                    Objects.requireNonNull(
+                            omfb.getObject(), "ObjectMapperFactoryBean returned no ObjectMapper");
         } catch (Exception e) {
             mapper = new ObjectMapper();
             mapper.findAndRegisterModules();
