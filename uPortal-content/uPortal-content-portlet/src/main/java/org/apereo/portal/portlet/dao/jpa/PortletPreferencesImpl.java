@@ -53,7 +53,7 @@ import org.hibernate.annotations.FetchMode;
         sequenceName = "UP_PORTLET_PREFS_SEQ",
         allocationSize = 10)
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class PortletPreferencesImpl {
     @Id
     @GeneratedValue(generator = "UP_PORTLET_PREFS_GEN")
@@ -72,7 +72,7 @@ class PortletPreferencesImpl {
     @JoinColumn(name = "PORTLET_PREFS_ID")
     @OrderColumn(name = "PREF_ORDER")
     @Fetch(FetchMode.JOIN)
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private List<IPortletPreference> portletPreferences = new ArrayList<IPortletPreference>(0);
 
     @Transient
