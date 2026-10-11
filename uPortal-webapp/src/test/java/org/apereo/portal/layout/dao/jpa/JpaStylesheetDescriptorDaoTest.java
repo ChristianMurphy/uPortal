@@ -14,15 +14,18 @@
  */
 package org.apereo.portal.layout.dao.jpa;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apereo.portal.IUserProfile;
@@ -294,5 +297,120 @@ public class JpaStylesheetDescriptorDaoTest extends BasePortalJpaDaoTest {
                         return null;
                     }
                 });
+    }
+
+    /**
+     * Keys of the stylesheet parameter and layout attribute maps are stored with the "_" prefix of
+     * NullSafeStringType, like their values: Hibernate 4.3 stored them that way in every existing
+     * uPortal database, and the portal looks them up by the unprefixed name (e.g. the externalId
+     * that maps /f/welcome to the guest's welcome tab).
+     */
+    @Test
+    public void testStoredMapKeysKeepNullSafePrefix() throws Exception {
+        final IPerson person = mock(IPerson.class);
+        when(person.getID()).thenReturn(1);
+        final IUserProfile userProfile = mock(IUserProfile.class);
+        when(userProfile.getProfileId()).thenReturn(1);
+
+        final long supId =
+                this.execute(
+                        () -> {
+                            final IStylesheetDescriptor stylesheetDescriptor =
+                                    stylesheetDescriptorDao.createStylesheetDescriptor(
+                                            "columns", "classpath:/layout/struct/columns.xsl");
+                            final IStylesheetUserPreferences preferences =
+                                    stylesheetUserPreferencesDao.createStylesheetUserPreferences(
+                                            stylesheetDescriptor, person, userProfile);
+                            preferences.setStylesheetParameter("activeTab", "1");
+                            preferences.setLayoutAttribute("s1000", "externalId", "welcome");
+                            stylesheetUserPreferencesDao.storeStylesheetUserPreferences(
+                                    preferences);
+                            return preferences.getId();
+                        });
+
+        this.execute(
+                () -> {
+                    assertStoredRow(
+                            "SELECT PARAM_NAME, PARAM_VALUE FROM UP_SS_USER_PREF_PARAM",
+                            "_activeTab",
+                            "_1");
+                    assertStoredRow(
+                            "SELECT ATTR_NAME, ATTR_VALUE FROM UP_SS_USER_PREF_LAY_ATTR_VAL",
+                            "_externalId",
+                            "_welcome");
+                    return null;
+                });
+
+        this.execute(
+                () -> {
+                    final IStylesheetUserPreferences preferences =
+                            stylesheetUserPreferencesDao.getStylesheetUserPreferences(supId);
+                    assertEquals("1", preferences.getStylesheetParameter("activeTab"));
+                    assertEquals("welcome", preferences.getLayoutAttribute("s1000", "externalId"));
+                    return null;
+                });
+    }
+
+    /**
+     * A layout attribute whose target element names Hibernate loads as empty, because the only row
+     * holds NULL (Oracle stores '' as NULL; the INSERT leaves ELEMENT_NAME out), is deleted with
+     * its rows: before MOD-I144 was fixed the rows stayed and the delete failed on the foreign key.
+     */
+    @Test
+    public void testDeleteRemovesNullTargetElementNames() throws Exception {
+        final long ssId =
+                this.execute(
+                        () -> {
+                            final IStylesheetDescriptor stylesheetDescriptor =
+                                    stylesheetDescriptorDao.createStylesheetDescriptor(
+                                            "columns", "classpath:/layout/struct/columns.xsl");
+                            final LayoutAttributeDescriptorImpl attribute =
+                                    new LayoutAttributeDescriptorImpl("hidden", Scope.PERSISTENT);
+                            attribute.setTargetElementNames(new HashSet<>());
+                            stylesheetDescriptor.setLayoutAttributeDescriptors(
+                                    Collections.singleton(attribute));
+                            stylesheetDescriptorDao.updateStylesheetDescriptor(
+                                    stylesheetDescriptor);
+                            return stylesheetDescriptor.getId();
+                        });
+
+        this.executeInTransaction(
+                () ->
+                        getEntityManager()
+                                .createNativeQuery(
+                                        "INSERT INTO UP_SS_DESC_LAY_ATTR_ELMS (ATTR_ID) SELECT"
+                                                + " SS_DESC_LAYOUT_ATTR_ID FROM UP_SS_DESC_LAY_ATTR")
+                                .executeUpdate());
+
+        this.execute(
+                () -> {
+                    final IStylesheetDescriptor stylesheetDescriptor =
+                            stylesheetDescriptorDao.getStylesheetDescriptor(ssId);
+                    assertEquals(
+                            Collections.emptySet(),
+                            stylesheetDescriptor
+                                    .getLayoutAttributeDescriptor("hidden")
+                                    .getTargetElementNames());
+                    stylesheetDescriptorDao.deleteStylesheetDescriptor(stylesheetDescriptor);
+                    return null;
+                });
+
+        this.execute(
+                () -> {
+                    assertNull(stylesheetDescriptorDao.getStylesheetDescriptor(ssId));
+                    assertEquals(
+                            0,
+                            getEntityManager()
+                                    .createNativeQuery("SELECT * FROM UP_SS_DESC_LAY_ATTR_ELMS")
+                                    .getResultList()
+                                    .size());
+                    return null;
+                });
+    }
+
+    private void assertStoredRow(String sql, String... expected) {
+        final List<?> rows = getEntityManager().createNativeQuery(sql).getResultList();
+        assertEquals(sql, 1, rows.size());
+        assertArrayEquals(sql, expected, (Object[]) rows.get(0));
     }
 }

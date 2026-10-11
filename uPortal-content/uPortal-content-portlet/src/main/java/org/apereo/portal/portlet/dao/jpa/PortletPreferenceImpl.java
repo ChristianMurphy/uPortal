@@ -24,12 +24,12 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
-import javax.persistence.Lob;
+import javax.persistence.OrderColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -42,23 +42,16 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
-import org.hibernate.annotations.IndexColumn;
 import org.hibernate.annotations.Type;
 
 /** */
 @Entity
-@Table(name = "UP_PORTLET_PREF")
-@org.hibernate.annotations.Table(
-        appliesTo = "UP_PORTLET_PREF",
-        indexes = @Index(name = "IDX_UPP_PREFS_ID", columnNames = "PORTLET_PREFS_ID"))
+@Table(
+        name = "UP_PORTLET_PREF",
+        indexes = {@Index(name = "IDX_UPP_PREFS_ID", columnList = "PORTLET_PREFS_ID")})
 @SequenceGenerator(
         name = "UP_PORTLET_PREF_GEN",
         sequenceName = "UP_PORTLET_PREF_SEQ",
-        allocationSize = 10)
-@TableGenerator(
-        name = "UP_PORTLET_PREF_GEN",
-        pkColumnValue = "UP_PORTLET_PREF",
         allocationSize = 10)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
@@ -74,9 +67,15 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
     @Column(name = "ENTITY_VERSION")
     private final long entityVersion;
 
+    /*
+     * PREF_NAME and PREF_VALUE are long VARCHAR columns, read and written as strings. Their type
+     * follows from the length: varchar(100000) on HSQLDB and PostgreSQL, longtext on MySQL and
+     * MariaDB, varchar(MAX) on SQL Server, clob on Oracle. They used to be annotated as LOBs as
+     * well, which the @Type overrode; Hibernate 6 drops string @Type and would then turn them into
+     * CLOB columns (oid on PostgreSQL).
+     */
     @Column(name = "PREF_NAME", length = 100000)
     @Type(type = "org.hibernate.type.StringType")
-    @Lob
     private String name = null;
 
     @Column(name = "READ_ONLY", nullable = false)
@@ -84,8 +83,7 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
 
     @ElementCollection(fetch = FetchType.EAGER, targetClass = String.class)
     @JoinTable(name = "UP_PORTLET_PREF_VALUES", joinColumns = @JoinColumn(name = "PORTLET_PREF_ID"))
-    @IndexColumn(name = "VALUE_ORDER")
-    @Lob
+    @OrderColumn(name = "VALUE_ORDER")
     @Column(name = "PREF_VALUE", length = 100000)
     @Type(type = "org.hibernate.type.StringType")
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

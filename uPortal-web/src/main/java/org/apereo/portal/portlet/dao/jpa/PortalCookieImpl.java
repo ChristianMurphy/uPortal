@@ -23,11 +23,11 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.portlet.om.IPortalCookie;
 import org.apereo.portal.portlet.om.IPortletCookie;
@@ -35,7 +35,6 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
 import org.hibernate.annotations.Type;
@@ -43,21 +42,13 @@ import org.joda.time.DateTime;
 
 /** JPA annotated {@link IPortalCookie} annotation. */
 @Entity
-@Table(name = "UP_PORTAL_COOKIES")
+@Table(
+        name = "UP_PORTAL_COOKIES",
+        indexes = {@Index(name = "IDX_UP_PRTL_CK_EXP", columnList = "EXPIRES")})
 @SequenceGenerator(
         name = "UP_PORTAL_COOKIES_GEN",
         sequenceName = "UP_PORTAL_COOKIES_SEQ",
         allocationSize = 100)
-@TableGenerator(
-        name = "UP_PORTAL_COOKIES_GEN",
-        pkColumnValue = "UP_PORTAL_COOKIES",
-        allocationSize = 100)
-@org.hibernate.annotations.Table(
-        appliesTo = "UP_PORTAL_COOKIES",
-        indexes =
-                @Index(
-                        name = "IDX_UP_PRTL_CK_EXP",
-                        columnNames = {"EXPIRES"}))
 @NaturalIdCache(region = "org.apereo.portal.portlet.dao.jpa.PortalCookieImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
