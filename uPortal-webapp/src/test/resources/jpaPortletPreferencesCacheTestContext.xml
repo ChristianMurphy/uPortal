@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Apereo under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Apereo licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License.  You may obtain a
+    copy of the License at the following location:
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--
+     | The JPA test context with the portal's second-level cache turned on: the Hibernate cache
+     | settings of properties/db/hibernate.cfg.xml and the cache regions of
+     | properties/ehcache-no-jgroups.xml (ehcache.xml without the JGroups replication).
+     +-->
+    <import resource="classpath:jpaPortalTestApplicationContext.xml"/>
+
+    <!-- Its own name, so it does not clash with a cache manager of another cached test context -->
+    <bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"
+          p:configLocation="classpath:/properties/ehcache-no-jgroups.xml"
+          p:cacheManagerName="portletPreferencesCacheTest.cacheManager"
+          xmlns:p="http://www.springframework.org/schema/p" />
+
+    <bean id="factoryBean" class="org.apereo.portal.jpa.EventingLocalContainerEntityManagerFactoryBean" depends-on="cacheManager" autowire="byType">
+        <property name="jpaVendorAdapter" ref="jpaVendorAdapter" />
+        <property name="persistenceUnitName" value="${persistenceUnitName}" />
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.SpringBeanEhCacheRegionFactory</prop>
+                <prop key="org.apereo.portal.cache.CacheManagerName">portletPreferencesCacheTest.cacheManager</prop>
+                <prop key="hibernate.cache.use_second_level_cache">true</prop>
+                <prop key="hibernate.cache.use_query_cache">true</prop>
+                <prop key="hibernate.cache.use_minimal_puts">true</prop>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="persistenceUnitName">${persistenceUnitName}</prop>
+            </props>
+        </property>
+    </bean>
+</beans>
