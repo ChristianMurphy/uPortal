@@ -33,6 +33,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKey;
@@ -46,7 +47,6 @@ import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 import org.apache.commons.lang.Validate;
@@ -67,7 +67,6 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
 import org.hibernate.annotations.Type;
@@ -75,12 +74,13 @@ import org.springframework.util.StringUtils;
 
 /** Concrete JPA-managed implementation of {@link IPortletDefinition} . */
 @Entity
-@Table(name = "UP_PORTLET_DEF")
+@Table(
+        name = "UP_PORTLET_DEF",
+        indexes = {@Index(name = "IDX_PORTLET_DEF__TITLE", columnList = "PORTLET_TITLE")})
 @SequenceGenerator(
         name = "UP_PORTLET_DEF_GEN",
         sequenceName = "UP_PORTLET_DEF_SEQ",
         allocationSize = 5)
-@TableGenerator(name = "UP_PORTLET_DEF_GEN", pkColumnValue = "UP_PORTLET_DEF", allocationSize = 5)
 @NaturalIdCache(region = "org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
@@ -140,7 +140,6 @@ public class PortletDefinitionImpl implements IPortletDefinition {
     private String fname;
 
     @Column(name = "PORTLET_TITLE", length = 128, nullable = false)
-    @Index(name = "IDX_PORTLET_DEF__TITLE")
     private String title;
 
     @ManyToOne(targetEntity = PortletTypeImpl.class, optional = false)

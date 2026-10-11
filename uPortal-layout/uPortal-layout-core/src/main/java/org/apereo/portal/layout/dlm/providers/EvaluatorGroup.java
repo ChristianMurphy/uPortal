@@ -23,10 +23,10 @@ import javax.persistence.FetchType;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import org.apereo.portal.layout.dlm.Evaluator;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.IndexColumn;
 
 /**
  * An {@link Evaluator} that contains a group of other evaluators
@@ -42,7 +42,7 @@ public abstract class EvaluatorGroup extends Evaluator {
             cascade = CascadeType.ALL,
             fetch = FetchType.EAGER,
             orphanRemoval = true)
-    @IndexColumn(name = "EVAL_INDEX")
+    @OrderColumn(name = "EVAL_INDEX")
     @JoinTable(
             name = "UP_DLM_EVALUATOR_PAREN",
             joinColumns = @JoinColumn(name = "PAREN_EVAL_ID"),

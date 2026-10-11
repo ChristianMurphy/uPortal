@@ -22,7 +22,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -35,10 +34,6 @@ import org.hibernate.annotations.NaturalIdCache;
 @SequenceGenerator(
         name = "UP_AGGR_TAB_MAPPING_GEN",
         sequenceName = "UP_AGGR_TAB_MAPPING_SEQ",
-        allocationSize = 10)
-@TableGenerator(
-        name = "UP_AGGR_TAB_MAPPING_GEN",
-        pkColumnValue = "UP_AGGR_TAB_MAPPING_PROP",
         allocationSize = 10)
 @Immutable
 @NaturalIdCache(region = "org.apereo.portal.events.aggr.tabs.AggregatedTabMappingImpl-NaturalId")
