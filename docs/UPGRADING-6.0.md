@@ -190,21 +190,23 @@ The channels no longer read the Search portlet's preferences:
 
 ### What is removed
 
-* The Search portlet (`SearchPortletController`, its JSPs and `Search-portlet.xml`) and its
-  event mode (`RESTSearch=false`).
-* Portlet-event search. uPortal no longer defines the `SearchRequest` and `SearchResults` portlet
-  events, and the `uPortal-api-search` module with their JAXB types is gone. **Portlets can no
-  longer contribute search results through events.** A portlet WAR that answers `SearchRequest`
-  events keeps working, but nothing sends it the event any more. uPortal's Directory portlet no
-  longer answers it, because the people search already covers the directory.
-* `IPortalSearchService` and its implementations. They are the services for the Google Search
-  Appliance (Google ended that product in 2019) and Google Custom Search, and the portlet registry
-  and marketplace searches.
-* The `searchServices`, `searchTabs`, `searchAutocompletePriorityMap` and
-  `searchAutocompleteIgnoreResultTypes` beans in `servicesContext.xml`, the
-  `org.apereo.portal.portlets.searchSearchPortletController.*` and `*.search.result.type`
-  properties, `autosuggestHandler.js`, and `PortletUtils.getStringFromPortletUrl` with
-  `portletUrl.tld`.
+Portlets can no longer contribute search results through portlet events. A portlet WAR that
+answers `SearchRequest` events keeps working, but nothing sends it the event any more.
+
+| Removed | Replaced by |
+| --- | --- |
+| The `Search` framework portlet: `SearchPortletController`, `jsp/Search/*.jsp` (`search.jsp`, `searchLauncher.jsp`, `searchRest.jsp`, `mobileSearch.jsp`), `properties/contexts/portlet/Search-portlet.xml` and its `portlet.xml` entry | `<up-search>` and `<up-search-launcher>` in Web Component channels |
+| The portlet's event mode (`RESTSearch=false`) and the `searchTabs` bean | Remote JSON search providers, one tab each (below) |
+| The `uPortal-api-search` artifact: `SearchRequest`, `SearchResults`, `SearchResult`, `PortletUrl`, `PortletUrlParameter`, `PortletUrlType`, `SearchConstants`, and its schema `portal-search-4.0.xsd` | Nothing. Results come from `ISearchStrategy` beans through `/api/v6-0/search` |
+| The `SearchRequest` and `SearchResults` event definitions in `portlet.xml`, the `org.apereo.portal.globalEvent` option that broadcast `SearchRequest`, and the Directory portlet's `SearchRequest` handler | Nothing. The people search already covers the directory |
+| `IPortalSearchService` and `PortalSearchResults` (uPortal-api-internal) | `ISearchStrategy` (uPortal-api-rest) |
+| `GsaSearchService` and its `gsa` result types (Google ended the Search Appliance in 2019) | A remote JSON search provider for the service that replaced it |
+| `GoogleCustomSearchService` | A remote JSON search provider for Google's Programmable Search JSON API |
+| `PortletRegistrySearchService` and `MarketplaceSearchService` | The portlet search (`PortletsSearchStrategy`), already in `/api/v6-0/search` |
+| The `searchServices`, `searchAutocompletePriorityMap` and `searchAutocompleteIgnoreResultTypes` beans in `servicesContext.xml` | Remote providers in `portal.properties`; type-ahead doesn't need settings |
+| The properties `org.apereo.portal.portlets.searchSearchPortletController.*` and `org.apereo.portal.portlets.*.search.result.type` | Nothing |
+| `scripts/search/autosuggestHandler.js` (`up.initSearchAuto`) and `css/search/autosuggest.css` | The type-ahead built into `<up-search-box>` |
+| `portletUrl.tld` (`pURL:getStringFromPortletUrl`), which an overlay's JSP could use, and `PortletUtils.getStringFromPortletUrl`; `PortletUtils` is no longer a Spring bean | Nothing. Build portlet URLs with `IPortalUrlProvider` |
 
 ### Remote search providers instead
 
@@ -260,6 +262,16 @@ org.apereo.portal.search.remote.directory.timeout=3000
 
 A search that needs more than a URL and a field mapping, such as results that depend on the
 user, becomes an `ISearchStrategy` bean of its own, like the people and portlet searches.
+
+### Search statistics
+
+The search statistics (the Activity portlet's popular searches and the search report) counted the
+Search portlet's actions. `/api/v6-0/search` now publishes a `SearchRequestEvent` with the search
+terms for each search the user submits in `<up-search>` or `<up-search-launcher>`. The components
+mark those searches with `submitted=true`, and other API calls are not counted. The aggregation counts both, so
+statistics from events stored before the upgrade still aggregate, and the aggregation tables don't
+change. An `ignoredEvents` filter in `eventHandlerContext.xml` that drops
+`PortletActionExecutionEvent` no longer affects search terms.
 
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
