@@ -74,6 +74,14 @@ public class PortletDelegationView implements View {
     public void render(
             Map<String, ?> model, HttpServletRequest request, HttpServletResponse response)
             throws Exception {
+        if (model == null) {
+            // View.render allows a null model; this view needs the delegate entries (MOD-I225)
+            throw new IllegalArgumentException(
+                    "PortletDelegationView needs a model with "
+                            + DELEGATE_PORTLET_WINDOW_ID
+                            + " and "
+                            + DELEGATE_REQUEST);
+        }
         final IPortletWindowId portletWindowId =
                 (IPortletWindowId) model.get(DELEGATE_PORTLET_WINDOW_ID);
         final DelegationRequest delegationRequest = (DelegationRequest) model.get(DELEGATE_REQUEST);
