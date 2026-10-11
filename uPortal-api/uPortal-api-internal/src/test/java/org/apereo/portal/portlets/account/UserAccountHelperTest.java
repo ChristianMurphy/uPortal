@@ -23,12 +23,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,6 +76,11 @@ public class UserAccountHelperTest {
 
     private static final String TEST_USER_LOGIN_TOKEN = "16526520982";
 
+    private static final Instant NOW = Instant.parse("2026-10-11T12:00:00Z");
+
+    /** When the test account's token was issued: within the default lifetime of one hour. */
+    private static final String TOKEN_ISSUED = "2026-10-11T11:30:00Z";
+
     private UserAccountHelper userAccountHelper;
 
     @Mock private ILocalAccountDao accountDao;
@@ -101,6 +110,8 @@ public class UserAccountHelperTest {
 
     @Before
     public void setup() throws Exception {
+        // First, so that it does not replace the mocks the helper is given below
+        MockitoAnnotations.initMocks(this);
         userAccountHelper = new UserAccountHelper();
         userAccountHelper.setAccountEditAttributes(generateAccountEditPreferences());
         accountDao = mock(ILocalAccountDao.class);
@@ -112,6 +123,7 @@ public class UserAccountHelperTest {
         when(accountPerson.getPassword()).thenReturn(TEST_USER_PASSWORD);
         when(accountPerson.getId()).thenReturn(10000l);
         when(accountPerson.getAttributeValue("loginToken")).thenReturn(TEST_USER_LOGIN_TOKEN);
+        when(accountPerson.getAttributeValue("loginTokenIssued")).thenReturn(TOKEN_ISSUED);
         when(accountDao.getCurrentAttributeNames()).thenReturn(CURRENT_ATTRIBUTE_NAMES);
         when(accountPerson.getAttributeValues(TEST_ATTRIBUTE_NAME))
                 .thenReturn(CURRENT_ATTRIBUTE_VALUES);
@@ -122,7 +134,7 @@ public class UserAccountHelperTest {
 
         userAccountHelper.setLocalAccountDao(accountDao);
         userAccountHelper.setPortalPasswordService(passwordService);
-        MockitoAnnotations.initMocks(this);
+        userAccountHelper.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @Test
@@ -259,5 +271,82 @@ public class UserAccountHelperTest {
             assertFalse(message, message.contains(TEST_USER_LOGIN_TOKEN));
             assertFalse(message, message.contains(submitted));
         }
+    }
+
+    @Test
+    public void testIssueLoginTokenDatesTheToken() {
+        userAccountHelper.issueLoginToken(accountPerson);
+        verify(accountPerson)
+                .setAttribute(
+                        org.mockito.ArgumentMatchers.eq("loginToken"),
+                        org.mockito.ArgumentMatchers.<String>argThat(
+                                token -> token.length() == 20));
+        verify(accountPerson).setAttribute("loginTokenIssued", NOW.toString());
+    }
+
+    @Test
+    public void testLoginTokenWorksUntilItsLifetimeEnds() {
+        when(accountPerson.getAttributeValue("loginTokenIssued"))
+                .thenReturn("2026-10-11T11:00:00Z");
+        assertTrue(userAccountHelper.validateLoginToken(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+        assertFalse(userAccountHelper.isLoginTokenExpired(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+
+        when(accountPerson.getAttributeValue("loginTokenIssued"))
+                .thenReturn("2026-10-11T10:59:59Z");
+        assertFalse(userAccountHelper.validateLoginToken(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+        assertTrue(userAccountHelper.isLoginTokenExpired(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+    }
+
+    @Test
+    public void testResetTokenLifetimeIsConfigurable() {
+        userAccountHelper.setResetTokenLifetime("PT10M");
+        assertFalse(userAccountHelper.validateLoginToken(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+        userAccountHelper.setResetTokenLifetime("PT30M");
+        assertTrue(userAccountHelper.validateLoginToken(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testResetTokenLifetimeMustBePositive() {
+        userAccountHelper.setResetTokenLifetime("PT0S");
+    }
+
+    @Test
+    public void testLoginTokenWithoutAnIssueTimeIsExpired() {
+        when(accountPerson.getAttributeValue("loginTokenIssued")).thenReturn(null);
+        assertFalse(userAccountHelper.validateLoginToken(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+        assertTrue(userAccountHelper.isLoginTokenExpired(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+
+        when(accountPerson.getAttributeValue("loginTokenIssued")).thenReturn("yesterday");
+        assertTrue(userAccountHelper.isLoginTokenExpired(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+    }
+
+    @Test
+    public void testOnlyTheRightTokenIsReportedExpired() {
+        when(accountPerson.getAttributeValue("loginTokenIssued"))
+                .thenReturn("2026-10-11T09:00:00Z");
+        assertFalse(userAccountHelper.isLoginTokenExpired(TEST_USER_NAME, "wrong-token"));
+        assertFalse(userAccountHelper.isLoginTokenExpired(TEST_USER_NAME, null));
+        assertFalse(userAccountHelper.isLoginTokenExpired("nobody", TEST_USER_LOGIN_TOKEN));
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testCreatePasswordRefusesAnExpiredToken() {
+        when(accountPerson.getAttributeValue("loginTokenIssued"))
+                .thenReturn("2026-10-11T09:00:00Z");
+        final PersonForm personForm = userAccountHelper.getForm(TEST_USER_NAME);
+        personForm.setPassword(TEST_USER_PASSWORD);
+        personForm.setConfirmPassword(TEST_USER_PASSWORD);
+        userAccountHelper.createPassword(personForm, TEST_USER_LOGIN_TOKEN);
+    }
+
+    @Test
+    public void testCreatePasswordRemovesTheTokenAndItsIssueTime() {
+        final PersonForm personForm = userAccountHelper.getForm(TEST_USER_NAME);
+        personForm.setPassword(TEST_USER_PASSWORD);
+        personForm.setConfirmPassword(TEST_USER_PASSWORD);
+        userAccountHelper.createPassword(personForm, TEST_USER_LOGIN_TOKEN);
+        verify(accountPerson).setPassword(TEST_USER_ENCRYPTED_PASSWORD);
+        verify(accountPerson).removeAttribute("loginToken");
+        verify(accountPerson).removeAttribute("loginTokenIssued");
     }
 }
