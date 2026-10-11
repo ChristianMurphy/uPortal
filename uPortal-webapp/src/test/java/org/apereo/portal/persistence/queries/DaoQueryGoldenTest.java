@@ -179,6 +179,7 @@ public class DaoQueryGoldenTest {
             {"percent", "100%_Done", "Wildcards 100%_Done", "x"},
             {"trailing", "Trailing Space ", "Trailing Space ", "p"},
             {"bang", "Bang!Portlet", "100xyDone", "p"},
+            {"bracket", "Sel[x]ect", "Brackets [x]", "p"},
         };
         final List<IPortletDefinition> saved = new ArrayList<>();
         for (final String[] d : definitions) {
@@ -267,6 +268,12 @@ public class DaoQueryGoldenTest {
             {"!", SearchMatch.CONTAINS},
             {"g!p", SearchMatch.CONTAINS},
             {"!!", SearchMatch.CONTAINS},
+            // [ starts a character class in SQL Server's LIKE (MOD-I223)
+            {"[", SearchMatch.CONTAINS},
+            {"]", SearchMatch.CONTAINS},
+            {"[x]", SearchMatch.CONTAINS},
+            {"sel[", SearchMatch.STARTS_WITH},
+            {"x]", SearchMatch.ENDS_WITH},
         };
         for (final Object[] search : searches) {
             final String term = (String) search[0];

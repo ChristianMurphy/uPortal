@@ -70,9 +70,13 @@ fix" evidence, a second worktree under the session scratchpad holds only the new
   uPortal-rendering, uPortal-content-portlet and uPortal-groups-local.
 - `QueryVendorDifferences` loses the MOD-I142 entries (the partial searches and `"über"`). The
   exact search `"calendar", false` stays listed: that is collation, not MOD-I142.
-- Open question for the coordinator: on SQL Server, `[` in a LIKE pattern starts a character
-  class. `!` can't escape it on the other vendors (see above), so a term with `[` may still
-  differ on SQL Server. The task did not ask for it, and no test covers it yet.
+- MOD-I223: on SQL Server, `[` in a LIKE pattern starts a character class. HSQLDB 2.7.4 rejects
+  `![` and `!]` ("invalid escape sequence"), and Oracle documents the same rule (ORA-01424), so the
+  DAO escapes `[` on SQL Server only. It learns PortalDb's dialect through
+  `HibernateConfigurationAware`. `]` is an ordinary character outside a class, everywhere. The
+  table test covers both escape sets, `JpaPortletDefinitionDaoDialectTest` checks the dialect
+  switch, and the query golden has a `Sel[x]ect` portlet with searches for `[`, `]`, `[x]`,
+  `sel[` and `x]`.
 
 ### Proposed UPGRADING-6.0.md text
 
@@ -316,5 +320,5 @@ this session can't read. The test reproduces the case from the code.
 | MOD-I220 | Persistence | **Found by the entity round trip.** `UP_MUTEX.LOCK_END` (`ClusterMutex.lockEnd`) is stored as JVM-local time too, but MOD-I141's list left it out. | **Fixed** with MOD-I141: `Instant` in UTC, converted by the copy tool. |
 | MOD-I221 | Persistence | `hibernate.jdbc.time_zone=UTC` alone moves `UP_TIME_DIMENSION.TD_TIME` by the JVM's offset (00:00 stored as 05:00 in New York). Without a zone, Jadira's `localTime` binds through Hibernate's time descriptor. | **Fixed:** `JvmZoneLocalTimeType` binds with the JVM zone's calendar, as before. |
 | MOD-I222 | Portlets | `TransientPortletEntityDao.getPortletEntity` threw a NullPointerException for a transient node the layout lacks or whose portlet is gone (seen on `layout.json` with `user=null` in the first P2 runs). | **Fixed:** returns null. |
-| MOD-I223 | Portlets | On SQL Server, `[` in a portlet search term starts a LIKE character class. HSQLDB and Oracle reject escaping it with the `!` escape, so it isn't escaped. | **Open**, not covered by a test. Needs a decision: SQL Server-only escaping, or accept. |
+| MOD-I223 | Portlets | On SQL Server, `[` in a portlet search term starts a LIKE character class. HSQLDB and Oracle reject `![`, so one escape set can't serve every vendor. | **Fixed:** the DAO escapes `[` on SQL Server only, from PortalDb's dialect. The query golden checks that the vendors agree. |
 

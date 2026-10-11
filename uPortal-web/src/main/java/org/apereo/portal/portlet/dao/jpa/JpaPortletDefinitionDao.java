@@ -25,6 +25,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 import org.apache.commons.lang.Validate;
+import org.apereo.portal.hibernate.DelegatingHibernateIntegrator.HibernateConfiguration;
+import org.apereo.portal.hibernate.HibernateConfigurationAware;
 import org.apereo.portal.jpa.BasePortalJpaDao;
 import org.apereo.portal.jpa.OpenEntityManager;
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao;
@@ -32,6 +34,7 @@ import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletDefinitionId;
 import org.apereo.portal.spring.tx.DialectAwareTransactional;
 import org.hibernate.dialect.PostgreSQL81Dialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.support.DataAccessUtils;
@@ -39,7 +42,8 @@ import org.springframework.stereotype.Repository;
 
 /** JPA implementation of the portlet definition DAO */
 @Repository
-public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortletDefinitionDao {
+public class JpaPortletDefinitionDao extends BasePortalJpaDao
+        implements IPortletDefinitionDao, HibernateConfigurationAware {
 
     private CriteriaQuery<PortletDefinitionImpl> findAllPortletDefinitions;
     private CriteriaQuery<PortletDefinitionImpl> findDefinitionByNameQuery;
@@ -50,21 +54,44 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
 
     /**
      * The escape character of the partial searches. HSQLDB and Oracle reject an escape character
-     * followed by anything but {@code %}, {@code _} or itself, so only those are escaped.
+     * followed by anything but {@code %}, {@code _} or itself, so only those are escaped, and
+     * {@code [} on SQL Server.
      */
     static final char LIKE_ESCAPE = '!';
 
+    /** SQL Server reads {@code [} in a LIKE pattern as the start of a character class (MOD-I223) */
+    private volatile boolean escapeBracket;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    /** The LIKE pattern, escaped with {@link #LIKE_ESCAPE}, that finds {@code term} literally */
-    static String likePattern(String term, SearchMatch match) {
+    @Override
+    public boolean supports(String persistenceUnit) {
+        return PERSISTENCE_UNIT_NAME.equals(persistenceUnit);
+    }
+
+    @Override
+    public void setConfiguration(
+            String persistenceUnit, HibernateConfiguration hibernateConfiguration) {
+        this.escapeBracket = hibernateConfiguration.getDialect() instanceof SQLServerDialect;
+    }
+
+    /** The LIKE pattern for {@code term} on this persistence unit's database */
+    String likePattern(String term, SearchMatch match) {
+        return likePattern(term, match, escapeBracket);
+    }
+
+    /**
+     * The LIKE pattern, escaped with {@link #LIKE_ESCAPE}, that finds {@code term} literally. On
+     * SQL Server ({@code escapeBracket}) {@code [} is escaped too.
+     */
+    static String likePattern(String term, SearchMatch match, boolean escapeBracket) {
         final StringBuilder pattern = new StringBuilder(term.length() + 2);
         if (match == SearchMatch.ENDS_WITH || match == SearchMatch.CONTAINS) {
             pattern.append('%');
         }
         for (int i = 0; i < term.length(); i++) {
             final char c = term.charAt(i);
-            if (c == '%' || c == '_' || c == LIKE_ESCAPE) {
+            if (c == '%' || c == '_' || c == LIKE_ESCAPE || (escapeBracket && c == '[')) {
                 pattern.append(LIKE_ESCAPE);
             }
             pattern.append(c);
