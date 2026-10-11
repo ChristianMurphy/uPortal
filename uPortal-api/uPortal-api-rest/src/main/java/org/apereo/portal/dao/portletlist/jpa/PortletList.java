@@ -116,7 +116,7 @@ public class PortletList implements IPortletList {
      */
     public void prepareForPersistence(IPerson requester) {
         if (!StringUtils.isEmpty(this.name)) {
-            InputValidator.validateAsWordCharacters(this.name, "name");
+            InputValidator.validateAsText(this.name, "name");
         }
 
         if (!StringUtils.isEmpty(this.ownerUsername)) {

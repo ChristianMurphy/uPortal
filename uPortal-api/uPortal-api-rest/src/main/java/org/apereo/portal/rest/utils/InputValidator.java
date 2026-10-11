@@ -11,6 +11,9 @@ public class InputValidator {
     private static final Pattern ALPHANUMERIC_AND_DASH_VALIDATOR_PATTERN =
             Pattern.compile(ALPHANUMERIC_AND_DASH_VALIDATOR_REGEX);
 
+    /** Text in any script without control characters, 1 to 255 code points (MOD-D49) */
+    private static final Pattern TEXT_VALIDATOR_PATTERN = Pattern.compile("^[^\\p{Cc}]{1,255}$");
+
     /**
      * @param s value to validate
      * @param inputType not sanitized and will be returned in json.
@@ -21,7 +24,24 @@ public class InputValidator {
             throw new IllegalArgumentException(
                     "Specified "
                             + inputType
-                            + " is not the correct length or has invalid characters.");
+                            + " must have 1 to 500 of the characters A-Z, a-z, 0-9, _ and -.");
+        }
+        return s;
+    }
+
+    /**
+     * Validates text people read, such as a name: any script, no control characters.
+     *
+     * @param s value to validate
+     * @param inputType not sanitized and will be returned in json.
+     * @return The validated value
+     */
+    public static String validateAsText(String s, String inputType) {
+        if (!TEXT_VALIDATOR_PATTERN.matcher(s).matches()) {
+            throw new IllegalArgumentException(
+                    "Specified "
+                            + inputType
+                            + " must have 1 to 255 characters and no control characters.");
         }
         return s;
     }
