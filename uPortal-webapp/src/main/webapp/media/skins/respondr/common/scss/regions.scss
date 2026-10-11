@@ -227,8 +227,8 @@
     .background-preference [id*="background-edit-control"],
     .background-preference up-background-preference {
       position: absolute;
-      right: 12px;
-      top: 0;
+      inset-inline-end: 12px;
+      inset-block-start: 0;
     }
 
     button {
