@@ -612,7 +612,8 @@ public class PortalEventFactoryImpl implements IPortalEventFactory, ApplicationE
             HttpServletRequest request, Object source, String searchTerms) {
         final PortalEvent.PortalEventBuilder eventBuilder =
                 this.createPortalEventBuilder(source, request);
-        this.applicationEventPublisher.publishEvent(new SearchRequestEvent(eventBuilder, searchTerms));
+        this.applicationEventPublisher.publishEvent(
+                new SearchRequestEvent(eventBuilder, searchTerms));
     }
 
     protected PortalEvent.PortalEventBuilder createPortalEventBuilder(

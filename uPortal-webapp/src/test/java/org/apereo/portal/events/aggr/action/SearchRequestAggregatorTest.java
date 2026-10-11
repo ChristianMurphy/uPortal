@@ -29,14 +29,14 @@ import org.junit.Test;
 
 /**
  * Search statistics count the searches stored before 6.0 (the Search portlet's actions with a
- * {@code query} parameter) and the searches {@code /api/v6-0/search} publishes, read back from
- * the JSON the raw event store keeps.
+ * {@code query} parameter) and the searches {@code /api/v6-0/search} publishes, read back from the
+ * JSON the raw event store keeps.
  */
 public class SearchRequestAggregatorTest {
 
     private static final String STORED =
             "\"timestamp\":1371745598080,\"serverId\":\"example.com\","
-                    + "\"eventSessionId\":\"1234567890123_student_AAAAAAAAAAA\",\"userName\":\"student\"";
+                + "\"eventSessionId\":\"1234567890123_student_AAAAAAAAAAA\",\"userName\":\"student\"";
 
     /** An action of the Search portlet, as uPortal 5.17 stored it. */
     private static final String PORTLET_SEARCH =
@@ -93,7 +93,9 @@ public class SearchRequestAggregatorTest {
         final PortalEvent logout = read("{\"@c\":\".LogoutEvent\"," + STORED + "}");
 
         for (PortalEvent event :
-                new PortalEvent[] {otherPortlet, noQuery, blankQuery, noValue, blankSearch, logout}) {
+                new PortalEvent[] {
+                    otherPortlet, noQuery, blankQuery, noValue, blankSearch, logout
+                }) {
             assertFalse(event.toString(), aggregator.supports(event));
             assertNull(SearchRequestAggregator.searchTermsOf(event));
         }

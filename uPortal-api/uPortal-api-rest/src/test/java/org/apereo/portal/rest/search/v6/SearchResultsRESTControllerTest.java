@@ -144,8 +144,7 @@ public class SearchResultsRESTControllerTest {
         when(service.search(any(), any(), any(HttpServletRequest.class)))
                 .thenReturn(new SearchResults("cal", Collections.emptyList()));
 
-        mockMvc.perform(api(get("/uPortal" + URI).param("q", " cal ")))
-                .andExpect(status().isOk());
+        mockMvc.perform(api(get("/uPortal" + URI).param("q", " cal "))).andExpect(status().isOk());
         verify(events, never()).publishSearchRequestEvent(any(), any(), any());
 
         mockMvc.perform(api(get("/uPortal" + URI).param("q", " cal ").param("submitted", "true")))

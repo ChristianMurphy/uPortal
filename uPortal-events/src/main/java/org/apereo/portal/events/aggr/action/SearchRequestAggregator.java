@@ -33,9 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SearchRequestAggregator
         extends BaseIntervalAwarePortalEventAggregator<
-                PortalEvent,
-                SearchRequestAggregationImpl,
-                SearchRequestAggregationKey> {
+                PortalEvent, SearchRequestAggregationImpl, SearchRequestAggregationKey> {
     private static final String TARGET_FNAME = "search";
     private static final String TARGET_PARAM = "query";
 
