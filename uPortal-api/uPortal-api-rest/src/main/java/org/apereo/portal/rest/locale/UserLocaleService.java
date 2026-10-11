@@ -51,7 +51,8 @@ public class UserLocaleService {
 
     /** The portal's locales, named in the user's language and in their own, and the choice. */
     public UserLocale getUserLocale(HttpServletRequest request) {
-        final @Nullable Locale current = getCurrentLocale(request);
+        final LocaleManager localeManager = getLocaleManager(request);
+        final @Nullable Locale current = getCurrentLocale(localeManager);
         final List<LocaleOption> options = new ArrayList<>();
         for (final LocaleBean bean : userLocaleHelper.getLocales(current)) {
             options.add(
@@ -61,7 +62,13 @@ public class UserLocaleService {
                             bean.getDisplayLanguage(),
                             nativeName(bean.getLocale())));
         }
-        return new UserLocale(current == null ? null : current.toString(), options);
+        final @Nullable Locale rendered = getRenderedLocale(localeManager);
+        // A stored choice the portal no longer offers is no choice among these locales
+        final @Nullable String selected =
+                current != null && localeManagerFactory.getPortalLocales().contains(current)
+                        ? current.toString()
+                        : null;
+        return new UserLocale(selected, rendered == null ? null : rendered.toString(), options);
     }
 
     /**
@@ -100,14 +107,30 @@ public class UserLocaleService {
         return false;
     }
 
+    private LocaleManager getLocaleManager(HttpServletRequest request) {
+        return userInstanceManager
+                .getUserInstance(request)
+                .getPreferencesManager()
+                .getUserProfile()
+                .getLocaleManager();
+    }
+
+    /**
+     * The locale the portal renders the page in: the first of the manager's locales (session, user,
+     * then {@code portal_locales}) that the portal offers.
+     */
+    private @Nullable Locale getRenderedLocale(LocaleManager localeManager) {
+        final List<Locale> portalLocales = localeManagerFactory.getPortalLocales();
+        for (final Locale locale : localeManager.getLocales()) {
+            if (portalLocales.contains(locale)) {
+                return locale;
+            }
+        }
+        return null;
+    }
+
     /** The session's locale, else the user's stored one, else null (as the portlet did). */
-    private @Nullable Locale getCurrentLocale(HttpServletRequest request) {
-        final LocaleManager localeManager =
-                userInstanceManager
-                        .getUserInstance(request)
-                        .getPreferencesManager()
-                        .getUserProfile()
-                        .getLocaleManager();
+    private @Nullable Locale getCurrentLocale(LocaleManager localeManager) {
         final @Nullable List<Locale> sessionLocales = localeManager.getSessionLocales();
         if (sessionLocales != null && !sessionLocales.isEmpty()) {
             return sessionLocales.get(0);

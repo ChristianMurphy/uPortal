@@ -99,6 +99,8 @@ public class UserLocaleServiceTest {
         final UserLocale userLocale = service.getUserLocale(request);
 
         assertNull(userLocale.getSelected());
+        // The page is rendered in the first portal locale, so that one is current
+        assertEquals("en_US", userLocale.getCurrent());
         assertEquals(List.of("en_US", "fr_FR", "ja_JP"), codes(userLocale));
         assertEquals("fr-FR", userLocale.getLocales().get(1).getTag());
     }
@@ -110,6 +112,7 @@ public class UserLocaleServiceTest {
         final UserLocale userLocale = service.getUserLocale(request);
 
         assertEquals("fr_FR", userLocale.getSelected());
+        assertEquals("fr_FR", userLocale.getCurrent());
         assertEquals("anglais", userLocale.getLocales().get(0).getName());
         assertEquals("français", userLocale.getLocales().get(1).getName());
         assertEquals("English", userLocale.getLocales().get(0).getNativeName());
@@ -132,6 +135,17 @@ public class UserLocaleServiceTest {
         localeManager.setUserLocales(Collections.singletonList(Locale.JAPAN));
 
         assertEquals("ja_JP", service.getUserLocale(request).getSelected());
+        assertEquals("ja_JP", service.getUserLocale(request).getCurrent());
+    }
+
+    @Test
+    public void ignoresAStoredLocaleThePortalNoLongerOffers() {
+        localeManager.setUserLocales(Collections.singletonList(Locale.GERMANY));
+
+        final UserLocale userLocale = service.getUserLocale(request);
+
+        assertNull(userLocale.getSelected());
+        assertEquals("en_US", userLocale.getCurrent());
     }
 
     @Test

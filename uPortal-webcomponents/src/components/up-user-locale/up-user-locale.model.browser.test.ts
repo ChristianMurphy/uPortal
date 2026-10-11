@@ -31,14 +31,16 @@ const ATTRIBUTES =
 
 const IN_ENGLISH: UserLocaleData = {
     selected: 'en_US',
+    current: 'en_US',
     locales: [
         { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' },
         { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' },
     ],
 };
-const NONE_CHOSEN: UserLocaleData = { ...IN_ENGLISH, selected: null };
+const NONE_CHOSEN: UserLocaleData = { ...IN_ENGLISH, selected: null, current: null };
 const IN_FRENCH: UserLocaleData = {
     selected: 'fr_FR',
+    current: 'fr_FR',
     locales: [
         { code: 'en_US', tag: 'en-US', name: 'anglais', nativeName: 'English' },
         { code: 'fr_FR', tag: 'fr-FR', name: 'français', nativeName: 'Français' },

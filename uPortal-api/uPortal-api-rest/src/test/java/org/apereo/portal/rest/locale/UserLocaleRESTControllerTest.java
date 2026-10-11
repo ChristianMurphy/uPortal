@@ -53,12 +53,13 @@ public class UserLocaleRESTControllerTest {
     private static final UserLocale FRENCH =
             new UserLocale(
                     "fr_FR",
+                    "fr_FR",
                     Arrays.asList(
                             new LocaleOption("en_US", "en-US", "anglais", "English"),
                             new LocaleOption("fr_FR", "fr-FR", "français", "Français")));
 
     private static final String FRENCH_JSON =
-            "{\"selected\":\"fr_FR\",\"locales\":["
+            "{\"selected\":\"fr_FR\",\"current\":\"fr_FR\",\"locales\":["
                     + "{\"code\":\"en_US\",\"tag\":\"en-US\",\"name\":\"anglais\","
                     + "\"nativeName\":\"English\"},"
                     + "{\"code\":\"fr_FR\",\"tag\":\"fr-FR\",\"name\":\"français\","
@@ -115,11 +116,13 @@ public class UserLocaleRESTControllerTest {
     @Test
     public void returnsNullWhenNothingIsChosen() throws Exception {
         when(service.getUserLocale(any(HttpServletRequest.class)))
-                .thenReturn(new UserLocale(null, Arrays.asList()));
+                .thenReturn(new UserLocale(null, null, Arrays.asList()));
 
         mockMvc.perform(api(get("/uPortal" + URI)))
                 .andExpect(status().isOk())
-                .andExpect(content().json("{\"selected\":null,\"locales\":[]}", true));
+                .andExpect(
+                        content()
+                                .json("{\"selected\":null,\"current\":null,\"locales\":[]}", true));
     }
 
     @Test

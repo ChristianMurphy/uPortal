@@ -10,7 +10,7 @@ import {
 
 const ENGLISH = { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' };
 const FRENCH = { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' };
-const body = { selected: 'fr_FR', locales: [ENGLISH, FRENCH] };
+const body = { selected: 'fr_FR', current: 'fr_FR', locales: [ENGLISH, FRENCH] };
 
 function client(respond: () => Response) {
     const fetch = vi.fn<typeof globalThis.fetch>(() => Promise.resolve(respond()));
@@ -36,8 +36,19 @@ describe('validateUserLocale', () => {
         expect(validateUserLocale({ locales: [ENGLISH] }).selected).toBeNull();
         expect(validateUserLocale({ selected: null, locales: [] })).toEqual({
             selected: null,
+            current: null,
             locales: [],
         });
+    });
+
+    it('keeps the current locale when it is listed, and ignores it otherwise', () => {
+        const locales = [ENGLISH, FRENCH];
+        expect(validateUserLocale({ selected: null, current: 'fr_FR', locales }).current).toBe(
+            'fr_FR',
+        );
+        for (const current of ['de_DE', 1, undefined]) {
+            expect(validateUserLocale({ selected: null, current, locales }).current).toBeNull();
+        }
     });
 
     it.each([

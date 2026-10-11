@@ -129,6 +129,7 @@ The coordinator numbers them.
   `UserLocaleHelper.updateUserLocale`, which parses any string into a locale and stores it.
   `/api/v6-0/locale` accepts only the locales in `portal_locales` and answers 400 to others.
   UPGRADING-6.0 says so."
-* New issue: "The user locale selector checks no language for a user who never saved one, and
-  the theme then renders in the portal's default locale. The component keeps this. A later change
-  could check the language the page is rendered in."
+* Fixed issue (MOD-I262): "The user locale selector checked no language for a user who never
+  saved one, though the page renders in the portal's default locale. `/api/v6-0/locale` now
+  returns `current`, the locale the page is rendered in, and the component checks it until the
+  user chooses. The JSP's own comparison worked: EL compares a String and a Locale as strings."

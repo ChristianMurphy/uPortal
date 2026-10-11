@@ -520,7 +520,7 @@ portlet entity for the channel, the one the portlet used.
 
 | Request | Answer |
 | --- | --- |
-| `GET /api/v6-0/locale` | `{"selected": "fr_FR", "locales": [{"code": "en_US", "tag": "en-US", "name": "anglais", "nativeName": "English"}, ...]}`: the portal's locales in `portal_locales` order, each named in the user's current language (`name`) and in its own language (`nativeName`, with a capital first letter). The component names each language with `Intl.DisplayNames` and uses `nativeName` only when the browser can't name it. `selected` is null when the user has not chosen one. |
+| `GET /api/v6-0/locale` | `{"selected": "fr_FR", "current": "fr_FR", "locales": [{"code": "en_US", "tag": "en-US", "name": "anglais", "nativeName": "English"}, ...]}`: the portal's locales in `portal_locales` order, each named in the user's current language (`name`) and in its own language (`nativeName`, with a capital first letter). The component names each language with `Intl.DisplayNames` and uses `nativeName` only when the browser can't name it. `selected` is null when the user has not chosen one, or chose one the portal no longer offers. `current` is the locale the page is rendered in, which the component checks when `selected` is null. |
 | `PUT /api/v6-0/locale` with `{"code": "fr_FR"}` | 200 and the same body, now in the new language. 400 for a code that is not one of the portal's locales. |
 
 Guests may call it: their choice goes into the session. A signed-in user's choice also goes into

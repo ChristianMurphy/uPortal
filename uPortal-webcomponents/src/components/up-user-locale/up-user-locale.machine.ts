@@ -14,6 +14,8 @@
  *   saved            the portal took it; the element reloads the page in the new language (busy)
  * ```
  *
+ * Until the user picks one, the choice is their saved language, else the one the page is in.
+ *
  * The change is pessimistic: the chosen language is saved only when the portal confirms, so a
  * failure leaves the saved one as it was and adds a notice.
  */
@@ -30,7 +32,7 @@ export interface Notice {
 export interface UserLocaleContext {
     api: ApiClient;
     data: UserLocaleData;
-    /** The code of the language the user picked; the saved one until they pick another. */
+    /** The code of the language the user picked; the saved one, else the page's, until they pick. */
     choice: string | undefined;
     notice: Notice | undefined;
 }
@@ -49,7 +51,7 @@ export type UserLocaleEvent =
 
 export type UserLocaleEmitted = { type: 'locale.changed'; code: string; tag: string };
 
-const NO_LOCALES: UserLocaleData = { selected: null, locales: [] };
+const NO_LOCALES: UserLocaleData = { selected: null, current: null, locales: [] };
 
 export function errorKind(error: unknown): ApiErrorKind {
     return error instanceof ApiError ? error.kind : 'malformed';
@@ -89,7 +91,8 @@ export const userLocaleMachine = setup({
     actions: {
         loaded: assign((_, { data }: { data: UserLocaleData }) => ({
             data,
-            choice: data.selected ?? undefined,
+            // The user's choice, else the language the page is in (the portlet checked nothing)
+            choice: data.selected ?? data.current ?? undefined,
         })),
         saved: enqueueActions(({ context, enqueue }, { data }: { data: UserLocaleData }) => {
             const code = choiceOf(context);

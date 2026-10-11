@@ -182,7 +182,19 @@ describe('up-user-locale states', () => {
         expect(form?.scrollWidth).toBeLessThanOrEqual(form?.clientWidth ?? 0);
     });
 
-    it('checks nothing when the user has not chosen a language', async () => {
+    it('checks the language the page is in when the user has not chosen one', async () => {
+        server.on('GET', API, json({ ...IN_ENGLISH, selected: null, current: 'fr_FR' }));
+        server.on('PUT', API, json(IN_FRENCH));
+
+        const element = await render();
+
+        expect(checked(element)).toBe('fr_FR');
+        await userEvent.click(updateButton(element));
+        await expect.poll(() => puts()).toHaveLength(1);
+        expect(puts()[0]?.body).toEqual({ code: 'fr_FR' });
+    });
+
+    it('checks nothing when the portal names no current language', async () => {
         server.on('GET', API, json({ ...IN_ENGLISH, selected: null }));
 
         const element = await render();
