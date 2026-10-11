@@ -111,6 +111,9 @@ public class AuthorizationImpl implements IAuthorizationService {
     /** The cache to hold permission resolution. */
     private Cache doesPrincipalHavePermissionCache;
 
+    /** AnyUnblockedGrantPermissionPolicy's cache of permission resolution. */
+    private Cache hasUnblockedGrantCache;
+
     /** The class representing the permission set type. */
     private static final Class<IPermissionSet> PERMISSION_SET_TYPE = IPermissionSet.class;
 
@@ -148,6 +151,10 @@ public class AuthorizationImpl implements IAuthorizationService {
                 CacheLookup.requireCache(cacheManager, CacheFactory.ENTITY_PARENTS_CACHE));
         this.setDoesPrincipalHavePermissionCache(
                 CacheLookup.requireCache(cacheManager, PRINCIPAL_HAS_PERMISSION_CACHE_NAME));
+        this.setHasUnblockedGrantCache(
+                CacheLookup.requireCache(
+                        cacheManager,
+                        AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT_CACHE_NAME));
     }
 
     public void setPrincipalCache(Cache principalCache) {
@@ -160,6 +167,10 @@ public class AuthorizationImpl implements IAuthorizationService {
 
     public void setDoesPrincipalHavePermissionCache(Cache doesPrincipalHavePermissionCache) {
         this.doesPrincipalHavePermissionCache = doesPrincipalHavePermissionCache;
+    }
+
+    public void setHasUnblockedGrantCache(Cache hasUnblockedGrantCache) {
+        this.hasUnblockedGrantCache = hasUnblockedGrantCache;
     }
 
     @Autowired
@@ -190,6 +201,7 @@ public class AuthorizationImpl implements IAuthorizationService {
             if (this.cachePermissions) {
                 removeFromPermissionsCache(permissions);
             }
+            clearPermissionDecisions();
         }
     }
 
@@ -1150,6 +1162,16 @@ public class AuthorizationImpl implements IAuthorizationService {
     }
 
     /**
+     * Forgets every cached permission decision, on this node and, as both caches replicate
+     * removals, on the others. A change reaches every member of the group it names, so the entries
+     * of all principals go, not only those of the principals in the changed permissions.
+     */
+    private void clearPermissionDecisions() {
+        this.doesPrincipalHavePermissionCache.clear();
+        this.hasUnblockedGrantCache.clear();
+    }
+
+    /**
      * Removes <code>IPermissions</code> from the cache.
      *
      * @param permissions IPermission[]
@@ -1173,6 +1195,7 @@ public class AuthorizationImpl implements IAuthorizationService {
             if (this.cachePermissions) {
                 removeFromPermissionsCache(permissions);
             }
+            clearPermissionDecisions();
         }
     }
 
@@ -1189,6 +1212,7 @@ public class AuthorizationImpl implements IAuthorizationService {
             if (this.cachePermissions) {
                 removeFromPermissionsCache(permissions);
             }
+            clearPermissionDecisions();
         }
     }
 }

@@ -103,8 +103,8 @@ after this branch:
 | `org.apereo.portal.layout.dlm.LAYOUT_CACHE` | `CacheKey` (tagged username, profile id) → `DistributedUserLayout` | 1000 | 7200 | 900 | inval | tag | LayoutCachingService | Spring |
 | `...AuthorizationImpl.AUTH_PRINCIPAL_CACHE` | `Tuple<String, Class>` → `IAuthorizationPrincipal` | 1000 | 0 | 900 | no | tag | AuthorizationImpl | Spring |
 | `...AuthorizationImpl.ENTITY_PARENTS_CACHE` | target `String` → `Set<String>` group keys | 1000 | 180 | 0 | no | none | AuthorizationImpl | Spring |
-| `...AuthorizationImpl.PRINCIPAL_HAS_PERMISSION` | `CacheKey` (tagged username, policy, type, owner, activity, target) → `Boolean` | 50000 | 180 | 0 | no | tag | AuthorizationImpl | Spring |
-| `...AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT` | `CacheKey` → `Boolean` | 250000 | 300 | 0 | no | tag | AnyUnblockedGrantPermissionPolicy | Spring |
+| `...AuthorizationImpl.PRINCIPAL_HAS_PERMISSION` | `CacheKey` (tagged username, policy, type, owner, activity, target) → `Boolean` | 50000 | 180 | 0 | inval | tag | AuthorizationImpl | Spring |
+| `...AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT` | `CacheKey` → `Boolean` | 250000 | 300 | 0 | inval | tag | AnyUnblockedGrantPermissionPolicy | Spring |
 | `SpELExpressionCache` | expression `String` → `Expression` | 5000 | 0 | 900 | no | none | PortalSpELServiceImpl | Spring |
 | `portletSpELExpressionCache` | expression `String` → `Expression` | 100 | 0 | 900 | no | none | PortletSpELServiceImpl | Spring |
 | `org.apereo.portal.events.tincan.LrsActorCache` | username → `LrsActor` | 10000 | 0 | 600 | no | none | LrsActorService | Spring |
@@ -416,14 +416,21 @@ Then require the same results on profile (b), and on (c) where it applies:
    change. This covers the Hibernate L2 entity regions and the `.Query` regions.
 4. **Entity types:** `EntityTypes` caches (inval) stay consistent.
 5. **Logout purge is local:** the username tag purge (`listenFor=local`) does not need to
-   cross nodes. A user's cached attributes and permissions on node 2 expire by TTL, as today.
-   Record this, so a new provider doesn't "fix" it by surprise.
-6. **No copies of non-replicated caches:** `USER_INFO.merged` and
-   `PRINCIPAL_HAS_PERMISSION` entries exist only on the node that computed them.
+   cross nodes. A user's cached attributes on node 2 expire by TTL, as today. Record this, so
+   a new provider doesn't "fix" it by surprise. `PRINCIPAL_HAS_PERMISSION` and
+   `HAS_UNBLOCKED_GRANT` replicate removals (item 9), so JGroups also sends a purge of their
+   entries to the other nodes, which is harmless.
+6. **No copies of non-replicated caches:** `USER_INFO.merged` entries exist only on the node
+   that computed them. The permission-decision caches replicate removals only, never values.
 7. **Timestamps:** query-cache invalidation through the timestamps region works across nodes
    (the aggregation unit replicates it by copy).
 8. **Restart and rejoin:** a node restarts and rejoins the cluster; it starts cold and
    receives invalidations.
+9. **Permission changes:** an admin grants or revokes a permission on node 1; checks already
+   cached on every node, in existing sessions too, follow the change within 30 s.
+   `AuthorizationImpl` clears `PRINCIPAL_HAS_PERMISSION` and `HAS_UNBLOCKED_GRANT` on every
+   permission change, and both caches replicate the removal (`clear()` must reach the other
+   nodes). uPortal-start's cluster test checks it (`permission-session`).
 
 ## Appendix: Hibernate second-level cache regions in ehcache.xml
 
