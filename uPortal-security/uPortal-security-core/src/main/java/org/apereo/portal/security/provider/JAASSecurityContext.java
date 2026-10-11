@@ -14,6 +14,8 @@
  */
 package org.apereo.portal.security.provider;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.Serializable;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
@@ -60,7 +62,9 @@ class JAASSecurityContext extends ChainingSecurityContext
                                 "uPortal",
                                 new JAASInlineCallbackHandler(
                                         this.myPrincipal.UID,
-                                        (new String(this.myOpaqueCredentials.credentialstring))
+                                        (new String(
+                                                        this.myOpaqueCredentials.credentialstring,
+                                                        UTF_8))
                                                 .toCharArray())); // could not come up w/ a better
                 // way to do this
 
