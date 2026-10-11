@@ -59,6 +59,11 @@ public class LocalLoginRefUrlEncoder implements LoginRefUrlEncoder {
         return encodeLoginUrl(request, refUrl.toString());
     }
 
+    @Override
+    public String encodeLoginFailureUrl(HttpServletRequest request, String refUrl) {
+        return encodeLoginUrl(request, refUrl);
+    }
+
     private String encodeLoginUrl(HttpServletRequest request, String refUrl) {
         if (StringUtils.isBlank(loginUrl)) {
             throw new IllegalStateException(

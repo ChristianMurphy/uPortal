@@ -33,4 +33,18 @@ public interface LoginRefUrlEncoder {
      * @throws UnsupportedEncodingException
      */
     String encodeLoginAndRefUrl(HttpServletRequest request) throws UnsupportedEncodingException;
+
+    /**
+     * Encodes the URL that takes a user whose local login (user name and password posted to {@code
+     * /Login}) failed back to the login form, so that the form shows its error and the user can try
+     * again.
+     *
+     * @param request HTTP Request to {@code /Login}
+     * @param refUrl the page to open after a successful login, or {@code null}
+     * @return the login form URL, or {@code null} if this strategy has no local login form; then
+     *     the portal shows its default page
+     */
+    default String encodeLoginFailureUrl(HttpServletRequest request, String refUrl) {
+        return null;
+    }
 }

@@ -15,6 +15,7 @@
 package org.apereo.portal.url;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -78,6 +79,16 @@ public class LocalLoginRefUrlEncoderTest {
     }
 
     @Test
+    public void sendsAFailedLoginBackToTheLoginForm() {
+        final MockHttpServletRequest login = request("/uPortal/Login", null);
+        assertEquals(
+                "/uPortal/p/login?refUrl=%2FuPortal%2Fp%2Fuser-administration",
+                encoder.encodeLoginFailureUrl(login, "/uPortal/p/user-administration"));
+        assertEquals("/uPortal/p/login", encoder.encodeLoginFailureUrl(login, null));
+        assertEquals("/uPortal/p/login", encoder.encodeLoginFailureUrl(login, ""));
+    }
+
+    @Test
     public void appliesTheServerNameCustomizer() throws Exception {
         encoder.setLoginUrl("https://_CURRENT_SERVER_NAME_/uPortal/p/login");
         final UrlMultiServerNameCustomizer customizer = new UrlMultiServerNameCustomizer();
@@ -91,5 +102,12 @@ public class LocalLoginRefUrlEncoderTest {
         assertEquals(
                 "https://theirhost/uPortal/p/login?refUrl=%2FuPortal%2Fp%2Fuser-administration",
                 encoder.encodeLoginAndRefUrl(request));
+    }
+
+    @Test
+    public void theCasEncoderKeepsTheDefaultPageForAFailedLogin() {
+        assertNull(
+                new CasLoginRefUrlEncoder()
+                        .encodeLoginFailureUrl(request("/uPortal/Login", null), "/uPortal/p/x"));
     }
 }

@@ -81,8 +81,8 @@
 
          login.refUrlEncoder picks the strategy, loginRefUrlEncoder:  'cas' (casRefUrlEncoder)
          when the Sign In URL is a CAS server, 'local' (localRefUrlEncoder) when it is the
-         portal's own login form.  casRefUrlEncoder stays defined in both cases:  the Sign In
-         button uses it.
+         portal's own login form.  LoginController also asks it where to send a failed local
+         login.  casRefUrlEncoder stays defined in both cases:  the Sign In button uses it.
     -->
     <bean id="casRefUrlEncoder" class="org.apereo.portal.url.CasLoginRefUrlEncoder"
         p:casLoginUrl="${org.apereo.portal.channels.CLogin.CasLoginUrl}" p:urlCustomizer-ref="authUrlCustomizer"/>

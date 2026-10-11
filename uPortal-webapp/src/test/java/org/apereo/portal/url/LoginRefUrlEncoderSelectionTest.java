@@ -30,7 +30,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
  * MOD-I180: {@code login.refUrlEncoder} selects how mvcContext.xml sends a guest's deep link to the
- * Sign In URL, and the URL canonicalizing filter uses that selection.
+ * Sign In URL, and the URL canonicalizing filter and LoginController use that selection.
  */
 public class LoginRefUrlEncoderSelectionTest {
 
