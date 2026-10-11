@@ -16,13 +16,48 @@ export const MESSAGES_PATH = '/api/v6-0/messages';
 /** A message argument: text as it is, numbers and dates formatted for the locale. */
 export type MessageArg = string | number | Date;
 
-/** The locale if `Intl` accepts it as a language tag, else English. */
-function intlLocale(locale: string): string {
+/**
+ * The locale as a canonical BCP 47 tag (`en_US` and `en-us` give `en-US`), or English when `Intl`
+ * does not accept it.
+ */
+export function intlLocale(locale: string): string {
     try {
-        return Intl.getCanonicalLocales(locale)[0] ?? 'en';
+        return Intl.getCanonicalLocales(locale.replaceAll('_', '-'))[0] ?? 'en';
     } catch {
         return 'en';
     }
+}
+
+/** Languages written right to left, for browsers without `Intl.Locale` text info. */
+const RIGHT_TO_LEFT = new Set(['ar', 'he', 'fa', 'ur']);
+
+interface TextInfo {
+    readonly direction?: string;
+}
+
+/** The text direction the browser knows for a locale (`Intl.Locale` text info), if it does. */
+export function intlTextDirection(locale: Intl.Locale): string | undefined {
+    const withInfo = locale as Intl.Locale & {
+        getTextInfo?: () => TextInfo;
+        textInfo?: TextInfo;
+    };
+    return (withInfo.getTextInfo?.() ?? withInfo.textInfo)?.direction;
+}
+
+/**
+ * The direction of a locale's text: `rtl` for Arabic, Hebrew, Persian and Urdu (and any other
+ * language the browser's `Intl.Locale` says is written right to left), else `ltr`.
+ */
+export function textDirection(
+    locale: string,
+    browserDirection: (locale: Intl.Locale) => string | undefined = intlTextDirection,
+): 'ltr' | 'rtl' {
+    const parsed = new Intl.Locale(intlLocale(locale));
+    const direction = browserDirection(parsed);
+    if (direction === 'rtl' || direction === 'ltr') {
+        return direction;
+    }
+    return RIGHT_TO_LEFT.has(parsed.language) ? 'rtl' : 'ltr';
 }
 
 /**

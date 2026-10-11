@@ -111,6 +111,63 @@ describe('UpElement context', () => {
     });
 });
 
+/** The transform of a mirror-rtl icon in an element of the locale. */
+async function mirroredIcon(locale: string): Promise<string> {
+    const element = await fixture<TestElement>(
+        `<test-up-element locale="${locale}"></test-up-element>`,
+    );
+    const span = document.createElement('span');
+    span.className = 'mirror-rtl';
+    span.textContent = '>';
+    element.renderRoot.append(span);
+    return getComputedStyle(span).transform;
+}
+
+describe('UpElement language and direction', () => {
+    it.each([
+        ['fr-CA', 'fr-CA', 'ltr'],
+        ['en_US', 'en-US', 'ltr'],
+        ['ar-EG', 'ar-EG', 'rtl'],
+        ['he', 'he', 'rtl'],
+        ['fa-IR', 'fa-IR', 'rtl'],
+        ['ur', 'ur', 'rtl'],
+        ['zh-Hant-TW', 'zh-Hant-TW', 'ltr'],
+    ])('sets lang and dir on the host for %s', async (locale, lang, dir) => {
+        const element = await fixture<TestElement>(
+            `<test-up-element locale="${locale}"></test-up-element>`,
+        );
+        expect(element.getAttribute('lang')).toBe(lang);
+        expect(element.getAttribute('dir')).toBe(dir);
+        expect(getComputedStyle(element).direction).toBe(dir);
+    });
+
+    it('follows a change of locale', async () => {
+        const element = await fixture<TestElement>(
+            '<test-up-element locale="en"></test-up-element>',
+        );
+        element.locale = 'ar';
+        await element.updateComplete;
+        expect([element.getAttribute('lang'), element.getAttribute('dir')]).toEqual(['ar', 'rtl']);
+    });
+
+    it('takes the locale from the page, not from the lang it set itself', async () => {
+        const nested = await fixture<TestElement>(
+            '<div lang="he"><test-up-element></test-up-element></div>',
+        );
+        const wrapper = nested as unknown as HTMLDivElement;
+        const element = wrapper.firstElementChild as TestElement;
+        await element.updateComplete;
+        expect(element.getAttribute('dir')).toBe('rtl');
+        wrapper.setAttribute('lang', 'de');
+        expect(element.resolvedLocale).toBe('de');
+    });
+
+    it('mirrors icons marked mirror-rtl in right-to-left locales', async () => {
+        expect(await mirroredIcon('ar')).toBe('matrix(-1, 0, 0, 1, 0, 0)');
+        expect(await mirroredIcon('en')).toBe('none');
+    });
+});
+
 describe('UpElement messages', () => {
     it('renders English defaults until the portal answers, then its messages', async () => {
         server.on('GET', `/uPortal${MESSAGES_PATH}`, () =>

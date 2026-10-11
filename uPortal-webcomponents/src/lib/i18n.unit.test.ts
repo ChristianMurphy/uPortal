@@ -3,10 +3,13 @@ import { ApiClient } from './api-client';
 import {
     clearMessageCache,
     formatMessage,
+    intlLocale,
+    intlTextDirection,
     loadMessages,
     messageKeys,
     MESSAGES_PATH,
     pluralKey,
+    textDirection,
     validateMessages,
 } from './i18n';
 
@@ -196,5 +199,57 @@ describe('messageKeys', () => {
 
     it('leaves keys without a family alone', () => {
         expect(messageKeys(['a', 'b.one'])).toEqual(['a', 'b.one']);
+    });
+});
+
+describe('intlLocale', () => {
+    it.each([
+        ['en_US', 'en-US'],
+        ['zh_hant_tw', 'zh-Hant-TW'],
+        ['ar-eg', 'ar-EG'],
+        ['not a tag', 'en'],
+    ])('reads %s as %s', (locale, tag) => {
+        expect(intlLocale(locale)).toBe(tag);
+    });
+});
+
+/** A browser whose Intl.Locale has no text info. */
+function noTextInfo(): undefined {
+    return undefined;
+}
+
+describe('textDirection', () => {
+    it.each([
+        ['ar', 'rtl'],
+        ['ar_EG', 'rtl'],
+        ['he-IL', 'rtl'],
+        ['fa', 'rtl'],
+        ['ur-PK', 'rtl'],
+        ['en-US', 'ltr'],
+        ['zh-Hant-TW', 'ltr'],
+        ['not a tag', 'ltr'],
+    ])('gives %s %s', (locale, direction) => {
+        expect(textDirection(locale)).toBe(direction);
+    });
+
+    it('uses the list when the browser has no text info', () => {
+        expect(textDirection('ar', noTextInfo)).toBe('rtl');
+        expect(textDirection('ur', noTextInfo)).toBe('rtl');
+        expect(textDirection('de', noTextInfo)).toBe('ltr');
+    });
+
+    it('trusts the browser for languages the list lacks', () => {
+        // Dhivehi is written right to left
+        expect(textDirection('dv', () => 'rtl')).toBe('rtl');
+        expect(textDirection('ar', () => 'ltr')).toBe('ltr');
+    });
+
+    it('reads the text info of Intl.Locale where it exists', () => {
+        const locale = new Intl.Locale('ar');
+        expect(intlTextDirection(locale)).toBe('rtl');
+        expect(
+            intlTextDirection({ textInfo: { direction: 'rtl' } } as unknown as Intl.Locale),
+        ).toBe('rtl');
+        expect(intlTextDirection({} as Intl.Locale)).toBeUndefined();
     });
 });
