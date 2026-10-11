@@ -152,8 +152,24 @@ allprojects {
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.add('-parameters')
     }
+    // -PquietCompile prints compile errors but no warnings (MOD-D53). A CI log that holds
+    // thousands of Error Prone and javac warnings hides the one error that failed the build.
+    // Errors are unchanged: javac errors, and Error Prone checks at ERROR level (NullAway, and
+    // the checks Error Prone ships as errors) still fail the compile. One CI leg (Linux, Temurin
+    // 21) runs without it and so keeps listing the warnings.
+    def quietCompile = providers.gradleProperty('quietCompile').map { it != 'false' }.getOrElse(false)
+    if (quietCompile) {
+        tasks.withType(JavaCompile).configureEach {
+            options.warnings = false // javac -nowarn
+            options.compilerArgs.add('-Xlint:none')
+            // -Xlint:none still prints "Note: ... uses or overrides a deprecated API" lines
+            options.compilerArgs.add('-XDsuppressNotes')
+        }
+    }
     tasks.withType(JavaCompile).configureEach {
         options.errorprone {
+            // Error Prone checks at WARNING level are off with -PquietCompile
+            disableAllWarnings = quietCompile
             // ERROR-level checks added to Error Prone after 2.3.4 that flag existing code.
             // Disabled so the toolchain upgrade needs no production change; each finding
             // should be fixed (and its check re-enabled) separately.

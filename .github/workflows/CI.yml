@@ -45,6 +45,11 @@ jobs:
       - name: Install Chromium for the web component tests
         run: ./gradlew -S --no-daemon :uPortal-webcomponents:installChromium
       - name: Build and Test
+        env:
+          # Every leg but one prints compile errors only (MOD-D53); Linux with Temurin 21 keeps
+          # listing the Error Prone and javac warnings. Gradle reads this as -PquietCompile, in
+          # any shell.
+          ORG_GRADLE_PROJECT_quietCompile: ${{ !(matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21) }}
         run: ./gradlew -S --stacktrace --no-daemon --no-parallel build jacocoAggregateReport
       - name: Upload coverage to Coveralls
         if: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
@@ -83,7 +88,7 @@ jobs:
       # Fails on any finding that is not in the module's config/spotbugs/baseline file
       # (MOD-D27). --continue analyses every module, so one run lists all new findings.
       - name: Run SpotBugs
-        run: ./gradlew -S --no-daemon --continue spotbugsMain
+        run: ./gradlew -S --no-daemon --continue -PquietCompile spotbugsMain
       - name: Show new findings
         if: failure()
         run: |
@@ -175,7 +180,7 @@ jobs:
           cache-provider: basic
       # Writes the error counts by module to the job summary
       - name: Compile against Spring 5.3
-        run: ./gradlew -S --no-daemon --continue spring53Probe
+        run: ./gradlew -S --no-daemon --continue -PquietCompile spring53Probe
       - name: Show the errors
         if: always()
         run: cat build/reports/spring53-probe/errors.txt || true
