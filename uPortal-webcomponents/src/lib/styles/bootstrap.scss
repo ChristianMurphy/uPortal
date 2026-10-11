@@ -42,4 +42,10 @@
     .alert {
         color: var(--theme-fg-emphasis, var(--alert-color));
     }
+
+    // Bootstrap 6 pads a select at its inline end but draws the arrow at the right, over the
+    // value in a right-to-left locale (found by the ar-XB pseudo-locale, MOD-D51)
+    select.form-control:dir(rtl) {
+        --control-select-bg-position: left 0.75rem center;
+    }
 }
