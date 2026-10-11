@@ -66,7 +66,7 @@ on every run.
 | TIME | to the microsecond; midnight, 23:59:59.999999, the DST gap's hour | truncated to the lower precision (reported) |
 | TIMESTAMP(0), (3), (6) | to the microsecond, year 1000 to 9999; New York's DST gap and overlap (the tests run in America/New_York), its last LMT second, pre-1970, 2038-01-19, 9999-12-31 23:59:59.999999 | exactly |
 | 5.17's timestamp (MySQL/MariaDB `DATETIME`, SQL Server `datetime`) | as TIMESTAMP | truncated (MOD-I95) or on SQL Server's 1/300 s grid (reported) |
-| TIMESTAMP WITH TIME ZONE | offsets -14:00 to +14:00 | same instant |
+| TIMESTAMP WITH TIME ZONE | from 1583 (HSQLDB 2.7 shifts earlier ones), offsets -14:00 to +14:00 | same instant |
 | uuid (PostgreSQL to PostgreSQL) | nil, max, v7 | exactly |
 
 A conversion that changes a value must be in the report's notes for the
