@@ -47,6 +47,7 @@ import org.apereo.portal.user.IUserInstanceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -178,7 +179,8 @@ public class PortletsRESTController {
      * Provides a single, fully-rendered portlet. NOTE: Access to this API endpoint requires only
      * <code>IPermission.PORTAL_SUBSCRIBE</code> permission.
      */
-    @GetMapping(value = "/v4-3/portlet/{fname}.html")
+    // Spring 4.3 took text/html from the .html extension; Spring 5.3 no longer reads extensions
+    @GetMapping(value = "/v4-3/portlet/{fname}.html", produces = MediaType.TEXT_HTML_VALUE)
     public @ResponseBody String getRenderedPortlet(
             HttpServletRequest req, HttpServletResponse res, @PathVariable String fname) {
 
