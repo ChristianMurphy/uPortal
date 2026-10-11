@@ -97,7 +97,7 @@ final class VendorDifferences {
             if ("nullSafeString".equals(slot.userType)) {
                 // Stored with a '_' prefix, so an empty string survives on Oracle too
                 return vendor == DatabaseVendor.SQLSERVER
-                        ? DatabaseVendor.windows1252(string)
+                        ? DatabaseVendor.sqlServerVarchar(string)
                         : string;
             }
             return expectedString(vendor, string);
@@ -126,9 +126,9 @@ final class VendorDifferences {
      * <ul>
      *   <li>Oracle stores the empty string as NULL.
      *   <li>SQL Server: Hibernate 4.3's SQLServer2005Dialect maps strings to {@code varchar}, not
-     *       {@code nvarchar}, so the database's code page (windows-1252 for the default collation)
-     *       applies: every UTF-16 unit outside it is stored as '?'. Columns using uPortal's
-     *       nullSafeString or fname types are the same, but fnames are ASCII anyway.
+     *       {@code nvarchar}, so the database converts them to its code page ({@link
+     *       DatabaseVendor#sqlServerVarchar}). Columns using uPortal's nullSafeString or fname
+     *       types are the same, but fnames are ASCII anyway.
      * </ul>
      */
     static String expectedString(DatabaseVendor vendor, String value) {

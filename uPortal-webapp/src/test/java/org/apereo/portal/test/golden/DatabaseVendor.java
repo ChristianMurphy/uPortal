@@ -14,12 +14,14 @@
  */
 package org.apereo.portal.test.golden;
 
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
 
 /**
@@ -35,14 +37,22 @@ public enum DatabaseVendor {
     SQLSERVER,
     ORACLE;
 
-    private static final Charset WINDOWS_1252 = Charset.forName("windows-1252");
+    /** The SQL Server database last seen by {@link #of(DataSource)}, for {@link #storedString} */
+    private static volatile DataSource sqlServer;
+
+    private static final Map<String, String> SQL_SERVER_VARCHAR = new ConcurrentHashMap<>();
 
     public static DatabaseVendor of(DataSource dataSource) {
+        final DatabaseVendor vendor;
         try (Connection connection = dataSource.getConnection()) {
-            return of(connection.getMetaData());
+            vendor = of(connection.getMetaData());
         } catch (SQLException e) {
             throw new IllegalStateException("Cannot read the database metadata", e);
         }
+        if (vendor == SQLSERVER) {
+            sqlServer = dataSource;
+        }
+        return vendor;
     }
 
     public static DatabaseVendor of(DatabaseMetaData metaData) throws SQLException {
@@ -81,8 +91,8 @@ public enum DatabaseVendor {
      * <ul>
      *   <li>Oracle: the empty string is stored as null.
      *   <li>SQL Server: Hibernate 4.3's SQLServer2005Dialect maps strings to {@code varchar}, not
-     *       {@code nvarchar}, so the database's code page (windows-1252 for the default collation)
-     *       applies: every UTF-16 unit outside it is stored as '?'.
+     *       {@code nvarchar}, so the database converts each value to its code page ({@link
+     *       #sqlServerVarchar}).
      *   <li>The others store the string as it is.
      * </ul>
      */
@@ -94,21 +104,42 @@ public enum DatabaseVendor {
             case ORACLE:
                 return value.isEmpty() ? null : value;
             case SQLSERVER:
-                return windows1252(value);
+                return sqlServerVarchar(value);
             default:
                 return value;
         }
     }
 
-    /** Each UTF-16 unit that windows-1252 cannot encode as '?' */
-    public static String windows1252(String value) {
-        final CharsetEncoder encoder = WINDOWS_1252.newEncoder();
-        final StringBuilder result = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            final char c = value.charAt(i);
-            result.append(encoder.canEncode(c) ? c : '?');
+    /**
+     * {@code value} as a {@code varchar} column of the SQL Server database stores it. The JDBC
+     * driver sends strings as {@code nvarchar}, and the database converts them to the code page of
+     * its collation (windows-1252 for the default one): characters without an exact or best-fit
+     * mapping become '?'. The conversion is read from the database itself, with {@code CAST(? AS
+     * VARCHAR(MAX))}, so it matches what an insert stores. Printable ASCII is unchanged.
+     */
+    public static String sqlServerVarchar(String value) {
+        if (value.chars().allMatch(c -> c >= 0x20 && c <= 0x7e)) {
+            return value;
         }
-        return result.toString();
+        final DataSource dataSource = sqlServer;
+        if (dataSource == null) {
+            throw new IllegalStateException("No SQL Server database was seen by of(DataSource)");
+        }
+        return SQL_SERVER_VARCHAR.computeIfAbsent(value, v -> castToVarchar(dataSource, v));
+    }
+
+    private static String castToVarchar(DataSource dataSource, String value) {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement statement =
+                        connection.prepareStatement("SELECT CAST(? AS VARCHAR(MAX))")) {
+            statement.setString(1, value);
+            try (ResultSet result = statement.executeQuery()) {
+                result.next();
+                return result.getString(1);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Cannot convert a string on SQL Server", e);
+        }
     }
 
     /** Lower-case name used in messages and file names */
