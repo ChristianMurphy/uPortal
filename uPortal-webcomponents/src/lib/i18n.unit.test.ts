@@ -46,6 +46,29 @@ describe('formatMessage', () => {
     });
 });
 
+describe('formatMessage for a locale', () => {
+    it("formats numbers with the locale's digits and separators", () => {
+        expect(formatMessage('{0} items', [1234567.5], 'de-DE')).toBe('1.234.567,5 items');
+        expect(formatMessage('{0} items', [1234567.5], 'en-US')).toBe('1,234,567.5 items');
+        expect(formatMessage('{0}', [1234.5], 'ar-EG')).toBe('١٬٢٣٤٫٥');
+        expect(formatMessage('{0} / {1}', [3, 12], 'ar-EG')).toBe('٣ / ١٢');
+    });
+
+    it('formats dates for the locale', () => {
+        const date = new Date(2026, 9, 11, 12);
+        expect(formatMessage('{0}', [date], 'de-DE')).toBe('11.10.2026');
+        expect(formatMessage('{0}', [date], 'en-US')).toBe('Oct 11, 2026');
+        expect(formatMessage('{0}', [date], 'ar-EG')).toBe(
+            new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date),
+        );
+        expect(formatMessage('{0}', [date], 'ar-EG')).toMatch(/[٠-٩]/);
+    });
+
+    it('keeps text as it is and uses English for a tag that is not well formed', () => {
+        expect(formatMessage('{0} {1}', ['1234', 1234], 'not a tag')).toBe('1234 1,234');
+    });
+});
+
 describe('validateMessages', () => {
     it('keeps string messages', () => {
         expect(validateMessages({ locale: 'fr', messages: { a: 'A', b: 7, c: null } })).toEqual({
