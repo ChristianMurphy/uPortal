@@ -77,7 +77,7 @@ public class PortletList implements IPortletList {
             orphanRemoval = true)
     @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     @Fetch(FetchMode.SELECT) // FM JOIN does BAD things to collections that support duplicates
-    @OrderBy("LIST_ORDER ASC")
+    @OrderBy("LIST_ORDER ASC, ID ASC")
     private List<PortletListItem> items;
 
     public void clearAndSetItems(List<PortletListItem> items) {

@@ -98,6 +98,8 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
                         + " "
                         + "ORDER BY e."
                         + PersistentPortalEvent_.timestamp.getName()
+                        + " ASC, e."
+                        + PersistentPortalEvent_.id.getName()
                         + " ASC";
 
         this.selectUnaggregatedQuery =
@@ -127,6 +129,8 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
                         + " = false) "
                         + "ORDER BY e."
                         + PersistentPortalEvent_.timestamp.getName()
+                        + " ASC, e."
+                        + PersistentPortalEvent_.id.getName()
                         + " ASC";
 
         this.deleteQuery =

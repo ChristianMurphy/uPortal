@@ -447,22 +447,9 @@ public class AggregationGoldenTest {
                                     });
                             return null;
                         });
-        // In time order; the events of one second come in any order
-        final List<String> byTime = new ArrayList<>(read);
-        byTime.sort(
-                java.util.Comparator.comparing((String event) -> event.split("[@ ]")[1])
-                        .thenComparing(java.util.Comparator.naturalOrder()));
-        boolean inTimeOrder = true;
-        for (int i = 1; i < read.size(); i++) {
-            inTimeOrder &=
-                    read.get(i - 1).split("[@ ]")[1].compareTo(read.get(i).split("[@ ]")[1]) <= 0;
-        }
+        // In the order the store returns them: by time, then by id (MOD-I191)
         lines.add(
-                prefix
-                        + "portalEventDao.getPortalEvents(first visit) "
-                        + read.size()
-                        + (inTimeOrder ? " in time order " : " NOT in time order ")
-                        + byTime);
+                prefix + "portalEventDao.getPortalEvents(first visit) " + read.size() + " " + read);
 
         final DateDimensionDao dateDimensions = ctx.getBean(DateDimensionDao.class);
         final TimeDimensionDao timeDimensions = ctx.getBean(TimeDimensionDao.class);
@@ -535,19 +522,14 @@ public class AggregationGoldenTest {
                             new LoginAggregationKeyImpl(interval, everyone),
                             everyone,
                             students);
-            // Ordered by date and time only, so the rank counts distinct times: the rows of one
-            // time (one per group) may come in any order
-            int rank = 0;
+            // Ordered by date and time, then by id (MOD-I191)
             for (int i = 0; i < found.size(); i++) {
-                if (i > 0 && !found.get(i).getDateTime().equals(found.get(i - 1).getDateTime())) {
-                    rank++;
-                }
                 lines.add(
                         prefix
                                 + "loginAggregationDao.getAggregations("
                                 + interval
                                 + ", Everyone+Students)#"
-                                + rank
+                                + i
                                 + " "
                                 + renderer.render(found.get(i)));
             }

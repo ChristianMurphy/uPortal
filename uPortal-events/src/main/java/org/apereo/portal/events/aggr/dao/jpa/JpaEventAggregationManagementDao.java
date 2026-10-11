@@ -171,7 +171,8 @@ public class JpaEventAggregationManagementDao extends BaseAggrEventsJpaDao
                                         criteriaQuery.from(QuarterDetailImpl.class);
                                 criteriaQuery.select(entityRoot);
                                 criteriaQuery.orderBy(
-                                        cb.asc(entityRoot.get(QuarterDetailImpl_.quarterId)));
+                                        cb.asc(entityRoot.get(QuarterDetailImpl_.quarterId)),
+                                        cb.asc(entityRoot.get(QuarterDetailImpl_.id)));
 
                                 return criteriaQuery;
                             }
@@ -188,7 +189,8 @@ public class JpaEventAggregationManagementDao extends BaseAggrEventsJpaDao
                                         criteriaQuery.from(AcademicTermDetailImpl.class);
                                 criteriaQuery.select(entityRoot);
                                 criteriaQuery.orderBy(
-                                        cb.asc(entityRoot.get(AcademicTermDetailImpl_.start)));
+                                        cb.asc(entityRoot.get(AcademicTermDetailImpl_.start)),
+                                        cb.asc(entityRoot.get(AcademicTermDetailImpl_.id)));
 
                                 return criteriaQuery;
                             }

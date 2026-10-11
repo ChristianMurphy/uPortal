@@ -82,7 +82,7 @@ public class RDBMLocaleStore implements ILocaleStore {
 
                         final List<Locale> localeList = new ArrayList<Locale>();
                         final String query =
-                                "SELECT * FROM UP_USER_LOCALE WHERE USER_ID=? ORDER BY PRIORITY";
+                                "SELECT * FROM UP_USER_LOCALE WHERE USER_ID=? ORDER BY PRIORITY, LOCALE";
                         final PreparedStatement pstmt = con.prepareStatement(query);
                         try {
                             pstmt.clearParameters();
