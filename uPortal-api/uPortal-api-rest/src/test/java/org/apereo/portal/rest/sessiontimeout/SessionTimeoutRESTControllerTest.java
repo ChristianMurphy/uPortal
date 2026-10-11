@@ -152,8 +152,9 @@ public class SessionTimeoutRESTControllerTest {
 
     @Test
     public void refusesARequestWithoutASessionAndDoesNotCreateOne() throws Exception {
-        // The controller alone: in the portal the CSRF filter creates a session first, whose
-        // user is then a guest
+        // The controller alone: the CsrfFilter of this test saves its token in a new session,
+        // while the portal answers a GET without a session cookie without creating one
+        // (uPortal-start's tests/api/session-timeout.spec.ts checks both kinds of guest)
         final MockMvc controllerOnly =
                 MockMvcBuilders.standaloneSetup(new SessionTimeoutRESTController(personManager))
                         .build();
