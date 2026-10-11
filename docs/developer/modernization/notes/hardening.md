@@ -9,13 +9,13 @@ LOG numbers: MOD-I250 to MOD-I259.
 
 | Part | State |
 | --- | --- |
-| 1. Tomcat error pages without the version | pushed. Integration 38141361903 (uPortal-start `c2f0b0a`) was red for layout and harness reasons, fixed in `b01ddf1`; waiting for its push run, then the coordinator may merge part 1 on its own (MOD-D53) |
+| 1. Tomcat error pages without the version | ready to merge. On uPortal-start `b0bc7f7`, Integration 38153992098 passed (Playwright on HSQLDB and PostgreSQL 18, 359 tests each), and so did HTTP replay 38153992140 and Migration equivalence 38153992169. CI 38153992096 failed in the Java 11 job when Maven Central didn't return three of `:buildSrc`'s poms, before any test ran. The same build files passed on the integration tip. G-index 38153992223 also fails on the integration tip |
 | 1a. Tomcat's docs, examples and ROOT page removed (MOD-I251) | pushed (uPortal-start `e7b70d3`, UPGRADING-6.0 section "Tomcat's documentation, examples and ROOT page are gone"); green in 38141361903 |
-| 1b. HTTP replay registry entry for the new error pages | pushed (uPortal-start `c2f0b0a`): `tomcat-error-page-no-version` replaces `tomcat-9-error-page-version`. Replay 38141361986 explains every error page; it fails on 10 `Vary` differences that come from ccr, reported to the coordinator |
-| Layout checks at standard sizes (MOD-D52) | pushed (uPortal-start `2412f7d`, uPortal `bc6eb94`). CI's fonts showed 13 more problems; `b01ddf1` adds them and logs the entries a run no longer sees |
+| 1b. HTTP replay registry entry for the new error pages | pushed (uPortal-start `c2f0b0a`, `b0bc7f7`): `tomcat-error-page-no-version` replaces `tomcat-9-error-page-version`, and `tomcat-error-page-no-vary` explains the 400 pages that lost `Vary` (435 bytes, under `compressionMinSize`). Replay 38153992140 passes |
+| Layout checks at standard sizes (MOD-D52) | pushed (uPortal-start `2412f7d`, uPortal `bc6eb94`). `b01ddf1` adds the 13 problems CI's fonts show. `23c69f5` removes the 2 entries that Integration 38153992098 no longer sees |
 | 2a. Respondr layout fixes (MOD-I284, MOD-I285) | pushed (uPortal `886c73b`, `db1556b`; uPortal-start `94edb5d`): baseline 615 to 230 entries, 243 with CI's |
-| 2b. Existing axe violations in the Respondr skin | not started: waits for the cluster branch, which adds the axe baseline (`tests/a11y/baseline.ts`) |
-| 3. Respondr right to left (MOD-I234, MOD-D51) | not started: comes after part 2 |
+| 2b. Existing axe violations in the Respondr skin | on its own branch, `ccr-43ba0785-hzlrj5-a11y-fixes` (uPortal `1cdf6a51`), see `notes/a11y-fixes.md` there. The baseline commit waits for uPortal-start's `-test-suites` branch |
+| 3. Respondr right to left (MOD-I234, MOD-D51) | not started: the owner set it after 2b |
 
 ## Part 1: Tomcat error pages
 
@@ -181,6 +181,4 @@ fix is small.
 
 ## Next step
 
-Wait for uPortal-start's push run on `b01ddf1`. If Integration is green, send the coordinator the
-run IDs so part 1 can be merged, and remove the baseline entries its log lists as no longer seen.
-Then part 2b once the cluster branch is merged.
+The coordinator merges part 1. Part 2b continues on `-a11y-fixes`. Part 3 starts after 2b.
