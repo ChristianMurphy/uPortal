@@ -22,8 +22,8 @@ against a running portal:
   superuser) can edit. The form lists the `accountEditAttributes` the user has
   `EDIT_USER_ATTRIBUTE` on, a password and its confirmation.
 * Defects:
-  * The form has no current password field. `enterPassword.jsp` has one, but no flow state uses
-    it. Whether a new password should need the current one is the owner's call.
+  * Fixed here (see below), approved by the owner: the form changed the password without the
+    current one. `enterPassword.jsp` has a current password field, but no flow state uses it.
   * Fixed here (see below): a confirmation that differed was saved anyway. The script read the
     input's `textLength`, which inputs don't have; `PersonFormValidator` never ran because Web Flow
     looks for `accountFormValidator` and the bean is `personValidator`; and the error block read
@@ -46,7 +46,7 @@ Defects found:
   sent". Anyone can use the form to learn which local accounts exist.
 * The page says the email was sent whether or not it was. `EmailPasswordResetNotificationImpl`
   logs a failed send and carries on. The test portal has no mail server.
-* Tokens never expire.
+* Fixed here, approved by the owner: tokens never expired.
 * Fixed here: a failed token check logged the account's real token and the submitted one at INFO
   (`UserAccountHelper.validateLoginToken`), and the reset email logged the link at DEBUG.
 * The reset page's password inputs have no labels (their captions are table cells), and a
@@ -70,6 +70,11 @@ uPortal, oldest first:
 | merge of `ccr-43ba0785-hzlrj5` | The login and CSRF fixes |
 | `fix(account): stop logging password reset tokens` | `validateLoginToken` logs the user name only, the reset email the account name; log-capturing unit tests (logback-classic, test scope) |
 | `docs: record the token logging fix and the held defects` | This note |
+| `docs: record a possible portlet-manager flake` | This note |
+| merge of `ccr-43ba0785-hzlrj5` | Hibernate 5.2 |
+| `docs: add the password confirmation fix to UPGRADING-6.0` | The confirmation fix's UPGRADING section |
+| `fix(account): ask for the current password in self edit account` | `PersonForm.currentPassword`, `PersonFormValidator.validateEditOwnAccount`, the self-edit view-state renamed `editOwnAccount`, the JSP input, unit tests, UPGRADING section |
+| `fix(account): expire password reset tokens` | `loginTokenIssued`, `resetTokenLifetime` (default `PT1H`), the expired message, unit tests, UPGRADING section |
 
 uPortal-start, oldest first:
 
@@ -84,6 +89,9 @@ uPortal-start, oldest first:
 | merge of `ccr-43ba0785-hzlrj5` | The login and CSRF fixes, with `tests/api/utils/csrf-request.ts` |
 | `test(e2e): send the csrf token with the account imports` | `importXml` sends `sessionCsrfHeaders()` |
 | `test(e2e): note that the reset flow no longer logs tokens` | The reset spec's header |
+| merges of `ccr-43ba0785-hzlrj5` | Integration branch updates |
+| `test(e2e): expect self edit account to ask for the current password` | Pairs with the current password fix |
+| `test(e2e): expect password reset links to expire` | Pairs with the token expiry fix; `loginTokenIssued` helper |
 
 ### The confirmation fix
 
@@ -113,6 +121,32 @@ edit-account error block seeded to read another model.
 `fix(account): stop logging password reset tokens`: each new log-capturing unit test failed with
 the old log line put back.
 
+### The current password fix
+
+The owner approved requiring the current password on the existing Web Flow form. Web Flow calls
+`validate<StateId>` on the `accountFormValidator` bean, so the self-edit view-state is now
+`editOwnAccount` (view still `editLocalAccount`), and only Self Edit Account calls
+`validateEditOwnAccount`. User Administration's edit-account flow keeps `editLocalAccount` and
+doesn't ask for the current password. Self Edit Account asks for it only with a new password.
+
+Local runs of the four account specs passed 25 of 25. A deployed view-state renamed back to
+`editLocalAccount` failed only "refuses a new password without the right current one". The unit
+test `ownAccountRefusesAWrongCurrentPassword` alone failed once the hash check was removed from
+the validator.
+
+### The token expiry fix
+
+`UserAccountHelper.issueLoginToken` stores the token and `loginTokenIssued`; a token older than
+`org.apereo.portal.portlets.account.resetTokenLifetime` (default `PT1H`), or one without an issue
+time (sent by 5.x), is refused, and the reset link shows "This password reset URL has expired".
+The token stays on the account until a new email replaces it. A token that expires while the
+form is open gets the generic "Password was not updated." on submit.
+
+Local runs: the four specs, 27 of 27. With the deployed page showing the old text and the flow
+storing an undated token, the three new or changed tests failed and no others. With the age check
+always passing, four of the new unit tests failed. The existing `UserAccountHelperTest.setup`
+called `initMocks` last, which replaced the mocks given to the helper. It now runs first.
+
 ### A possible parallel-run flake
 
 On 2026-10-11 at about 09:02 UTC, a local run of every admin spec and the three account specs
@@ -123,9 +157,12 @@ so this looks like a flake under parallel load.
 
 ## Next steps
 
-Wait for the owner's rulings: the confirmation fix (keep or revert), the current password, whether
-Self-Edit Account may be a web component (a revert of the two revert commits brings it back), and
-the held defects below.
+This branch has three of the four fixes the owner approved. The fourth, Forgot Password, should
+give every user name the same answer and say when the email couldn't be sent. Those two
+asks conflict for an existing account whose email fails; that waits on
+the coordinator (one neutral page for everyone, or a failure message for existing accounts only,
+or that behind a setting), as does a mail sink for CI. Whether Self-Edit Account may be a web
+component is still open (a revert of the two revert commits brings it back).
 
 ## Proposed LOG rows
 
@@ -139,10 +176,6 @@ For the coordinator to number. Held for the owner, each with how a fix could loo
   (`EmailPasswordResetNotificationImpl` logs the failure and returns). Fix: return the outcome and
   show "The email could not be sent. Contact the help desk." on failure. With the enumeration fix,
   show it only for a failed send to an existing account, so it does not reveal accounts.
-* Issue (Portlets, security): reset tokens never expire. Fix: store the time the token was issued
-  next to it (a `loginTokenIssued` attribute), and refuse tokens older than
-  `org.apereo.portal.portlets.account.resetTokenLifetime`, an ISO-8601 duration with a default of
-  `PT1H`. An expired token gets the "Invalid password reset URL" page and loses its attribute.
 * Issue (Portlets, accessibility): the reset form's password inputs have no labels (their captions
   are table cells), and a differing confirmation or a blank password gets only "Password was not
   updated.". Fix: `<label for>` on both inputs, and the `passwords.must.match` and a new
@@ -152,8 +185,7 @@ For the coordinator to number. Held for the owner, each with how a fix could loo
   page its own URL, such as `/uPortal/password/reset?user=...&token=...`, not a parameter of the
   login portlet. Until then, end the login flow when a request has a `loginToken` parameter.
 * Issue (Portlets): the update-password flow is unreachable (no portlet maps a `flowId` to it),
-  and so is its `AccountPasswordFormValidator`. Fix: delete both with the Web Flow removal. A current-password check, if the
-  owner rules for one, could reuse the validator.
+  and so is its `AccountPasswordFormValidator`. Fix: delete both with the Web Flow removal.
 
 Decided or fixed:
 
@@ -164,13 +196,16 @@ Decided or fixed:
 * Issue (Portlets): `PersonFormValidator` never ran, because Web Flow looks for
   `accountFormValidator`, and the self-edit form's script check was dead too, so differing
   confirmations were saved. **Fixed** by `fix(account): refuse a password confirmation that
-  differs`, pending the owner.
+  differs`, approved by the owner.
 * MOD-I195: **fixed** by the same commit, tested by uPortal-start `test(e2e): refuse creating a
   user whose name is taken`.
 * Issue (Security): a failed reset-token check logged the account's real token at INFO, and the
   reset email logged its link. **Fixed** by `fix(account): stop logging password reset tokens`.
-* Issue (Portlets): the Self-Edit Account flow changes the password without the current password.
-  Owner to decide for the Thymeleaf page.
+* Issue (Portlets, security): the Self-Edit Account flow changed the password without the
+  current password. **Fixed** by `fix(account): ask for the current password in self edit
+  account`, approved by the owner.
+* Issue (Portlets, security): reset tokens never expired. **Fixed** by `fix(account): expire
+  password reset tokens` (`resetTokenLifetime`, default `PT1H`), approved by the owner.
 * Issue (Portlets, Thymeleaf conversion): drop Self-Edit Account's "Add Preference" link, whose
   inputs saving ignores.
 * Issue (uPortal-start): the account specs create local accounts through `/api/import` and can't
