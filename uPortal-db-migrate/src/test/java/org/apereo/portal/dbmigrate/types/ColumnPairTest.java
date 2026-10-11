@@ -293,4 +293,21 @@ public class ColumnPairTest {
                 writeCalls(hsqldbClob, text));
         assertEquals(Collections.singletonList("setString"), writeCalls(PG_VARCHAR, text));
     }
+
+    @Test
+    public void sqlServerTimesAreWrittenAsText() throws Exception {
+        // As a LocalTime, mssql-jdbc rounded 23:59:59.999999 to midnight (sendTimeAsDatetime)
+        LocalTime t = LocalTime.of(23, 59, 59, 999_999_000);
+        ColumnType sqlServerTime = type(Vendor.SQLSERVER, Types.TIME, "time", 16, 7);
+        assertEquals(
+                Collections.singletonList("setString"),
+                writeCalls(sqlServerTime, ColumnType.Family.TIME, t));
+        assertEquals(
+                Collections.singletonList("setObject"),
+                writeCalls(PG_TIME6, ColumnType.Family.TIME, t));
+        // 5.17 keeps a time of day in SQL Server's datetime, on 1970-01-01
+        assertEquals(
+                Collections.singletonList("setObject"),
+                writeCalls(SQLSERVER_DATETIME, ColumnType.Family.TIME, t));
+    }
 }
