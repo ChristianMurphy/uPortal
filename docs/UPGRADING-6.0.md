@@ -699,3 +699,24 @@ A site that uses them must add a user with the `manager-gui` or `admin-gui` role
 `conf/tomcat-users.xml`. A site that doesn't can delete `webapps/manager` and
 `webapps/host-manager` from its Tomcat. uPortal-start `tests/api/tomcat-webapps.spec.ts` checks
 the redirect and that the documentation and examples are gone.
+
+## Respondr's tab bar, header and phone menu fit their boxes again
+
+Respondr's header, phone menu and tab bar broke in the move to Bootstrap 5, whose `.row > *` and `.container-fluid`
+now set `width: 100%`. The layout checks at standard screen sizes (uPortal-start
+`tests/layout`) found them, and the skin now fixes them:
+
+* Below 576 pixels, the menu button was as wide as the screen, plus a 12-pixel margin that put
+  its right end past the edge. The user links went on a second row, and the fixed header covered
+  the top of the logo. The menu button is now a small button on the left, with the user links on
+  the same row.
+* Below 576 pixels, the open menu showed the tabs side by side in a sidebar wider than the 270
+  pixels that the page moves over. The first tab was cut off and the last ones could not be
+  reached. The tabs now stack in a 270-pixel sidebar.
+* From 576 pixels, the first tab started 4 pixels left of the tab bar, because every tab has a
+  -4px left margin. The tab bar now starts with the first tab, so all tabs sit 4 pixels further
+  right.
+
+A portlet in the pre-content region that floats its content, such as the quickstart's feedback
+link, now has the height of that content instead of 0. Skins that copy Respondr's
+`navigation.scss`, `header.scss` or `regions.scss` need the same changes.
