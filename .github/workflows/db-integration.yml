@@ -107,7 +107,7 @@ jobs:
           DB_USERNAME: ${{ matrix.username }}
           DB_PASSWORD: ${{ matrix.password }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           "-Duportal.test.db.username=$DB_USERNAME" "-Duportal.test.db.password=$DB_PASSWORD"
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on
@@ -234,7 +234,7 @@ jobs:
           DB_USERNAME: ${{ matrix.username }}
           DB_PASSWORD: ${{ matrix.password }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           "-Duportal.test.db.username=$DB_USERNAME" "-Duportal.test.db.password=$DB_PASSWORD"
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on
@@ -345,7 +345,7 @@ jobs:
           DB_DRIVER: ${{ matrix.driver }}
           DB_URL: ${{ matrix.url }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           -Duportal.test.db.username=uportal -Duportal.test.db.password=uportal
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on

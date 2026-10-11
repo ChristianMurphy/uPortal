@@ -67,7 +67,7 @@ jobs:
           cache-provider: basic
       - name: Copy between ${{ env.VENDORS }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-db-migrate:integrationTest
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-db-migrate:integrationTest
           "-PdbMigrateVendors=$VENDORS" "-PdbMigrateSeed=$SEED"
           "-PdbMigrateTriesFactor=$FACTOR" "-PdbMigrateMaxLob=$MAX_LOB"
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy): the results, the property
@@ -125,7 +125,7 @@ jobs:
           cache-provider: basic
       - name: Copy between ${{ env.VENDORS }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-db-migrate:integrationTest
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-db-migrate:integrationTest
           "-PdbMigrateVendors=$VENDORS" "-PdbMigrateSeed=$SEED"
           "-PdbMigrateTriesFactor=$FACTOR" "-PdbMigrateMaxLob=$MAX_LOB"
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy): the results, the property
@@ -175,7 +175,7 @@ jobs:
       - name: PIT
         env:
           TASK: ${{ matrix.task }}
-        run: ./gradlew -S --stacktrace --no-daemon --no-parallel "$TASK"
+        run: ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile "$TASK"
       - name: Report
         if: always()
         env:
