@@ -19,9 +19,11 @@
 *.pl         text eol=lf
 *.pom        text eol=lf
 *.properties text eol=lf
+*.scss       text eol=lf
 *.sh         text eol=lf
 *.svg        text eol=lf
 *.tld        text eol=lf
+*.ts         text eol=lf
 *.txt        text eol=lf
 *.wsdl       text eol=lf
 *.xjb        text eol=lf
