@@ -14,6 +14,7 @@ const components = [
     'up-user-locale',
     'up-session-timeout',
     'up-search',
+    'up-reset-my-layout',
 ];
 
 export default defineConfig({
