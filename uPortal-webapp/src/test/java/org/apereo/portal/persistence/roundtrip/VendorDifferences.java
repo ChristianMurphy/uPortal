@@ -84,6 +84,19 @@ final class VendorDifferences {
         }
     }
 
+    /**
+     * The id, or part of a composite id, an entity is stored under. SQL Server converts a String id
+     * to its code page like any other varchar ({@link DatabaseVendor#sqlServerVarchar}), so an
+     * entity whose id has other characters (the UNICODE variants of {@code JdbcAuthDao.Table} and
+     * of {@code MarketplaceRatingImpl}, keyed by user name) is found by the converted id only.
+     * Other ids are stored as they are.
+     */
+    static Object storedId(DatabaseVendor vendor, Object id) {
+        return vendor == DatabaseVendor.SQLSERVER && id instanceof String
+                ? DatabaseVendor.sqlServerVarchar((String) id)
+                : id;
+    }
+
     /** What the database is documented to return for {@code value} after a round trip */
     static Object expectedAfterRoundTrip(DatabaseVendor vendor, Slot slot, Object value) {
         if (value == null) {

@@ -35,6 +35,7 @@ import java.util.TreeSet;
 import javax.persistence.PersistenceUnitUtil;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.ManagedType;
+import javax.persistence.metamodel.MapAttribute;
 import javax.persistence.metamodel.Metamodel;
 import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SingularAttribute;
@@ -212,7 +213,9 @@ final class EntityGraphComparator {
             }
             final Map<Object, Object> expectedByKey = new HashMap<>();
             for (final Map.Entry<?, ?> entry : expectedMap.entrySet()) {
-                expectedByKey.put(keyOf(entry.getKey()), entry.getValue());
+                expectedByKey.put(
+                        keyOf(expectedKey(slotPath, attribute, field, entry.getKey())),
+                        entry.getValue());
             }
             for (final Map.Entry<Object, Object> entry : expectedByKey.entrySet()) {
                 final Object key = entry.getKey();
@@ -318,12 +321,15 @@ final class EntityGraphComparator {
             final Map<?, ?> expectedMap = (Map<?, ?>) expected;
             final Map<?, ?> actualMap = actual == null ? new HashMap<>() : (Map<?, ?>) actual;
             // Hibernate's PersistentMap#keySet() has no equals(), so compare copies
-            if (!new java.util.HashSet<>(expectedMap.keySet())
-                    .equals(new java.util.HashSet<>(actualMap.keySet()))) {
+            final java.util.Set<Object> expectedKeys = new java.util.HashSet<>();
+            for (final Object key : expectedMap.keySet()) {
+                expectedKeys.add(expectedKey(path, attribute, field, key));
+            }
+            if (!expectedKeys.equals(new java.util.HashSet<>(actualMap.keySet()))) {
                 differences.add(
                         path
                                 + ": expected keys "
-                                + renderAll(expectedMap.keySet())
+                                + renderAll(expectedKeys)
                                 + " but was "
                                 + renderAll(actualMap.keySet()));
             }
@@ -404,6 +410,20 @@ final class EntityGraphComparator {
             return Double.compare((Double) expected, (Double) actual) == 0;
         }
         return expected.equals(actual);
+    }
+
+    /**
+     * A map key as the database returns it: String keys get the vendor's documented changes ({@link
+     * VendorDifferences#expectedAfterRoundTrip}), like any other stored string.
+     */
+    private Object expectedKey(
+            String slotPath, PluralAttribute<?, ?, ?> attribute, Field field, Object key) {
+        if (!(key instanceof String) || !(attribute instanceof MapAttribute)) {
+            return key;
+        }
+        final Class<?> keyType = ((MapAttribute<?, ?, ?>) attribute).getKeyJavaType();
+        return VendorDifferences.expectedAfterRoundTrip(
+                vendor, Slot.ofKeys(slotPath + "{}", field, keyType), key);
     }
 
     private Object keyOf(Object key) {
