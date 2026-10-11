@@ -111,7 +111,7 @@ Spring Framework 5.0 removed `org.springframework.web.portlet`, and Web Flow 2.5
   - forking PortletMVC4Spring and porting it to Spring 7 (APIs such as `PathMatcher`, `HandlerMappingIntrospector` and the Jackson 2 classes are changing);
   - vendoring the 4.3 `web.portlet` code into uPortal under its own package (what Spring 5.0 suggests); or
   - re-platforming the internal admin portlets away from Portlet MVC.
-- The Web Flow portlet glue is not in Web Flow 3/4 at all. Only PortletMVC4Spring's `webflow` module contains it, so the 26 admin flows inherit the same blocker.
+- Web Flow's portlet integration classes are not in Web Flow 3/4 at all. Only PortletMVC4Spring's `webflow` module contains it, so the 26 admin flows inherit the same blocker.
 - Any blanket javax→jakarta rewrite must leave `javax.portlet` alone unless the container moves to Jakarta Portlet 4.0. The `jakarta.portlet` namespace exists only in Portlet 4.0 (Liferay's GAV here).
 
 ### Gaps
@@ -133,7 +133,7 @@ Versioned XSD references (`spring-beans-3.1.xsd`) still resolve in 7.x. Versione
 ### Cited Findings
 **4.3 → 5.x**
 - 5.0 removed packages `beans.factory.access` (BeanFactoryLocator), `jdbc.support.nativejdbc`, `mock.staticmock`, `web.view.tiles2` and `orm.hibernate3/hibernate4` <!-- vale ai-tells.ColonUsage = NO --><!-- direct quote of the Spring 5.0 release notes -->("Minimum requirement: Tiles 3 and Hibernate 5 now")<!-- vale ai-tells.ColonUsage = YES -->, plus JSP tag attributes such as FormTag `commandName` (use `modelAttribute`). ([Spring Framework 5.0 Release Notes](https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-5.0-Release-Notes))
-- 5.0 replaced the commons-logging dependency with its own `spring-jcl` bridge. It says "you might have to declare explicit excludes for 'commons-logging' and/or 'jcl-over-slf4j'". ([Spring Framework 5.0 Release Notes](https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-5.0-Release-Notes))
+- 5.0 replaced the commons-logging dependency with `spring-jcl`, its own jar that provides the Commons Logging API. It says "you might have to declare explicit excludes for 'commons-logging' and/or 'jcl-over-slf4j'". ([Spring Framework 5.0 Release Notes](https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-5.0-Release-Notes))
 - 5.0 CORS: "`allowCredentials` default value has been changed to `false`". ([Spring Framework 5.0 Release Notes](https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-5.0-Release-Notes))
 - Git tree check, v4.3.30 vs v5.0.0. Absent from 5.0.0 onward: `util/Log4jConfigurer`, `web/util/Log4jConfigListener`, `view/velocity/*`, `view/tiles2/*`, `orm/hibernate3|4/*` (including `HibernateJdbcException`), `view/jasperreports/*`, `cache/guava/GuavaCacheManager`, `beans/factory/access/SingletonBeanFactoryLocator`, and the servlet `annotation/DefaultAnnotationHandlerMapping` and `annotation/AnnotationMethodHandlerAdapter`. ([spring-framework tags v4.3.30.RELEASE / v5.0.0.RELEASE](https://github.com/spring-projects/spring-framework/tree/v4.3.30.RELEASE))
 - 5.1: nested configuration classes are only detected on `@Configuration`/`@Component` classes. `Forwarded`/`X-Forwarded-*` handling is expected via `ForwardedHeaderFilter`. `DefaultUriBuilderFactory` encodes URI variables more strictly. ([Spring Framework 5.1 Release Notes](https://github.com/spring-projects/spring-framework/wiki/Spring-Framework-5.1-Release-Notes))
@@ -457,7 +457,7 @@ Apereo CAS is the closest public analogue: same community, a heavy Spring and Sp
   - Sleuth was removed, SCIM2 was replaced, and Jetty lacked Servlet 6.0 at the time.
 
   Source: [CAS 7.0 RC3 release notes](https://github.com/apereo/cas/blob/7.0.x/docs/cas-server-documentation/release_notes/RC3.md)
-- CAS 7.0 RC8: "Spring Framework `6.1` provides a first-class experience on JDK `21` and Jakarta EE 10 ... it is likely that CAS `7` would switch to using JDK `21` as its baseline." ([CAS 7.0 RC8 release notes](https://github.com/apereo/cas/blob/7.0.x/docs/cas-server-documentation/release_notes/RC8.md))
+- CAS 7.0 RC8: <!-- vale uPortal.Jargon = NO --><!-- direct quote of the CAS 7.0 RC8 release notes -->"Spring Framework `6.1` provides a first-class experience on JDK `21` and Jakarta EE 10 ... it is likely that CAS `7` would switch to using JDK `21` as its baseline."<!-- vale uPortal.Jargon = YES --> ([CAS 7.0 RC8 release notes](https://github.com/apereo/cas/blob/7.0.x/docs/cas-server-documentation/release_notes/RC8.md))
 - CAS 8.0 RC1:
   - "CAS is now built with Spring Boot `4.0.x`."
   - "The JDK baseline requirement for this CAS release is and **MUST be JDK `25`**."
