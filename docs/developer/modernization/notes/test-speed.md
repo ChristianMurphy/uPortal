@@ -265,12 +265,51 @@ the session timeout is what that test measures. Less than a minute per push. Low
 * **`removedApiScan` once per push:** the scans run one at a time (MOD-D9 heap limit), 87 s in all,
   but after item 4 only the uPortal overlay's scan is on the critical path.
 
+## Decisions
+
+The coordinator answered the ranked list on 2026-10-11.
+
+| Item | Decision |
+| --- | --- |
+| 1, 4, 6, 11 | Approved, one push, one commit each. That push's `Integration` run is the first of three runs for item 1. If `portlet-modes.spec.ts` fails or passes only on a retry in any of the three, item 1 is reverted. |
+| 3 | Approved, with option c of item 9 (drop the uPortal key's Gradle cache once the build is reused). |
+| 7, 8 | Approved as a CI comparison, numbers before keeping them. |
+| 2 | Approved as a diagnosis first, with timing on the server. The fix is proposed with numbers before it is built. |
+| 5 | Rejected by the owner. The `DB harness` jobs stay as they are. |
+| 9a | Rejected. The basic provider of `setup-gradle` ignores `gradle-home-cache-excludes`: at the pinned commit `3f5f9ad`, `getCachePaths()` in `cache-service-basic.ts` always saves `~/.gradle/caches` and `~/.gradle/wrapper`. Deleting the directories before the save would fit about one more branch, and each restoring job would rebuild them on every run. |
+| 9b, 10 | Deferred. 9b waits for a timing of the WAR download in one CI job. |
+
+## Phase 2 evidence
+
+### Local checks
+
+| Item | Before | After | Seeded fault |
+| --- | --- | --- | --- |
+| 1 | `portlet-modes.spec.ts` 8.1 min on one worker (suite run `base1`) | 94 tests, the same count as CI, in 4.1 min | With the `error` portlet's expected error entry renamed, `error: view` fails on "uPortal's error portlet" (0 expected, 1 found) and the other 93 pass. Reverted |
+| 4 | `portalInit` 170 s and 188 s | 145 s and 151 s, interleaved with the runs before, same 223 tasks (`--dry-run`) | Malformed XML in `data/quickstart/user/academics-lo.user.xml`: `:overlays:uPortal:dataInit FAILED`, "1 failed: FAIL: user - academics-lo.user.xml", after 87 s. Reverted |
+| 6 | `tomcatStart` without uPortal deployed: 182 s, then "local uPortal server is live" | 3 s, then "answered 404: uPortal is not deployed or did not start". With uPortal deployed it still says live | none, the task doesn't check anything new |
+| 7 | SpotBugs in a second Gradle call | `build` and `spotbugsMain` in one call with `--continue` | A `new java.util.Random().nextInt()` class in uPortal-utils-core: `spotbugsMain` fails, the module's 45 tests still run in the same call, and the findings step prints the two findings (DMI and SECPR) and sets `found=true` for the upload. Removed |
+| 11 | TinyMCE check slept 2 s, news test 3 s | TinyMCE check polls the editor count, news test waits for the portlet's `*.uP` requests | With TinyMCE's script blocked, the check fails on "TinyMCE editors on the add announcement form" (0 editors). The feed request delayed 4 s and answered 500: the new wait fails on "console errors", the old 3-second wait passes and misses it. Reverted |
+
+The item 2 diagnosis logs two timing lines in `ChannelListController` (uPortal) and adds `%D` to
+Tomcat's access log pattern in the HSQLDB Playwright job (uPortal-start, CI only). A script prints
+the times, by user, in the last lines of both Playwright jobs and as a notice. Both are removed
+once the cause is known.
+
+### CI runs
+
+Pending.
+
 ## Proposed LOG rows (MOD-I340 to MOD-I349)
 
 | ID | Area | Finding | Resolution |
 | --- | --- | --- | --- |
-| MOD-I340 | Tests | `portlet-modes.spec.ts` runs its 94 tests on one worker, 581.5 s of the 786 s HSQLDB suite in job 114546465364. | Phase 2, item 1. |
-| MOD-I341 | Portal | On CI runners with HSQLDB, `/api/portletList` took over 3 s on 100 renders of staff and guest in job 114546465364, and on 9 of 20 runs. Locally it takes 0.2 to 1.3 s. Respondr asks for it on every page. | Phase 2, item 2. |
-| MOD-I342 | CI | Four uPortal-start workflows build the same uPortal commit on each push, 4.2 minutes each. | Phase 2, item 3. |
-| MOD-I343 | Build | `portalInit` builds the uPortal overlay last, so its 89 s chain ends the task at 175 s. | Phase 2, item 4. |
-| MOD-I344 | CI | `tomcatStart` waited Ant's default 3 minutes in every uPortal-start `CI` cell, where uPortal isn't deployed, and then logged that uPortal was live. | Phase 2, item 6. |
+| MOD-I340 | Portal | On CI runners with HSQLDB, `/api/portletList` took over 3 s on 100 renders of staff and guest in job 114546465364, and the HSQLDB Playwright step took 285 s longer in 9 of 20 runs. Locally it takes 0.2 to 1.3 s. Respondr asks for the whole registry on every page an authenticated user opens, so production pays for it too. | Diagnosis on the test-speed branch (item 2). |
+| MOD-I341 | Tests | `portlet-modes.spec.ts` ran its 94 tests on one worker, 581.5 s of the 786 s HSQLDB suite in job 114546465364. | Parallel mode for its `describe` (item 1). |
+| MOD-I342 | CI | Up to four uPortal-start workflows build the same uPortal commit on each push, 4.2 minutes each. | Item 3, with the uPortal key's Gradle cache dropped. |
+| MOD-I343 | Build | `portalInit` built the uPortal overlay last, so its 89 s chain ended the task at 175 s. | The other overlays' tasks run after the uPortal overlay's, and each overlay's tasks after its clean (item 4). |
+| MOD-I344 | Build | `tomcatStart` waited Ant's default 3 minutes in every uPortal-start `CI` cell, where uPortal isn't deployed, and then logged that uPortal was live. | It waits for any answer, then logs the status of `/uPortal` (item 6). |
+| MOD-I345 | Tests | `announcements.spec.ts` slept 2 s for TinyMCE and `visual-resource-server.spec.ts` 3 s for the news feed request. | `expect.poll` and `waitForPortalRequestsToSettle` (item 11). |
+| MOD-I346 | CI | uPortal's build cell ran SpotBugs in a second Gradle call after the build, 482 s after 555 s. | One Gradle call with `--continue` (item 7), kept only if CI shows the gain. |
+| MOD-I347 | CI | uPortal's build cell ran with `--no-parallel`. | Parallel mode (item 8), kept only if CI shows the gain. |
+| MOD-I348 | CI | A uPortal-start branch's Gradle cache entries take about 1.7 GB of the 10 GB limit, so about 6 of some 20 active branches fit. | 9a rejected (provider), 9c with item 3, 9b deferred. |
