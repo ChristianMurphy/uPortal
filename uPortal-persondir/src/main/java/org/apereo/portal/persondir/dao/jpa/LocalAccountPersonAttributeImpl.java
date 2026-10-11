@@ -63,7 +63,7 @@ class LocalAccountPersonAttributeImpl implements Serializable {
     @OrderColumn(name = "VALUE_ORDER")
     @Type(type = "nullSafeString")
     @Column(name = "ATTR_VALUE")
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private final List<String> values = new ArrayList<String>(0);
 
