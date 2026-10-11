@@ -40,7 +40,11 @@ public class PortletDefinitionSearcher implements ITypedEntitySearcher {
         this.portletDefinitionRegistry = portletDefinitionRegistry;
     }
 
-    // Internal search, so shouldn't be called as case insensitive.
+    /**
+     * The partial searches ignore case whatever the method (MOD-I142), so each _CI method maps to
+     * the same search as its plain one. DISCRETE is case-sensitive and DISCRETE_CI isn't
+     * (MOD-I203).
+     */
     @Override
     public EntityIdentifier[] searchForEntities(String query, SearchMethod method)
             throws GroupsException {
@@ -49,13 +53,19 @@ public class PortletDefinitionSearcher implements ITypedEntitySearcher {
             case DISCRETE:
                 match = SearchMatch.EXACT;
                 break;
+            case DISCRETE_CI:
+                match = SearchMatch.EXACT_IGNORE_CASE;
+                break;
             case STARTS_WITH:
+            case STARTS_WITH_CI:
                 match = SearchMatch.STARTS_WITH;
                 break;
             case ENDS_WITH:
+            case ENDS_WITH_CI:
                 match = SearchMatch.ENDS_WITH;
                 break;
             case CONTAINS:
+            case CONTAINS_CI:
                 match = SearchMatch.CONTAINS;
                 break;
             default:
