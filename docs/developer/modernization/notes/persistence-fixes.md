@@ -18,22 +18,23 @@ commit body.
 | MOD-I141 timestamps in UTC | done locally; uPortal-start part waits for access | see `git log` | |
 | MOD-I140 analytics repeated hour | design approved (option B), built in the 6.0 schema step; characterisation committed | see `git log` | |
 | G-index R4 | index plan written for the 6.0 schema step; allowlist entries stay | | |
-| 6: pre-delete in `PersistenceUnits` | removed; passes on HSQLDB, needs the six-vendor run | see `git log` | |
+| 6: pre-delete in `PersistenceUnits` | removed; passes on all six databases (DB integration on `feab06e`) | `502d3e2` | |
 | 7: `TransientPortletEntityDao` NPE | reproduced and fixed | see `git log` | |
 
-## Full-matrix runs (head `bcf049d`)
+## Runs
 
-Started 2026-10-11 11:04 UTC with workflow_dispatch:
+The full matrix on `feab06e` (CI 38135719523, DB integration 38135721314) failed for two reasons,
+both this branch's. Oracle and PostgreSQL passed, so removing the pre-delete (fix 6) holds there.
 
-| Workflow | Run | Why |
-| --- | --- | --- |
-| CI | 38134202155 | full CI matrix |
-| DB integration | 38134204060 | the goldens on the six databases |
-| DB copy tool | 38134205546 | this branch changes the tool |
+- SpotBugs (uPortal-events) found five reads of the generated `X_.id` metamodel fields that the
+  MOD-I191 tie-breakers added, as UwF. `6404d2e` reads the id from the metamodel at run time.
+- `JpaPortletDaoTest` failed on MySQL, MariaDB and SQL Server: the exact search for "calendar"
+  found "Calendar" there. "fix(portlets): match exact portlet searches with case on every
+  database" makes the exact search case-sensitive everywhere (see
+  MOD-I142 below).
 
-Next step:
-read their results. A red golden on a vendor other than HSQLDB is this branch's to fix. If Oracle
-fails on the removed pre-delete (fix 6), revert `502d3e2` and record why.
+Under MOD-D53 the evidence for landing is the push run on the head plus DB integration, because
+the branch changes persistence. The coordinator runs the full matrix on each batch it merges.
 
 ## Items for the 6.0 schema step (with Hibernate 7, after P7-1)
 
@@ -46,6 +47,8 @@ Each one changes the schema and waits for that step. The sections below give the
 | MOD-I141 marker | `dataInit` and the copy tool write a marker, and a 6.0 portal refuses to start on an unconverted database | writes the marker |
 | MOD-D44 | SQL Server text columns become `nvarchar` (Hibernate's nationalized strings) | converts the text |
 | MOD-D49 | MySQL and MariaDB tables name `utf8mb4` in their DDL, so a server whose default is `utf8mb3` or `latin1` can't create tables that lose four-byte characters (utf8-inputs note) | creates the tables with it |
+| MOD-D49, Oracle | Every `varchar2` already uses CHAR semantics. With the default `MAX_STRING_SIZE=STANDARD` a `varchar2` still holds at most 4000 bytes, so in AL32UTF8 the columns over 1000 characters can refuse long text in a script of three or four bytes per character. Owner decision: document `MAX_STRING_SIZE=EXTENDED` as a minimum for Oracle (MOD-D25), or make those columns `clob` (utf8-inputs note) | with `clob`, copies the values unchanged |
+| MOD-I272 | `UP_PROFILE_SELECTION.USERNAME` widens from 70 to 100 characters, the length a user name may have | copies the values unchanged |
 
 ## Running tests in this container
 
@@ -69,8 +72,14 @@ fix" evidence, a second worktree under the session scratchpad holds only the new
 - After the fix: `JpaPortletDaoTest`, `JpaPortletDefinitionDaoLikePatternTest` (table test of the
   pattern) and the re-recorded query golden pass on HSQLDB, as do the tests of uPortal-web,
   uPortal-rendering, uPortal-content-portlet and uPortal-groups-local.
-- `QueryVendorDifferences` loses the MOD-I142 entries (the partial searches and `"über"`). The
-  exact search `"calendar", false` stays listed: that is collation, not MOD-I142.
+- `QueryVendorDifferences` loses the MOD-I142 entries (the partial searches and `"über"`).
+- The exact search (`EXACT`, the groups `DISCRETE` method) compared as each database does, so
+  "calendar" found "Calendar" on MySQL, MariaDB and SQL Server only (the DB integration run on
+  `feab06e`). `IGroupConstants` defines `DISCRETE`, unlike `DISCRETE_CI`, as case-sensitive, and
+  `PortletDefinitionSearcher` is the only caller. The query now compares `upper()` on both
+  sides, and `exactMatches` keeps the rows whose name or title equals the term, so case and
+  trailing spaces count on every database. The vendor entry for `"calendar", false` is gone; the
+  HSQLDB golden is unchanged.
 - MOD-I223: on SQL Server, `[` in a LIKE pattern starts a character class. HSQLDB 2.7.4 rejects
   `![` and `!]` ("invalid escape sequence"), and Oracle documents the same rule (ORA-01424), so the
   DAO escapes `[` on SQL Server only. It learns PortalDb's dialect through
@@ -86,7 +95,8 @@ fix" evidence, a second worktree under the session scratchpad holds only the new
 > ends-with, and treat `%` and `_` in the search term as ordinary characters. Code that calls
 > `IPortletDefinitionRegistry.searchForPortlets(term, true)` and put SQL wildcards in `term` must
 > use `searchForPortlets(term, SearchMatch.STARTS_WITH)` or `ENDS_WITH` instead. The exact
-> search (`false`, or `SearchMatch.EXACT`) is unchanged and compares as the database does.
+> search (`false`, or `SearchMatch.EXACT`) is case-sensitive on every database. Before 6.0 it
+> ignored case on MySQL, MariaDB and SQL Server.
 
 ## MOD-I191: a final tie-breaker on every sort
 
