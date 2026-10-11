@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import net.sf.ehcache.Ehcache;
@@ -347,11 +348,14 @@ public class RDBMDistributedLayoutStore extends RDBMUserLayoutStore {
             throw new IllegalArgumentException(msg);
         }
 
+        // COUNT(*) always returns a row (MOD-I225)
         final int struct_count =
-                jdbcOperations.queryForObject(
-                        "SELECT COUNT(*) FROM up_layout_struct WHERE user_id = ?",
-                        Integer.class,
-                        person.getID());
+                Objects.requireNonNull(
+                        jdbcOperations.queryForObject(
+                                "SELECT COUNT(*) FROM up_layout_struct WHERE user_id = ?",
+                                Integer.class,
+                                person.getID()),
+                        "No COUNT(*) from UP_LAYOUT_STRUCT");
         return struct_count == 0 ? false : true;
     }
 
