@@ -72,6 +72,20 @@
             </div>
         </div>
 
+        <c:set var="errorCssClass">
+            <c:choose>
+                <c:when test="${invalidFields['fname'] ne null}">is-invalid</c:when>
+                <c:otherwise></c:otherwise>
+            </c:choose>
+        </c:set>
+        <div class="row mb-3 ${errorCssClass}">
+            <label for="fname" class="col-sm-2 col-form-label"><spring:message code="tenant.manager.fname" /></label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" name="fname" id="fname" value="<c:out value="${previousResponses['fname']}" />" placeholder="<spring:message code="enter.tenant.fname" />" />
+                <div class="field-error bg-danger"><spring:message code="tenant.manager.fname.invalid" /></div>
+            </div>
+        </div>
+
         <c:forEach items="${tenantManagerAttributes}" var="attribute">
             <c:set var="errorCssClass">
                 <c:choose>
@@ -114,7 +128,6 @@
         </c:if>
 
         <div class="text-end">
-            <input type="hidden" name="fname" id="fname" value="">
             <button id="tenantFormSubmit" type="submit" class="btn btn-primary">Submit</button>
             <a href="<portlet:renderURL />" class="btn btn-link">Cancel</a>
         </div>
