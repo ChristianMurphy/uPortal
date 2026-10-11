@@ -45,6 +45,7 @@ Each one changes the schema and waits for that step. The sections below give the
 | G-index R4 | indexes on the three foreign keys to `UP_UNIQUE_STR` | creates them with the 6.0 schema |
 | MOD-I141 marker | `dataInit` and the copy tool write a marker, and a 6.0 portal refuses to start on an unconverted database | writes the marker |
 | MOD-D44 | SQL Server text columns become `nvarchar` (Hibernate's nationalized strings) | converts the text |
+| MOD-D49 | MySQL and MariaDB tables name `utf8mb4` in their DDL, so a server whose default is `utf8mb3` or `latin1` can't create tables that lose four-byte characters (utf8-inputs note) | creates the tables with it |
 
 ## Running tests in this container
 
