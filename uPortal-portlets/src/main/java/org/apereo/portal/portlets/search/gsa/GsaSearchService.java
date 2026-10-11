@@ -77,6 +77,10 @@ public class GsaSearchService implements IPortalSearchService {
 
         GsaResults gsaResults = restTemplate.getForObject(urlTemplate, GsaResults.class, vars);
         SearchResults results = new SearchResults();
+        if (gsaResults == null) {
+            // A response without a body (204 No Content) has no results (MOD-I225)
+            return results;
+        }
         for (GsaSearchResult gsaResult : gsaResults.getSearchResults()) {
             SearchResult result = new SearchResult();
             result.setTitle(gsaResult.getTitle());
