@@ -1783,6 +1783,35 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 * **Work:** `ccr-43ba0785-hzlrj5-i18n` (MOD-I231, MOD-I232, the check); each open conversion
   adds its own translations.
 
+### MOD-D51: web components work in any language a site adds
+
+* **Decision (project owner, 2026-10-11):** beyond English, Spanish and French (MOD-D50), a site
+  can run the components in other languages, such as German, Polish, Arabic or Chinese. It adds
+  a message bundle and lists the locale in `portal_locales`, with no code changes. So the
+  components:
+  1. pick plural forms by the language's rules (`Intl.PluralRules`). Polish needs three forms
+     and Arabic six. A message key has one entry per form (`.one`, `.few`, `.many`, `.other`
+     and so on), and a missing form falls back to `.other`;
+  2. format numbers and dates in the user's locale (`Intl.NumberFormat`,
+     `Intl.DateTimeFormat`), so Arabic digits and German separators appear where those locales
+     use them;
+  3. set `lang` and `dir` on the element from the locale, use CSS logical properties only, and
+     mirror icons that point left or right, so Arabic reads right to left;
+  4. ignore keys while an input method is composing text (`isComposing`), so pressing Enter to
+     choose a Chinese or Japanese character doesn't submit a form;
+  5. wrap long words, such as German compounds, instead of clipping them;
+  6. fall back from region to language to English (`zh-TW`, then `zh`, then English), and
+     accept script subtags (`zh-Hant`).
+* **Tests:** two pseudo-locales built from `Messages.properties` at test time: one with
+  accented letters and text 40% longer, one right to left. They find English text written into
+  the code, clipped text and layouts that don't mirror. Unit tests check the Polish and Arabic
+  plural forms, and a Playwright test runs a component with test bundles for `pl`, `ar` and
+  `zh-TW`.
+* **Not covered:** the Respondr theme around the components has no right-to-left layout
+  (MOD-I234).
+* **Work:** `ccr-43ba0785-hzlrj5-i18n` builds the shared code in `lib/i18n.ts` and updates the
+  landed components. Each later conversion uses that code.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1974,6 +2003,8 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Open.** Translate them on `ccr-43ba0785-hzlrj5-i18n`. The MOD-D50 check stops it from happening again. |
 | MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Open.** Read message bundles as UTF-8 after checking that each one is valid UTF-8, and test the French line. Existing `\u` escapes keep working. |
 | MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
+| MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, owner decision.** Make Respondr right to left (`dir` from the locale and mirrored stylesheets), or wait. |
+| MOD-I235 | Web components | `formatMessage` in `lib/i18n.ts` turns numbers into text with `String()`, so counts and positions ignore the locale's digits and separators. Messages have no plural forms. | **Open.** Fix on `ccr-43ba0785-hzlrj5-i18n` (MOD-D51). |
 
 ## Open questions
 
