@@ -50,8 +50,11 @@ G-index in uPortal-start). Integration builds the uPortal branch of the same nam
 
 ## Next steps
 
-1. Characterisation spec green against the portlet (Integration on uPortal-start `7bacc1dee`,
-   run 38115662860).
+1. Done: the characterisation spec passes against the Search portlet. Integration run
+   38122396831 on uPortal-start `202e6ff`, dispatched with `uportal-ref` set to uPortal
+   `1aa8d008c` (the API and the components, with the portlet still in place): all 6 search tests
+   passed on hsqldb (141 of 141) and on postgres-18. The postgres-18 job failed on 8
+   Announcements tests, which this branch does not touch.
 2. Search analytics (coordinator's option a): `/api/v6-0/search?submitted=true` publishes a
    `SearchRequestEvent`; `SearchRequestAggregator` counts it and the stored 5.17 portlet action
    events (`SearchRequestAggregatorTest` reads both from stored JSON). The aggregation golden
