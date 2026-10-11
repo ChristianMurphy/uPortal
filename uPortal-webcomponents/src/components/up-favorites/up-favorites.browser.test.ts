@@ -668,6 +668,30 @@ describe('up-favorites reordering', () => {
         expect(server.requests.filter((request) => request.method === 'POST')).toHaveLength(0);
     });
 
+    it('ignores Alt+Down and Escape while an input method composes', async () => {
+        const element = await render();
+        await startEditing(element);
+        const link = control(element, 'u12l1n20', 'link');
+        link.focus();
+
+        // As a Chinese or Japanese input method sends them while it shows candidates
+        for (const key of ['ArrowDown', 'Escape']) {
+            link.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                    key,
+                    altKey: key === 'ArrowDown',
+                    isComposing: true,
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
+        }
+        await element.updateComplete;
+
+        expect(server.requests.filter((request) => request.method === 'POST')).toHaveLength(0);
+        expect(shadow(element).querySelector('[data-control="up"]')).not.toBeNull();
+    });
+
     it('stops reordering with Escape and returns focus to the toggle', async () => {
         const element = await render();
         await startEditing(element);
