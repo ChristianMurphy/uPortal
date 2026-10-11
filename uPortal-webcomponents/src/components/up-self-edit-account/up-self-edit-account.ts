@@ -7,8 +7,13 @@
  * details from the next login, as in the portlet, because the details come from the session.
  *
  * Events: `up-account-updated` (`detail.passwordChanged`) after a save.
+ *
+ * Password managers look for password inputs in the document and cannot see into a shadow root
+ * (MOD-D46). So while the form shows, the user name and the three password inputs are in a
+ * `<form>` in the element's light DOM, slotted into the shadow form's Password section, with the
+ * `autocomplete` hints `username`, `current-password` and `new-password`.
  */
-import { css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
+import { css, html, nothing, render, type PropertyValues, type TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import type { Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
@@ -43,6 +48,9 @@ function noticeMessage(notice: Notice): SelfEditAccountMessageKey {
     } as const;
     return keys[notice.kind];
 }
+
+/** Makes the light-DOM ids of each element on the page distinct. */
+let instanceCount = 0;
 
 /** Which view is showing, to move focus when it changes. */
 type View = 'loading' | 'failed' | 'viewing' | 'editing' | 'saved';
@@ -114,6 +122,27 @@ export class UpSelfEditAccount extends UpElement {
 
     #view: View | undefined;
 
+    /** The light-DOM form with the user name and password inputs, while the form shows. */
+    readonly #credentials: HTMLFormElement = this.#createCredentialsForm();
+
+    readonly #idPrefix = `up-self-edit-account-${String(++instanceCount)}`;
+
+    #createCredentialsForm(): HTMLFormElement {
+        const form = document.createElement('form');
+        form.slot = 'credentials';
+        form.className = 'up-self-edit-account-credentials';
+        // An arrow, since #submitted is not set yet when this field is
+        form.addEventListener('submit', (event) => {
+            this.#submitted(event);
+        });
+        return form;
+    }
+
+    override disconnectedCallback(): void {
+        super.disconnectedCallback();
+        this.#credentials.remove();
+    }
+
     protected override get defaultMessages(): Messages {
         return SELF_EDIT_ACCOUNT_MESSAGES;
     }
@@ -130,6 +159,7 @@ export class UpSelfEditAccount extends UpElement {
 
     protected override updated(changed: PropertyValues<this>): void {
         super.updated(changed);
+        this.#updateCredentials();
         const view = this.#currentView();
         const previous = this.#view;
         this.#view = view;
@@ -138,7 +168,10 @@ export class UpSelfEditAccount extends UpElement {
         }
         // Keep the keyboard where the user is: in the form, on Edit after it, on the outcome
         if (view === 'editing') {
-            this.renderRoot.querySelector<HTMLInputElement>('form input')?.focus();
+            (
+                this.renderRoot.querySelector<HTMLInputElement>('form input') ??
+                this.#credentials.querySelector<HTMLInputElement>('input[type="password"]')
+            )?.focus();
         } else if (view === 'viewing' && previous === 'editing') {
             this.renderRoot.querySelector<HTMLButtonElement>('.edit')?.focus();
         } else if (view === 'saved') {
@@ -226,8 +259,7 @@ export class UpSelfEditAccount extends UpElement {
 
     #renderForm(): TemplateResult {
         const snapshot = this.#account.snapshot;
-        const { account, draft, currentPassword, password, confirmPassword, notice } =
-            snapshot.context;
+        const { account, draft, notice } = snapshot.context;
         const busy = snapshot.hasTag('busy');
         return html`<div class="header"><h2>${this.msg('edit.my.account')}</h2></div>
             <form aria-busy=${busy ? 'true' : nothing} @submit=${this.#submitted}>
@@ -249,23 +281,7 @@ export class UpSelfEditAccount extends UpElement {
                     </tbody>
                 </table>
                 <h3>${this.msg('password')}</h3>
-                <table class="table">
-                    <tbody>
-                        ${this.#renderPasswordInput(
-                            'currentPassword',
-                            'current.password',
-                            currentPassword,
-                            busy,
-                        )}
-                        ${this.#renderPasswordInput('password', 'password', password, busy)}
-                        ${this.#renderPasswordInput(
-                            'confirmPassword',
-                            'confirm.password',
-                            confirmPassword,
-                            busy,
-                        )}
-                    </tbody>
-                </table>
+                <slot name="credentials"></slot>
                 <div class="buttons">
                     <button type="submit" class="btn-solid theme-primary save" ?disabled=${busy}>
                         ${this.msg('save')}
@@ -312,21 +328,78 @@ export class UpSelfEditAccount extends UpElement {
         </tr>`;
     }
 
+    /** Render the light-DOM credentials form while the form shows, and take it out after. */
+    #updateCredentials(): void {
+        if (this.#currentView() !== 'editing') {
+            if (this.#credentials.isConnected) {
+                render(nothing, this.#credentials);
+                this.#credentials.remove();
+            }
+            return;
+        }
+        const snapshot = this.#account.snapshot;
+        const { account, currentPassword, password, confirmPassword } = snapshot.context;
+        const busy = snapshot.hasTag('busy');
+        const id = `${this.#idPrefix}-username`;
+        render(
+            html`<table class="table">
+                    <tbody>
+                        <tr>
+                            <td class="attribute-name">
+                                <label class="form-label" for=${id}>${this.msg('username')}</label>
+                            </td>
+                            <td>
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    id=${id}
+                                    name="username"
+                                    autocomplete="username"
+                                    readonly
+                                    .value=${account.username}
+                                />
+                            </td>
+                        </tr>
+                        ${this.#renderPasswordInput(
+                            'currentPassword',
+                            'current.password',
+                            currentPassword,
+                            busy,
+                        )}
+                        ${this.#renderPasswordInput('password', 'password', password, busy)}
+                        ${this.#renderPasswordInput(
+                            'confirmPassword',
+                            'confirm.password',
+                            confirmPassword,
+                            busy,
+                        )}
+                    </tbody>
+                </table>
+                <button type="submit" hidden tabindex="-1"></button>`,
+            this.#credentials,
+        );
+        if (!this.#credentials.isConnected) {
+            this.append(this.#credentials);
+        }
+    }
+
     #renderPasswordInput(
         field: PasswordField,
         labelKey: 'current.password' | 'password' | 'confirm.password',
         value: string,
         busy: boolean,
     ): TemplateResult {
+        const id = `${this.#idPrefix}-${field}`;
         return html`<tr>
             <td class="attribute-name">
-                <label class="form-label" for=${field}>${this.msg(labelKey)}</label>
+                <label class="form-label" for=${id}>${this.msg(labelKey)}</label>
             </td>
             <td>
                 <input
                     type="password"
                     class="form-control"
-                    id=${field}
+                    id=${id}
+                    name=${field}
                     autocomplete=${field === 'currentPassword' ? 'current-password' : 'new-password'}
                     .value=${value}
                     ?disabled=${busy}

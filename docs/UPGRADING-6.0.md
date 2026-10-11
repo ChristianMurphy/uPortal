@@ -201,11 +201,17 @@ same account details. Users allowed to edit their own local account (`UP_USERS` 
 * A confirmation that differs from the new password is refused with "Passwords must match". The
   portlet saved the password field whatever the confirmation said, because its check never ran.
 * The form's "Add Preference" link is gone. Saving always ignored what it added.
+* The form shows the user name, read-only, above the password fields. The user name has the
+  `autocomplete` hint `username`, the current password `current-password` and the new one and
+  its confirmation `new-password`. These four inputs are in a form in the page's own DOM, not
+  the component's shadow root, so browser password managers can fill them and offer to save the
+  new password.
 * The form offers one text field per attribute. A custom `accountEditAttributes` list in
   `userContext.xml` that uses choice or multi-value inputs is shown as text fields that edit the
   first value only.
 
-The first two changes await the project owner's decision and may be reverted before 6.0.
+The project owner approved the first two (MOD-D45). The portlet's flow, kept until the
+channel is converted, has the same checks (see the sections on the account forms below).
 
 The API acts on the signed-in user only and never takes a user name from the request. Guests get
 401, and a change needs the CSRF token of the user's own session (or a bearer token). No answer

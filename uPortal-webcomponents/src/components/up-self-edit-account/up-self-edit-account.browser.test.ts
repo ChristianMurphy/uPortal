@@ -88,8 +88,11 @@ async function openForm(): Promise<UpSelfEditAccount> {
     return element;
 }
 
+/** An attribute input by id, in the shadow root, or a credentials input by name, in the light DOM. */
 function input(element: UpSelfEditAccount, id: string): HTMLInputElement {
-    const found = shadow(element).querySelector<HTMLInputElement>(`input#${id}`);
+    const found =
+        shadow(element).querySelector<HTMLInputElement>(`input#${id}`) ??
+        element.querySelector<HTMLInputElement>(`input[name="${id}"]`);
     if (!found) {
         throw new Error(`no input #${id}`);
     }
@@ -201,6 +204,46 @@ describe('up-self-edit-account editing', () => {
             [...shadow(element).querySelectorAll('h3')].map((h3) => h3.textContent?.trim()),
         ).toEqual(['My Account Details', 'Password']);
         expect(await axeViolations(element)).toEqual([]);
+    });
+
+    it('puts the user name and passwords where password managers look for them', async () => {
+        const element = await openForm();
+
+        // Password managers search the document, which does not include shadow roots
+        const form = document.querySelector<HTMLFormElement>('up-self-edit-account > form');
+        expect(form?.assignedSlot?.name).toBe('credentials');
+        const fields = [...document.querySelectorAll<HTMLInputElement>('form input')].map(
+            (field) => [field.name, field.type, field.autocomplete, field.form === form],
+        );
+        expect(fields).toEqual([
+            ['username', 'text', 'username', true],
+            ['currentPassword', 'password', 'current-password', true],
+            ['password', 'password', 'new-password', true],
+            ['confirmPassword', 'password', 'new-password', true],
+        ]);
+        expect(input(element, 'username').value).toBe('selma');
+        expect(input(element, 'username').readOnly).toBe(true);
+        expect(input(element, 'username').labels?.[0]?.textContent).toBe('Username');
+        expect(input(element, 'currentPassword').labels?.[0]?.textContent).toBe('Current Password');
+    });
+
+    it('takes the credentials form out of the page when the form closes', async () => {
+        const element = await openForm();
+        await userEvent.click(find(element, '.cancel'));
+        await expect.poll(() => heading(element)).toBe('My Account');
+        expect(element.querySelector('form')).toBeNull();
+        expect(document.querySelectorAll('input[type="password"]')).toHaveLength(0);
+    });
+
+    it('saves when Enter is pressed in a password input', async () => {
+        const element = await openForm();
+        await userEvent.fill(input(element, 'currentPassword'), '0ld-Secret!');
+        await userEvent.fill(input(element, 'password'), 'n3w-Secret!');
+        await userEvent.fill(input(element, 'confirmPassword'), 'n3w-Secret!');
+        await userEvent.keyboard('{Enter}');
+
+        await expect.poll(() => heading(element)).toBe('Account Updated');
+        expect(server.requests.filter((request) => request.method === 'PUT')).toHaveLength(1);
     });
 
     it('goes back to the details on Cancel, with focus on Edit and nothing saved', async () => {
