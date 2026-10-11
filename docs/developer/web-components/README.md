@@ -272,7 +272,7 @@ therefore adopts **one shared constructable stylesheet**: `src/lib/styles/bootst
 compiles the parts of Bootstrap 6 that the components use (root and color tokens, reboot,
 buttons, close button, form controls, input groups, navs, list group, alert, spinner,
 placeholder, theme colors, focus ring and visually-hidden helpers) from Bootstrap's Sass sources,
-and Lit adopts the resulting sheet, a single `CSSStyleSheet` object, into every shadow root. It is
+and Lit adopts the resulting sheet, one `CSSStyleSheet` object, into every shadow root. It is
 about 76 kB minified (12 kB gzipped), loaded once per page with the first component.
 
 Light DOM was the alternative. It would let the page's own CSS style the markup, but the page's
@@ -499,11 +499,11 @@ for locked fragments apply.
 
 | Request | Answer |
 | --- | --- |
-| `GET /api/v6-0/search?q=cartoon` | `{"query": "cartoon", "groups": [{"type": "people", "results": [...]}, {"type": "portlets", "results": [...]}]}`: one group per search strategy, ordered by type, also when it found nothing. |
-| `GET /api/v6-0/search?q=...&type=people` | Only the named strategies (repeat `type`, or separate types with commas); an unknown type gives no group. |
+| `GET /api/v6-0/search?q=cartoon` | `{"query": "cartoon", "groups": [{"type": "people", "results": [...]}, {"type": "portlets", "results": [...]}]}`. The answer has one group for each search strategy, in the order of their types, including a group without results. |
+| `GET /api/v6-0/search?q=...&type=people` | Only the strategies whose types the request lists, where `type` is repeated or holds types separated by commas, and an unknown type doesn't add a group. |
 | A blank `q`, or one over 200 characters | 400 with a `message`. |
 
-A group carries its `type`, a `label` (the tab name of a remote provider, else null), its
+A group has its `type`, a `label` (the tab name of a remote provider, else null), its
 `results` and `failed`, which is true when that strategy threw: the other groups still answer. A
 result carries a `title` (its `displayName`, `title` or `name` attribute), a `url` (null for
 people) and its other `attributes`, each a list of strings in the order the strategy returned
@@ -514,9 +514,9 @@ see.
 
 Remote JSON search providers (`RemoteJsonSearchStrategy`) are configured in portal properties
 under `org.apereo.portal.search.remote.` (see `portal.properties` and UPGRADING-6.0). Each one
-GETs a URL with the query encoded into it, sends only its configured headers (never the user's
-cookies), follows no redirects, waits at most its timeout, and maps the JSON answer with JSON
-Pointers. Their tests run against a loopback HTTP server.
+GETs a URL with the query encoded into it and sends only its configured headers, never the user's
+cookies. It doesn't follow redirects or wait longer than its timeout. JSON Pointers map the
+answer to results. Their tests run against a loopback HTTP server.
 
 ### Popular Portlets
 
@@ -760,23 +760,23 @@ UPGRADING-6.0).
 One module, `up-search`, defines all three elements, so both channels name it in
 `webComponent.moduleUrl` and the page loads it once.
 
-Two machines hold the states:
+The states are in `up-search.machine.ts` and `up-search-box.machine.ts`:
 
 * `up-search.machine.ts`: `start` (to `searching` with a query, else `idle`), `searching`,
   `results` (with the selected tab in the context), `failed.retryable` and
   `failed.sessionExpired`. A new search starts from any state and aborts the one in flight.
 * `up-search-box.machine.ts`, the type-ahead, two parallel regions: `source` (`loading`, `ready`,
   or `unavailable` when the portlet list fails, which leaves a plain search box) and `popup`
-  (`closed`, `waiting` for the 200 ms pause, `open`). The pause is the named delay `typeAhead`;
-  the model-based test replays it with fake timers.
+  (`closed`, `waiting` for the 200 ms pause, `open`). The pause is the delay `typeAhead`,
+  which the model-based test replays with fake timers.
 
 The field stays a search box for assistive technology, as the portlet's did, with
 `aria-autocomplete`, `aria-controls` and `aria-activedescendant` pointing at the suggestions,
 and a live region that says how many there are. Escape closes the suggestions or cancels the
 pause before the browser clears the field.
 
-Page navigation (opening a URL, reading and updating `?query=`) goes through `navigation.ts`, so
-the browser tests replace it instead of leaving the test page.
+Page navigation (opening a URL, reading and updating `?query=`) goes through `navigation.ts`.
+The browser tests replace it and stay on the test page.
 
 ## Conversion: Popular Portlets
 
