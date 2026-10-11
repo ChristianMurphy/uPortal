@@ -427,6 +427,17 @@ describe('up-popular-portlets filters', () => {
         expect(shadow(element).activeElement?.getAttribute('data-filter')).toBe('title');
     });
 
+    it('keeps the rows it names after a sort (the 5.17 portlet showed other rows)', async () => {
+        const element = await render();
+        await userEvent.click(view(element).getByRole('button', { name: '# Times' }));
+        expect(fnames(element)).toEqual(['courses', 'xkcd', 'calendar']);
+
+        await choose(select(element, 'select[data-filter="title"]'), 'calendar');
+
+        expect(fnames(element)).toEqual(['calendar']);
+        expect(find(element, 'tbody a').textContent).toBe('Calendar');
+    });
+
     it('keeps the filters when other days load', async () => {
         const element = await render();
         await choose(select(element, 'select[data-filter="title"]'), 'xkcd');
