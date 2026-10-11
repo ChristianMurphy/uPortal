@@ -102,7 +102,8 @@ public class MessagesRESTController {
 
     private Locale resolveLocale(String locale, HttpServletRequest request) {
         if (locale != null) {
-            final Locale requested = Locale.forLanguageTag(locale.trim());
+            // zh_TW as Java and portal_locales write it, as well as the language tag zh-TW
+            final Locale requested = Locale.forLanguageTag(locale.trim().replace('_', '-'));
             if (!requested.getLanguage().isEmpty()) {
                 return requested;
             }
