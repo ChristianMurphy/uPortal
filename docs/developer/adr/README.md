@@ -66,3 +66,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0013](0013-build-web-components-with-lit-vite-plus-vitest-and-xstate.md) | Build web components with Lit, Vite+ and Vitest, and model their state with XState | proposed | 2026-10-10 |
 | [0014](0014-keep-bootstrap-and-target-bootstrap-6.md) | Keep Bootstrap as the theme framework and target Bootstrap 6 | proposed | 2026-10-10 |
 | [0015](0015-draw-charts-with-apache-echarts.md) | Draw statistics charts with Apache ECharts | proposed | 2026-10-10 |
+| [0016](0016-default-to-local-login-with-cas-as-an-option.md) | Make uPortal's local login the uPortal-start default, with CAS as an option | proposed | 2026-10-10 |
