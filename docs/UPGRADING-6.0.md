@@ -419,6 +419,14 @@ bundled portlets open at most 80 connections:
 | `tomcat.jdbc.pool.aggrEventsDataSource.maxActive` / `maxIdle` | 100 / 50 | 5 / 2 |
 | `tomcat.jdbc.pool.newsReaderDataSource.maxActive` / `maxIdle` | 50 / 15 | 8 / 4 |
 
+**If your portal has more people signed in at once than the quickstart, size `PortalDb` from your
+own peak instead of taking 30.** Too small a `maxActive` makes requests wait for a connection and
+then fail with "Pool empty. Unable to fetch a connection", where 5.x would have opened more. Read
+the peak during your busiest hour from the pool's JMX bean `uPortal:section=DataSource,name=PortalDb`
+(`Active` is in use now, `WaitCount` above 0 means requests are waiting), and set `maxActive` to
+about one and a half times it. uPortal-start `docs/connection-budget.md` describes this and a
+PostgreSQL query that gives the same number.
+
 uPortal's own defaults in `datasourceContext.xml` are unchanged. If your `global.properties` comes
 from an older uPortal-start, copy the block or size the pools yourself. The database's connection
 limit has to cover the sum of every pool's `maxActive` on every portal node, plus room for
