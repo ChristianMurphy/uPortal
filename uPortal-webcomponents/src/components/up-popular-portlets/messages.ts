@@ -17,7 +17,11 @@ export const POPULAR_PORTLETS_MESSAGES = {
     'popular.portlets.filters': 'Filters',
     'popular.portlets.filter.by': 'Filter by {0}',
     'popular.portlets.filter.remove': 'Remove the filter {0}',
-    'popular.portlets.page.info': 'Viewing page {0}. Showing records {1} to {2} of {3} items.',
+    // A plural family (MOD-I235), chosen by the number of items, {3}. English keeps the
+    // portlet's text for one item too
+    'popular.portlets.page.info.one': 'Viewing page {0}. Showing records {1} to {2} of {3} items.',
+    'popular.portlets.page.info.other':
+        'Viewing page {0}. Showing records {1} to {2} of {3} items.',
     'popular.portlets.per.page': 'per page',
     'popular.portlets.pagination': 'pagination',
     'popular.portlets.none': 'No data available in table',
