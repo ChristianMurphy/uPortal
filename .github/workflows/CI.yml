@@ -21,10 +21,11 @@ jobs:
   test:
     name: '${{ matrix.platform }} with Java ${{ matrix.java-distribution }} version ${{ matrix.java-version }}'
     strategy:
-      # Prototype only (MOD-D30): a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs one Linux
-      # leg to spare the account's runners; master, pull requests and the integration branch run
-      # the full matrix: ubuntu x temurin/zulu/corretto x 21/25, plus windows and macos on temurin 25.
-      matrix: ${{ fromJSON(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && '{"include":[{"platform":"ubuntu-latest","java-distribution":"temurin","java-version":21}]}' || '{"platform":["ubuntu-latest"],"java-distribution":["temurin","zulu","corretto"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}') }}
+      # Prototype only (MOD-D30): a push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs
+      # one Linux leg to spare the account's runners. A manual run on a workstream branch (such as
+      # a landing check), master, pull requests and the integration branch run the full matrix:
+      # ubuntu x temurin/zulu/corretto x 21/25, plus windows and macos on temurin 25.
+      matrix: ${{ fromJSON(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && github.event_name != 'workflow_dispatch' && '{"include":[{"platform":"ubuntu-latest","java-distribution":"temurin","java-version":21}]}' || '{"platform":["ubuntu-latest"],"java-distribution":["temurin","zulu","corretto"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}') }}
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 45
     steps:
@@ -133,6 +134,11 @@ jobs:
         env:
           RANGE: ${{ steps.range.outputs.range }}
         run: .github/scripts/vale.sh commits "$RANGE"
+      - name: Check the ArchUnit freeze store did not grow (MOD-D43)
+        if: ${{ !cancelled() && steps.range.outcome == 'success' && contains(steps.range.outputs.range, '..') }}
+        env:
+          RANGE: ${{ steps.range.outputs.range }}
+        run: .github/scripts/check-freeze-store.py "${RANGE%%..*}"
 
   prose:
     name: Prose (Vale)

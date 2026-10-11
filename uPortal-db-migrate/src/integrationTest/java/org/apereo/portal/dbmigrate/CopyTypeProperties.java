@@ -71,6 +71,8 @@ class CopyTypeProperties {
         for (PairCopy pair : PairCopy.all(DbServer.enabled())) {
             problems.addAll(pair.check(rows));
         }
+        // Every pair's one-line problems first, the tools' outputs after them
+        problems.sort(java.util.Comparator.comparing(p -> p.contains("\n")));
         assertTrue(String.join("\n", problems), problems.isEmpty());
     }
 }

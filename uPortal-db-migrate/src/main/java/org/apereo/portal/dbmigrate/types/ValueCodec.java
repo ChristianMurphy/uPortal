@@ -191,6 +191,12 @@ public final class ValueCodec {
                     return null;
                 }
                 return v;
+            case BINARY:
+                // Oracle stores a zero-length binary value as NULL, as it does ''
+                if (t.emptyStringIsNull() && ((byte[]) v).length == 0) {
+                    return null;
+                }
+                return v;
             case TIME:
                 return t.sqlServerDatetime()
                         ? sqlServerDatetime(LocalDateTime.of(EPOCH_DATE, (LocalTime) v))
@@ -243,6 +249,18 @@ public final class ValueCodec {
                     String s = (String) v;
                     if (c.postgresLargeObject()) {
                         ps.setBytes(i, s.getBytes(StandardCharsets.UTF_8));
+                    } else if (c.largeText() && c.vendor() == Vendor.ORACLE) {
+                        // Oracle's driver converts a character stream or a String in chunks of
+                        // 32,768 characters and turns a surrogate pair split between two chunks
+                        // into two U+FFFD; it writes a Clob's text whole. It refuses an empty
+                        // Clob, and stores '' as NULL anyway.
+                        if (s.isEmpty()) {
+                            ps.setString(i, s);
+                        } else if (c.column().jdbcType() == Types.NCLOB) {
+                            ps.setNClob(i, new StringReader(s), s.length());
+                        } else {
+                            ps.setClob(i, new StringReader(s), s.length());
+                        }
                     } else if (c.largeText()) {
                         ps.setCharacterStream(i, new StringReader(s), s.length());
                     } else {
@@ -268,7 +286,12 @@ public final class ValueCodec {
                 }
                 break;
             case TIME:
-                if (c.family() == Family.TIME) {
+                if (c.family() == Family.TIME && c.vendor() == Vendor.SQLSERVER) {
+                    // mssql-jdbc sends a time as a datetime unless told otherwise
+                    // (sendTimeAsDatetime), which rounds it to 1/300 s and 23:59:59.999999 to
+                    // midnight; TIME(7) takes the text exactly
+                    ps.setString(i, v.toString());
+                } else if (c.family() == Family.TIME) {
                     ps.setObject(i, v);
                 } else {
                     // Hibernate stores a java.sql.Time in a datetime/DATE column on 1970-01-01
@@ -319,7 +342,10 @@ public final class ValueCodec {
                     return s.getBytes(StandardCharsets.UTF_8);
                 }
             case BINARY:
-                return (byte[]) v;
+                {
+                    byte[] b = (byte[]) v;
+                    return pair.emptyStringIsNull() && b.length == 0 ? null : b;
+                }
             case DATE:
                 return ascii(v.toString());
             case TIME:

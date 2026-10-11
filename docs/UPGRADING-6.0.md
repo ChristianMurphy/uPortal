@@ -324,3 +324,26 @@ the wrong type throws `IllegalArgumentException` instead. The view bean names,
 
 The CSV and HTML downloads format numbers and dates as before. In locales whose default calendar
 isn't Gregorian or Buddhist, such as `ar-SA` and `fa-IR`, dates are now Gregorian.
+
+## uPortal-start signs users in locally; CAS is opt-in
+
+uPortal-start no longer deploys a CAS 3.6 server (`overlays/cas`) into the portal's Tomcat.
+CAS 3.6 is end of life, runs on Spring 3.2 and the javax Servlet API, and cannot follow the
+portal to Tomcat 10.1 and 11. A portal built from uPortal-start now signs users in with
+uPortal's own login form (`SimpleSecurityContextFactory`) against the accounts in the portal
+database:
+
+* `org.apereo.portal.security.provider.cas.CasAssertionSecurityContextFactory.enabled=false`
+* `org.apereo.portal.channels.CLogin.CasLoginUrl=${portal.context}/p/login?refUrl=`
+* `logout.redirect=` (empty: back to the guest page)
+
+To keep signing in through CAS, build with `authMode=cas` and `casServerUrl` pointing at your CAS
+server (uPortal-start `docs/authentication.md`). Register the portal's `/Login` URL as a CAS
+service, and allow proxying to `/CasProxyServlet` if portlets use proxy tickets. CAS 5 and later
+take `logout?service=` (not `logout?url=`) and follow it only with
+`cas.logout.follow-service-redirects=true`. Drop `cas.ticketValidationFilter.encodeServiceUrl=false`
+if you set it for CAS 3.6.
+
+uPortal's defaults in `security.properties` are unchanged: they still point the login and logout
+URLs at `${cas.protocol.server.context}`, so a portal not built from uPortal-start keeps its CAS
+settings.
