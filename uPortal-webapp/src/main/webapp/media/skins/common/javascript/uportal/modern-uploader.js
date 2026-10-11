@@ -198,6 +198,7 @@ class ModernUploader {
 
             const response = await fetch(this.options.queueSettings.uploadURL, {
                 method: 'POST',
+                headers: window.up.csrfHeaders(),
                 body: formData,
             });
 

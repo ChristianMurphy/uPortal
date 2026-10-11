@@ -27,8 +27,10 @@ import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
 import org.apereo.portal.url.IPortalUrlBuilder;
 import org.apereo.portal.url.IPortalUrlProvider;
+import org.apereo.portal.url.LoginRefUrlEncoder;
 import org.apereo.portal.url.UrlType;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -65,6 +67,18 @@ public class LoginController {
 
     @Autowired(required = false)
     private ILoginRedirect loginRedirect;
+
+    private LoginRefUrlEncoder loginRefUrlEncoder;
+
+    /**
+     * The strategy that {@code login.refUrlEncoder} selects. It says where a failed local login
+     * goes: back to the login form, or (when it returns {@code null}) to the default page.
+     */
+    @Autowired(required = false)
+    @Qualifier("loginRefUrlEncoder")
+    public void setLoginRefUrlEncoder(LoginRefUrlEncoder loginRefUrlEncoder) {
+        this.loginRefUrlEncoder = loginRefUrlEncoder;
+    }
 
     /**
      * Process the incoming HttpServletRequest. Note that this processing occurs after
@@ -144,9 +158,15 @@ public class LoginController {
                     request.getSession(false).setAttribute(AUTH_ATTEMPTED_KEY, "true");
                 // Preserve the attempted username so it can be redisplayed to the user
                 String attemptedUserName = request.getParameter("userName");
-                if (attemptedUserName != null)
+                if (attemptedUserName != null) {
                     request.getSession(false)
                             .setAttribute(ATTEMPTED_USERNAME_KEY, request.getParameter("userName"));
+                    // A failed local login goes back to the login form, which shows the error
+                    final String loginFormUrl = getLoginFailureUrl(request, redirectLocation);
+                    if (loginFormUrl != null) {
+                        redirectTarget = loginFormUrl;
+                    }
+                }
             }
         }
 
@@ -157,6 +177,19 @@ public class LoginController {
         }
 
         response.sendRedirect(encodedRedirectURL);
+    }
+
+    /**
+     * The login form URL for a failed local login, carrying the requested page (a local {@code
+     * refUrl} only), or {@code null} to keep the default redirect.
+     */
+    private String getLoginFailureUrl(HttpServletRequest request, URL redirectLocation) {
+        if (loginRefUrlEncoder == null) {
+            return null;
+        }
+        final String refUrl =
+                redirectLocation != null ? request.getParameter(REFERER_URL_PARAM) : null;
+        return loginRefUrlEncoder.encodeLoginFailureUrl(request, refUrl);
     }
 
     /**

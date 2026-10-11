@@ -114,7 +114,8 @@
            sysId = form.sysid.value;
            $.ajax({
                url: "<c:url value="/api/entity/"/>" + entityType + "/" + sysId,
-               type: "DELETE"
+               type: "DELETE",
+               headers: up.csrfHeaders()
            });
 
            return false;
