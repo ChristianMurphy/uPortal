@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.PostConstruct;
@@ -476,19 +477,19 @@ public final class SmartLdapGroupStore implements IEntityGroupStore {
         switch (method) {
             case DISCRETE:
             case DISCRETE_CI:
-                regex = query.toUpperCase();
+                regex = query.toUpperCase(Locale.ROOT);
                 break;
             case STARTS_WITH:
             case STARTS_WITH_CI:
-                regex = query.toUpperCase() + ".*";
+                regex = query.toUpperCase(Locale.ROOT) + ".*";
                 break;
             case ENDS_WITH:
             case ENDS_WITH_CI:
-                regex = ".*" + query.toUpperCase();
+                regex = ".*" + query.toUpperCase(Locale.ROOT);
                 break;
             case CONTAINS:
             case CONTAINS_CI:
-                regex = ".*" + query.toUpperCase() + ".*";
+                regex = ".*" + query.toUpperCase(Locale.ROOT) + ".*";
                 break;
             default:
                 String msg = "Unsupported search method:  " + method;
@@ -851,11 +852,12 @@ public final class SmartLdapGroupStore implements IEntityGroupStore {
             newChildrenPersons.put(g.getLocalKey(), childrenPersonList);
 
             // newKeysByUpperCaseName...
-            List<String> groupsWithMyName = newKeysByUpperCaseName.get(g.getName().toUpperCase());
+            List<String> groupsWithMyName =
+                    newKeysByUpperCaseName.get(g.getName().toUpperCase(Locale.ROOT));
             if (groupsWithMyName == null) {
                 // I am the first group with my name (pretty likely)...
                 groupsWithMyName = Collections.synchronizedList(new ArrayList<String>());
-                newKeysByUpperCaseName.put(g.getName().toUpperCase(), groupsWithMyName);
+                newKeysByUpperCaseName.put(g.getName().toUpperCase(Locale.ROOT), groupsWithMyName);
             }
             groupsWithMyName.add(g.getLocalKey());
         }
@@ -885,11 +887,12 @@ public final class SmartLdapGroupStore implements IEntityGroupStore {
         newChildren.put(root.getLocalKey(), childrenOfRoot);
 
         // newKeysByUpperCaseName...
-        List<String> groupsWithMyName = newKeysByUpperCaseName.get(root.getName().toUpperCase());
+        List<String> groupsWithMyName =
+                newKeysByUpperCaseName.get(root.getName().toUpperCase(Locale.ROOT));
         if (groupsWithMyName == null) {
             // I am the first group with my name (pretty likely)...
             groupsWithMyName = Collections.synchronizedList(new ArrayList<String>());
-            newKeysByUpperCaseName.put(root.getName().toUpperCase(), groupsWithMyName);
+            newKeysByUpperCaseName.put(root.getName().toUpperCase(Locale.ROOT), groupsWithMyName);
         }
         groupsWithMyName.add(root.getLocalKey());
 
