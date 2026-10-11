@@ -16,14 +16,18 @@ package org.apereo.portal.dbmigrate.verify;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
+import net.jqwik.api.Example;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
@@ -151,5 +155,50 @@ class RowHasherProperties {
         marker.add(new byte[][] {new byte[] {(byte) 0xFF, 'N', 'U', 'L', 'L'}, null, null});
         assertNotEquals(hash(nul), hash(empty));
         assertNotEquals(hash(nul), hash(marker));
+    }
+
+    @Property(tries = 100)
+    void rowsCountsEveryAddedRow(@ForAll("tables") List<byte[][]> rows) {
+        RowHasher h = new RowHasher();
+        rows.forEach(h::add);
+        assertEquals(rows.size(), h.rows());
+    }
+
+    /**
+     * Each half of the table hash keeps all 64 bits of a row's digest: 2,000 one-row tables with
+     * distinct rows all hash apart (16 bits per hash would give about 30 collisions).
+     */
+    @Example
+    void distinctRowsHashApart() {
+        Set<String> seen = new HashSet<>();
+        for (int i = 0; i < 2000; i++) {
+            RowHasher h = new RowHasher();
+            h.add(new byte[][] {Integer.toString(i).getBytes(StandardCharsets.UTF_8)});
+            assertTrue("row " + i + " collides with an earlier one", seen.add(h.value()));
+        }
+    }
+
+    /**
+     * Every byte of a value's length counts, for LOBs too: with the 256^k byte of the length lost,
+     * a row [z, ''] with z 256^k + 4 bytes long would read like a row [x, y] of 4 and 256^k bytes.
+     */
+    @Example
+    void lengthsOfLongValuesKeepTheirBoundaries() {
+        for (int k = 1; k <= 3; k++) {
+            int length = 1 << (8 * k);
+            byte[] x = {1, 2, 3, 4};
+            byte[] y = new byte[length];
+            // Its last four bytes stay 0, as the length of an empty value
+            java.util.Arrays.fill(y, 0, length - 4, (byte) 7);
+            byte[] z = new byte[length + 4];
+            System.arraycopy(x, 0, z, 0, 4);
+            // z's bytes 4..7 stay 0: y's length without its 256^k byte
+            System.arraycopy(y, 0, z, 8, length - 4);
+            List<byte[][]> two = new ArrayList<>();
+            two.add(new byte[][] {x, y});
+            List<byte[][]> one = new ArrayList<>();
+            one.add(new byte[][] {z, new byte[0]});
+            assertNotEquals("length " + length, hash(two), hash(one));
+        }
     }
 }
