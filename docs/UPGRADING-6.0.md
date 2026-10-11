@@ -735,3 +735,33 @@ now set `width: 100%`. The layout checks at standard screen sizes (uPortal-start
 A portlet in the pre-content region that floats its content, such as the quickstart's feedback
 link, now has the height of that content instead of 0. Skins that copy Respondr's
 `navigation.scss`, `header.scss` or `regions.scss` need the same changes.
+
+## Respondr reads right to left in Arabic, Hebrew, Persian and Urdu
+
+When the user's locale is written right to left, Respondr now mirrors the page: the header, the
+tab bar, the columns, the portlet title bars and the phone menu start on the right, and text is
+aligned to the right. 5.x laid these pages out left to right. Web components on the page already
+follow the locale (MOD-D51).
+
+* The `<html>` element has `dir="rtl"` next to `lang`. Themes get the direction as the
+  `USER_DIR` stylesheet parameter (`rtl` or `ltr`), from the same locale as `USER_LANG`. A
+  locale is right to left when its language is Arabic, Hebrew, Persian, Urdu, Pashto, Sindhi,
+  Uyghur, Yiddish, Dhivehi or Central Kurdish, or when its script subtag is a right-to-left
+  script such as `Arab` or `Hebr` (`pa-Arab`).
+* The build makes `defaultSkin-rtl.css` from `defaultSkin.css` with RTLCSS, as Bootstrap makes
+  `bootstrap.rtl.css`. For a right-to-left locale the Dynamic Respondr Skin portlet links that
+  file instead of `defaultSkin.css`. Left-to-right pages are unchanged.
+* In a right-to-left page, icons that point along the line (arrows, chevrons, angles, carets,
+  sign in and sign out) are mirrored.
+
+A skin of your own, such as one made with uPortal-start's `skinGenerate`, has no mirrored copy,
+and neither has a skin that the portlet compiles from its preferences (`dynamic` set to true). For a right-to-left locale the portlet then links the skin itself, and the
+page has `dir="rtl"` over a layout that doesn't mirror. To mirror it, put a copy made with
+RTLCSS next to the skin as `<skinName>-rtl.css`:
+
+```sh
+npx rtlcss mySkin.css mySkin-rtl.css
+```
+
+To offer a right-to-left language, add its locale to `portal_locales` and a message bundle for
+it, as for any language.
