@@ -27,7 +27,9 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.ParameterExpression;
+import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Root;
+import javax.persistence.metamodel.EntityType;
 import org.apereo.portal.events.aggr.AcademicTermDetail;
 import org.apereo.portal.events.aggr.AggregatedGroupConfig;
 import org.apereo.portal.events.aggr.AggregatedIntervalConfig;
@@ -47,6 +49,15 @@ import org.springframework.transaction.support.TransactionCallback;
 @Repository
 public class JpaEventAggregationManagementDao extends BaseAggrEventsJpaDao
         implements IEventAggregationManagementDao {
+    /**
+     * The id of an entity, the last sort key of the ordered queries (MOD-I191). Read from the
+     * metamodel at run time: the generated {@code _.id} fields look unwritten to SpotBugs.
+     */
+    private static Path<?> id(Root<?> root) {
+        final EntityType<?> model = root.getModel();
+        return root.get(model.getId(model.getIdType().getJavaType()).getName());
+    }
+
     private static final Class<IPortalEventAggregator> DEFAULT_AGGREGATOR_TYPE =
             IPortalEventAggregator.class;
 
@@ -171,7 +182,8 @@ public class JpaEventAggregationManagementDao extends BaseAggrEventsJpaDao
                                         criteriaQuery.from(QuarterDetailImpl.class);
                                 criteriaQuery.select(entityRoot);
                                 criteriaQuery.orderBy(
-                                        cb.asc(entityRoot.get(QuarterDetailImpl_.quarterId)));
+                                        cb.asc(entityRoot.get(QuarterDetailImpl_.quarterId)),
+                                        cb.asc(id(entityRoot)));
 
                                 return criteriaQuery;
                             }
@@ -188,7 +200,8 @@ public class JpaEventAggregationManagementDao extends BaseAggrEventsJpaDao
                                         criteriaQuery.from(AcademicTermDetailImpl.class);
                                 criteriaQuery.select(entityRoot);
                                 criteriaQuery.orderBy(
-                                        cb.asc(entityRoot.get(AcademicTermDetailImpl_.start)));
+                                        cb.asc(entityRoot.get(AcademicTermDetailImpl_.start)),
+                                        cb.asc(id(entityRoot)));
 
                                 return criteriaQuery;
                             }
