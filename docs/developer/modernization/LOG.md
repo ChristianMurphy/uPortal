@@ -1244,8 +1244,15 @@ This supersedes MOD-D24's runtime matrix.
   * Commit messages: checked in CI from uPortal `247d76b87` and uPortal-start `dde58e2c0` on. A
     seeded bad message failed with four findings, and 3 of the previous 60 commits would have failed.
   * Docs: about 2,000 findings at the start (785 em dashes, 537 semicolons, 146 capitals after a
-    colon, then smaller groups), mostly in the research reports. Agents are rewriting the files in
-    parallel, and the docs check joins CI when they reach zero.
+    colon, then smaller groups), mostly in the research reports. Agents rewrote the files in
+    parallel and reached zero on 2026-10-11, keeping facts, numbers, links and citations. About 70 spans
+    stay verbatim under an inline suppression with a reason: direct quotes from upstream docs,
+    error messages and cited page titles. The Prose (Vale) CI job checks every doc in scope from
+    uPortal `55defd7e5` and uPortal-start `bda2e6072` on. A planted em dash and jargon word in the
+    upgrade guide failed it with three annotations.
+  * A committed uPortal style adds what ai-tells lacks. Jargon.yml lists six planning terms, and
+    NotButContrast.yml catches a contrast that defines a thing by what it isn't. Plain technical
+    negation passes.
 * **Alternative considered:** krishnasunkam/vale-ai-tells, a smaller package with 17 rules. The tbhb
   package is the one Vale's catalog lists as `ai-tells`, and it has the commit-message rules.
 
