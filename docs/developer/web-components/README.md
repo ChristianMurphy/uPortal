@@ -435,22 +435,6 @@ its `url` (`<context path>/p/<fname>`) and its `count`. `PopularPortletsService`
 portlet-layout aggregations of the group of all users, as the portlet did, and leaves out portlets
 the user may not subscribe to and portlets that no longer exist.
 
-### Self edit account
-
-| Request | Answer |
-| --- | --- |
-| `GET /api/v6-0/account` | `{"username": ..., "details": [...], "canEdit": ..., "editable": [...]}`; each attribute has its `name`, its `label` in the user's language and its first `value` (or `null`). `editable` is empty unless `canEdit`. |
-| `PUT /api/v6-0/account` with `{"attributes": {"department": "..."}, "password": "...", "confirmPassword": "...", "currentPassword": "..."}` | 204. An attribute left out keeps its value, an empty one is removed. 403 when the user may not edit their account or names an attribute they may not edit; 400 with a `code` (`passwords.must.match`, `please.enter.current.password`, `current.password.doesnt.match`) for a refused password. |
-
-`SelfEditAccountService` works on the user of the portal session and never takes a user name from
-the request; the permission rules stay in `UserAccountHelper` (a local account, `UP_USERS`
-`EDIT_USER` on `SELF`, `EDIT_USER_ATTRIBUTE` per attribute). The API never logs, returns or
-reports a password, and answers an unreadable body without the parser's message, which can quote
-the body.
-`<up-self-edit-account>` replaces the Password Management portlet: the machine's states are
-`loading`, `failed`, `viewing`, `editing` (`idle` or `saving`) and `saved`, and the passwords stay
-in its context only while the form is open.
-
 ## Reference conversion: Favorites
 
 The Favorites portlet (Spring Portlet MVC, four JSPs, an EDIT mode) is the first portlet
