@@ -205,17 +205,15 @@ Some things look different:
 * Failures show a message in the channel: the user's name could not be loaded (with Try again),
   the reset failed, or the session has expired.
 
-The ResetMyLayout portlet is removed: its entry in `WEB-INF/portlet.xml`, its context
-`properties/contexts/portlet/ResetMyLayout-portlet.xml` and its flow `WEB-INF/flows/reset-my-layout`.
-A channel whose definition still names the `ResetMyLayout` framework portlet doesn't render until
-it is converted. `/p/reset-my-layout` then shows the user's first tab, and the portal log warns
-"No portlet descriptor could be found for the portlet definition". Convert it by importing uPortal-start's
+A channel whose definition names the `ResetMyLayout` framework portlet keeps rendering the
+portlet until it is converted. Convert it by importing uPortal-start's
 `data/base/portlet-type/Web_Component.portlet-type.xml` (if the Favorites conversion has not
 imported it already), then its `data/base/portlet-definition/reset-my-layout.portlet-definition.xml`.
 The import updates the channel by fname and keeps its ID, permissions and layout placements. A
 definition with another fname is converted by the same changes: the type becomes `Web Component`
 with the `WebComponent` framework portlet, and two parameters are added, `webComponent.tagName`
-and `webComponent.moduleUrl`, both `up-reset-my-layout`.
+and `webComponent.moduleUrl`, both `up-reset-my-layout`. The ResetMyLayout portlet, its context
+and its flow will be removed in a later release.
 
 Administrators still reset other users' layouts in User Administration. That flow,
 `reset-user-layout`, is unchanged.
