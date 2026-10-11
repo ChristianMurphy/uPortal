@@ -620,7 +620,9 @@ public class CopyFaultIT {
                             t,
                             // The held insert's session among them; the blocker's stays
                             (thread, blocker) ->
-                                    assertTrue(t.server().killSessions(t, blocker.sessionId) > 0));
+                                    assertTrue(
+                                            "no session ended: " + t.server().lastKillFailures(),
+                                            t.server().killSessions(t, blocker.sessionId) > 0));
             assertFailedClosed(run);
             assertEquals(run.toString(), DbMigrate.FAILED, run.status);
             MigrationReport.TableEntry counters = run.table("UP_SEQUENCE");
