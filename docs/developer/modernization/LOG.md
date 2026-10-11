@@ -20,6 +20,37 @@ databases upgrading in place.
 * Baseline: uPortal 5.17.10-SNAPSHOT on Java 11 / Gradle 6.9.4, deployed with
   uPortal-start on Tomcat 8.5.100 with HSQLDB.
 
+## ADRs
+
+The decisions that matter upstream are architecture decision records in
+[`docs/developer/adr`](../adr/README.md) (MOD-D36). Each ADR summarizes its own
+evidence, because this log stays on the prototype branch.
+
+| ADR | Title | Log entries |
+| --- | --- | --- |
+| 0001 | Record architecture decisions with MADR | MOD-D36 |
+| 0002 | Target Java 25 and Jakarta EE 11 in 6.0, reached in tested steps | MOD-D1, MOD-D2, MOD-D5, MOD-D6, MOD-D9 |
+| 0003 | Build with Gradle 9 before raising the bytecode level | MOD-D3, MOD-D17, MOD-Q2 |
+| 0004 | Deploy uPortal as a WAR on an external Tomcat 11 | MOD-Q1, MOD-D6, MOD-D22, MOD-D28 |
+| 0005 | Prefer the Spring approach for every migration, and cache through Spring's Cache API | MOD-D22, MOD-Q10 |
+| 0006 | Upgrade Hibernate in steps with the 5.17 schema frozen | MOD-D5, MOD-D11, MOD-D33 |
+| 0007 | Replace Joda-Time with java.time | MOD-D11, MOD-D22 |
+| 0008 | Move to an improved 6.0 schema with a cross-vendor copy tool | MOD-D11, MOD-D25, MOD-D28 |
+| 0009 | Run 6.0 on current database servers, with an index set measured under load | MOD-D12, MOD-D16, MOD-D24, MOD-D25 |
+| 0010 | Compare each step with 5.17's output, on each supported database | MOD-D10, MOD-D16, MOD-D23, MOD-D29 |
+| 0011 | Keep Spring Portlet MVC and Pluto in uPortal's source, and transform portlet WARs for Jakarta | MOD-D9, MOD-D13, MOD-D18, MOD-D26, MOD-Q5 |
+| 0012 | Replace uPortal's built-in portlets with web components or Thymeleaf pages before the Jakarta switch | MOD-D18, MOD-D19, MOD-D26 |
+| 0013 | Build web components with Lit, Vite+ and Vitest, and model their state with XState | MOD-D18, MOD-D20, MOD-D31 |
+| 0014 | Keep Bootstrap as the theme framework and target Bootstrap 6 | MOD-D21 |
+| 0015 | Draw statistics charts with Apache ECharts | MOD-D34 |
+| 0016 | Make uPortal's local login the uPortal-start default, with CAS as an option | MOD-Q3, MOD-D30 |
+| 0017 | Require static analysis in CI, with a SpotBugs baseline and NullAway on null-marked code | MOD-D27 |
+| 0018 | Check commit messages and 6.0 docs in CI, and keep history linear | MOD-D32, MOD-D35 |
+
+MOD-D4, MOD-D7, MOD-D8, MOD-D14, MOD-D15, MOD-D30 and MOD-D37 are about how the
+prototype runs (its machines, branches, CI runs and history) and have no ADR.
+MOD-D30 is listed above only for the local login workstream it started.
+
 ## Decisions
 
 ### MOD-D1: go to full Jakarta in the 6.0 line
@@ -1321,7 +1352,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I17 | Portlets | PortletMVC4Spring 6.0.0-M1 targets Spring 6.2 and Portlet 4.0 (which needs a Portlet 3+ container). There is no Spring 7 release, and it is not on Central past 5.3.4. | Not a drop-in replacement for the internal portlets on Pluto 2.1. Forking Spring Portlet MVC 4.3 (Apache-2.0) into uPortal is the likely path. |
 | MOD-I18 | Portlets | Neither the Tomcat jakartaee-migration tool nor Eclipse Transformer renames `javax.portlet`. So a converted portlet WAR only links against a hybrid portlet API: `javax.portlet` compiled against `jakarta.servlet` (only `Cookie` is affected in Portlet 2.0). | The prototype spike tests deploy-time or build-time conversion of the bundled portlet WARs against a hybrid API + in-tree Pluto. |
 | MOD-I19 | Soffit | `SoffitConnectorController` is itself a Spring Portlet MVC portlet. | Moving content to Soffit still needs the in-uPortal portlet container, or a rewritten connector. |
-| MOD-I20 | Upstream | The published roadmap defines uP6 as Java 21 + Tomcat upgrade + converting external portlets to web components, and uP7 as dropping portlets. It also lists "Maven" (2025) and "Replace Gradle" (2028). An April 2025 uportal-dev thread (seen only via search snippets) revised uP6 to Java 17 on Tomcat 9 / javax. Renovate pins Spring < 5 and blocks Hibernate majors. A Spring 7 / Jakarta / Tomcat 11 6.0 merges uP6 and uP7 scope. | Needs an RFC in `uPortal-Project/community` Discussions before large PRs are merged (MOD-Q6). |
+| MOD-I20 | Upstream | The published roadmap defines uP6 as Java 21 + Tomcat upgrade + converting external portlets to web components, and uP7 as dropping portlets. It also lists "Maven" (2025) and "Replace Gradle" (2028). An April 2025 uportal-dev thread (seen only via search snippets) revised uP6 to Java 17 on Tomcat 9 / javax. Renovate pins Spring < 5 and blocks Hibernate majors. A Spring 7 / Jakarta / Tomcat 11 6.0 merges uP6 and uP7 scope. | Needs community agreement before large PRs are merged. The decisions are proposed as ADRs, indexed in [`docs/developer/adr/README.md`](../adr/README.md) (MOD-D36). |
 | MOD-I21 | Upstream | The owner has open upstream PRs that overlap phase 1: uPortal #2921 (Gradle 6.9.4 → 8.5, branch `build/gradle-8`), #2988 (sherter → Spotless, branch `refactor/spotless-migration`), and uPortal-start #681. | Phase 1 reuses their decisions. Then either update those PRs or replace them with the finer-grained series. |
 | MOD-I22 | Upstream | `docs/architecture/subsystem-analysis.md` (PR #2917) already recommends: decomposing `uPortal-utils-core`; splitting `core-api` / `core-portlet`; extracting the rendering pipeline from Pluto; adopting Liquibase or Flyway, and turning the Soffit connector into a servlet filter. It estimates about 21k portlet-specific LOC. | Align workstreams with these "first moves" so the work reads as executing the agreed analysis. |
 | MOD-I23 | Persistence | IDs on SQL Server / MariaDB: `PortalDialectResolver` forces `SQLServer2005Dialect`, and MariaDB is detected as MySQL, so neither supports sequences. So the `@SequenceGenerator`-named generators probably fall back to tables there (inferred from dialect behaviour, not yet checked on a real database). Hibernate 7.4's `SQLServerDialect` / `MariaDBDialect` always use native sequences. | **Confirmed by the P0-4 harness.** On SQL Server 2022, MySQL 8.4 and MariaDB 10.6/11.4, all 49 IDs are backed by one-row `UP_*_SEQ(next_val)` tables. HSQLDB, PostgreSQL and Oracle use 49 real sequences. All 49 `@TableGenerator`s are dead (no vendor has `hibernate_sequences`), and every sequence's increment equals its allocationSize. Fix: no-sequence dialect subclasses for SQL Server and MariaDB in P2/P6. |
@@ -1344,7 +1375,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I40 | Web Flow | Spring Web Flow 4.0.x (Spring 7) is maintained, but has had no portlet integration since 2.5. Liferay PortletMVC4Spring has a `webflow` module for Spring 6.2 only. | The 26 admin portlet flows need a forked portlet integration or a rewrite. Write Playwright specs for them first (WS3). |
 | MOD-I41 | Tests | uPortal-start PR #692 (May 2026) reported "99 passed / 7 failed" for Playwright. | P0 has to make the baseline green before it can be a required check. This session's baseline run is checking it. |
 | MOD-I42 | Spring | Jackson 3 changes default property ordering and date output. | Use a mapper configured with Jackson 2 defaults for `JacksonType` columns and the REST payloads. Add golden-file tests. |
-| MOD-I43 | Persistence | Hibernate 7.4 needs at least PostgreSQL 14, MariaDB 10.6 and SQL Server 2014. | Adopter prerequisite. State it in the RFC and in UPGRADING-6.0. |
+| MOD-I43 | Persistence | Hibernate 7.4 needs at least PostgreSQL 14, MariaDB 10.6 and SQL Server 2014. | Adopter prerequisite. State it in the ADRs ([`docs/developer/adr/README.md`](../adr/README.md), ADR 0009) and in UPGRADING-6.0. |
 | MOD-I44 | Security | cas-client 4.1 needs Java 21 and Servlet 6.1. | Use 4.0 at the Spring 6.2 checkpoint and 4.1 with Spring 7. |
 | MOD-I45 | Logging | Spring 7 replaces `spring-jcl` with commons-logging 1.3, and uPortal bans commons-logging. | Revisit the exclusions and `jcl-over-slf4j` in the Spring 7 PR. |
 | MOD-I46 | Runtime | Tomcat's newer defaults are lower: `maxParameterCount` is 1000 and `maxPartCount` is 50. | Set the connector values explicitly in uPortal-start. Add a large-form permissions spec. |
@@ -1427,7 +1458,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-Q3 | Local SSO in uPortal-start? | **Proposed:** default to uPortal local login (`SimpleSecurityContextFactory`, already on). CAS becomes opt-in as a separate CAS 7.3/8.0 Initializr overlay or Docker container. java-cas-client 4.x is used once uPortal is on Jakarta. |
 | MOD-Q4 | Schema management after hbm2ddl? (**Superseded by MOD-D11** for the 5.17 → 6.0 path, while Flyway vs Liquibase is still open for changes *after* 6.0) | **Open (licence issue).** Liquibase 5.0 moved to the FSL (not OSI), which Apereo may not accept. Flyway OSS is Apache-2.0 with `baselineOnMigrate`, but needs per-vendor SQL. The candidate is Hibernate 7 `SchemaManager` for fresh installs, plus Flyway versioned migrations (baseline = 5.17 schema) for upgrades, tested on all vendors with Testcontainers. Needs community input. |
 | MOD-Q5 | Portlets: transform or port the WARs, or replace them with web components / Soffit? | **Proposed:** follow Sakai's approach and keep Pluto in-tree on `jakarta.servlet`, with the `javax.portlet` 2.0 API rebuilt against `jakarta.servlet`. Fork Spring Portlet MVC for the 37 built-in portlets. Use build-time conversion of the bundled portlet WARs only *until they are replaced*. Over time, move content portlets to web components (Vue 2 is EOL, so Lit or Vue 3) and Soffit. The prototype will verify that the converted WARs run. |
-| MOD-Q6 | Propose 6.0 as an RFC in `uPortal-Project/community` Discussions before opening the large PRs? | **Recommended** |
+| MOD-Q6 | Propose 6.0 as an RFC in `uPortal-Project/community` Discussions before opening the large PRs? | **Superseded by MOD-D36:** the decisions are ADRs, indexed in [`docs/developer/adr/README.md`](../adr/README.md). |
 | MOD-Q7 | What scale defines "high traffic" for G-index (users, concurrent sessions, events per day, retention)? | **Answered:** large campus. About 100k users, 5k concurrent sessions, 5M raw events/day, 30 days of raw events kept, 2 years of aggregations. |
 | MOD-Q8 | Can an adopter share anonymised production query statistics (`pg_stat_statements` or MySQL performance_schema digests)? | Asked |
 | MOD-Q9 | Which open-source alternatives exist for the portlet container, Spring Portlet MVC and Web Flow's portlet support, and what could replace the uPortal parts that need them? | **Proposed:** only Liferay maintains alternatives. Plutonium (Jakarta Portlet 4.0 container) and PortletMVC4Spring, which includes a `webflow` module, are both Apache-2.0. But they are milestones hosted outside Maven Central, and they have one maintainer. They target Spring 6.2 only and need Portlet 3/4 with `jakarta.portlet`, so every portlet would have to be rebuilt. Sakai maintains a copy of Pluto in its own tree. A community mirror (`sustain/portals-pluto-jakarta`, Dec 2025) shows little activity. Servlet-mode Spring Web Flow 4.0.x is maintained for Spring 7, and the flow XML can be reused. Plan: 6.0 includes the vendored Portlet MVC + Web Flow portlet integration classes (P3-1) until they are replaced, and PortletMVC4Spring 5.3.4 is the reference for adapting the vendored code to Spring 5. In 6.x, the 37 built-in portlets and 26 admin flows move to a servlet-based admin console (Spring MVC + servlet Web Flow 4, or REST + web components), one flow at a time, checked by the `tests/ux/admin` specs. Content moves to a native web-component channel, and Soffit becomes a pipeline component. The container is then kept only as a compatibility layer for third-party portlets until 7.0. Next step: a spike converting one admin flow (Groups Manager) to measure the effort. |
