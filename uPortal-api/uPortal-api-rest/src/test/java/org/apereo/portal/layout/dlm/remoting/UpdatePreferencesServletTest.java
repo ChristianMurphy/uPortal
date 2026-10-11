@@ -18,6 +18,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -346,6 +348,50 @@ public class UpdatePreferencesServletTest {
         verify(ulm).deleteNode(getFavoritedPortlet3SubscribeId);
         verify(ulm).saveUserLayout();
         verify(messageSource).getMessage(eq("success.remove.portlet"), any(), any(), any());
+    }
+
+    private static String repeat(String s, int times) {
+        return new String(new char[times]).replace("\0", s);
+    }
+
+    /** UP_LAYOUT_STRUCT.NAME holds 35 characters; 35 emoji are 70 UTF-16 chars (MOD-I272) */
+    @Test
+    public void testRenameTabAcceptsNamesUpToTheColumnSize() throws IOException {
+        final IUserLayoutFolderDescription tab = mock(IUserLayoutFolderDescription.class);
+        when(ulm.getNode("s1")).thenReturn(tab);
+        when(ulm.canUpdateNode(tab)).thenReturn(true);
+        req.setParameter("tabId", "s1");
+        req.setParameter("tabName", repeat("\uD83D\uDE00", 35));
+        updatePreferencesServlet.renameTab(req, res);
+        assertEquals(200, res.getStatus());
+        verify(tab).setName(repeat("\uD83D\uDE00", 35));
+    }
+
+    @Test
+    public void testRenameTabRefusesNamesLongerThanTheColumn() throws IOException {
+        final IUserLayoutFolderDescription tab = mock(IUserLayoutFolderDescription.class);
+        when(ulm.getNode("s1")).thenReturn(tab);
+        when(ulm.canUpdateNode(tab)).thenReturn(true);
+        req.setParameter("tabId", "s1");
+        req.setParameter("tabName", repeat("t", 36));
+        updatePreferencesServlet.renameTab(req, res);
+        assertEquals(400, res.getStatus());
+        verify(ulm, never()).updateNode(any());
+    }
+
+    @Test
+    public void testAddTabRefusesNamesLongerThanTheColumn() throws IOException {
+        updatePreferencesServlet.setPersonEntityService(
+                this.createPersonEntityService(personEntity));
+        when(authPrincipal.hasPermission(
+                        IPermission.PORTAL_SYSTEM,
+                        IPermission.ADD_TAB_ACTIVITY,
+                        IPermission.ALL_TARGET))
+                .thenReturn(true);
+        req.setParameter("tabName", repeat("t", 36));
+        updatePreferencesServlet.addTab(req, res, new String[] {"100"});
+        assertEquals(400, res.getStatus());
+        verify(ulm, never()).addNode(any(), any(), any());
     }
 
     private UpdatePreferencesServlet.IPersonEntityService createPersonEntityService(

@@ -298,6 +298,9 @@ class ModernTabManager {
             const input = document.createElement('input');
             input.type = 'text';
             input.value = originalText;
+            // UP_LAYOUT_STRUCT.NAME holds 35 characters. maxLength counts UTF-16 units, so a
+            // name with emoji gets fewer, but never more than the server takes.
+            input.maxLength = 35;
             input.className = 'portal-navigation-label';
 
             // Size input to match text width
