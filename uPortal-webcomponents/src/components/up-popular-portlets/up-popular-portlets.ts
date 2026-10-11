@@ -1,7 +1,7 @@
 import { css, html, nothing, svg, type PropertyValues, type TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { waitFor } from 'xstate';
-import { formatMessage, type Messages } from '../../lib/i18n';
+import { formatMessage, type MessageArg, type Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
 import { decodeEntities, POPULAR_PORTLETS_MESSAGES } from './messages';
@@ -205,9 +205,9 @@ export class UpPopularPortlets extends UpElement {
     }
 
     /** Messages.properties holds some of these texts as HTML; they are shown as text. */
-    protected override msg(key: string, ...args: (string | number)[]): string {
+    protected override msg(key: string, ...args: MessageArg[]): string {
         const pattern = this.localizedMessages[key] ?? this.defaultMessages[key] ?? key;
-        return formatMessage(decodeEntities(pattern), args);
+        return formatMessage(decodeEntities(pattern), args, this.resolvedLocale);
     }
 
     protected override willUpdate(changed: PropertyValues<this>): void {
