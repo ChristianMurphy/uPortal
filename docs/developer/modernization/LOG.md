@@ -1610,6 +1610,19 @@ This answers MOD-Q3 as proposed.
 * **Later:** the portal's own CAS client moves to Apereo cas-client 4.x in P6/P7, tested by the
   CAS 8 job.
 
+### MOD-D41: the G-index workload and index audit (MOD-D12) is in uPortal-start CI
+
+* **What it is:** a generator for large-campus data, a workload driver, a statement and plan
+  audit with an allowlist, and CI jobs, in uPortal-start (`docs/developer/modernization/notes/g-index.md`
+  there). Every push runs PostgreSQL 18 at 1/100 scale with seeded faults. The nightly set runs
+  PostgreSQL 18 and MariaDB 12.3 at 1/20.
+* **Result:** the recommended 6.0 index set is R1 to R15 in that note; R7 is a code change, the
+  rest are DDL. At 100,000 accounts the proposed set cut total database time by 41 % and the
+  login lookup from 67 ms to 0.19 ms.
+* **Status (2026-10-11): landed** in uPortal-start with the local-login batch. The R1 to R15
+  changes go into the 6.0 schema (MOD-D11, MOD-D12). R1 is also a 5.17.x candidate, since it only
+  adds an index.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1775,6 +1788,13 @@ This answers MOD-Q3 as proposed.
 | MOD-I181 | Login | A failed local login redirects to the guest page without a message. "Invalid username or password" appears only when the user opens the login form again. | **Open**, uPortal. Fix: redirect a failed local login back to `/p/login`. The uPortal-start spec asserts the current behaviour. |
 | MOD-I182 | uPortal-start | `cas-proxy-test-portlet` never received a proxy ticket: uPortal kept `casTicketUserInfoService` commented out, and uPortal-start never set `proxyReceptorUrl` or `proxyCallbackUrl`. | **Fixed** in uPortal-start (MOD-D40): the bean is in `overridesContext.xml` for both modes and returns an empty map without a CAS session. A spec checks both cases. |
 | MOD-I183 | uPortal-start | `npm run lint` fails with 8 `no-undef` errors in `tests/db/migrate/matrix.mjs`, and CI never runs that lint. | **Open**. |
+| MOD-I184 | Persistence | Local-account login reads all of `UP_PERSON_ATTR`: `USER_DIR_ID` has no index, so at 100,000 accounts each login spends about 130 ms in two lookups. | **Open**. G-index R1 fixes it (MOD-D41). It is also a 5.17.x upstream candidate. |
+| MOD-I185 | Events | The aggregation job's `DISTINCT` group query (`getAggregatedGroupMappings`) reads whole aggregation tables every minute. It is the top statement by total time and grows with history. | **Open**. G-index R7 fixes it with a code change, then R8. |
+| MOD-I186 | Groups | The groups-of-a-member lookup has no index on `UP_GROUP_MEMBERSHIP.MEMBER_KEY`, and it runs on every login and permission check. | **Open**. G-index R12 fixes it. |
+| MOD-I187 | Events | `UP_RAW_EVENTS` has five unused indexes, one on the `AGGREGATED` flag, which is updated about 5 million times a day at large-campus scale. | **Open**. G-index R9 fixes it and made those statements 53 % to 64 % faster. |
+| MOD-I188 | Persistence | Foreign keys to parents that are purged or deleted (cookies, unique strings, portlet entities) have no index. | **Open**. G-index R2 to R4 fix it. |
+| MOD-I189 | Persistence | The 5.17.9 MariaDB schema has 43 duplicate or covered InnoDB foreign-key indexes. The integration build creates none of them. | **Open**. G-index R10 fixes it. |
+| MOD-I190 | Deployment | The portal and its portlets together use all 100 default PostgreSQL connections. | **Open**. Document a connection budget for 6.0. |
 
 ## Open questions
 
