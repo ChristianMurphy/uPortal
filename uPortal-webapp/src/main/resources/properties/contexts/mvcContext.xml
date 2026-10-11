@@ -31,7 +31,8 @@
     <bean id="maxInactiveFilter" class="org.apereo.portal.url.MaxInactiveFilter" />
     <bean id="personalizationFilter" class="org.apereo.portal.utils.web.PersonalizationFilter" />
     <bean id="personalizationLogic" class="org.apereo.portal.utils.personalize.PersonalizerImpl" />
-    <bean id="urlCanonicalizingFilter" class="org.apereo.portal.url.UrlCanonicalizingFilter" />
+    <bean id="urlCanonicalizingFilter" class="org.apereo.portal.url.UrlCanonicalizingFilter"
+        p:loginRefUrlEncoder-ref="loginRefUrlEncoder" />
     <bean id="createPortletCookieFilter" class="org.apereo.portal.utils.web.CreatePortletCookieFilter"/>
 
     <bean id="remoteCookieCheckFilter" class="org.apereo.portal.utils.web.RemoteCookieCheckFilter">
@@ -77,9 +78,17 @@
                  not the requested content
            - (3) there is a strategy for external login (LoginRefUrlEncoder
                  bean) configured
+
+         login.refUrlEncoder picks the strategy, loginRefUrlEncoder:  'cas' (casRefUrlEncoder)
+         when the Sign In URL is a CAS server, 'local' (localRefUrlEncoder) when it is the
+         portal's own login form.  casRefUrlEncoder stays defined in both cases:  the Sign In
+         button uses it.
     -->
     <bean id="casRefUrlEncoder" class="org.apereo.portal.url.CasLoginRefUrlEncoder"
         p:casLoginUrl="${org.apereo.portal.channels.CLogin.CasLoginUrl}" p:urlCustomizer-ref="authUrlCustomizer"/>
+    <bean id="localRefUrlEncoder" class="org.apereo.portal.url.LocalLoginRefUrlEncoder"
+        p:loginUrl="${org.apereo.portal.channels.CLogin.CasLoginUrl}" p:urlCustomizer-ref="authUrlCustomizer"/>
+    <alias name="${login.refUrlEncoder:cas}RefUrlEncoder" alias="loginRefUrlEncoder"/>
 
     <!--
      | Message source for this context, loaded from localized "messages_xx" files
