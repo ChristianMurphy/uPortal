@@ -51,6 +51,14 @@ final class QueryVendorDifferences {
     private static final Set<DatabaseVendor> CASE_INSENSITIVE =
             EnumSet.of(DatabaseVendor.MYSQL, DatabaseVendor.MARIADB, DatabaseVendor.SQLSERVER);
 
+    /**
+     * The default collations of MySQL and MariaDB also ignore accents (_ai_), so "ecole" finds
+     * "\u00c9cole". SQL Server's SQL_Latin1_General_CP1_CI_AS and the other databases compare
+     * accents.
+     */
+    private static final Set<DatabaseVendor> ACCENT_INSENSITIVE =
+            EnumSet.of(DatabaseVendor.MYSQL, DatabaseVendor.MARIADB);
+
     private static final String SEPARATOR = " -> ";
     private static final String ELEMENT = "   ";
     private static final Pattern QUOTED = Pattern.compile("\"([^\"]*)\"");
@@ -76,23 +84,6 @@ final class QueryVendorDifferences {
                     golden,
                     "portletDefinitionDao.getPortletDefinitionByName(\"weather\")",
                     "portletDefinitionDao.getPortletDefinitionByName(\"Weather\")");
-            // The partial search upper-cases the term only (MOD-I142), so here it matches
-            for (final String term : Arrays.asList("cal", "CAL", "Calendar")) {
-                sameAs(
-                        differences,
-                        golden,
-                        "portletDefinitionDao.searchForPortlets(\"" + term + "\", true)",
-                        "portletDefinitionDao.searchForPortlets(\"Calendar\", false)");
-            }
-            sameAs(
-                    differences,
-                    golden,
-                    "portletDefinitionDao.searchForPortlets(\"calendar\", false)",
-                    "portletDefinitionDao.searchForPortlets(\"Calendar\", false)");
-            // "%\u00dcBER%" matches the title "\u00dcbersicht"
-            differences.put(
-                    "portletDefinitionDao.searchForPortlets(\"\\u00fcber\", true)",
-                    listOf(golden, "portletDefinitionDao.getPortletDefinitionByName(unicode)"));
             // The unique key (CODE, LOCALE) rejects "Greeting" next to "greeting"
             differences.put(
                     "messageDao.createMessage(\"Greeting\", en, ...) next to \"greeting\"",
@@ -132,6 +123,13 @@ final class QueryVendorDifferences {
                     "pagsGroupDefinitionDao.getPersonAttributesGroupDefinitionByName(\"students\")",
                     "pagsGroupDefinitionDao.getPersonAttributesGroupDefinitionByName(\"Students\")");
         }
+        if (ACCENT_INSENSITIVE.contains(vendor)) {
+            sameAs(
+                    differences,
+                    golden,
+                    "portletDefinitionDao.searchForPortlets(\"ecole\", CONTAINS)",
+                    "portletDefinitionDao.searchForPortlets(\"\\u00e9cole\", CONTAINS)");
+        }
         switch (vendor) {
             case MYSQL:
             case MARIADB:
@@ -150,6 +148,17 @@ final class QueryVendorDifferences {
                 differences.put(
                         "portletDefinitionDao.getPortletDefinitionByName(unicode)",
                         Arrays.asList("null"));
+                // The varchar title holds the Greek letters as "?", so no Greek term finds it
+                for (final String label :
+                        Arrays.asList(
+                                "portletDefinitionDao.searchForPortlets(\"\\u03a3\\u03bf\\u03c6"
+                                        + "\\u03af\\u03b1 \\u03a0\\u03cd\\u03bb\\u03b7\", false)",
+                                "portletDefinitionDao.searchForPortlets(\"\\u03c3\\u03bf\\u03c6"
+                                        + "\\u03af\\u03b1\", CONTAINS)",
+                                "portletDefinitionDao.searchForPortlets(\"\\u03a0\\u038e\\u039b"
+                                        + "\\u0397\", CONTAINS)")) {
+                    differences.put(label, Arrays.asList("ArrayList of 0"));
+                }
                 break;
             default:
                 break;
@@ -215,16 +224,6 @@ final class QueryVendorDifferences {
             String label,
             String sameAsLabel) {
         differences.put(label, resultOf(golden, sameAsLabel));
-    }
-
-    /** An ArrayList holding the single results of {@code labels} */
-    private static List<String> listOf(List<String> golden, String... labels) {
-        final List<String> result = new ArrayList<>();
-        result.add("ArrayList of " + labels.length);
-        for (final String label : labels) {
-            result.add("- " + resultOf(golden, label).get(0));
-        }
-        return result;
     }
 
     /** The quoted strings after the label, as {@code vendor} stores them */

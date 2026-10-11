@@ -46,10 +46,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div id="${n}" class="card portlet user-mgr view-reviewuser" role="section">
+<div id="${n}" class="card portlet user-mgr view-reviewuser">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading">${ fn:escapeXml(person.name )}</h2>
         <div class="btn-group toolbar">
                 <c:if test="${ canEdit }">

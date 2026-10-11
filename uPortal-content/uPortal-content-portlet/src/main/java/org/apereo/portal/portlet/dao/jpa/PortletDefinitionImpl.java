@@ -83,7 +83,7 @@ import org.springframework.util.StringUtils;
         allocationSize = 5)
 @NaturalIdCache(region = "org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl-NaturalId")
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class PortletDefinitionImpl implements IPortletDefinition {
 
     /*
@@ -178,7 +178,7 @@ public class PortletDefinitionImpl implements IPortletDefinition {
     @JoinColumn(name = "PORTLET_DEF_ID", nullable = false)
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     @Fetch(FetchMode.SELECT) // FM JOIN does BAD things to collections that support duplicates
-    @OrderBy("ENTRY_DATE ASC")
+    @OrderBy("ENTRY_DATE ASC, ENTRY_ID ASC")
     private List<IPortletLifecycleEntry> lifecycleEntries = new ArrayList<>();
 
     /**
@@ -199,7 +199,7 @@ public class PortletDefinitionImpl implements IPortletDefinition {
     @ElementCollection(fetch = FetchType.EAGER, targetClass = PortletLocalizationData.class)
     @CollectionTable(name = "UP_PORTLET_DEF_MDATA", joinColumns = @JoinColumn(name = "PORTLET_ID"))
     @MapKeyColumn(name = "LOCALE", length = 64)
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private final Map<String, PortletLocalizationData> localizations = new LinkedHashMap<>();
 

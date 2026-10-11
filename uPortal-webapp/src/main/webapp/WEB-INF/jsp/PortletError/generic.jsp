@@ -21,9 +21,9 @@
 <%@ include file="/WEB-INF/jsp/include.jsp"%>
 <c:set var="n"><portlet:namespace/></c:set>
 
-<div id="${n}" class="card portlet error view-detailed" role="section">
+<div id="${n}" class="card portlet error view-detailed">
 
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <p><spring:message code="errorportlet.main"/></p>
 
         <div class="breadcrumb">

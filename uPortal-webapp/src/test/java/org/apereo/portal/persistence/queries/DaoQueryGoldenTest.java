@@ -53,6 +53,7 @@ import org.apereo.portal.persondir.LocalAccountQuery;
 import org.apereo.portal.portlet.dao.IMarketplaceRatingDao;
 import org.apereo.portal.portlet.dao.IPortletCookieDao;
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao;
+import org.apereo.portal.portlet.dao.IPortletDefinitionDao.SearchMatch;
 import org.apereo.portal.portlet.dao.IPortletEntityDao;
 import org.apereo.portal.portlet.dao.IPortletTypeDao;
 import org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl;
@@ -177,6 +178,14 @@ public class DaoQueryGoldenTest {
             {"unicode", "Zoë's 日本語 Portlet", "Übersicht", "p"},
             {"percent", "100%_Done", "Wildcards 100%_Done", "x"},
             {"trailing", "Trailing Space ", "Trailing Space ", "p"},
+            {"bang", "Bang!Portlet", "100xyDone", "p"},
+            {"bracket", "Sel[x]ect", "Brackets [x]", "p"},
+            {
+                "ecole",
+                "\u00c9cole de Musique",
+                "\u03a3\u03bf\u03c6\u03af\u03b1 \u03a0\u03cd\u03bb\u03b7",
+                "p"
+            },
         };
         final List<IPortletDefinition> saved = new ArrayList<>();
         for (final String[] d : definitions) {
@@ -247,10 +256,54 @@ public class DaoQueryGoldenTest {
                             + "\", true)",
                     () -> definitionDao.searchForPortlets(term, true));
         }
-        for (final String term : Arrays.asList("Calendar", "calendar", "Campus Weather")) {
+        for (final String term :
+                Arrays.asList(
+                        "Calendar",
+                        "calendar",
+                        "Campus Weather",
+                        "\u03a3\u03bf\u03c6\u03af\u03b1 \u03a0\u03cd\u03bb\u03b7")) {
             check(
-                    "portletDefinitionDao.searchForPortlets(\"" + term + "\", false)",
+                    "portletDefinitionDao.searchForPortlets(\""
+                            + GoldenRenderer.escape(term)
+                            + "\", false)",
                     () -> definitionDao.searchForPortlets(term, false));
+        }
+        // The partial searches ignore case and find %, _ and the escape character ! literally
+        final Object[][] searches = {
+            {"campus", SearchMatch.STARTS_WITH},
+            {"cAL", SearchMatch.STARTS_WITH},
+            {"%", SearchMatch.STARTS_WITH},
+            {"CALENDAR", SearchMatch.ENDS_WITH},
+            {"%_done", SearchMatch.ENDS_WITH},
+            {"campus", SearchMatch.ENDS_WITH},
+            {"_", SearchMatch.CONTAINS},
+            {"100", SearchMatch.CONTAINS},
+            {"!", SearchMatch.CONTAINS},
+            {"g!p", SearchMatch.CONTAINS},
+            {"!!", SearchMatch.CONTAINS},
+            // [ starts a character class in SQL Server's LIKE (MOD-I223)
+            {"[", SearchMatch.CONTAINS},
+            {"]", SearchMatch.CONTAINS},
+            {"[x]", SearchMatch.CONTAINS},
+            {"sel[", SearchMatch.STARTS_WITH},
+            {"x]", SearchMatch.ENDS_WITH},
+            // Accented and Greek terms (MOD-D49): case folds in any script, accents count
+            {"\u00e9cole", SearchMatch.CONTAINS},
+            {"\u00c9COLE", SearchMatch.CONTAINS},
+            {"ecole", SearchMatch.CONTAINS},
+            {"\u03c3\u03bf\u03c6\u03af\u03b1", SearchMatch.CONTAINS},
+            {"\u03a0\u038e\u039b\u0397", SearchMatch.CONTAINS},
+        };
+        for (final Object[] search : searches) {
+            final String term = (String) search[0];
+            final SearchMatch match = (SearchMatch) search[1];
+            check(
+                    "portletDefinitionDao.searchForPortlets(\""
+                            + GoldenRenderer.escape(term)
+                            + "\", "
+                            + match
+                            + ")",
+                    () -> definitionDao.searchForPortlets(term, match));
         }
 
         check(

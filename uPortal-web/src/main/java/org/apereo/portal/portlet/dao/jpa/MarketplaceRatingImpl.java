@@ -51,7 +51,11 @@ class MarketplaceRatingImpl implements IMarketplaceRating {
     @Override
     public void setReview(String review) {
         if (review != null) {
-            review = review.trim().substring(0, Math.min(review.length(), REVIEW_MAX_LENGTH));
+            // Trim first, then keep at most REVIEW_MAX_LENGTH whole characters (code points)
+            review = review.trim();
+            if (review.codePointCount(0, review.length()) > REVIEW_MAX_LENGTH) {
+                review = review.substring(0, review.offsetByCodePoints(0, REVIEW_MAX_LENGTH));
+            }
         }
         this.review = review;
     }

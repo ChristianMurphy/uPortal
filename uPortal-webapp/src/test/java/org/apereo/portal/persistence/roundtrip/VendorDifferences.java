@@ -119,6 +119,9 @@ final class VendorDifferences {
             final DateTime dateTime = (DateTime) value;
             return new DateTime(timestampMillis(vendor, dateTime.getMillis()), dateTime.getZone());
         }
+        if (value instanceof Instant) {
+            return Instant.ofEpochMilli(timestampMillis(vendor, ((Instant) value).toEpochMilli()));
+        }
         if (value instanceof Timestamp) {
             return new Timestamp(timestampMillis(vendor, ((Timestamp) value).getTime()));
         }

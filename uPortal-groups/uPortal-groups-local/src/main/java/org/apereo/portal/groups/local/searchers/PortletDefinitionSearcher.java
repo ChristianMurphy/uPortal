@@ -22,6 +22,7 @@ import org.apereo.portal.EntityIdentifier;
 import org.apereo.portal.IBasicEntity;
 import org.apereo.portal.groups.GroupsException;
 import org.apereo.portal.groups.local.ITypedEntitySearcher;
+import org.apereo.portal.portlet.dao.IPortletDefinitionDao.SearchMatch;
 import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.registry.IPortletDefinitionRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,24 +40,33 @@ public class PortletDefinitionSearcher implements ITypedEntitySearcher {
         this.portletDefinitionRegistry = portletDefinitionRegistry;
     }
 
-    // Internal search, so shouldn't be called as case insensitive.
+    /**
+     * The partial searches ignore case whatever the method (MOD-I142), so each _CI method maps to
+     * the same search as its plain one. DISCRETE is case-sensitive and DISCRETE_CI isn't
+     * (MOD-I203).
+     */
     @Override
     public EntityIdentifier[] searchForEntities(String query, SearchMethod method)
             throws GroupsException {
-        boolean allowPartial = true;
-
+        final SearchMatch match;
         switch (method) {
             case DISCRETE:
-                allowPartial = false;
+                match = SearchMatch.EXACT;
+                break;
+            case DISCRETE_CI:
+                match = SearchMatch.EXACT_IGNORE_CASE;
                 break;
             case STARTS_WITH:
-                query = query + "%";
+            case STARTS_WITH_CI:
+                match = SearchMatch.STARTS_WITH;
                 break;
             case ENDS_WITH:
-                query = "%" + query;
+            case ENDS_WITH_CI:
+                match = SearchMatch.ENDS_WITH;
                 break;
             case CONTAINS:
-                query = "%" + query + "%";
+            case CONTAINS_CI:
+                match = SearchMatch.CONTAINS;
                 break;
             default:
                 throw new GroupsException("Unknown search type");
@@ -64,7 +74,7 @@ public class PortletDefinitionSearcher implements ITypedEntitySearcher {
 
         // get the list of matching portlet definitions
         final List<IPortletDefinition> definitions =
-                this.portletDefinitionRegistry.searchForPortlets(query, allowPartial);
+                this.portletDefinitionRegistry.searchForPortlets(query, match);
         if (log.isDebugEnabled()) {
             log.debug("Found " + definitions.size() + " matching definitions for query " + query);
         }

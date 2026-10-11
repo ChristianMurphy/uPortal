@@ -49,5 +49,31 @@ public interface IPortletDefinitionDao {
 
     List<IPortletDefinition> getPortletDefinitions();
 
-    List<IPortletDefinition> searchForPortlets(String term, boolean allowPartial);
+    /** How {@link #searchForPortlets(String, SearchMatch)} compares a term with a name or title */
+    enum SearchMatch {
+        /** Equal to the term, case-sensitive on every database */
+        EXACT,
+        /** Equal to the term, ignoring case (MOD-I203) */
+        EXACT_IGNORE_CASE,
+        /** Starts with the term, ignoring case */
+        STARTS_WITH,
+        /** Ends with the term, ignoring case */
+        ENDS_WITH,
+        /** Contains the term, ignoring case */
+        CONTAINS
+    }
+
+    /**
+     * Same as {@link #searchForPortlets(String, SearchMatch)} with {@link SearchMatch#CONTAINS} if
+     * {@code allowPartial} is true, and {@link SearchMatch#EXACT} if it is false.
+     */
+    default List<IPortletDefinition> searchForPortlets(String term, boolean allowPartial) {
+        return searchForPortlets(term, allowPartial ? SearchMatch.CONTAINS : SearchMatch.EXACT);
+    }
+
+    /**
+     * Finds the portlet definitions whose name or title matches {@code term}. Every character of
+     * the term is literal: {@code %} and {@code _} are not wildcards.
+     */
+    List<IPortletDefinition> searchForPortlets(String term, SearchMatch match);
 }

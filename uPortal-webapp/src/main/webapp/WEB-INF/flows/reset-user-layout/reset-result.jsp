@@ -24,10 +24,10 @@
 </portlet:actionURL>
         
 <!-- Portlet -->
-<div class="card portlet reset-layout view-result" role="section">
+<div class="card portlet reset-layout view-result">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
     	<h2 class="title" role="heading"><spring:message code="reset.user.layout"/></h2>
     </div>
     

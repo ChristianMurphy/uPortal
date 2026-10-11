@@ -46,6 +46,7 @@ import org.apereo.portal.dbmigrate.it.DbServer;
 import org.apereo.portal.dbmigrate.it.DbServer.Kind;
 import org.apereo.portal.dbmigrate.it.TestDatabase;
 import org.apereo.portal.dbmigrate.report.MigrationReport;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -62,7 +63,8 @@ import org.junit.runners.Parameterized.Parameters;
  *   <li>one corrupted target row (changed, deleted, added, a LOB byte, a timestamp second, ...)
  *       fails {@code --verify-only}, naming the table and only that table;
  *   <li>a plan the target cannot take (a missing table, MOD-I92; an unexpected source column; a
- *       target constraint the source data violates) exits with 2 and writes nothing;
+ *       target constraint the source data violates; source text outside a target column's character
+ *       set, MOD-I202) exits with 2 and writes nothing;
  *   <li>a generator set below the copied ids fails verification.
  * </ul>
  */
@@ -652,6 +654,11 @@ public class CopyFaultIT {
             ToolRun run = copyWithFault(s, t, (thread, blocker) -> server.stop());
             assertFailedClosed(run);
             assertEquals(run.toString(), DbMigrate.FAILED, run.status);
+            // The table being copied when the server stopped failed for the lost connection, not
+            // for a fault of the tool (any exception ends as FAILED)
+            String error = run.table("UP_SEQUENCE").error;
+            assertNotNull(run.toString(), error);
+            assertTrue(error, error.toLowerCase(Locale.ROOT).contains("connection"));
         } finally {
             server.stop();
         }
@@ -859,14 +866,16 @@ public class CopyFaultIT {
         assertPlanRefused(
                 CopyFaultIT::noChange,
                 t -> t.execute(notNull("UP_THING", "CODE", "CHAR(8)")),
-                "CODE");
+                "UP_THING.CODE is NOT NULL, but");
     }
 
     @Test
     public void aTargetColumnTooShortForTheDataFailsThePlan() throws Exception {
         // TITLE values are up to 10 characters long
         assertPlanRefused(
-                CopyFaultIT::noChange, t -> t.execute(resize("UP_THING", "TITLE", 5)), "TITLE");
+                CopyFaultIT::noChange,
+                t -> t.execute(resize("UP_THING", "TITLE", 5)),
+                "UP_THING.TITLE holds 5 characters, but");
     }
 
     @Test
@@ -875,7 +884,7 @@ public class CopyFaultIT {
         assertPlanRefused(
                 CopyFaultIT::noChange,
                 t -> t.execute("CREATE UNIQUE INDEX UQ_THING_TYPE ON UP_THING (TYPE_ID)"),
-                "UP_THING");
+                "has a unique key on [TYPE_ID], but");
     }
 
     @Test
@@ -886,7 +895,42 @@ public class CopyFaultIT {
                     s.execute("UPDATE UP_THING SET TYPE_ID = 77 WHERE THING_ID = 15");
                 },
                 CopyFaultIT::noChange,
-                "UP_THING_TYPE");
+                "reference no row of UP_THING_TYPE");
+    }
+
+    /** An emoji in one source title (THING_ID 9). */
+    private static void emojiTitle(TestDatabase s) throws SQLException {
+        s.execute("UPDATE UP_THING SET TITLE = 'Thing 9 \uD83C\uDF31' WHERE THING_ID = 9");
+    }
+
+    @Test
+    public void sourceTextOutsideTheTargetCodePageFailsThePlan() throws Exception {
+        // MOD-I201, MOD-I202: VARCHAR on SQL Server's default collation, and a latin1 column on
+        // MySQL/MariaDB, keep windows-1252
+        Assume.assumeTrue(
+                "PostgreSQL and Oracle choose the character set per database",
+                kind == Kind.SQLSERVER || kind.isMySqlFamily());
+        assertPlanRefused(
+                CopyFaultIT::emojiTitle,
+                t -> {
+                    if (kind.isMySqlFamily()) {
+                        t.execute(
+                                "ALTER TABLE UP_THING MODIFY TITLE VARCHAR(200) CHARACTER SET latin1");
+                    }
+                },
+                "UP_THING.TITLE holds windows-1252 only, but 1 source rows of UP_THING.TITLE have"
+                        + " other characters: the one with THING_ID = 9 has U+1F331");
+    }
+
+    @Test
+    public void anEmojiForAUtf8mb3TargetColumnFailsThePlan() throws Exception {
+        Assume.assumeTrue("utf8mb3 is MySQL's and MariaDB's", kind.isMySqlFamily());
+        assertPlanRefused(
+                CopyFaultIT::emojiTitle,
+                t ->
+                        t.execute(
+                                "ALTER TABLE UP_THING MODIFY TITLE VARCHAR(200) CHARACTER SET utf8mb3"),
+                "UP_THING.TITLE holds Unicode without supplementary characters only");
     }
 
     private String addColumn(String table, String column, String type, boolean notNull) {

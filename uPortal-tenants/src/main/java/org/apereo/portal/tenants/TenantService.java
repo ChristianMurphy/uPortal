@@ -42,7 +42,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class TenantService {
 
-    private static final String TENANT_NAME_VALIDATOR_REGEX = "^[\\w ]{5,32}$";
+    /**
+     * A tenant name is text people read: letters, combining marks, digits and spaces in any script,
+     * 5 to 32 characters counted as code points (MOD-D49)
+     */
+    private static final String TENANT_NAME_VALIDATOR_REGEX = "^[\\p{L}\\p{M}\\p{N} ]{5,32}$";
+
+    private static final String TENANT_NAME_RULE =
+            "names have 5 to 32 letters, digits or spaces, in any script";
     private static final Pattern TENANT_NAME_VALIDATOR_PATTERN =
             Pattern.compile(TENANT_NAME_VALIDATOR_REGEX);
     private static final String TENANT_FNAME_VALIDATOR_REGEX = "^[a-z_0-9]{5,32}$";
@@ -122,14 +129,14 @@ public class TenantService {
         // Input validation
         Validate.validState(
                 TENANT_NAME_VALIDATOR_PATTERN.matcher(name).matches(),
-                "Invalid tenant name '%s'  -- names must match %s .",
+                "Invalid tenant name '%s' -- %s.",
                 name,
-                TENANT_NAME_VALIDATOR_REGEX);
+                TENANT_NAME_RULE);
         Validate.validState(
                 TENANT_FNAME_VALIDATOR_PATTERN.matcher(fname).matches(),
-                "Invalid tenant fname '%s'  -- fnames must match %s .",
-                fname,
-                TENANT_FNAME_VALIDATOR_REGEX);
+                "Invalid tenant fname '%s' -- fnames have 5 to 32 of the characters a-z, 0-9"
+                        + " and _.",
+                fname);
 
         // Create the concrete tenant object
         final ITenant result = tenantDao.instantiate();
@@ -352,9 +359,9 @@ public class TenantService {
     public void validateName(final String name) {
         Validate.validState(
                 TENANT_NAME_VALIDATOR_PATTERN.matcher(name).matches(),
-                "Invalid tenant name '%s'  -- names must match %s .",
+                "Invalid tenant name '%s' -- %s.",
                 name,
-                TENANT_NAME_VALIDATOR_REGEX);
+                TENANT_NAME_RULE);
     }
 
     /**
@@ -365,9 +372,9 @@ public class TenantService {
     public void validateFname(final String fname) {
         Validate.validState(
                 TENANT_FNAME_VALIDATOR_PATTERN.matcher(fname).matches(),
-                "Invalid tenant fname '%s'  -- fnames must match %s .",
-                fname,
-                TENANT_FNAME_VALIDATOR_REGEX);
+                "Invalid tenant fname '%s' -- fnames have 5 to 32 of the characters a-z, 0-9"
+                        + " and _.",
+                fname);
     }
 
     /**

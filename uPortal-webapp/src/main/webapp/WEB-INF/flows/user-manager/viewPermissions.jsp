@@ -111,10 +111,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div class="card portlet prm-mgr" role="section">
+<div class="card portlet prm-mgr">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header portlet-titlebar" role="sectionhead">
+    <div class="card-header portlet-titlebar">
         <h2 class="title" role="heading">
             <a href="${ userUrl }">${ fn:escapeXml(person.name )}</a> >
             <spring:message code="permissions"/>

@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,10 +35,12 @@ import org.apereo.portal.dbmigrate.plan.MigrationPlan;
 import org.apereo.portal.dbmigrate.plan.Planner;
 import org.apereo.portal.dbmigrate.plan.SchemaProfile;
 import org.apereo.portal.dbmigrate.plan.TableMapping;
+import org.apereo.portal.dbmigrate.plan.TargetCodePageChecks;
 import org.apereo.portal.dbmigrate.plan.TargetConstraintChecks;
 import org.apereo.portal.dbmigrate.report.MigrationReport;
 import org.apereo.portal.dbmigrate.rules.RuleSet;
 import org.apereo.portal.dbmigrate.schema.Dialect;
+import org.apereo.portal.dbmigrate.schema.Names;
 import org.apereo.portal.dbmigrate.schema.SchemaModel;
 import org.apereo.portal.dbmigrate.schema.SchemaReader;
 import org.apereo.portal.dbmigrate.schema.Table;
@@ -67,6 +70,10 @@ public final class DbMigrate {
     public static final int PLAN_ERROR = 2;
 
     private final MigrationOptions options;
+
+    /** The source columns the profiles convert (upper-case TABLE.COLUMN); null when none */
+    private Set<String> conversionColumns;
+
     private final PrintStream out;
     private final MigrationReport report = new MigrationReport();
     private final AtomicLong maxUsedHeap = new AtomicLong();
@@ -126,12 +133,22 @@ public final class DbMigrate {
         options(report.options);
         SchemaProfile sourceProfile = SchemaProfile.load(options.sourceProfile());
         SchemaProfile targetProfile = SchemaProfile.load(options.targetProfile());
-        RuleSet rules = RuleSet.empty();
+        RuleSet userRules = RuleSet.empty();
         for (Path p : options.ruleFiles()) {
             try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
-                rules.add(r, p.toString());
+                userRules.add(r, p.toString());
             }
         }
+        // A copy into a newer profile can convert values on the way (from-<source>.rules)
+        RuleSet conversions =
+                targetProfile.conversionsFrom(
+                        sourceProfile.name(),
+                        options.sourceZone() == null ? "UTC" : options.sourceZone().getId());
+        conversionColumns = conversions == null ? null : conversions.transformedColumns();
+        RuleSet rules =
+                conversions != null && options.sourceZone() != null
+                        ? conversions.merge(userRules)
+                        : userRules;
         // Rules for the target's own generators (e.g. portlet tables) also position them
         targetProfile.generators().addRules(rules);
         options.excludes().forEach(rules::exclude);
@@ -260,9 +277,57 @@ public final class DbMigrate {
                                 + " rows; the target must be empty (or pass --clear-target)");
             }
         }
+        checkSourceZone(plan, s);
         if (options.mode() != MigrationOptions.Mode.VERIFY_ONLY) {
             // A target constraint the source rows violate fails here, not half-way through
             TargetConstraintChecks.check(plan, s);
+            // So does text the target's character set can't hold (MOD-I202)
+            TargetCodePageChecks.check(plan, s, t);
+        }
+    }
+
+    /**
+     * A copy from 5.17 into 6.0 converts the columns 5.17 stored as the JVM's local clock time to
+     * UTC, with the zone of {@code --source-zone} (MOD-I141). Without that zone, a column that
+     * holds a value fails the plan: the copy can't know what the times mean.
+     */
+    private void checkSourceZone(MigrationPlan plan, JdbcTemplate s) {
+        if (conversionColumns == null) {
+            if (options.sourceZone() != null) {
+                plan.error(
+                        "--source-zone applies only to a copy from "
+                                + options.sourceProfile()
+                                + " into a profile that converts local times"
+                                + " (--target-profile 6.0)");
+            }
+            return;
+        }
+        if (options.sourceZone() != null) {
+            return;
+        }
+        Dialect sd = plan.source().dialect();
+        for (TableMapping m : plan.tables()) {
+            for (ColumnMapping cm : m.sourcedColumns()) {
+                String column = m.source().name() + "." + cm.source().name();
+                if (!conversionColumns.contains(Names.key(column))) {
+                    continue;
+                }
+                long values =
+                        count(
+                                s,
+                                sd.qualify(m.source().name()),
+                                sd.quote(cm.source().name()) + " IS NOT NULL");
+                if (values > 0) {
+                    plan.error(
+                            column
+                                    + " holds "
+                                    + values
+                                    + " values written in the local time of the source portal's"
+                                    + " JVM;"
+                                    + " pass --source-zone with that JVM's zone (for example"
+                                    + " --source-zone America/New_York) to convert them to UTC");
+                }
+            }
         }
     }
 

@@ -25,6 +25,11 @@ If your 5.17 database runs on an older server, use it as a migration source. The
 (`uPortal-db-migrate`, run with `./gradlew dbMigrate` in uPortal-start) copies 5.17 data from it
 into a new server of any supported vendor and checks every table after the copy.
 
+Before it writes a row, the copy tool also checks that the target can store your text. On SQL
+Server's default collation, `varchar` columns keep only windows-1252, so emoji or CJK text in
+group names, portlet titles, layout names or user attributes doesn't fit. The tool then stops
+and reports each such column, the number of rows and the key of one of them.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
@@ -120,8 +125,13 @@ The servlet contexts for login and logout (`authenticationServletContext.xml`), 
 (`renderingServletContext.xml`, `jsonRenderingServletContext.xml`) and the `/s/*` redirection
 service (`redirectionServletContext.xml`) now map their controllers with Spring MVC's
 `RequestMappingHandlerMapping` and `RequestMappingHandlerAdapter`. Spring Framework 5 removed the
-`DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter` they used before. URLs and
-behaviour are unchanged.
+`DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter` they used before. URLs are
+unchanged.
+
+One answer changes. A GET for a path under `/api/` that no controller maps now answers 404 Not
+Found. uPortal 5.17 answered 405 Method Not Allowed with `Allow: POST`, because the `/api`
+dispatcher also loaded the page-rendering mapping, whose catch-all accepted POST. A client that
+took a 405 as a sign that an API exists should expect a 404 for paths that never existed.
 
 If your overlay replaces one of these files, make the same change. The old mapping's
 `useDefaultSuffixPattern` property is called `useSuffixPatternMatch` on the new one. If you added
@@ -135,6 +145,23 @@ whole path within the servlet, not just the part the pattern's wildcards matched
 on `/resources/*`. It served static files packaged in jars such as `spring-js`, nothing in uPortal
 requested them, and Web Flow 2.5 removed the class. If your overlay links to files under
 `/uPortal/resources/`, serve them from the web application instead.
+
+## uPortal-start runs Tomcat 9
+
+uPortal-start installs Tomcat 9.0 instead of 8.5, and these answers look different:
+
+* Tomcat's own error pages, such as the 404 page for a missing file, show the Tomcat version,
+  now 9.0. They showed 8.5 before. To hide the version, set
+  `showServerInfo="false"` on the `ErrorReportValve` in `server.xml`.
+* JSON error responses from the `/api` controllers (401, 403 and 404) say
+  `Content-Type: application/json;charset=UTF-8`. On Tomcat 8.5 the same responses said
+  `charset=ISO-8859-1`, although their bodies were UTF-8. A client that decodes by the declared
+  charset now reads non-ASCII characters correctly.
+
+## Fixes made after uPortal 5.17.9
+
+* The portal's analytics script (`scripts/portal-analytics.js`) no longer stops Bootstrap drop-down
+  menus from opening (uPortal f301239691).
 
 ## Favorites is a web component
 
@@ -181,6 +208,116 @@ definition with another fname needs the type `Web Component`, the framework desc
 `up-popular-portlets`. See
 [Converting existing Popular Portlets channels](developer/web-components/README.md#converting-existing-popular-portlets-channels).
 The PopularPortlets portlet itself will be removed in a later release.
+
+## Background Preference is a web component
+
+The Background Preference channel (`background-preference`) was the backgroundPreference portlet.
+It is now a **Web Component** channel that renders `<up-background-preference>`. The element
+reads the offered images and the user's choice from
+`GET /api/v6-0/background-preference/{fname}` and saves a choice with a `PUT` to the same path.
+The API accepts only one of the offered images (or none), and answers anything else with 400.
+Guests get 401.
+
+Users see the same control: "Change Background Image" opens a list of None and the images with
+their thumbnails, and the chosen image shows behind the page at once and on every page after.
+Some things are different:
+
+* The background is set through one stylesheet that the element adopts into the page
+  (`document.adoptedStyleSheets`), not through `<style>` elements, so a Content-Security-Policy
+  that forbids inline styles no longer blocks it.
+* The element applies the background after it has loaded the choice, so it appears a moment
+  after the page.
+* None removes the chosen image, and the skin's own background shows, as after a reload with the
+  portlet. The portlet also set the page's background color to transparent when an image was
+  chosen, until the next page.
+* "Change Background Image" and "None" are messages now (`background.preference.change`,
+  `background.preference.none`), translated into French and Spanish.
+
+The preferences keep their names and meaning: `defaultBackgroundImages`,
+`defaultBackgroundThumbnailImages`, `backgroundImageCaptions`,
+`defaultBackgroundContainerSelector`, and the `mobile*` versions for users in the "Mobile Device
+Access" group. Paths may still contain `${portalContext}`. The user's choice is still the
+`defaultSelectedBackgroundImage` (or `mobileSelectedBackgroundImage`) preference of their portlet
+entity, so choices made with the portlet stay. The container selector defaults to
+`body.portal #portalPageBody::before` (`body.portal #portalPageBody` for mobile), as the
+portlet's `portlet.xml` did, and must be one CSS style rule's selector. `applyOpacityTo` and
+`opacityCssValue` were never used by the portlet's view and are ignored.
+
+To convert an existing portal, import uPortal-start's Web Component portlet type (if another
+conversion has not imported it already), then its
+`data/quickstart/portlet-definition/background-preference.portlet-definition.xml`. The import
+updates the channel by fname and keeps its ID, layout placements and users' choices. A
+definition with another fname is converted by the same changes: the type becomes `Web Component`
+with the `WebComponent` framework portlet, and two parameters are added,
+`webComponent.tagName` and `webComponent.moduleUrl`, both `up-background-preference`. The
+backgroundPreference portlet, `ViewBackgroundPreferenceController` and its JSP stay in this
+release for definitions that are not converted yet, and will be removed later.
+
+## The user locale selector is a web component
+
+The User Locales Selector channel (`user-locales-selector`) was the `UserLocale` portlet, a Web
+Flow. It is now a **Web Component** channel that renders `<up-user-locale>`, with its data from
+the new REST API `/api/v6-0/locale`. Users see the same list of the portal's languages, and
+Update still reloads the page in the chosen language. A signed-in user's choice is stored, and a
+guest's lasts the session, as before. What changed:
+
+* Each language is named in its own language, then in the user's current language when that reads
+  differently: "Français (French)" for an English user, "English (anglais)" for a French one. A
+  user who can't read the current language can still find their own. The browser supplies each
+  own name, so a language added to `portal_locales` doesn't need a new message.
+
+* The flag icons next to the languages are gone. A flag stands for a country, and several
+  countries share a language.
+* The API accepts only the locales in `org.apereo.portal.i18n.LocaleManager.portal_locales`, and
+  answers 400 to any other code. The portlet stored whatever code the form sent.
+
+Existing portals keep their User Locales Selector definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/user-locales-selector.portlet-definition.xml`, which updates the
+channel in place. For a definition with another fname, make these changes and keep everything
+else:
+
+* the type to `Web Component`, and the descriptor to the framework portlet `WebComponent`;
+* add the parameters `webComponent.tagName=up-user-locale` and
+  `webComponent.moduleUrl=up-user-locale`.
+
+The `UserLocale` portlet and its `locale-selector` flow will be removed in a later release.
+`UserLocaleHelper` stays, because the REST API and the Translator portlet use it.
+
+## Session Timeout is a web component
+
+The Session Timeout channel (`session-timeout`) was the SessionTimeout portlet. It is now a **Web
+Component** channel that renders `<up-session-timeout>`. The element reads the session's timeout
+from `GET /api/v6-0/session` and keeps the session with `POST /api/v6-0/session/keep-alive`. Users
+see the same warning with the same text and buttons, 30 seconds plus `dialogDisplaySeconds`
+before the session expires. One thing looks different:
+when the keep-alive fails, "Error resetting your session!" appears inside the warning instead of
+in a browser alert. Tabs that still run the portlet and tabs that run the component share the
+logout time, so they postpone each other's warning while a portal is being upgraded.
+
+To convert an existing portal, import uPortal-start's Web Component portlet type (if the
+Favorites conversion has not imported it already), then its
+`data/base/portlet-definition/session-timeout.portlet-definition.xml`. The import updates the
+channel by fname and keeps its ID and layout placements. A definition with another fname is
+converted by the same changes: the type becomes `Web Component` with the `WebComponent`
+framework portlet, and three parameters are added:
+
+* `webComponent.tagName` and `webComponent.moduleUrl`, both `up-session-timeout`;
+* `webComponent.preferenceAttributes`, one mapping per line: `enabled=enabled`,
+  `dialog-display-seconds=dialogDisplaySeconds` and `logout-url=logoutURLFragment`.
+
+The `enabled`, `dialogDisplaySeconds` and `logoutURLFragment` preferences keep their meaning and
+defaults (`true`, 60 and `/Logout`). As with the portlet's script, a portal that can't report the
+session timeout (a server error, a network failure or an unreadable body) gets a 30-minute default
+and the warning still shows. A guest's 401 turns it off. `logoutURLFragment` must be a path in the
+portal: a value that starts with `//` or names another host falls back to `/Logout`. A portal that
+pointed it at another site, such as a CAS or single sign-on logout page, should leave it at
+`/Logout` and set `logout.redirect` in `security.properties` to that page instead. `/Logout` ends
+the portal session and then sends the browser there.
+`resetSessionURLFragment` is no longer read, because the keep-alive is the REST API. A portal that
+pointed it at its own URL should check that `POST /api/v6-0/session/keep-alive` reaches uPortal. The
+SessionTimeout portlet, `SessionTimeoutViewController` and `scripts/session-timeout.js` stay in this
+release for definitions that are not converted yet, and will be removed later.
 
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
@@ -369,6 +506,66 @@ its owner, and the owner's delete failed with ORA-02292. This hit a portlet enti
 window state, a layout attribute with an empty target element name, and a portlet definition with
 an empty localization. uPortal now deletes those rows with their owner.
 
+## Timestamps are stored in UTC
+
+uPortal 5.17 stored some timestamp columns as the clock time of the portal server's JVM. The value
+in the database depended on the server's time zone, and in the hour that repeats when daylight
+time ends, two different instants were stored as the same clock time. uPortal 6.0 stores these
+columns as UTC clock time (`hibernate.jdbc.time_zone=UTC` in `hibernate.properties`):
+
+| Table | Columns |
+| --- | --- |
+| `UP_PORTLET_LIFECYCLE` | `ENTRY_DATE` (portlet publish and expiry dates) |
+| `UP_MUTEX` | `LOCK_START`, `LOCK_UPDATE`, `LOCK_END` (cluster locks) |
+| `UP_PERSON_DIR` | `LST_PSWD_CGH_DT` (last password change of local accounts) |
+| `UP_PORTLET_LIST` | `CREATED_ON`, `UPDATED_ON` |
+
+`UP_MUTEX.LOCK_END` was not on the first list of affected columns. The persistence tests found
+that it is stored the same way, so it is converted too.
+
+The other timestamps (raw events, aggregation, event sessions, cookies) were already stored in
+UTC, and the analytics date and time dimensions keep their local dates and times.
+
+**Upgrade with the copy tool and the source server's zone.** Copy the 5.17 database into a 6.0
+database with `--target-profile 6.0` (the default) and `--source-zone` set to the time zone of the
+5.17 portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
+
+```sh
+db-migrate --source-properties 517.properties --target-properties 60.properties \
+    --target-profile 6.0 --source-zone America/New_York
+```
+
+The copy converts the columns above from that zone's clock time to UTC. If any of them holds a
+value and `--source-zone` is missing, the copy stops before writing anything and names the
+columns. A copy between two 5.17 databases (`--target-profile 5.17`) leaves the values as they
+are.
+
+**The repeated hour.** A clock time in the hour that repeats when daylight time ends (01:00 to
+01:59 on the first Sunday of November in New York) can be either of two instants, and 5.17 didn't
+record which. The copy takes the earlier one, the daylight-time offset: 01:30 on 2026-11-01 in New
+York becomes 05:30 UTC. A value that was written in the second 01:00 to 01:59 hour ends up one hour
+early. A clock time in the hour that is skipped when daylight time starts can't come from 5.17;
+if one is there, the copy moves it forward by an hour, as `java.time` does.
+
+Code that reads these columns with SQL of its own gets UTC clock times from 6.0 on. The Java API
+(`IPortletLifecycleEntry.getDate()`, `ILocalAccountPerson.getLastPasswordChange()`, the portlet
+list REST API) returns the same instants as before.
+
+## Passwords with letters outside ASCII
+
+Local account passwords may contain any Unicode text. uPortal hashes a password as its UTF-8 bytes
+(Jasypt's digester), as 5.x did, so stored hashes are the same whatever the server's default
+charset was. You don't need to reset any password.
+
+The sign-in path changed. 5.x turned the typed password into bytes with the
+JVM's default charset before checking it. On a server whose default charset wasn't UTF-8 (Java 11
+to 17 on Windows, or a Linux container in the POSIX locale), a password with letters outside that
+charset didn't sign in, although its hash was right. 6.0 uses UTF-8 on every step, for local
+accounts, LDAP and JAAS.
+
+`CliPasswordUpdateTool` reads the new password from standard input as UTF-8. Run it in a terminal
+that uses UTF-8 when the password has letters outside ASCII.
+
 ## PostgreSQL: do not run `vacuumlo`
 
 On PostgreSQL, uPortal stores the raw event data (`UP_RAW_EVENTS.EVENT_DATA` and
@@ -464,6 +661,80 @@ calls (uPortal-home's `addPortlet`, `removeByFName` and `movePortletAjax` with `
 on), Marketplace rating (`saveRating`), skin (`chooseSkin`) and add-to-home calls fail against
 6.0. Adopters still running them must change their own copies to send the token or a Bearer
 token, or stop using those calls.
+
+## Respondr fixes for the accessibility checks
+
+The accessibility check (axe-core, WCAG 2.1 A and AA) found these problems on the portal's key
+pages. Respondr and the portlets in uPortal now avoid them:
+
+* Cards and title bars of the uPortal portlets and of Respondr's portlet chrome had
+  `role="section"` or `role="sectionhead"`. Both are abstract ARIA roles, which a page must not
+  use. The attributes are gone. A skin or script that selects on `[role="section"]` or
+  `[role="sectionhead"]` must select on the classes instead, such as `.portlet` and
+  `.portlet-titlebar`.
+* `#portalNavigation` and each region portlet's `section` had `aria-selected="false"`, which
+  their roles don't allow. The attribute is gone.
+* Links in paragraphs and in the footer regions are underlined. Before, only their colour marked
+  them, and they were underlined only on hover. To keep the old look, a skin overrides
+  `p a` and `footer a` in Respondr's `tags.scss` (the colour must then give a contrast of at
+  least 3:1 with the text around it).
+* The Permissions search inputs and the Portlet Manager's State and Category filters have
+  accessible names.
+* The header's search button showed only its icon, because `header.scss` hid its text with
+  `display: none`, which also hides it from screen readers. The text is now hidden only visually
+  (`.visually-hidden`), so the button's name is the `search.submit` message. The button looks
+  the same.
+
+## Tomcat's error pages no longer show the Tomcat version
+
+uPortal-start's `etc/tomcat/conf/server.xml` now puts an `ErrorReportValve` on the Host with
+`showReport="false"` and `showServerInfo="false"`. Tomcat writes its own error page when no
+webapp's `error-page` answers: a 404 in uPortal (whose `web.xml` maps only 500) or outside every
+webapp, a request the connector rejects (such as an invalid percent-encoding), and an exception in
+a webapp without an `error-page`. These pages used to end in "Apache Tomcat/9.0.x" and show the
+exception message. Now their title and heading give only the status code and its reason phrase.
+Tomcat's logs still record the cause. The connector sends no `Server` header unless its `server`
+attribute is set, and uPortal-start doesn't set it.
+
+A portal that keeps its own `server.xml` adds the same valve inside its `<Host>`. Monitoring that
+read the message text of these pages has to read the status code instead. uPortal-start
+`tests/api/error-pages.spec.ts` checks one page of each kind.
+
+## Tomcat's documentation, examples and ROOT page are gone
+
+uPortal-start's `tomcatConfig` (which `tomcatInstall` runs) now deletes Tomcat's `docs`,
+`examples` and `ROOT` webapps, and installs `etc/tomcat/webapps/ROOT`, which only redirects `/`
+to `/uPortal/`. Tomcat's ROOT page named the Tomcat version, and anyone could open the
+documentation and the examples, some of which echo request data. `/docs/` and `/examples/` now
+answer 404. A portal whose context path is not `/uPortal` changes the target in
+`etc/tomcat/webapps/ROOT/index.jsp`.
+
+The `manager` and `host-manager` webapps stay. They have no users by default, so they answer 401.
+A site that uses them must add a user with the `manager-gui` or `admin-gui` role to
+`conf/tomcat-users.xml`. A site that doesn't can delete `webapps/manager` and
+`webapps/host-manager` from its Tomcat. uPortal-start `tests/api/tomcat-webapps.spec.ts` checks
+the redirect and that the documentation and examples are gone.
+
+## Respondr's tab bar, header and phone menu fit their boxes again
+
+Respondr's header, phone menu and tab bar broke in the move to Bootstrap 5, whose `.row > *` and `.container-fluid`
+now set `width: 100%`. The layout checks at standard screen sizes (uPortal-start
+`tests/layout`) found them, and the skin now fixes them:
+
+* Below 576 pixels, the menu button was as wide as the screen, plus a 12-pixel margin that put
+  its right end past the edge. The user links went on a second row, and the fixed header covered
+  the top of the logo. The menu button is now a small button on the left, with the user links on
+  the same row.
+* Below 576 pixels, the open menu showed the tabs side by side in a sidebar wider than the 270
+  pixels that the page moves over. The first tab was cut off and the last ones could not be
+  reached. The tabs now stack in a 270-pixel sidebar.
+* From 576 pixels, the first tab started 4 pixels left of the tab bar, because every tab has a
+  -4px left margin. The tab bar now starts with the first tab, so all tabs sit 4 pixels further
+  right.
+
+A portlet in the pre-content region that floats its content, such as the quickstart's feedback
+link, now has the height of that content instead of 0. Skins that copy Respondr's
+`navigation.scss`, `header.scss` or `regions.scss` need the same changes.
 
 ## Size the database's connection limit
 

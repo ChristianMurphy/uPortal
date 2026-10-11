@@ -15,6 +15,7 @@
 package org.apereo.portal.persondir.dao.jpa;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -51,7 +52,7 @@ import org.springframework.util.Assert;
         sequenceName = "UP_PERSON_DIR_SEQ",
         allocationSize = 5)
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {
     private static final long serialVersionUID = 1L;
 
@@ -72,7 +73,7 @@ class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {
     private String password;
 
     @Column(name = "LST_PSWD_CGH_DT")
-    private Date lastPasswordChange;
+    private Instant lastPasswordChange;
 
     @OneToMany(
             targetEntity = LocalAccountPersonAttributeImpl.class,
@@ -80,7 +81,7 @@ class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     @JoinColumn(name = "USER_DIR_ID", nullable = false)
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private final Collection<LocalAccountPersonAttributeImpl> attributes =
             new ArrayList<LocalAccountPersonAttributeImpl>(0);
@@ -142,7 +143,7 @@ class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {
      */
     @Override
     public Date getLastPasswordChange() {
-        return lastPasswordChange;
+        return lastPasswordChange == null ? null : Date.from(lastPasswordChange);
     }
 
     /* (non-Javadoc)
@@ -150,7 +151,8 @@ class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {
      */
     @Override
     public void setLastPasswordChange(Date lastPasswordChange) {
-        this.lastPasswordChange = lastPasswordChange;
+        this.lastPasswordChange =
+                lastPasswordChange == null ? null : lastPasswordChange.toInstant();
     }
 
     /* (non-Javadoc)

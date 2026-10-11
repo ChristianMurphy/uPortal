@@ -32,11 +32,11 @@ public class SpringSessionRedisEnabledCondition implements Condition {
     private String getSessionStoreTypeValue(ConditionContext context) {
         String result =
                 context.getEnvironment()
-                        .getProperty(SESSION_STORE_TYPE_SYSTEM_PROPERTY_NAME, String.class, null);
+                        .getProperty(SESSION_STORE_TYPE_SYSTEM_PROPERTY_NAME, String.class);
         if (result == null) {
             result =
                     context.getEnvironment()
-                            .getProperty(SESSION_STORE_TYPE_ENV_PROPERTY_NAME, String.class, null);
+                            .getProperty(SESSION_STORE_TYPE_ENV_PROPERTY_NAME, String.class);
         }
         return result;
     }

@@ -167,6 +167,9 @@ public class UpdatePreferencesServlet {
     /** Default name given to newly created tabs. */
     protected static final String DEFAULT_TAB_NAME = "New Tab"; // TODO: Requires i18n!
 
+    /** UP_LAYOUT_STRUCT.NAME holds 35 characters (MOD-I272) */
+    private static final int TAB_NAME_MAX_LENGTH = 35;
+
     /**
      * Remove an element from the layout.
      *
@@ -919,6 +922,9 @@ public class UpdatePreferencesServlet {
         String id = "tbd";
         String tabName = request.getParameter("tabName");
         if (StringUtils.isBlank(tabName)) tabName = DEFAULT_TAB_NAME;
+        if (isTooLongForTabName(tabName)) {
+            return tabNameTooLong(request, response);
+        }
         IUserLayoutFolderDescription newTab = new UserLayoutFolderDescription();
         newTab.setName(tabName);
         newTab.setId(id);
@@ -1158,6 +1164,10 @@ public class UpdatePreferencesServlet {
                                     "error.element.update",
                                     "Unable to update element",
                                     RequestContextUtils.getLocale(request))));
+        }
+
+        if (isTooLongForTabName(tabName)) {
+            return tabNameTooLong(request, response);
         }
 
         /*
@@ -1479,6 +1489,23 @@ public class UpdatePreferencesServlet {
         }
 
         return authorizationService.newPrincipal(user);
+    }
+
+    /** Tab names are counted in characters (code points), so 35 emoji fit */
+    private static boolean isTooLongForTabName(String tabName) {
+        return tabName != null && tabName.codePointCount(0, tabName.length()) > TAB_NAME_MAX_LENGTH;
+    }
+
+    private ModelAndView tabNameTooLong(HttpServletRequest request, HttpServletResponse response) {
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+        return new ModelAndView(
+                "jsonView",
+                Collections.singletonMap(
+                        "error",
+                        getMessage(
+                                "error.tab.name.too.long",
+                                "A tab name has at most 35 characters",
+                                RequestContextUtils.getLocale(request))));
     }
 
     private String getTabIdFromName(IUserLayout userLayout, String tabName) {

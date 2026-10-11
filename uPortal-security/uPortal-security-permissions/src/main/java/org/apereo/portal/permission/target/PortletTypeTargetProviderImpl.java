@@ -15,6 +15,7 @@ package org.apereo.portal.permission.target;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.lang3.Validate;
@@ -75,14 +76,14 @@ public class PortletTypeTargetProviderImpl implements IPermissionTargetProvider 
         Set<IPermissionTarget> result = new HashSet<IPermissionTarget>();
 
         // Search case-insensitive
-        final String lowerTerm = term.toLowerCase();
-        if (IPermission.ALL_PORTLET_TYPES.toLowerCase().contains(lowerTerm)) {
+        final String lowerTerm = term.toLowerCase(Locale.ROOT);
+        if (IPermission.ALL_PORTLET_TYPES.toLowerCase(Locale.ROOT).contains(lowerTerm)) {
             result.add(ALL_PORTLET_TYPES_TARGET);
         }
         final Map<IPortletType, PortletPublishingDefinition> cpds =
                 channelPublishingDefinitionDao.getChannelPublishingDefinitions();
         for (Map.Entry<IPortletType, PortletPublishingDefinition> y : cpds.entrySet()) {
-            if (y.getKey().getName().toLowerCase().contains(lowerTerm)) {
+            if (y.getKey().getName().toLowerCase(Locale.ROOT).contains(lowerTerm)) {
                 IPermissionTarget target =
                         new PermissionTargetImpl(
                                 y.getKey().getName(),

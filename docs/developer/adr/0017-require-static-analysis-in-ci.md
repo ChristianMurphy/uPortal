@@ -76,8 +76,9 @@ be fixed later.
 
 ### Confirmation
 
-The CI workflow's `Static analysis (SpotBugs and FindSecBugs)` job fails on a finding outside the
-baseline. A deliberately added null dereference failed it. NullAway fails `compileJava` on a
+The CI workflow's `Run SpotBugs` step (it was the `Static analysis (SpotBugs and FindSecBugs)` job
+when this ADR was written, and now runs in the Linux, Temurin 21 build cell) fails on a finding
+outside the baseline. A deliberately added null dereference failed it. NullAway fails `compileJava` on a
 violation in a null-marked package. CI run 38081288582 passed on all 8 build legs and the static
 analysis job.
 

@@ -483,6 +483,15 @@ research report.
     channel. The characterisation spec passed on the portlet and then,
     unchanged, on the component. The conversion fixes MOD-I193 rather than
     matching it. Notes: `notes/wc-popular-portlets.md`.
+  * User Locale: `/api/v6-0/locale` (GET, PUT) and `<up-user-locale>`,
+    published by uPortal-start as the `user-locales-selector` Web Component
+    channel. The `UserLocale` portlet and its flow remain until the 6.0 data
+    migration converts existing definitions (MOD-I133). Notes:
+    `notes/wc-user-locale.md`.
+  * Session Timeout: `/api/v6-0/session` and `<up-session-timeout>`,
+    published by uPortal-start as a Web Component channel. The
+    characterisation spec passed on the portlet and on the component.
+    Notes: `notes/wc-session-timeout.md`.
 
 ### MOD-D19: per-portlet choice between REST + web components and server-rendered Spring pages
 
@@ -1697,6 +1706,228 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   Spring's Cache API has no eviction events, and JCache does not report evictions either, so the
   listener becomes an Ehcache 3 event listener or a Caffeine removal listener (cause `SIZE`) then.
 
+### MOD-D44: 6.0 stores text on SQL Server as nvarchar
+
+* **Decision (project owner, 2026-10-11):** SQL Server text columns become `nvarchar`, through
+  Hibernate's nationalized strings, in the 6.0 schema step (MOD-D11). Lengths count characters,
+  and every supported SQL Server version accepts it.
+* **Why:** 5.17's and 6.0's `varchar` columns on the default collation keep only windows-1252
+  (MOD-I196, MOD-I201). Text such as emoji or CJK in group names, portlet titles or user
+  attributes can't be stored, and a copy from another vendor is refused (MOD-I202).
+* **Considered:** `varchar` with a UTF-8 collation. Its lengths count bytes, and every text column
+  would need up to four times its length for the same number of characters. It also depends on
+  each site's database setup.
+* **Cost:** text that fits windows-1252 takes twice the space, and the copy tool converts the
+  columns as part of the 6.0 copy.
+
+### MOD-D45: the password flows get four fixes in 6.0
+
+* **Decision (project owner, 2026-10-11):** all four, each in its own commit with tests:
+  1. Self-Edit Account and User Administration refuse a password confirmation that differs.
+     This also stops "Create a User" from overwriting an existing account (MOD-I195).
+  2. Self-Edit Account asks for the current password before a change.
+  3. Forgot Password gives the same answer for known and unknown user names.
+  4. Password reset links expire (default one hour, as a property).
+* **Resolved conflict (coordinator, 2026-10-11):** fixes 3 and 4 first asked for the page to say
+  when the email couldn't be sent. For an unknown user name nothing is sent, so a "could not be
+  sent" page would show that an account exists. Known and unknown user names get the same neutral page ("if that
+  user name has a local account with an email address, reset instructions were sent; contact the
+  help desk if nothing arrives"), and a failed send is logged at ERROR for administrators,
+  without the token.
+* **Found by:** the Self-Edit Account characterisation specs.
+
+### MOD-D46: Self-Edit Account and Reset My Layout are web components
+
+* **Decision (project owner, 2026-10-11):** both become REST APIs plus web components, which
+  changes MOD-D19's default mapping for these two (it listed them as Thymeleaf full-page flows).
+* **Condition.** Self-Edit Account's password fields work with browser password managers. They
+  carry `autocomplete` hints (`username`, `current-password`, `new-password`), and a browser
+  test checks that the fields can be found, since shadow DOM can hide fields from autofill.
+* **Why:** both conversions were built and tested before the mapping was checked. The API is
+  CSRF-protected, no log line contains a password, and a Thymeleaf page would have to wait for
+  Spring 5.3. Forgot Password and the reset-password flow keep MOD-D19's mapping.
+
+### MOD-D47: hide the Tomcat version and fix the existing accessibility violations
+
+* **Decision (project owner, 2026-10-11):** Tomcat's error pages and headers stop showing the
+  server version. The accessibility violations in the axe baseline (`tests/a11y/baseline.ts`
+  in uPortal-start) are fixed, starting with the Respondr skin, and the baseline only shrinks.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`.
+
+### MOD-D48: fix how uPortal holds database connections before changing pool defaults
+
+* **Decision (project owner, 2026-10-11):** the pool defaults stay as they are for now. First,
+  uPortal stops taking a connection per portlet render to read a cached portlet definition,
+  and stops holding the request's connection while the page waits for its portlets. The
+  budget (MOD-I190) is then set from new measurements.
+* **Why:** with 5.x defaults, 16 users reach about 127 PostgreSQL connections, more than the
+  default limit of 100. A pool of 60 avoids errors, but most of its connections are idle.
+
+### MOD-D49: text inputs accept any Unicode text
+
+* **Decision (project owner, 2026-10-11):** the portal has international users, so a field where
+  people type text accepts any Unicode text, sent as UTF-8. That covers names, titles,
+  descriptions, search terms, email addresses, passwords and tenant names. A field limits its
+  characters only when its value is an identifier that the portal puts in URLs or keys, such as
+  fnames, tenant fnames and event types. Its error message then lists the characters it allows.
+* **Tests:** each new API and component sends a value with accented letters, a non-Latin script
+  and a character outside the Basic Multilingual Plane (four bytes in UTF-8), and reads it back.
+  The persistence goldens do the same on all six vendors.
+* **Storage:** SQL Server follows MOD-D44. A MySQL or MariaDB column must use `utf8mb4` to hold
+  four-byte characters, and any change it needs joins the 6.0 schema step (MOD-D11).
+* **Work:** `ccr-43ba0785-hzlrj5-utf8-inputs` (audit, MOD-I233); each conversion tests its own
+  fields.
+
+### MOD-D50: web components come in English, Spanish and French
+
+* **Decision (project owner, 2026-10-11):** each message a web component uses has English,
+  Spanish and French text (`Messages.properties`, `Messages_es.properties`,
+  `Messages_fr.properties`) in the commit that adds it. A check fails the build when a
+  component's key is missing from one of the three. The other bundles (de, ja, lv, mk, sv) show
+  English for new keys until someone translates them, as today.
+* **Format:** messages go through `MessageFormat` (`alwaysUseMessageFormat`), so an apostrophe
+  is written twice (`l''élément`) and placeholders stay `{0}`, `{1}`.
+* **Tests:** a Playwright test renders each component for a user whose locale is Spanish and
+  one whose locale is French, and finds a translated text.
+* **Work:** `ccr-43ba0785-hzlrj5-i18n` (MOD-I231, MOD-I232, the check); each open conversion
+  adds its own translations.
+
+### MOD-D51: web components work in any language a site adds
+
+* **Decision (project owner, 2026-10-11):** beyond English, Spanish and French (MOD-D50), a site
+  can run the components in other languages, such as German, Polish, Arabic or Chinese. It adds
+  a message bundle and lists the locale in `portal_locales`, with no code changes. So the
+  components:
+  1. pick plural forms by the language's rules (`Intl.PluralRules`). Polish needs three forms
+     and Arabic six. A message key has one entry per form (`.one`, `.few`, `.many`, `.other`
+     and so on), and a missing form falls back to `.other`;
+  2. format numbers and dates in the user's locale (`Intl.NumberFormat`,
+     `Intl.DateTimeFormat`), so Arabic digits and German separators appear where those locales
+     use them;
+  3. set `lang` and `dir` on the element from the locale, use CSS logical properties only, and
+     mirror icons that point left or right, so Arabic reads right to left;
+  4. ignore keys while an input method is composing text (`isComposing`), so pressing Enter to
+     choose a Chinese or Japanese character doesn't submit a form;
+  5. wrap long words, such as German compounds, instead of clipping them;
+  6. fall back from region to language to English (`zh-TW`, then `zh`, then English), and
+     accept script subtags (`zh-Hant`).
+* **Tests:** two pseudo-locales built from `Messages.properties` at test time: one with
+  accented letters and text 40% longer, one right to left. They find English text written into
+  the code, clipped text and layouts that don't mirror. Unit tests check the Polish and Arabic
+  plural forms, and a Playwright test runs a component with test bundles for `pl`, `ar` and
+  `zh-TW`.
+* **Languages in the release (project owner, 2026-10-11):** the 6.0 release has English,
+  Spanish and French text for the components. A site can add other languages. The tests use
+  test bundles for them. The release doesn't contain translations that nobody has reviewed.
+* **Theme:** the Respondr theme around the components has no right-to-left layout (MOD-I234).
+  The owner chose to make it right to left after the accessibility fixes (MOD-D47), which
+  change the same skin files.
+* **Work:** `ccr-43ba0785-hzlrj5-i18n` builds the shared code in `lib/i18n.ts` and updates the
+  landed components. Each later conversion uses that code.
+
+### MOD-D52: pages and components fit standard screen sizes
+
+* **Request (project owner, 2026-10-11):** check that the layout fits on standard screen sizes:
+  nothing spills out of its box or gets cut off, nothing collapses, and nothing wraps where it
+  shouldn't.
+* **Sizes:** widths of 320 (the WCAG reflow minimum, a 1280-pixel screen at 400% zoom), 390
+  (phone), 768 (tablet), 1024, 1366 (the most common laptop) and 1920 pixels.
+* **Checks,** measured from element boxes in the browser rather than compared screenshots:
+  1. The page never scrolls sideways.
+  2. No text or control is cut off. A box that hides overflow shows all of its content, unless
+     it scrolls on purpose, or it ends in an ellipsis and the full text is available to screen
+     readers and on hover.
+  3. An element doesn't spill over its neighbors, and controls don't overlap.
+  4. Buttons, tabs, menu items, table headers, labels and badges stay on one line from 768 pixels
+     up. The tab bar fits on one row from 1024 pixels up, unless it turns into a menu by design.
+  5. A region, portlet or component with content keeps a usable size instead of collapsing, and
+     columns stack instead of getting narrower than 240 pixels. Images keep their proportions.
+  6. With the WCAG text spacing applied (line height 1.5, letter spacing 0.12em, word spacing
+     0.16em), nothing is cut off.
+* **Where:** each page of the quickstart users (guest, student, staff, faculty, admin), the
+  login page, each web component maximized, and the main admin pages, in Chromium at all six
+  widths. WebKit and Firefox run at 390 and 1366 pixels. Each web component also runs at
+  container widths of 280, 400, 800 and 1200 pixels in its own browser tests, since a portlet
+  column can be narrow. Once the -i18n pseudo-locales land, the checks also run with the
+  longer text and right to left.
+* **Existing problems:** recorded in a baseline that only shrinks, like the axe baseline
+  (MOD-D47). A new problem fails the build.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`, before the accessibility fixes, so those fixes and
+  the right-to-left theme (MOD-I234) are measured against it. The checks run inside the
+  existing Playwright jobs, not new ones.
+
+### MOD-D53: faster landing with the same checks
+
+* **Measured (2026-10-11, 11:55 UTC):** of 24 pending workflow runs, 22 were waiting for a runner
+  or running, one for close to two hours. A branch needs about 40 jobs before it is merged, and
+  about 20 runner slots serve both repositories. Pushes cancelled running checks: one branch
+  started 32 runs. Cloud sessions couldn't run Gradle, so each compile check went through the
+  queue or the coordinator.
+* **Decision (project owner, 2026-10-11):** the runner pool stays as it is, and:
+  1. Cloud sessions may run Gradle. `.claude/settings.json` in both repositories allows
+     `./gradlew`. The init script that points Gradle at a Maven mirror is kept outside the
+     repositories. A session
+     compiles and tests its change before it pushes.
+  2. A session pushes when a step has passed locally, not after every commit, since each push
+     cancels its branch's running checks.
+  3. Before it is merged, a branch runs the checks for what it changes: the light profile on push,
+     plus the six-vendor database workflows when it changes persistence, SQL, the schema or
+     the copy tool. Branches are then merged in batches of up to four, and the full matrix runs once
+     on the result. If that run fails, the coordinator finds the branch that broke it and
+     reverts its commits with revert commits. The other branches stay.
+  4. A rule the owner adds for every component goes into one follow-up branch that applies it
+     to every component, which also keeps the wording consistent. Branches that pass are
+     merged without it. A security or data-loss rule still goes into each branch before it is
+     merged.
+* **Unchanged:** seeded faults, characterisation specs, zero schema drift until the 6.0 schema
+  step, no re-runs for flakes, and a full matrix on the integration branch after each batch.
+  This refines MOD-D32's landing steps.
+* **Batches in practice (coordinator, 2026-10-11):** a push to the integration branch cancels the
+  workflows still running there, so a batch is pushed in quick succession and then nothing is
+  pushed until its full run finishes. A push whose head commit carries `[skip ci]` doesn't start a
+  run, so it cancels none. A landing can go out under a `[skip ci]` LOG commit while a
+  batch's run is in progress, and the next batch's run covers it. Clean-ups of superseded runs
+  leave runs started by hand alone.
+* **Lesson (coordinator, 2026-10-11):** a uPortal change to persistence or SQL also needs one
+  Integration run on uPortal-start with that uPortal build. The six-vendor DB integration
+  workflow runs uPortal's own tests, which didn't load a layout through the path that lost its
+  table alias. The portal's PostgreSQL run would have shown it before the merge.
+
+### MOD-D54: servers clear their replicated caches after a healed network split
+
+* **Decision (project owner, 2026-10-11):** when the JGroups channel reports a merge view (the two
+  halves of a split rejoining), each server clears its replicated caches and reloads from the
+  database. A normal join doesn't clear anything.
+* **Why:** during a split each server misses the other's invalidations, so a portlet definition
+  or a permission decision could stay out of date until its cache entry expires, up to six hours.
+  The join fix (MOD-I210, more join attempts) covers restarts, not a real network split.
+* **Cost:** a short burst of database load after a split heals.
+* **Work:** `ccr-43ba0785-hzlrj5-cluster`, with a harness leg that splits and heals the two
+  nodes and a seeded fault.
+
+### MOD-D55: fewer CI jobs on each push and batch
+
+* **Measured (2026-10-11):** six full runs took 391 runner-minutes. Jobs waited 16 to 123 minutes
+  for a runner and then ran for 3 to 40. Each job waits on its own, so every job a push starts
+  adds a wait. `npm ci` downloaded every package again in each of 16 Integration jobs
+  (34 minutes). uPortal CI compiled the same code 10 times and installed Chromium 8 times. A
+  3-second planning job held back the replay workflow's uPortal build for 44 minutes. G-index,
+  at 39 minutes, is the longest job, and it ran on every uPortal-start topic push.
+* **Changes that keep every test (coordinator):** cache npm and the Playwright browsers; run the
+  web component tests, the JavaScript lint and SpotBugs in one uPortal CI job instead of each
+  OS and Java job; make each planning job the first step of the job that needs its answer;
+  split the long harness steps into timed phases so the next savings are measured.
+* **Decision (project owner, 2026-10-11):**
+  1. The Zulu and Corretto jobs run in the nightly run only. Each batch keeps Temurin 21 and 25
+     on Linux, and Temurin 25 on macOS and Windows.
+  2. A uPortal-start topic push runs G-index only when it, or the uPortal branch of the same
+     name, changes persistence, SQL, the schema, the data files or G-index itself. A batch, a
+     run started by hand and the nightly run always run it.
+* **Cost:** a problem with one vendor's JDK shows up in the next nightly run instead of at
+  landing. A G-index failure that a web component change causes shows up in its batch run,
+  which then reverts that branch. The Session Timeout workload failures were found this way
+  on a topic push.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1756,7 +1987,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I53 | Runtime | `tomcatStop` leaves Tomcat running: two uPortal-owned worker threads (`pool-19-thread-1/2`) are never shut down, and Tomcat logs leak warnings naming the uPortal webapp. CI never notices. | **Fixed** in `0745364ca`. `PersonLookupHelperImpl` started up to 10 unnamed worker threads and never shut them down. One people search was enough to hang shutdown. The pool now closes with the Spring context, and its threads are named. Verified on a real portal with JDK 11 and 25. Upstream candidate for 5.17.x. |
 | MOD-I54 | Tests | The web-proxy "no critical JavaScript errors" test passes by accident. It waits for "Example Domain", which matches the portlet title "Example Domain (test proxy)", not the proxied page. | Tighten the selector (P0-1). |
 | MOD-I55 | Tests | The sandbox blocks three Playwright tests: web-proxy can't reach `example.com`, and two visual-resource-server tests fail because CKEditor 4.22.1's version check calls `cke4.ckeditor.com`. Feedback "renders feedback form" is flaky (post-login navigation race, 1 of 2 runs). | Sandbox check = all specs except those 3 environment-blocked tests. Consider `versionCheck: false` for CKEditor (it also stops nagging adopters). Fix the feedback race in P0-1. |
-| MOD-I56 | Rendering | **Found by the new specs.** A focused transient portlet (`/p/<fname>`) is kept in session state, and every `*.uP` request resets it (`UserLayoutParameterProcessor` → `TransientUserLayoutManagerWrapper.setFocusedId(null)`). So a late AJAX request from the previous page (emergency alert, calendar, file manager) makes the next render come back without the portlet. This caused the feedback/calendar Playwright flakes. | The tests now wait for in-flight `*.uP` requests to settle. The underlying race is a product bug: upstream candidate, fix after 6.0. |
+| MOD-I56 | Rendering | **Found by the new specs.** A focused transient portlet (`/p/<fname>`) is kept in session state, and every `*.uP` request resets it (`UserLayoutParameterProcessor` → `TransientUserLayoutManagerWrapper.setFocusedId(null)`). So a late AJAX request from the previous page (emergency alert, calendar, file manager) makes the next render come back without the portlet. This caused the feedback/calendar Playwright flakes. | The tests now wait for in-flight `*.uP` requests to settle. `loginViaPage` did not until uPortal-start 1c616b75e, and `cas-proxy-test.spec.ts` failed once that way (Integration job 114444272171). The underlying race is a product bug: upstream candidate, fix after 6.0. |
 | MOD-I57 | Admin UI | **Found by the new specs.** User Administration "Create a User" saves, but the next page throws an NPE. A null lookup for the new username is cached for 15 minutes, so the account can't be opened and edited attributes look stale. | The spec flushes that cache through Cache Manager. Upstream bug. |
 | MOD-I58 | Admin UI | **Found by the new specs.** The editPermission breadcrumbs are action URLs used as plain links, so following one returns HTTP 405. Import/Export `delete.jsp` has broken markup that leaves the form covered and unclickable. | The specs work around both (keyboard submit). Upstream bugs. |
 | MOD-I59 | API | `/api/entity` cannot delete groups or local accounts. | Spec cleanup goes through the UI. Possible API gap. |
@@ -1827,9 +2058,9 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I135 | CI | uPortal-start `CI.yml` runs the full Playwright suite against released uPortal 5.17.9. Data and specs that need unreleased uPortal fail there: with the WS14 data and specs (uPortal-start "feat(data): render favorites as a web component channel" and "test(e2e): cover the favorites web component and the channel type"), 5.17.9 has no `WebComponent` portlet, `/api/v6-0/` or `/webcomponents/`. There the Favorites channel shows an error and the seven new tests fail. `integration.yml` (uPortal built from source) runs them on the matching uPortal. | **Decided (coordinator, 2026-10-11):** CI.yml skips its released-uPortal Playwright job on every `ccr-*` branch (uPortal-start "ci(prototype): skip the released-uportal playwright run on ccr branches"). Integration runs the suite there against uPortal built from source. Ordering rule: a uPortal-start change that needs a new uPortal lands after that uPortal release, so upstream the job keeps running on master and pull requests. |
 | MOD-I136 | Tests | uPortal-start `npm run lint` fails on `tests/db/migrate/matrix.mjs` (8 `no-undef` errors for `console` and `process`): `eslint.config.js` declares globals for TypeScript files only. The linter runs in `./gradlew playwrightRun`, which no workflow calls. | Add Node globals for `*.mjs` in `eslint.config.js`. |
 | MOD-I137 | DB harness | **Found by the WS14 hsqldb harness run.** `dataInit` runs the import in a Spring context that also starts uPortal's scheduled event-aggregation jobs. On this loaded machine the context took 2 min 47 s to start, and the jobs ran after the tables existed. Before the snapshot they filled the date and time dimensions (365 and 1440 rows) and wrote rows to `UP_MUTEX` (4) and `UP_EVENT_AGGR_STATUS` (2). The harness reported these as DATA and GENERATORS drift. Faster runs (CI, the earlier local run) take the snapshot first. | Turn the aggregation jobs off in the import context, or snapshot right after the import ends. Harness owners (DB matrix). |
-| MOD-I140 | Analytics | **Found by the analytics goldens.** With the portal JVM in a zone with DST, events in the repeated autumn hour are dropped from the sub-day aggregations. The date and time dimensions hold local wall-clock time, so 01:00 to 02:00 EST maps to the same aggregation row as 01:00 to 02:00 EDT, which is already closed. `LoginAggregationImpl` and the other aggregations log "is already closed ... will be ignored". In `aggregation/America_New_York.txt` the HOUR rows of 2025-11-02 sum to 6 logins while the DAY row counts 8. A UTC JVM is unaffected. | **Owner (2026-10-11): fix in 6.0.** Queued until P2 is merged, because it changes the event aggregation code that P2 touches. The fix stores the time dimension in UTC or with its offset, and re-records the New York golden on purpose. Characterised, not fixed: the goldens pin 5.17's behaviour. The fix belongs with the java.time move (UTC dimensions, or the offset in the time dimension) and re-records the New York golden on purpose. |
-| MOD-I141 | Persistence | **Found by the entity round trip.** `java.util.Date` columns mapped as timestamps are written as JVM-local wall-clock time. The stored value depends on the JVM zone, and an instant in the repeated autumn hour reads back an hour late under America/New_York (2026-11-01T05:30Z, 01:30 EDT, comes back as 06:30Z). Affected: `ClusterMutex.lastUpdate` and `lockStart`, `PortletLifecycleEntryImpl.date`, `PortletList.createdOn` and `updatedOn`, `LocalAccountPersonImpl.lastPasswordChange`. The Jadira `DateTime` columns (`databaseZone=UTC`) are not affected. | **Owner (2026-10-11): fix in 6.0.** The columns listed above become `Instant` with `hibernate.jdbc.time_zone=UTC`, so they hold UTC clock time. The copy tool converts 5.17's local clock values using the source server's zone, given as an input. Values written in an autumn repeated hour are already ambiguous in 5.17. The conversion picks one reading, and `UPGRADING-6.0.md` documents it. Queued after P2. Characterised in `roundtrip/*-America_New_York.txt`. From P2 on, keep `hibernate.jdbc.time_zone` unset until these columns move to `Instant` stored in UTC, and re-record on purpose then. |
-| MOD-I142 | Portlets | **Found by the query goldens.** `JpaPortletDefinitionDao.searchForPortlets(term, true)` upper-cases the term but not the name and title it is compared with, and does not escape `%` or `_`. The partial search (the groups `PortletDefinitionSearcher`) finds only upper-case names on HSQLDB, PostgreSQL and Oracle, and matches case-insensitively on MySQL, MariaDB and SQL Server. `STARTS_WITH` and `ENDS_WITH` searches also behave as `CONTAINS`, because the DAO wraps the term in `%` on both sides. | **Owner (2026-10-11): fix.** Compare `upper()` on both sides, honour starts-with and ends-with, and escape `%` and `_`. Re-record the query golden on purpose. Characterised per vendor (`QueryVendorDifferences`). Fix with `upper()` on both sides and an escape character when the portlet search is reworked, and re-record then. |
+| MOD-I140 | Analytics | **Found by the analytics goldens.** With the portal JVM in a zone with DST, events in the repeated autumn hour are dropped from the sub-day aggregations. The date and time dimensions hold local wall-clock time, so 01:00 to 02:00 EST maps to the same aggregation row as 01:00 to 02:00 EDT, which is already closed. `LoginAggregationImpl` and the other aggregations log "is already closed ... will be ignored". In `aggregation/America_New_York.txt` the HOUR rows of 2025-11-02 sum to 6 logins while the DAY row counts 8. A UTC JVM is unaffected. | **Owner (2026-10-11): fix in 6.0.** Queued until P2 is merged, because it changes the event aggregation code that P2 touches. The fix stores the time dimension in UTC or with its offset, and re-records the New York golden on purpose. Characterised, not fixed: the goldens pin 5.17's behaviour. The fix belongs with the java.time move (UTC dimensions, or the offset in the time dimension) and re-records the New York golden on purpose. **Design chosen (option B, the UTC offset in each aggregation row's natural id). The schema part waits for the 6.0 schema step (MOD-D11).** A test that shows the repeated-hour gap is on the integration branch (`notes/persistence-fixes.md`). |
+| MOD-I141 | Persistence | **Found by the entity round trip.** `java.util.Date` columns mapped as timestamps are written as JVM-local wall-clock time. The stored value depends on the JVM zone, and an instant in the repeated autumn hour reads back an hour late under America/New_York (2026-11-01T05:30Z, 01:30 EDT, comes back as 06:30Z). Affected: `ClusterMutex.lastUpdate` and `lockStart`, `PortletLifecycleEntryImpl.date`, `PortletList.createdOn` and `updatedOn`, `LocalAccountPersonImpl.lastPasswordChange`. The Jadira `DateTime` columns (`databaseZone=UTC`) are not affected. | **Owner (2026-10-11): fix in 6.0.** The columns listed above become `Instant` with `hibernate.jdbc.time_zone=UTC`, so they hold UTC clock time. The copy tool converts 5.17's local clock values using the source server's zone, given as an input. Values written in an autumn repeated hour are already ambiguous in 5.17. The conversion picks one reading, and `UPGRADING-6.0.md` documents it. Queued after P2. Characterised in `roundtrip/*-America_New_York.txt`. From P2 on, keep `hibernate.jdbc.time_zone` unset until these columns move to `Instant` stored in UTC, and re-record on purpose then. **Fixed (persistence-fixes branch).** The listed columns and `ClusterMutex.lockEnd` (MOD-I220) are `Instant` with `hibernate.jdbc.time_zone=UTC`. `TimeDimensionImpl.time` binds with the JVM zone (MOD-I221). The copy tool's `--target-profile 6.0` converts 5.17's values with `--source-zone`. A value in the repeated autumn hour takes the earlier offset (`UPGRADING-6.0.md`). The uPortal-start side (G-migrate and equivalence pass `--source-zone`) is the e2e agent's. The start marker waits for the 6.0 schema step. |
+| MOD-I142 | Portlets | **Found by the query goldens.** `JpaPortletDefinitionDao.searchForPortlets(term, true)` upper-cases the term but not the name and title it is compared with, and does not escape `%` or `_`. The partial search (the groups `PortletDefinitionSearcher`) finds only upper-case names on HSQLDB, PostgreSQL and Oracle, and matches case-insensitively on MySQL, MariaDB and SQL Server. `STARTS_WITH` and `ENDS_WITH` searches also behave as `CONTAINS`, because the DAO wraps the term in `%` on both sides. | **Owner (2026-10-11): fix.** Compare `upper()` on both sides, honour starts-with and ends-with, and escape `%` and `_`. Re-record the query golden on purpose. Characterised per vendor (`QueryVendorDifferences`). Fix with `upper()` on both sides and an escape character when the portlet search is reworked, and re-record then. **Fixed (persistence-fixes branch).** `upper()` on both sides, starts-with and ends-with honoured, `%` and `_` escaped with `!`, `[` escaped on SQL Server only (MOD-I223). An exact search is case-sensitive on every vendor (an `upper()` query, then an exact filter in Java). The vendors agree in the query golden, and the `QueryVendorDifferences` entries are gone. |
 | MOD-I143 | Persistence | **Found by the query goldens and the round trip.** `LocalAccountPersonImpl.attributes` is an eager `FetchMode.JOIN` bag over the indexed `values` list. A loaded person repeats each attribute once per value, and `JpaLocalAccountDaoImpl.getAllAccounts()` returns one row per attribute value (7 for 3 accounts). `getAttributes()` builds a map, so callers of the person API don't see the duplicates. Hibernate 6 de-duplicates root entities, so `getAllAccounts()` changes at P4. | Characterised. Production code doesn't call `getAllAccounts()`. At P4, re-record the golden with the de-duplicated list and note it here. |
 | MOD-I144 | Persistence | **Found by the entity round trip on Oracle** (run 38107283955). Adopter-facing bug in 5.17 on Oracle: an owner whose element collection holds an empty string can't be deleted. Oracle stores `''` as NULL. In an element collection without uPortal's `nullSafeString` type, Hibernate 4.3 doesn't read an element or map entry whose value is NULL, so the value is missing after a reload. Hibernate then treats the collection as empty and doesn't delete its rows. Deleting the owner fails with ORA-02292. It affects `UP_SS_DESC_LAY_ATTR_ELMS` (a stylesheet descriptor with an empty target element name) and `UP_PORTLET_ENT__STATES` (a portlet entity with an empty window state). It also affects `UP_PORTLET_DEF_MDATA`, for a portlet definition with a localization whose name, title and description are all empty. Their portlet preferences and portlet types can't be deleted either while they remain. The other databases keep `''`. | The 5.17 mapping keeps the bug. On Oracle `EntityRoundTripGoldenTest` asserts which entity types `EntityManager#remove` can't delete after the round trip, and on the other databases that it deletes all of them. It also expects the missing entries. Its clean-up then deletes the element-collection rows with SQL. Not checked on Hibernate 5.2 yet: P2's Oracle run of the goldens shows it, because the assertion fails if 5.2 deletes the rows. Fix with `nullSafeString` or NOT NULL value columns plus a data migration, decided with the 6.0 schema (MOD-D11). **Update with P2 (Hibernate 5.2.18).** Oracle left the rows on 5.2 too (run 38111412577). Fixed in 6.0 by `ElementCollectionDeleteIntegrator`, landed with P2 (uPortal 632a3ee94). The round trip now asserts a clean delete on Oracle (run 38114017644). |
 | MOD-I150 | Portlets | **Found by the Pluto test suite spec** (uPortal-start `pluto-testsuite.spec.ts`, MiscTest.checkContextServerInfo). `PortletContext.getServerInfo()` returned `Pluto/${pluto.version}`. uPortal-webapp's own `pluto-configuration.properties`, which shadows the jar's, kept the Maven placeholder, which the Gradle build did not fill in. | **Fixed** (d20564691): processResources fills in `plutoVersion`. `PlutoConfigurationTest` fails on the old file. Upstream candidate. |
@@ -1873,7 +2104,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I188 | Persistence | Foreign keys to parents that are purged or deleted (cookies, unique strings, portlet entities) have no index. | **Open**. G-index R2 to R4 fix it. |
 | MOD-I189 | Persistence | The 5.17.9 MariaDB schema has 43 duplicate or covered InnoDB foreign-key indexes. The integration build creates none of them. | **Open**. G-index R10 fixes it. |
 | MOD-I190 | Deployment | The portal and its portlets together use all 100 default PostgreSQL connections. | **Open**. Document a connection budget for 6.0. |
-| MOD-I191 | Persistence | Queries with `ORDER BY` or `@OrderBy` don't break ties, so rows with the same sort key can come back in any order. The goldens compare tied rows as unordered. | **Owner (2026-10-11):** 6.0 adds a final tie-breaker, usually the id, to each sort, so results come back in a guaranteed order. |
+| MOD-I191 | Persistence | Queries with `ORDER BY` or `@OrderBy` don't break ties, so rows with the same sort key can come back in any order. The goldens compare tied rows as unordered. | **Owner (2026-10-11):** 6.0 adds a final tie-breaker, usually the id, to each sort, so results come back in a guaranteed order. **Fixed (persistence-fixes branch).** Each sort ends with a unique key, listed in `notes/persistence-fixes.md`, and the goldens compare in order. A seeded fault (one tie-breaker removed) fails a golden. |
 | MOD-I192 | CI | Playwright on PostgreSQL 18 intermittently loses one bundled portlet application: every page lacks its output, and a different application is missing on each attempt. It failed 22 SimpleContent tests in job 114386349300 and 8 Announcements tests in job 114405187791 (run 38110595100 and its re-run). Run 38117263537 failed the same 8 Announcements tests. So did job 114413716154 (run 38118476392, login-fixes). The re-run of that job passed. Those branches change only REST APIs, web components, tests and docs, not portlets or the database. The Tomcat logs are only in the job artifacts, and the proxy in front of the agents refuses the host that serves them. | **Open.** First guess was MOD-I190, the portal and its portlets running out of PostgreSQL's 100 connections. A local measurement makes that unlikely. The whole Playwright suite on PostgreSQL 18, with every overlay deployed, peaked at 32 to 38 connections and never emptied a pool. The one failure log read so far (run 38117263537) has no "too many clients" error and no Tomcat SEVERE line, but it predates uPortal-start fd53c9495, which prints Tomcat's startup errors in a failed job. The next failure should show the cause. MOD-I190's connection budget goes ahead on its own merits. |
 | MOD-I193 | Portlets | In 5.17's Popular Portlets portlet, the column filters show the wrong rows once the table is sorted. The DataTables search function reads `col.data()`, which is in display order, with each row's load index. | **Fixed in the web component** (WS14). "a filter keeps the rows it names, also after sorting" in uPortal-start's `popular-portlets.spec.ts` and "keeps the rows it names after a sort" in `up-popular-portlets.browser.test.ts` check it; the first fails on the old portlet, which keeps the bug. |
 | MOD-I194 | Portlets | `PopularPortletsController.getEventCounts` throws a `NullPointerException` when the `days` parameter is missing. | **Fixed in the REST API**: `/api/v6-0/popular-portlets` uses 30 days when `days` is missing and answers 400 unless it is a whole number from 1 to 365. The portlet keeps the bug. |
@@ -1881,9 +2112,45 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I197 | Testing | `JpaClusterLockDaoTest.anAbandonedLockIsTakenOver` failed at random on MySQL, also on Hibernate 4.3: `DATETIME` rounds the stored lock time to whole seconds, sometimes past the time the second node reads it. | **Fixed in the test** (`a19ebddc6`, landed with P2): it waits 1.1 s. Revisit when MOD-I141 moves `ClusterMutex.lastUpdate` to `Instant`. |
 | MOD-I198 | Build | The dom4j 2 exclusion added for Hibernate 5.2 stopped SpotBugs from starting. | **Fixed** in `24a283a72`, landed with P2. |
 | MOD-I199 | Build | `.sql` files had no line-ending rule in `.gitattributes`, so the DDL golden files could be checked out with CRLF on Windows. | **Fixed** in `7412afdfb` (LF for `*.sql`), landed with P2. |
-| MOD-I196 | Data | **Found by the migration-equivalence nightly set** (uPortal-start run 38120962016, job 114422262361). A 5.17 limit on SQL Server: 5.17 creates `varchar` columns, which on SQL Server's default collation keep only windows-1252. Text outside it (emoji, CJK) is stored as `?`, and 5.17 then can't find a row by such a name: importing the fixture's PAGS group `PAGS Fixture Child 🌱` stopped with `NoSuchElementException` in `dropTestGroupsAndTests`. A UTF-8 collation doesn't help, because `varchar(n)` then counts bytes: the fixture's 254-character attribute is 425 bytes and a portlet description 395. So 5.17 on SQL Server can't hold the fixture with either collation. The persistence goldens model the same conversion in `DatabaseVendor.sqlServerVarchar` (uPortal-webapp tests). | Open (5.17 behaviour). The equivalence check converts the fixture and the reference to windows-1252 when 5.17 runs on SQL Server (uPortal-start f6d21dd46, `tests/db/equivalence/code_page.py`), and compares both exports exactly. MOD-I201 is the 6.0 side. |
-| MOD-I201 | Copy tool | **Found by the migration-equivalence nightly set** (run 38120962016, job 114422262436). 6.0 on SQL Server can't hold text outside windows-1252: the build under test creates `varchar` columns on the default collation. A 5.17 site on another database with emoji or CJK in group names, portlet titles, layout names or user attributes can't move to 6.0 on SQL Server. The copy from MariaDB 10.6 wrote all 2,185 rows, and verification refused 14 tables (same row counts, other hashes): `news_definition`, `news_role`, `up_dlm_evaluator`, `up_group`, `up_pags_group`, `up_pags_test`, `up_permission`, `up_permission_owner`, `up_permission_activity`, `up_layout_struct`, `up_portlet_def`, `up_portlet_pref`, `up_portlet_pref_values`, `up_person_attr_values`. The copy failed, so nothing was lost without notice. The plan reported 0 warnings. | Open, schema decision with the project owner: `nvarchar` through Hibernate's nationalized strings, or a UTF-8 collation with lengths sized in characters. The nightly copy into SQL Server fails until that decision is made. MOD-I202 makes the plan refuse such a copy before it starts. |
-| MOD-I202 | Copy tool | The plan doesn't compare the target's text encoding with the source's text. A copy into a code-page column (SQL Server's default collation, MOD-I201) of text it can't hold copies every row, and only verification refuses the tables afterwards. | In progress on `ccr-43ba0785-hzlrj5-copy-codepage-warning`. The plan reads the collation of each target text column. For a source value with characters outside the target's code page, it reports a plan error with the table, the column and the row's key. |
+| MOD-I196 | Data | **Found by the migration-equivalence nightly set** (uPortal-start run 38120962016, job 114422262361). A 5.17 limit on SQL Server: 5.17 creates `varchar` columns, which on SQL Server's default collation keep only windows-1252. Text outside it (emoji, CJK) is stored as `?`, and 5.17 then can't find a row by such a name: importing the fixture's PAGS group `PAGS Fixture Child 🌱` stopped with `NoSuchElementException` in `dropTestGroupsAndTests`. A UTF-8 collation doesn't help, because `varchar(n)` then counts bytes: the fixture's 254-character attribute is 425 bytes and a portlet description 395. So 5.17 on SQL Server can't hold the fixture with either collation. The persistence goldens model the same conversion in `DatabaseVendor.sqlServerVarchar` (uPortal-webapp tests). | Open (5.17 behaviour). The equivalence check converts the fixture and the reference to windows-1252 when 5.17 runs on SQL Server (uPortal-start f6d21dd46, `tests/db/equivalence/code_page.py`), and compares both exports exactly. The conversion writes `_` (721c07314), because 5.17 names exported files after group names and `?` is not allowed in an Actions artifact. `vendors/sqlserver.diff` records the one other SQL Server difference, a PUBLISHED time rounded to 1/300 s (2c178247c). MOD-I201 is the 6.0 side. |
+| MOD-I200 | Data | **Found by the migration-equivalence nightly set** (uPortal-start run 38120962016, job 114422262407; the cause in run 38128100470, job 114443868353). On Oracle, `dataExport` failed for every layout profile, in 5.17.9 and in 6.0: `export-profile.crn` passes `STRUCTURE_SS_ID`, `THEME_SS_ID`, `USER_ID` and `PROFILE_ID` from SQL to `getStylesheetDescriptor(long)` and `getStylesheetUserPreferences(descriptor, int, int)`, and Oracle returns `NUMBER` columns as `BigDecimal`, which Groovy does not pass as a `long` or an `int` ("No signature of method getStylesheetDescriptor() is applicable for argument types: (BigDecimal)"). The import script already converts the same ids. A 5.17 limit that 6.0 shared. | **Fixed in 6.0** (0482bf643): the script converts the ids with `longValue()` and `intValue()`. `ProfileExportTest` runs it on legacy tables with `DECIMAL` ids, which every database returns as `BigDecimal`, so each database of DB integration behaves as Oracle does. The test failed before the fix. The equivalence check skips 5.17's export on Oracle and compares 6.0's export with the reference (uPortal-start 1b4b49066). |
+| MOD-I201 | Copy tool | **Found by the migration-equivalence nightly set** (run 38120962016, job 114422262436). 6.0 on SQL Server can't hold text outside windows-1252: the build under test creates `varchar` columns on the default collation. A 5.17 site on another database with emoji or CJK in group names, portlet titles, layout names or user attributes can't move to 6.0 on SQL Server. The copy from MariaDB 10.6 wrote all 2,185 rows, and verification refused 14 tables (same row counts, other hashes): `news_definition`, `news_role`, `up_dlm_evaluator`, `up_group`, `up_pags_group`, `up_pags_test`, `up_permission`, `up_permission_owner`, `up_permission_activity`, `up_layout_struct`, `up_portlet_def`, `up_portlet_pref`, `up_portlet_pref_values`, `up_person_attr_values`. The copy failed, so nothing was lost without notice. The plan reported 0 warnings. | Open until the 6.0 schema step: fixed by MOD-D44 in the 6.0 schema step (`nvarchar` through Hibernate's nationalized strings, uPortal c56fdc315). The nightly copy into SQL Server fails until that step is merged. MOD-I202 makes the plan refuse such a copy before it starts. |
+| MOD-I202 | Copy tool | The plan doesn't compare the target's text encoding with the source's text. A copy into a code-page column (SQL Server's default collation, MOD-I201) of text it can't hold copies every row, and only verification refuses the tables afterwards. | **Fixed** (4e55485f7). The plan reads the character set of each target text column (SQL Server code pages, MySQL/MariaDB column character sets, PostgreSQL and Oracle database character sets). For source values with characters outside it, it reports a plan error with the column, the number of rows and the lowest key with its first such character, and doesn't write any row. `TextEncodingTest`, `TargetCodePageChecksTest`, and two `CopyFaultIT` cases with an emoji (windows-1252 on SQL Server and MySQL/MariaDB `latin1`, and `utf8mb3`). |
+| MOD-I203 | Groups | **Found by a new API spec** (uPortal-start `tests/api/entities.spec.ts`, f3c3ddede), on a question from the persistence session. Every portlet search of the entity selector answers HTTP 500: `GroupListHelperImpl.search` always asks with `SearchMethod.CONTAINS_CI`, and `PortletDefinitionSearcher` (uPortal-groups-local) handles `DISCRETE`, `STARTS_WITH`, `ENDS_WITH` and `CONTAINS` only and throws `GroupsException("Unknown search type")`. The group services pass the exception up, so `/api/entities.json?entityType[]=portlet` fails, as does choosing a portlet as a permission target (`EntityTargetProviderImpl.searchTargets`). Group and person searches work. Unchanged since 5.17. | Open, for the persistence session: map the `*_CI` methods in `PortletDefinitionSearcher` onto the case-insensitive portlet search that the persistence fixes add (`upper()` on both sides, MOD-I142). Today's search upper-cases the term but not the name. Mapped onto it, a mixed-case search would still miss on HSQLDB, PostgreSQL and Oracle. The spec states the intended result (200, Bookmarks found for "oOKMARK") under `test.fail()` naming MOD-I203, so it reports "unexpectedly passed" once the fix is merged. |
+| MOD-I220 | Persistence | **Found by the entity round trip.** `UP_MUTEX.LOCK_END` (`ClusterMutex.lockEnd`) is stored as JVM-local time too, but MOD-I141's list left it out. | **Fixed** with MOD-I141: `Instant` in UTC, converted by the copy tool. |
+| MOD-I221 | Persistence | `hibernate.jdbc.time_zone=UTC` alone moves `UP_TIME_DIMENSION.TD_TIME` by the JVM's offset (00:00 stored as 05:00 in New York). Without a zone, Jadira's `localTime` binds through Hibernate's time descriptor. | **Fixed:** `JvmZoneLocalTimeType` binds with the JVM zone's calendar, as before. |
+| MOD-I222 | Portlets | `TransientPortletEntityDao.getPortletEntity` threw a NullPointerException for a transient node the layout lacks or whose portlet is gone (seen on `layout.json` with `user=null` in the first P2 runs). | **Fixed:** returns null. |
+| MOD-I223 | Portlets | On SQL Server, `[` in a portlet search term starts a LIKE character class. HSQLDB and Oracle reject `![`, so one escape set can't serve every vendor. | **Fixed:** the DAO escapes `[` on SQL Server only, from PortalDb's dialect. The query golden checks that the vendors agree. |
+| MOD-I224 | Persistence | **Found by the cluster harness.** MOD-I191's tie-breaker added `USP.STRUCT_PARM_NM` to the ORDER BY of `RDBMUserLayoutStore.getUserLayout`, which both of its queries share. Without outer joins the query reads `UP_LAYOUT_STRUCT` alone, and `dataInit` always takes that path: the portal tables don't exist yet when it starts, so `supportsOuterJoins()` returns false for the whole run. PostgreSQL 18 answered "missing FROM-clause entry for table usp" while importing the welcome-lo fragment layout. uPortal's DB integration tests never load a layout through this store. | **Fixed** (`ccr-43ba0785-hzlrj5-layout-order`): each query orders only by columns it reads, and `RDBMUserLayoutStoreQueryTest` runs both on HSQLDB. MOD-D53 now asks for an Integration run on uPortal-start for uPortal persistence changes. |
+| MOD-I225 | Spring | Spring 5.3's `@Nullable` annotations make SpotBugs report 41 findings in 15 modules, all in existing code: 35 possible null dereferences, 3 nulls passed for non-null parameters and 3 redundant null checks. Null can reach some of the sites, and four of them threw a `NullPointerException`. | **Fixed** (7870de9d8 to 7df60017b, one commit per module, on Spring 4.3). Where null can't occur, `Objects.requireNonNull` names the query or object. Where it can, the code handles it, with a test that failed first. On the merged `spring53` tree SpotBugs reports 0 findings with the baselines unchanged (`notes/spring53-nullness.md`). |
+| MOD-I230 | Persistence | **Found by the background-preference conversion.** When one user saves portlet-entity preferences from two sessions at once, Hibernate refuses one save, and a stale cached `PortletPreferenceImpl` can remain. The user's next sign-in then fails with `EntityNotFoundException` until Tomcat restarts. It is the existing `PortletEntityPreferencesAPIImpl` store, which the portlets use too. Seen when two Playwright workers changed the student's background at once. | **Open.** Write a test that saves the same user's entity preferences from two sessions at once and then signs in, and show the failure. Then fix the cache handling (evict on a failed save, or retry). A refused save must not leave a stale entity in the cache. Until then a user can be locked out by saving preferences in two tabs. |
+| MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Fixed** (8e34b7dd4): each message has Spanish and French text. The MOD-D50 check (`translations.unit.test.ts`, d172e169a) fails when a component message has no Spanish or French text. |
+| MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Fixed** (7a64f57b8): the message sources read UTF-8, and `MessageSourceEncodingTest` reads the French line. Every bundle they read is valid UTF-8. Lines with `\u` escapes read as before. |
+| MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
+| MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, decided (project owner, 2026-10-11).** Make Respondr right to left (`dir` from the locale and mirrored stylesheets) after the accessibility fixes (MOD-D47), on `ccr-43ba0785-hzlrj5-hardening`. |
+| MOD-I235 | Web components | `formatMessage` in `lib/i18n.ts` turns numbers into text with `String()`, so counts and positions ignore the locale's digits and separators. Messages have no plural forms. | **Fixed** (c5d34523c, 3364a57af): `msgPlural` picks plural forms with `Intl.PluralRules`, and `formatMessage` formats numbers and dates for the element's locale (MOD-D51). |
+| MOD-I240 | DB harness | G-index keyed a sequential-scan finding and its allowlist entry by an md5 of the statement's text on PostgreSQL and by the server's digest on MariaDB. Hibernate 5.2 renumbered its column aliases, which moved three R1 ids and failed every branch built on it (run 38130071085). Hibernate 5.6, 6.6 and 7.4 are still to come. | **Fixed** (uPortal-start 01672dfa4): `audit.py` keys a statement by an md5 of its text in lower case, without quoting, spacing or Hibernate's numbered aliases, on both vendors. `test_audit.py` checks that an alias change keeps the id. The allowlist was re-recorded with the new ids (uPortal-start c5da15604). |
+| MOD-I260 | i18n | `MessagesRESTController` read `locale=zh_TW`, the form Java and `portal_locales` use, as no language and answered in the user's locale. | **Fixed** (a3cca2705): the messages API reads `_` as `-`. `MessagesLocaleFallbackTest` failed before the fix. |
+| MOD-I261 | Web components | In Bootstrap 6 alpha a select's arrow sits at the physical right, but its padding is at the inline end. In a right-to-left locale the arrow covers the value. | **Fixed** (aa5b3ef1d): the shared sheet draws the arrow on the left under `:dir(rtl)`. Bootstrap could take the same fix. |
+| MOD-I263 | Web components | The English page info of Popular Portlets said "of 1 items" for one item, as the 5.17 portlet did. | **Fixed in uPortal** (b89180cd0): the English `.one` form says "of 1 item". The uPortal-start characterisation spec changes with it in its own commit, which is still to be merged. |
+| MOD-I300 | CI | Every uPortal-start job that runs Playwright installed the npm packages and a Chromium build from scratch. | **Fixed** (uPortal-start 996653bf7): `setup-node` caches npm, and the workflows that install Playwright cache `~/.cache/ms-playwright` by Playwright version. uPortal has no `npm ci` step to cache. |
+| MOD-I301 | CI | Every cell of uPortal's CI matrix installed Chromium and ran the web component tests and the JavaScript lint, with the same result in each. | **Fixed** (88c9793e6): only Linux Temurin 21 does. The other cells pass `-PskipWebComponentTests`. |
+| MOD-I302 | CI | The separate SpotBugs job set up Java and Gradle and compiled every module again (9 min 44 s in run 38143056177). | **Fixed** (1eb2d6a6f, 9512fcf91): SpotBugs runs in the Linux Temurin 21 cell after Build and Test, on the compiled classes. It writes its findings as an error annotation. The required check `Static analysis (SpotBugs and FindSecBugs)` no longer exists. |
+| MOD-I303 | CI | The four `plan` jobs of uPortal-start's database workflows were separate runner starts that the build waited for. | **Fixed** (uPortal-start 523ad75d3): they are the first steps of `Build uPortal`. On a workstream push without replay changes, HTTP replay now starts that job for two steps. |
+| MOD-I304 | CI | The database scripts ran as one workflow step. The step list showed only their total time. | **Fixed** (uPortal-start 6b51ea4da): each phase is a log group with its seconds. The table is a job summary and a notice annotation. |
+| MOD-I305 | CI | A full CI run built Zulu and Corretto cells on every push to the integration branch and on every pull request. | **Fixed** (3cc6ca5c5, uPortal-start 3c3e8bb6d): they run only in a manual run with the new `nightly` input ticked (MOD-D55). |
+| MOD-I306 | CI | G-index ran on every workstream push, about an hour of a runner each time. | **Fixed** (uPortal-start 5ca1d6fb7): it runs when the push changes persistence, SQL, schema, data files or G-index itself, in uPortal-start or in the uPortal branch of the same name (MOD-D55). |
+| MOD-I307 | CI | The uPortal that uPortal-start's workflows built fell back to the branch name with its last `-suffix` dropped. `-tests-e2e-r3` tested an older `-tests-e2e` from before Hibernate 5.2 (run 38147009440). | **Fixed** (uPortal-start 1aeac8783, 7767da45f): the order is the same-name branch, the integration branch, master. The job writes repository, ref and commit as a notice annotation and in the last log lines, and the checkout uses that commit. |
+| MOD-I310 | Persistence | **Cache bug.** `LocalAccountPersonImpl`, its attributes and the attribute values used `NONSTRICT_READ_WRITE`, whose `putFromLoad` compares no timestamp or version (the MOD-I204 race). A login that read a local account before a password change, an attribute change or a delete committed put the old account back into the cache for up to 30 minutes on that server. In that time the old password could log in instead of the new one, and a deleted account still loaded by id. It affects local-login accounts only. | **Owner (2026-10-11):** a cache bug, since the local password login is used only in demos. **Fixed** (841789316): `READ_WRITE` for `LocalAccountPersonImpl`, its `attributes` collection and `LocalAccountPersonAttributeImpl.values`. Its soft locks refuse a load older than the change. `LocalAccountCacheRaceTest` failed before the fix. |
+| MOD-I311 | Persistence | A PAGS group definition's `members` and its test group's `tests` used `NONSTRICT_READ_WRITE` (the MOD-I204 race). A load of a definition racing an import or a PAGS admin change could keep the old membership or tests cached. PAGS evaluates group membership, and with it the permissions a group grants, from these on each login. | **Fixed** (d0ea3ed47): `READ_WRITE` for `PersonAttributesGroupDefinitionImpl.members` and `PersonAttributesGroupTestGroupDefinitionImpl.tests`. `PagsDefinitionCacheRaceTest` failed before the fix. |
+| MOD-I312 | Persistence | A user's `StylesheetUserPreferencesImpl`, its `parameters` and its per-node `layoutAttributes` used `NONSTRICT_READ_WRITE` (the MOD-I204 race). A load of the preferences racing a layout save by the same user could undo the change until the entry expired and fail the next save with an optimistic-lock error. | **Fixed** (31d9cf3db): `READ_WRITE` for `StylesheetUserPreferencesImpl`, its `parameters` and `layoutAttributes` collections, and `LayoutNodeAttributesImpl.attributes`. `StylesheetUserPreferencesCacheRaceTest` failed before the fix with every value stale. |
+| MOD-I320 | Theme | About 100 ms after the load event, `portal-analytics.js` set up every `.dropdown-toggle` again. It set `aria-expanded="false"` and replaced the Bootstrap instance, whatever the menu's state. A portlet's Options menu opened before then was still shown while screen readers were told it was closed, and two Playwright tests failed at random on it. | **Fixed in uPortal** (a7c127800): `aria-expanded` follows the toggle's `show` class, and `getOrCreateInstance` reuses the instance. The uPortal-start test that opens the menu on the load event (30 of 30 runs failed before the fix, 30 of 30 passed after) is still to be merged. |
+| MOD-I321 | Web components | The `UserLocale` portlet's flow passed any code the form sent to `UserLocaleHelper.updateUserLocale`, which parses any string into a locale and stores it. | **Fixed for the component:** `/api/v6-0/locale` accepts only the locales in `portal_locales` and answers 400 to others. UPGRADING-6.0 says so. The portlet keeps the old behaviour until it is converted. |
+| MOD-I322 | Web components | The user locale selector marks no language for a user who never saved one, and the theme then renders in the portal's default locale. | **Open.** The component keeps the portlet's behaviour. A later change could mark the language the page is rendered in. |
+| MOD-I323 | Web components | A keydown listener on the portal page cancels Escape, so a modal dialog inside a web component can't be closed with it. | **Open.** Find the listener before a component relies on Escape (`notes/wc-session-timeout.md`). |
+| MOD-I324 | Web components | Content-hashed web component modules are served with `max-age=0`, and the page caching filter keeps stale copies until Tomcat restarts. It affects every component. | **Open.** Serve hashed modules as immutable and leave them out of the page cache. |
+| MOD-I325 | i18n | A draft of the Session Timeout note listed `session-timeout.keep-alive.failed` as English only. | **Not an issue.** The Spanish and French texts came with the conversion (`c2c49a35b`) and are on the integration branch. The row is kept so the number isn't reused. |
+| MOD-I330 | Concurrency | Removing a favorite answers HTTP 500 when the same user changes favorites in two sessions at once (3 or 4 of 30 runs of `portlet-options.spec.ts` with 4 workers, all as student). Each session loads the layout into its own `DistributedLayoutManager`. When another session has already removed the node, `deleteNode` throws `PortalException: Element with ID="n8" doesn't exist for student`. The same runs logged unique-key conflicts on `UP_LAYOUT_PARAM` (`RDBMUserLayoutStore.setUserLayout`) and `UP_AGGR_TAB_MAPPING` (`JpaAggregatedTabLookupDao.getTabMapping`). | **Open.** Reproduce with `npx playwright test tests/ux/smoke/portlet-options.spec.ts --repeat-each=30 --retries=0 --workers=4` against a local portal (`notes/options-dropdown.md`). |
 
 ## Open questions
 

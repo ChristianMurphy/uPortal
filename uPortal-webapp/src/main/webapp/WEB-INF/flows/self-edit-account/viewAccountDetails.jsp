@@ -26,10 +26,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div class="card portlet user-mgr view-reviewuser" role="section">
+<div class="card portlet user-mgr view-reviewuser">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading"><spring:message code="my.account"/></h2>
         <c:if test="${ canEditAccount }">
             <div class="toolbar">
