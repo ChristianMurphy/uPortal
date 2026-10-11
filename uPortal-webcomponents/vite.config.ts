@@ -9,7 +9,6 @@ import { playwright } from 'vite-plus/test/browser-playwright';
 const components = [
     'up-favorites',
     'up-popular-portlets',
-    'up-self-edit-account',
     'up-background-preference',
     'up-user-locale',
     'up-session-timeout',
