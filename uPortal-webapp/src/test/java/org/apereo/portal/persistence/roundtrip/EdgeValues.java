@@ -146,6 +146,9 @@ final class EdgeValues {
             final Instant instant = instant(slot, variant, seed);
             return instant == null ? null : new Date(instant.toEpochMilli());
         }
+        if (type == Instant.class) {
+            return instant(slot, variant, seed);
+        }
         if (type == Timestamp.class) {
             final Instant instant = instant(slot, variant, seed);
             return instant == null ? null : new Timestamp(instant.toEpochMilli());

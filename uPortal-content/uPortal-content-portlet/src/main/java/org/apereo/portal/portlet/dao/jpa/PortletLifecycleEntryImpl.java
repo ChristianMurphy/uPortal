@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.portlet.dao.jpa;
 
+import java.time.Instant;
 import java.util.Date;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
@@ -56,7 +57,7 @@ public class PortletLifecycleEntryImpl implements IPortletLifecycleEntry {
     private int lifecycleStateId = -1;
 
     @Column(name = "ENTRY_DATE")
-    private Date date = null;
+    private Instant date = null;
 
     /** Default constructor required by Hibernate */
     public PortletLifecycleEntryImpl() {
@@ -67,7 +68,7 @@ public class PortletLifecycleEntryImpl implements IPortletLifecycleEntry {
         this.id = -1;
         this.userId = userId;
         this.lifecycleStateId = lifecycleState.getOrder();
-        this.date = date;
+        this.date = date == null ? null : date.toInstant();
     }
 
     @Override
@@ -82,12 +83,12 @@ public class PortletLifecycleEntryImpl implements IPortletLifecycleEntry {
 
     @Override
     public Date getDate() {
-        return date;
+        return date == null ? null : Date.from(date);
     }
 
     @Override
     public int compareTo(IPortletLifecycleEntry o) {
-        int result = date.compareTo(o.getDate());
+        int result = getDate().compareTo(o.getDate());
         if (result == 0) {
             result = lifecycleStateId - o.getLifecycleState().getOrder();
         }

@@ -15,7 +15,7 @@
 package org.apereo.portal.concurrency.locking;
 
 import java.io.Serializable;
-import java.util.Date;
+import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -63,13 +63,13 @@ public class ClusterMutex implements Serializable {
     private String previousServerId;
 
     @Column(name = "LOCK_START", nullable = false)
-    private Date lockStart = new Date(0);
+    private Instant lockStart = Instant.EPOCH;
 
     @Column(name = "LOCK_UPDATE", nullable = false)
-    private Date lastUpdate = new Date(0);
+    private Instant lastUpdate = Instant.EPOCH;
 
     @Column(name = "LOCK_END", nullable = false)
-    private Date lockEnd = new Date(0);
+    private Instant lockEnd = Instant.EPOCH;
 
     @SuppressWarnings("unused")
     private ClusterMutex() {
@@ -126,21 +126,21 @@ public class ClusterMutex implements Serializable {
      * @return the lockStart
      */
     public long getLockStart() {
-        return this.lockStart.getTime();
+        return this.lockStart.toEpochMilli();
     }
 
     /**
      * @return the lastUpdate
      */
     public long getLastUpdate() {
-        return this.lastUpdate.getTime();
+        return this.lastUpdate.toEpochMilli();
     }
 
     /**
      * @return the lockEnd
      */
     public long getLockEnd() {
-        return this.lockEnd.getTime();
+        return this.lockEnd.toEpochMilli();
     }
 
     /** Mark the mutex as locked by the specific server */
@@ -150,7 +150,7 @@ public class ClusterMutex implements Serializable {
             throw new IllegalStateException("Cannot lock already locked mutex: " + this);
         }
         this.locked = true;
-        this.lockStart = new Date();
+        this.lockStart = now();
         this.lastUpdate = this.lockStart;
         this.serverId = serverId;
     }
@@ -160,7 +160,7 @@ public class ClusterMutex implements Serializable {
             throw new IllegalStateException("Cannot unlock already unlocked mutex: " + this);
         }
         this.locked = false;
-        this.lockEnd = new Date();
+        this.lockEnd = now();
         this.previousServerId = this.serverId;
         this.serverId = null;
     }
@@ -169,12 +169,17 @@ public class ClusterMutex implements Serializable {
      * @param lastUpdate the lastUpdate to set
      */
     void updateLock() {
-        this.lastUpdate = new Date();
+        this.lastUpdate = now();
     }
 
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()
      */
+    /** The current time, in milliseconds as {@code new Date()} gave it */
+    private static Instant now() {
+        return Instant.ofEpochMilli(System.currentTimeMillis());
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;

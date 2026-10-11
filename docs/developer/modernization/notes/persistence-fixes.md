@@ -14,8 +14,8 @@ commit body.
 | Fix | State | Commits | CI |
 | --- | --- | --- | --- |
 | MOD-I142 portlet search | pushed; light CI | `3e7e375` | |
-| MOD-I191 order tie-breakers | done locally (HSQLDB, full webapp suite) | see `git log` | |
-| MOD-I141 timestamps in UTC | waiting on the coordinator: `lockEnd`, the 6.0 copy profile, the in-place path | | |
+| MOD-I191 order tie-breakers | pushed; light CI | `98f0524` | |
+| MOD-I141 timestamps in UTC | half done: mappings and UTC storage committed; the upgrade conversion waits on the coordinator | see `git log` | |
 | MOD-I140 analytics repeated hour | design note sent (option B recommended), waiting for the decision | | |
 | G-index R4 | not started, needs uPortal-start access and the 6.0 schema-change ruling | | |
 
@@ -93,4 +93,51 @@ Goldens:
   `PortletList[MAX].items: @OrderBy("LIST_ORDER ASC") leaves elements tied`.
 - Not covered by a golden: the two `RDBMUserLayoutStore` queries and `RDBMLocaleStore`. HSQLDB
   returns their ties in key order anyway, so a test there can't fail without the change.
+
+## MOD-I141: timestamps in UTC
+
+### Every temporal column uPortal maps
+
+| Table.column | Field | Mapping | 5.17 stores | With `hibernate.jdbc.time_zone=UTC` alone | After this fix |
+| --- | --- | --- | --- | --- | --- |
+| `UP_PORTLET_LIFECYCLE.ENTRY_DATE` | `PortletLifecycleEntryImpl.date` | `java.util.Date` | JVM local | UTC | `Instant`, UTC |
+| `UP_MUTEX.LOCK_START`, `LOCK_UPDATE` | `ClusterMutex.lockStart`, `lastUpdate` | `java.util.Date` | JVM local | UTC | `Instant`, UTC |
+| `UP_MUTEX.LOCK_END` | `ClusterMutex.lockEnd` | `java.util.Date` | JVM local | UTC | `Instant`, UTC (not in MOD-I141's list, see below) |
+| `UP_PERSON_DIR.LST_PSWD_CGH_DT` | `LocalAccountPersonImpl.lastPasswordChange` | `java.util.Date` | JVM local | UTC | `Instant`, UTC |
+| `UP_PORTLET_LIST.CREATED_ON`, `UPDATED_ON` | `PortletList.createdOn`, `updatedOn` | `java.sql.Timestamp` | JVM local | UTC | `Instant`, UTC |
+| `UP_TIME_DIMENSION.TD_TIME` | `TimeDimensionImpl.time` | Jadira `localTime` | JVM local time of day | **moves by the JVM offset** | unchanged (`JvmZoneLocalTimeType`) |
+| `UP_DATE_DIMENSION.DD_DATE` | `DateDimensionImpl.date` | Jadira `localDate`, `databaseZone=jvm` | local date | unchanged | unchanged |
+| `UP_RAW_EVENTS.TIMESTAMP`, `UP_ANALYTICS_EVENTS.TIMESTAMP` | `PersistentPortalEvent`, `PersistentAnalyticsEvent` | Jadira `dateTime` | UTC | unchanged | unchanged |
+| `UP_EVENT_AGGR_STATUS.LAST_START`, `LAST_END`, `LAST_EVENT_DATE` | `EventAggregatorStatusImpl` | Jadira `dateTime` | UTC | unchanged | unchanged |
+| `UP_ACADEMIC_TERM_DETAIL.TERM_START`, `TERM_END` | `AcademicTermDetailImpl` | Jadira `dateTime` | UTC | unchanged | unchanged |
+| `UP_EVENT_SESSION.LAST_ACCESSED` | `EventSessionImpl.lastAccessed` | Jadira `dateTime` | UTC | unchanged | unchanged |
+| `UP_PORTAL_COOKIES.CREATED`, `EXPIRES`; `UP_PORTLET_COOKIES.EXPIRES` | cookie entities | Jadira `dateTime` | UTC | unchanged | unchanged |
+| `UP_QUARTER_DETAIL.QUARTER_START`, `QUARTER_END` | `QuarterDetailImpl` | Jadira `monthDay` (a string) | text | unchanged | unchanged |
+
+No entity maps `Calendar` or a java.time type before this fix. Plain JDBC code
+(`RDBMEntityLockStore` on `UP_ENTITY_LOCK.EXPIRATION_TIME`, `RDBMPermissionImpl` on
+`UP_PERMISSION.EFFECTIVE`/`EXPIRES`, `RDBMUserLayoutStore` on `UP_USER.LST_CHAN_UPDT_DT`) doesn't
+go through Hibernate and keeps storing JVM-local time.
+
+Evidence: two recordings of the America/New_York round-trip golden, one with only the property
+and one with the whole fix. The UTC golden is the reference.
+
+- With only the property, `TD_TIME` moved: 00:00 was stored as 05:00. Jadira's `localTime` type
+  without a zone binds through Hibernate's own time descriptor, which applies
+  `hibernate.jdbc.time_zone`. `databaseZone=jvm` means "no zone" to Jadira, so it doesn't help.
+  `JvmZoneLocalTimeType` passes the JVM zone's ID as `databaseZone`, and Jadira then binds with that
+  zone's calendar, as 5.17 effectively did.
+- After the fix, the New York rows of the four tables equal the UTC rows, the AggrEventsDb and
+  RawEventsDb goldens don't change, and the "lossy" lines for the repeated hour are gone.
+- Under a UTC JVM every stored value stays the same. The UTC golden loses only the five `class ... :
+  java.sql.Timestamp` notes, because `Instant` fields read back as `Instant`.
+- Before the fix, `JpaLocalAccountDaoImplTest.aPasswordChangeIsStoredInUtc` failed with
+  `expected:<2026-11-01T05:30> but was:<2026-11-01T01:30>`.
+
+Public API: the getters and setters keep their `Date` and `Timestamp` types. `PortletList`'s JSON
+getters build a `Timestamp` from the `Instant`, so the REST output doesn't change.
+
+Waiting on the coordinator (sent 2026-10-11): whether `LOCK_END` joins the list (it moves with
+the property either way), the copy tool's 6.0 profile and `--source-zone`, and the in-place
+upgrade path.
 

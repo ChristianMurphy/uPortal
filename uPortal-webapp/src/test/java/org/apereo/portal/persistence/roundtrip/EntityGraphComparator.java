@@ -584,6 +584,9 @@ final class EntityGraphComparator {
         if (value instanceof DateTime) {
             return value.toString();
         }
+        if (value instanceof java.time.Instant) {
+            return value + "(Instant)";
+        }
         if (value instanceof Date) {
             return java.time.Instant.ofEpochMilli(((Date) value).getTime())
                     + "("
