@@ -1119,9 +1119,13 @@ This supersedes MOD-D24's runtime matrix.
   `web-component-channel.spec.ts` adds three for the channel type. Two
   local full-suite runs on HSQLDB against uPortal from source passed all
   of them; the only failures were the two sandbox web-proxy tests and,
-  in one run, a portlet-list test that times out under load. CI: uPortal
-  CI 38104024957, uPortal-start CI 38104005708 and Integration
-  38104005683 (uPortal 9c996809b, uPortal-start 4bddf44a7).
+  in one run, a portlet-list test that times out under load. On
+  uPortal-start 4bddf44a7 both CI 38104005708 and Integration 38104005683
+  are green. Integration ran Playwright on HSQLDB, PostgreSQL 18 and
+  MariaDB 12.3, and the harness on all six 6.0 servers found both
+  intended changes. uPortal CI 38104024957 failed on Windows
+  because `.ts` files were checked out with CRLF. CI 38105388258 on the
+  fix (95493437d) passed on every leg.
 
 * **Status (2026-10-11, copy-tool strength tests):** in
   `uPortal-db-migrate`, described in
