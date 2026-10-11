@@ -242,6 +242,22 @@ describe('up-self-edit-account editing', () => {
         expect(await axeViolations(element)).toEqual([]);
     });
 
+    it('refuses a confirmation that differs without sending it', async () => {
+        const element = await openForm();
+        await userEvent.fill(input(element, 'password'), 'n3w-Secret!');
+        await userEvent.fill(input(element, 'confirmPassword'), 'n3w-Secret?');
+        await userEvent.click(find(element, '.save'));
+
+        await expect
+            .poll(() => shadow(element).querySelector('.notice')?.textContent)
+            .toContain('Passwords must match');
+        expect(find(element, '.notice').getAttribute('role')).toBe('alert');
+        expect(input(element, 'password').value).toBe('');
+        expect(input(element, 'confirmPassword').value).toBe('');
+        expect(server.requests.some((request) => request.method === 'PUT')).toBe(false);
+        expect(await axeViolations(element)).toEqual([]);
+    });
+
     it('saves with Enter', async () => {
         const element = await openForm();
         await userEvent.type(input(element, 'attribute-title'), 'Dr{Enter}');
@@ -282,6 +298,7 @@ describe('up-self-edit-account editing', () => {
         const element = await openForm();
         await userEvent.fill(input(element, 'attribute-title'), 'Dr');
         await userEvent.fill(input(element, 'password'), 'n3w-Secret!');
+        await userEvent.fill(input(element, 'confirmPassword'), 'n3w-Secret!');
         await userEvent.click(find(element, '.save'));
 
         await expect

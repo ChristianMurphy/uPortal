@@ -47,6 +47,7 @@ const VIEWER: AccountData = { ...EDITOR, canEdit: false, editable: [] };
 const LOAD_FAILED = 'Your account could not be loaded.';
 const SESSION_EXPIRED = 'Your session has expired. Sign in again to see your account.';
 const SAVE_FAILED = 'Your account could not be updated. Try again later.';
+const PASSWORDS_DIFFER = 'Passwords must match';
 
 /**
  * The events the traversal tries: user events, and the outcomes of the invoked REST calls
@@ -85,7 +86,7 @@ function serialize(snapshot: Snapshot): string {
         draft,
         password !== '',
         confirmPassword !== '',
-        notice?.reason ?? null,
+        notice ?? null,
     ]);
 }
 
@@ -223,9 +224,13 @@ function expectRendered(element: UpSelfEditAccount, snapshot: Snapshot): void {
         expect(shown).toBeNull();
     } else {
         expect(shown?.getAttribute('role')).toBe('alert');
-        expect(shown?.textContent).toContain(
-            notice.reason === 'unauthorized' ? SESSION_EXPIRED : SAVE_FAILED,
-        );
+        const expected =
+            notice.kind === 'passwords-differ'
+                ? PASSWORDS_DIFFER
+                : notice.reason === 'unauthorized'
+                  ? SESSION_EXPIRED
+                  : SAVE_FAILED;
+        expect(shown?.textContent).toContain(expected);
     }
 }
 

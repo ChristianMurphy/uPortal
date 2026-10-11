@@ -14,8 +14,12 @@ import type { Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
 import type { AccountAttribute } from './account-api';
-import { SELF_EDIT_ACCOUNT_MESSAGES } from './messages';
-import { selfEditAccountMachine, type PasswordField } from './up-self-edit-account.machine';
+import { SELF_EDIT_ACCOUNT_MESSAGES, type SelfEditAccountMessageKey } from './messages';
+import {
+    selfEditAccountMachine,
+    type Notice,
+    type PasswordField,
+} from './up-self-edit-account.machine';
 
 /** The value of the input an `input` event came from. */
 function inputValue(event: Event): string {
@@ -25,6 +29,14 @@ function inputValue(event: Event): string {
         return '';
     }
     return input.value;
+}
+
+/** The message key for a notice. */
+function noticeMessage(notice: Notice): SelfEditAccountMessageKey {
+    if (notice.kind === 'passwords-differ') {
+        return 'passwords.must.match';
+    }
+    return notice.reason === 'unauthorized' ? 'account.session.expired' : 'account.save.fail';
 }
 
 /** Which view is showing, to move focus when it changes. */
@@ -217,13 +229,7 @@ export class UpSelfEditAccount extends UpElement {
                     notice === undefined
                         ? nothing
                         : html`<div class="alert theme-danger notice" role="alert">
-                              <p>
-                                  ${this.msg(
-                                      notice.reason === 'unauthorized'
-                                          ? 'account.session.expired'
-                                          : 'account.save.fail',
-                                  )}
-                              </p>
+                              <p>${this.msg(noticeMessage(notice))}</p>
                           </div>`
                 }
                 <h3>${this.msg('my.account.details')}</h3>

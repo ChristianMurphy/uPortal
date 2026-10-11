@@ -10,6 +10,7 @@ export const SELF_EDIT_ACCOUNT_MESSAGES = {
     'my.account.details': 'My Account Details',
     password: 'Password',
     'confirm.password': 'Confirm Password',
+    'passwords.must.match': 'Passwords must match',
     save: 'Save',
     cancel: 'Cancel',
     'account.updated': 'Account Updated',

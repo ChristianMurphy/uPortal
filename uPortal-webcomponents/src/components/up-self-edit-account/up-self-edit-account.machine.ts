@@ -4,17 +4,18 @@
  * `saveAccount` actors, which tests replace with `machine.provide({ actors })`.
  *
  * Passwords stay in the context only while the form is open: leaving the form, saving and a failed
- * save all empty them.
+ * or refused save all empty them. A password and a confirmation that differ are refused before
+ * anything is sent.
  */
 import { assign, emit, fromPromise, setup } from 'xstate';
 import { ApiError, type ApiClient, type ApiErrorKind } from '../../lib/api-client';
 import { fetchAccount, saveAccount, type AccountChanges, type AccountData } from './account-api';
 
 /** A visible notice about the last save. */
-export interface Notice {
-    kind: 'save-failed';
-    reason: ApiErrorKind;
-}
+export type Notice =
+    | { kind: 'save-failed'; reason: ApiErrorKind }
+    /** The password and its confirmation differ, so nothing was sent. */
+    | { kind: 'passwords-differ' };
 
 export type PasswordField = 'password' | 'confirmPassword';
 
@@ -74,6 +75,10 @@ export const selfEditAccountMachine = setup({
     },
     guards: {
         canEdit: ({ context }) => context.account.canEdit,
+        // As PersonFormValidator meant to: a password or a confirmation must match the other
+        passwordsMatch: ({ context }) =>
+            (context.password.trim() === '' && context.confirmPassword.trim() === '') ||
+            context.password === context.confirmPassword,
         isEditable: ({ context }, { name }: { name: string }) =>
             context.account.editable.some((attribute) => attribute.name === name),
     },
@@ -154,7 +159,15 @@ export const selfEditAccountMachine = setup({
                             actions: assign(({ event }) => ({ [event.field]: event.value })),
                         },
                         cancel: { target: '#selfEditAccount.viewing', actions: 'closeForm' },
-                        submit: 'saving',
+                        submit: [
+                            { guard: 'passwordsMatch', target: 'saving' },
+                            {
+                                actions: assign({
+                                    ...NO_PASSWORDS,
+                                    notice: { kind: 'passwords-differ' as const },
+                                }),
+                            },
+                        ],
                     },
                 },
                 saving: {
