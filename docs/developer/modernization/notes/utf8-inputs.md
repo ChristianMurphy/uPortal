@@ -13,8 +13,8 @@ its error message lists the allowed characters.
 | --- | --- |
 | 1. Audit | done, table below |
 | 2. MOD-I233 tenant names | done, names and fnames |
-| 3. Other text fields | PAGS group names and descriptions, portlet list names: committed |
-| 4. Storage | already covered by the round trip's UNICODE variant on six vendors; limits listed below |
+| 3. Other text fields | committed, with MOD-I270 to MOD-I277 below; MOD-I278 is open |
+| 4. Storage | already covered by the round trip's UNICODE variant on six vendors; Oracle uses CHAR semantics; limits listed below |
 | 5. Portlet search with accented terms | waits for MOD-I142 (persistence-fixes branch) to reach `ccr-43ba0785-hzlrj5` |
 | 6. Passwords | committed: UTF-8 on every step of sign-in, UPGRADING text |
 
@@ -40,18 +40,19 @@ and `\s` are ASCII-only here, because no pattern uses `UNICODE_CHARACTER_CLASS`.
 | PAGS description | `PagsService` | `^[\w ,\.\(\)]{0,500}$` | text | **Fixed**: any text without control characters, up to 500 code points |
 | Ad hoc group description | `selectEntities.jsp` builds it from the group names | the description rule | text | **Fixed** with the description rule |
 | Portlet list name | `InputValidator`, `PortletList`, `PortletListRESTController` | `^[\w\-]{1,500}$` | text | **Fixed**: any text without control characters, 1 to 255 code points |
-| Portlet list id, owner, item fname | `InputValidator` | `^[\w\-]{1,500}$` | ID | kept; the message lists the characters (see MOD-I270 for the owner) |
+| Portlet list id, item fname | `InputValidator` | `^[\w\-]{1,500}$` | ID | kept; the message lists the characters |
+| Portlet list owner | `InputValidator` | `^[\w\-]{1,500}$` | user name | **Fixed** (MOD-I270): any user name without spaces or control characters, 1 to 100 code points |
 | Portlet fname (every `fname` column) | `FunctionalNameType` | `^[\w-]+$` | ID | kept |
-| Portlet fname in imports | `common-types-4.0.xsd` | `[\w\-_]+` (XML Schema `\w` is Unicode) | ID | MOD-I271 |
-| Portlet fname in URLs | `UrlSyntaxProviderImpl` | `/p/([a-zA-Z0-9_]+)`, `/f/(...)` | ID | MOD-I271 |
+| Portlet fname in imports | `common-types-4.0.xsd` | `[\w\-_]+` (XML Schema `\w` is Unicode) | ID | **Fixed** (MOD-I271): `[A-Za-z0-9_\-]+` |
+| Portlet fname in URLs | `UrlSyntaxProviderImpl` | `/p/([a-zA-Z0-9_]+)`, `/f/(...)` | ID | **Fixed** (MOD-I271): `FunctionalNameType.FNAME_REGEX`, which takes `-` |
 | Tab external id | `SingleTabUrlNodeSyntaxHelper.makeValid` | non-`[\w-]` becomes `_` | ID | kept |
-| Analytics event type | `InputValidator` (core), `PortalEventFactoryImpl` | `^[\w\-]{1,500}$` | ID | kept (column 200, see MOD-I272) |
+| Analytics event type | `InputValidator` (core), `PortalEventFactoryImpl` | `^[\w\-]{1,500}$` | ID | **Fixed** (MOD-I272): 1 to 200, the column's size |
 | Message key | `MessagesRESTController` | `[A-Za-z0-9_.-]{1,200}` | ID | kept |
 | Layout node id | `NodeReferenceFactory`, `JpaAggregatedTabLookupDao` | `[a-zA-Z]\d*`, `u(\d+)l\d+([ns]\d+)` | ID | kept |
 | Web component tag, attribute and module names | `WebComponentConfig` | `[a-z][a-z0-9._]*-...` | ID | kept |
 | User name (tenant admin contact) | `RDBMUserIdentityStore.validateUsername` | `^[^\s]{1,100}$` | ID | kept |
-| Email (tenant admin contact) | `ResetPasswordTenantOperationsListener` | `InternetAddress.validate()` | ID | kept; non-ASCII local parts are refused (MOD-I273) |
-| Entity id in the entity selector | `JsonEntityBean` | `replaceAll("\\W", "__")` | ID (DOM key) | MOD-I274 |
+| Email (tenant admin contact) | `ResetPasswordTenantOperationsListener` | `InternetAddress.validate()` | ID | **Fixed** (MOD-I273): `local@domain.tld` in any script; sending is MOD-I278 |
+| Principal key in the portlet editor | `JsonEntityBean.getTypeAndIdHash` | `replaceAll("\\W", "__")` | ID (form field name) | **Fixed** (MOD-I274): characters outside A-Z, a-z and 0-9 become `_<hex>_` |
 | Export file names | `SequenceGeneratorPhrase` | `[^a-zA-Z0-9_.-]` becomes `_` | ID (file name) | kept |
 
 ### Text without a character check
@@ -60,7 +61,7 @@ Local account user name and password (`PersonFormValidator`, `AccountPasswordFor
 `UserAccountHelper`), local group names (`GroupFormValidator`), portlet titles, names and
 descriptions (`PortletDefinitionFormValidator`), tab names (`UpdatePreferencesServlet`), fragment
 names, marketplace reviews and search terms check only for blank values, uniqueness or length.
-They take any text already. Their lengths are listed under MOD-I272.
+They take any text already. MOD-I272 checks their lengths against the columns.
 
 ### Character sets
 
@@ -71,13 +72,25 @@ They take any text already. Their lengths are listed under MOD-I272.
 | `JAASSecurityContext` | `new String(bytes)` | JAAS password | **Fixed**: UTF-8 |
 | `PortalPasswordServiceImpl` (Jasypt 1.9.3) | `StandardStringDigester` | password hash | UTF-8 already (`MESSAGE_CHARSET`) |
 | `CliPasswordUpdateTool` | `InputStreamReader(System.in, UTF_8)` | new password | UTF-8 already; UPGRADING says to use a UTF-8 terminal |
-| `EmailPasswordResetNotificationImpl` | `new MimeMessageHelper(message, true)` | reset email | MOD-I275 |
-| `BasicAuthInterceptor` | `getBytes()` | configured Basic auth credentials | MOD-I275 |
-| `JaxbPortalDataHandlerService` | `new FileWriter(...)` | import and export reports | MOD-I275 |
-| `AwsS3DynamicSkinService`, `AbstractDynamicSkinService`, `RemoteUserSettingFilter` | readers and writers without a charset | compiled skin CSS, and a file with a user name for development | MOD-I275 |
+| `EmailPasswordResetNotificationImpl` | `new MimeMessageHelper(message, true)` | reset email | **Fixed** (MOD-I275): UTF-8 |
+| `BasicAuthInterceptor` | `getBytes()` | configured Basic auth credentials | **Fixed** (MOD-I275): UTF-8 |
+| `JaxbPortalDataHandlerService` | `new FileWriter(...)` | import and export reports | **Fixed** (MOD-I275): UTF-8 |
+| `AwsS3DynamicSkinService`, `AbstractDynamicSkinService`, `RemoteUserSettingFilter` | readers and writers without a charset, and the LESS compiler's default | compiled skin CSS, and a file with a user name for development | **Fixed** (MOD-I275): UTF-8 |
+| `build.gradle` | javac without `-encoding` | Java sources | open: JDK 18+ reads them as UTF-8, but a build run with `-Dfile.encoding=COMPAT` turns non-ASCII literals in tests into U+FFFD |
 
 The copy tool reads and writes strings through JDBC without converting them, and hashes rows as
-UTF-8 (`RowHasher`). Every `URLEncoder` and `URLDecoder` call passes a charset.
+UTF-8 (`RowHasher`). Every `URLEncoder` and `URLDecoder` call passes a charset. The Soffit
+connector writes the remote response's bytes through unchanged.
+
+### Case changes
+
+Searches that changed case with the server's default locale now use `Locale.ROOT` (MOD-I277).
+These keep the default locale, because on a server with a Turkish or Azeri default a change would
+alter stored or configured values:
+
+- `SearchRequestAggregationUtil.normalizeSearchTerm` lowercases the search terms that analytics
+  stores.
+- `LowercasedRegexTester` (PAGS) lowercases the attribute before matching the configured regex.
 
 ## Storage (item 4)
 
@@ -98,25 +111,45 @@ The DB integration workflow runs the round trip on all six vendors:
 | PostgreSQL 18 | exactly | UTF8 database (the image's default) |
 | MySQL 9.7 | exactly | `utf8mb4` is the server default, and uPortal's DDL doesn't specify a charset |
 | MariaDB 12.3 | exactly | as MySQL |
-| Oracle Free 23 | exactly, but `''` is NULL | AL32UTF8, `varchar2(n char)` |
+| Oracle Free 23 | exactly, but `''` is NULL | AL32UTF8, `varchar2(n char)` (see below) |
 | SQL Server 2025 | characters outside windows-1252 become `?` | `varchar` columns (MOD-D44); the golden reads the conversion from the server (`DatabaseVendor.sqlServerVarchar`) |
 
-Known 6.0 limits, for the 6.0 schema step (also in the persistence-fixes note's list):
+Oracle: uPortal's dialect (`Oracle12ForceClobDialect`) declares every `varchar2` with CHAR
+semantics, for entity tables and `tables.xml` tables alike. The recorded DDL
+(`hibernate/ddl/oracle-23.sql`) has no `byte` column. The schema step keeps the semantics as
+they are.
+
+HSQLDB counts a `VARCHAR` length in UTF-16 units, not code points. A 35-character column holds 17
+emoji there, and the code point checks below allow 35. HSQLDB is for development only.
+
+Known 6.0 limits, for the 6.0 schema step (the SQL Server and MySQL items are also in the
+persistence-fixes note's list; the `MAX_STRING_SIZE` and user name items are new here):
 
 - SQL Server: `nvarchar` text (MOD-D44).
+- Oracle: with the default `MAX_STRING_SIZE=STANDARD`, a `varchar2` holds at most 4000 bytes
+  whatever its semantics. In AL32UTF8 the columns over 1000 characters (the 2000-character
+  parameter, preference, tenant attribute and description values, the 1000 and 1024 ones and
+  `UP_JGROUPS_AUTH.RANDOM_TOKEN`) can refuse a long value in a script of three or four bytes per
+  character. Either document `MAX_STRING_SIZE=EXTENDED` as a minimum for Oracle (MOD-D25) or make
+  those columns `clob`.
+- `UP_PROFILE_SELECTION.USERNAME` holds 70 characters, but user names may have 100 (MOD-I272):
+  widen it to 100.
 - MySQL and MariaDB: the 6.0 DDL should name `utf8mb4` for its tables, so a server configured
   with another default (`utf8mb3` or `latin1`) can't create tables that lose four-byte
   characters.
 
-## Proposed new LOG rows
+## LOG rows MOD-I270 to MOD-I278
 
-| ID | Area | Issue | Proposed resolution |
+The commits are on `ccr-43ba0785-hzlrj5-utf8-inputs`. Each fix has a test that failed first.
+
+| ID | Area | Issue | Resolution |
 | --- | --- | --- | --- |
-| MOD-I270 | Portlets | The portlet list owner must match `^[\w\-]{1,500}$`, so a user name with `.` or `@` (common with CAS) can't own a list. | Check owners with the user name rule (`^[^\s]{1,100}$`). |
-| MOD-I271 | Portlets | The fname rule differs by layer: XSD `[\w\-_]+` takes Unicode letters, `FunctionalNameType` takes ASCII, and the URL parser takes `[a-zA-Z0-9_]` without `-`. An import can pass the schema and then fail, and a fname with `-` doesn't parse from a URL. | Use one rule (`[A-Za-z0-9_-]+`) in all three. |
-| MOD-I272 | Persistence | Some checks allow more than their columns hold. The event type check allows 500 for `EVENT_TYPE` 200, and the user name check 100 for `ProfileSelection.USERNAME` 70. The portlet list name allowed 500 for 255 (fixed here). Tab names have no check against `UP_LAYOUT_STRUCT.NAME` 35. | Align the checks with the columns, or widen the columns in the 6.0 schema step. |
-| MOD-I273 | Tenants | The tenant admin contact email is checked with strict RFC 822, which refuses internationalized addresses (non-ASCII local parts). | Decide whether 6.0 accepts SMTPUTF8 addresses. |
-| MOD-I274 | Groups | `JsonEntityBean` turns every non-ASCII character of an entity id into `__` for DOM keys, so two ids can collide. | Encode ids instead of replacing characters. |
-| MOD-I275 | Other | Some readers and writers use the platform charset. Among them are the password reset email (`MimeMessageHelper` without an encoding), the configured Basic auth credentials and the import and export reports. The skin service files and a user name filter for development do too. | Pass UTF-8 explicitly. |
-| MOD-I276 | Marketplace | `MarketplaceRatingImpl` cuts a review with `review.trim().substring(0, Math.min(review.length(), 160))`, using the length before trimming. A review with spaces around it can throw `StringIndexOutOfBoundsException`, and the cut can split a surrogate pair. | Trim first, cut at a code point boundary. |
-| MOD-I277 | Search | The portlet browser builds `new RegExp(query, 'i')` from the search term, so `(` or `[` throws. SmartLDAP group search uses the term as a regex as well. Several searches change case without a `Locale`. | Escape the term, and use `Locale.ROOT`. |
+| MOD-I270 | Portlets | The portlet list owner had to match `^[\w\-]{1,500}$`, so a user name with `.` or `@` (common with CAS) couldn't own a list. | **Fixed** in `074bebc`: owners follow the user name rule (1 to 100 code points without spaces or control characters). |
+| MOD-I271 | Portlets | The fname rule differed by layer: the XSD took Unicode letters, `FunctionalNameType` took ASCII, and the URL parser took `[a-zA-Z0-9_]` without `-`. | **Fixed** in `59ad1b9`: one rule, `[A-Za-z0-9_-]+`, in all three. It is wider than the URL parser's and accepts every existing fname. |
+| MOD-I272 | Persistence | Some checks allowed more than their columns hold, and some text had no length check. | **Fixed**, counting code points: event types 200 (`1cb565c`), portlet fname, title, name and description (`408b2ac`), tab names 35 (`1369b6f`), local group names and descriptions 255 (`06ae90c`), portlet list names 255 (`8b3ee48`). Open for the schema step: `UP_PROFILE_SELECTION.USERNAME` 70 against user names of 100. |
+| MOD-I273 | Tenants | The tenant admin contact email was checked with strict RFC 822, which refuses non-ASCII local parts. | **Fixed** in `3274aea`: an address is `local@domain.tld` in any script, up to 254 code points. |
+| MOD-I274 | Portlets | `JsonEntityBean.getTypeAndIdHash` turned every character outside ASCII letters, digits and `_` into `__`, so principals "pags.Café" and "pags.Cafè" shared one permission checkbox name in the portlet editor, and a permission ticked for one was saved for both. | **Fixed** in `1f2e24a`: other characters, `_` included, become `_<hex code point>_`. |
+| MOD-I275 | Other | Some readers and writers used the platform charset. Among them were the password reset email, the import and export reports and the skin files. | **Fixed** in `6916fbf`: UTF-8 in each. |
+| MOD-I276 | Marketplace | `MarketplaceRatingImpl` cut a review at the length before trimming, so a review with spaces around it could throw, and the cut could split a surrogate pair. | **Fixed** in `187c4c5`: trim first, cut at 160 code points. |
+| MOD-I277 | Search | The portlet browser built `new RegExp(term, 'i')` from the search box, so `(` or `C++` threw. Searches changed case with the default locale, so under `tr_TR` "info" didn't find "INFO". | **Fixed** in `5fe0835`: the term is escaped (with the `u` flag), and searches use `Locale.ROOT`. SmartLDAP already escaped its term. It now uses `Locale.ROOT` too. |
+| MOD-I278 | Tenants | An address with a Unicode local part or domain passes MOD-I273, but JavaMail sends it only with `mail.mime.allowutf8=true` and an SMTPUTF8 server, and a Unicode domain needs IDNA conversion. | Open: decide whether 6.0 sets `mail.mime.allowutf8` and converts domains, or documents the limit. |
