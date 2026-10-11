@@ -109,7 +109,8 @@ public class JpaSearchRequestAggregationDao
                                         keyPredicates.toArray(new Predicate[keyPredicates.size()]));
                                 criteriaQuery.orderBy(
                                         cb.desc(dd.get(DateDimensionImpl_.date)),
-                                        cb.desc(td.get(TimeDimensionImpl_.time)));
+                                        cb.desc(td.get(TimeDimensionImpl_.time)),
+                                        cb.asc(id(ba)));
 
                                 return criteriaQuery;
                             }

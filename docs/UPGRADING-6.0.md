@@ -209,6 +209,50 @@ definition with another fname needs the type `Web Component`, the framework desc
 [Converting existing Popular Portlets channels](developer/web-components/README.md#converting-existing-popular-portlets-channels).
 The PopularPortlets portlet itself will be removed in a later release.
 
+## Background Preference is a web component
+
+The Background Preference channel (`background-preference`) was the backgroundPreference portlet.
+It is now a **Web Component** channel that renders `<up-background-preference>`. The element
+reads the offered images and the user's choice from
+`GET /api/v6-0/background-preference/{fname}` and saves a choice with a `PUT` to the same path.
+The API accepts only one of the offered images (or none), and answers anything else with 400.
+Guests get 401.
+
+Users see the same control: "Change Background Image" opens a list of None and the images with
+their thumbnails, and the chosen image shows behind the page at once and on every page after.
+Some things are different:
+
+* The background is set through one stylesheet that the element adopts into the page
+  (`document.adoptedStyleSheets`), not through `<style>` elements, so a Content-Security-Policy
+  that forbids inline styles no longer blocks it.
+* The element applies the background after it has loaded the choice, so it appears a moment
+  after the page.
+* None removes the chosen image, and the skin's own background shows, as after a reload with the
+  portlet. The portlet also set the page's background color to transparent when an image was
+  chosen, until the next page.
+* "Change Background Image" and "None" are messages now (`background.preference.change`,
+  `background.preference.none`), translated into French and Spanish.
+
+The preferences keep their names and meaning: `defaultBackgroundImages`,
+`defaultBackgroundThumbnailImages`, `backgroundImageCaptions`,
+`defaultBackgroundContainerSelector`, and the `mobile*` versions for users in the "Mobile Device
+Access" group. Paths may still contain `${portalContext}`. The user's choice is still the
+`defaultSelectedBackgroundImage` (or `mobileSelectedBackgroundImage`) preference of their portlet
+entity, so choices made with the portlet stay. The container selector defaults to
+`body.portal #portalPageBody::before` (`body.portal #portalPageBody` for mobile), as the
+portlet's `portlet.xml` did, and must be one CSS style rule's selector. `applyOpacityTo` and
+`opacityCssValue` were never used by the portlet's view and are ignored.
+
+To convert an existing portal, import uPortal-start's Web Component portlet type (if another
+conversion has not imported it already), then its
+`data/quickstart/portlet-definition/background-preference.portlet-definition.xml`. The import
+updates the channel by fname and keeps its ID, layout placements and users' choices. A
+definition with another fname is converted by the same changes: the type becomes `Web Component`
+with the `WebComponent` framework portlet, and two parameters are added,
+`webComponent.tagName` and `webComponent.moduleUrl`, both `up-background-preference`. The
+backgroundPreference portlet, `ViewBackgroundPreferenceController` and its JSP stay in this
+release for definitions that are not converted yet, and will be removed later.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
@@ -395,6 +439,51 @@ Hibernate does not load a NULL value of an element collection, so it did not del
 its owner, and the owner's delete failed with ORA-02292. This hit a portlet entity with an empty
 window state, a layout attribute with an empty target element name, and a portlet definition with
 an empty localization. uPortal now deletes those rows with their owner.
+
+## Timestamps are stored in UTC
+
+uPortal 5.17 stored some timestamp columns as the clock time of the portal server's JVM. The value
+in the database depended on the server's time zone, and in the hour that repeats when daylight
+time ends, two different instants were stored as the same clock time. uPortal 6.0 stores these
+columns as UTC clock time (`hibernate.jdbc.time_zone=UTC` in `hibernate.properties`):
+
+| Table | Columns |
+| --- | --- |
+| `UP_PORTLET_LIFECYCLE` | `ENTRY_DATE` (portlet publish and expiry dates) |
+| `UP_MUTEX` | `LOCK_START`, `LOCK_UPDATE`, `LOCK_END` (cluster locks) |
+| `UP_PERSON_DIR` | `LST_PSWD_CGH_DT` (last password change of local accounts) |
+| `UP_PORTLET_LIST` | `CREATED_ON`, `UPDATED_ON` |
+
+`UP_MUTEX.LOCK_END` was not on the first list of affected columns. The persistence tests found
+that it is stored the same way, so it is converted too.
+
+The other timestamps (raw events, aggregation, event sessions, cookies) were already stored in
+UTC, and the analytics date and time dimensions keep their local dates and times.
+
+**Upgrade with the copy tool and the source server's zone.** Copy the 5.17 database into a 6.0
+database with `--target-profile 6.0` and `--source-zone` set to the time zone of the 5.17
+portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
+
+```sh
+db-migrate --source-properties 517.properties --target-properties 60.properties \
+    --target-profile 6.0 --source-zone America/New_York
+```
+
+The copy converts the columns above from that zone's clock time to UTC. If any of them holds a
+value and `--source-zone` is missing, the copy stops before writing anything and names the
+columns. A copy between two 5.17 databases (the default `--target-profile 5.17`) leaves the values
+as they are.
+
+**The repeated hour.** A clock time in the hour that repeats when daylight time ends (01:00 to
+01:59 on the first Sunday of November in New York) can be either of two instants, and 5.17 didn't
+record which. The copy takes the earlier one, the daylight-time offset: 01:30 on 2026-11-01 in New
+York becomes 05:30 UTC. A value that was written in the second 01:00 to 01:59 hour ends up one hour
+early. A clock time in the hour that is skipped when daylight time starts can't come from 5.17;
+if one is there, the copy moves it forward by an hour, as `java.time` does.
+
+Code that reads these columns with SQL of its own gets UTC clock times from 6.0 on. The Java API
+(`IPortletLifecycleEntry.getDate()`, `ILocalAccountPerson.getLastPasswordChange()`, the portlet
+list REST API) returns the same instants as before.
 
 ## Passwords with letters outside ASCII
 
