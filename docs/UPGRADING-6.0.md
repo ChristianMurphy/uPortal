@@ -448,6 +448,46 @@ pointed it at its own URL should check that `POST /api/v6-0/session/keep-alive` 
 SessionTimeout portlet, `SessionTimeoutViewController` and `scripts/session-timeout.js` stay in this
 release for definitions that are not converted yet, and will be removed later.
 
+## Search is a web component
+
+uPortal-start's `search` channel was the Search portlet in its REST mode (`RESTSearch=true`), and
+its `search-launcher` channel was the same portlet showing the search box in the page header.
+Both are now **Web Component** channels from one module, `up-search`:
+
+* `search-launcher` renders `<up-search-launcher>`. A search opens the search channel maximized,
+  `/p/search/max?query=...`, with a plain link instead of a portlet action.
+* `search` renders `<up-search>`, which reads the query from that URL, shows the results of the
+  new REST API `/api/v6-0/search` with one tab per result type, and has a search box of its own
+  that searches again in place.
+
+Users see the same box, results, details and "No Results Found" message. Both boxes keep the
+type-ahead over the portlet list (`/api/portletList`). It suggests after one character and a 200 ms
+pause, and opens the chosen portlet maximized. The new API runs the same search strategies (`ISearchStrategy`
+beans) as `/api/v5-0/portal/search`, which stays, and the Lucene index is unchanged.
+
+The channels no longer read the Search portlet's preferences:
+
+* `searchLaunchFname` becomes the launcher's `search-fname` attribute, set with the
+  `webComponent.attributes` parameter (`search-fname=search`).
+* `RESTSearch.type`, if you set it, becomes `<up-search>`'s `result-types` attribute: add the
+  parameter `webComponent.preferenceAttributes` with the value `result-types=RESTSearch.type`.
+* `RESTSearch`, `prepopulateAutoSuggestUrl`, `prepopulateUrlPattern`, `autoSuggestResultsProcessor`
+  and `autocompleteMaxTextSize` have no effect. Type-ahead always uses the portlet list.
+
+Convert existing channels by importing uPortal-start's
+`data/base/portlet-type/Web_Component.portlet-type.xml` (once), then its
+`data/base/portlet-definition/search.portlet-definition.xml` and
+`data/base/portlet-definition/searchlauncher.portlet-definition.xml` (or your copies of them).
+The import updates each channel in place by fname, so layouts that place them keep working.
+
+**Event-mode search stays a portlet.** A Search portlet definition with `RESTSearch=false`
+collects results from other portlets through portlet events: the `searchServices` beans (GSA,
+Google Custom Search, the marketplace and portlet registry services), the `searchTabs` mapping,
+the 18 searches a minute limit, and portlets that answer `SearchRequest` events. A REST API can't
+call those, because they need the portlet container. The Search portlet, its JSPs and its event
+handling stay in uPortal unchanged, so a portal that relies on them keeps its Search portlet
+definition. Converting it to the web component would drop those results.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
