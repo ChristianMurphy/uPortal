@@ -11,6 +11,7 @@ const components = [
     'up-popular-portlets',
     'up-background-preference',
     'up-user-locale',
+    'up-session-timeout',
 ];
 
 export default defineConfig({
