@@ -1,7 +1,7 @@
 import { LitElement, type PropertyDeclarations, type PropertyValues } from 'lit';
 import { ApiClient } from './api-client';
 import { createEvent } from './events';
-import { formatMessage, loadMessages, type Messages } from './i18n';
+import { formatMessage, loadMessages, messageKeys, pluralKey, type Messages } from './i18n';
 import { bootstrapStyles, hostStyles } from './styles/shared-styles';
 
 /**
@@ -89,6 +89,22 @@ export abstract class UpElement extends LitElement {
         return formatMessage(this.localizedMessages[key] ?? this.defaultMessages[key] ?? key, args);
     }
 
+    /**
+     * The plural form of `key` for `count` in the user's locale (see {@link pluralKey}), formatted
+     * like {@link msg}. The component's English defaults list the family's `.one` and `.other`.
+     */
+    protected msgPlural(key: string, count: number, ...args: (string | number)[]): string {
+        const pattern = pluralKey(
+            key,
+            count,
+            this.resolvedLocale,
+            (candidate) =>
+                this.localizedMessages[candidate] !== undefined ||
+                this.defaultMessages[candidate] !== undefined,
+        );
+        return this.msg(pattern, ...args);
+    }
+
     /** Dispatches an `up-<subject>-<verb>` event (see events.ts). */
     protected emit(name: string, detail: unknown): boolean {
         return this.dispatchEvent(createEvent(name, detail));
@@ -97,7 +113,7 @@ export abstract class UpElement extends LitElement {
     protected override willUpdate(changed: PropertyValues<this>): void {
         super.willUpdate(changed);
         const locale = this.resolvedLocale;
-        const keys = Object.keys(this.defaultMessages);
+        const keys = messageKeys(Object.keys(this.defaultMessages));
         if (keys.length > 0 && locale !== this.#messagesLocale) {
             this.#messagesLocale = locale;
             this.#messagesReady = loadMessages(this.api, locale, keys).then((messages) => {

@@ -348,8 +348,9 @@ export class UpPopularPortlets extends UpElement {
     #renderPaging(view: TableView, pageSize: number, enabled: boolean): TemplateResult {
         const previous = !enabled || view.page === 0;
         const next = !enabled || view.page >= view.pageCount - 1;
-        const info = this.msg(
+        const info = this.msgPlural(
             'popular.portlets.page.info',
+            view.total,
             view.page + 1,
             view.from,
             view.to,

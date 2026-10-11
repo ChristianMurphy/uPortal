@@ -85,6 +85,23 @@ function componentKeys(): Map<string, string[]> {
     return keys;
 }
 
+/**
+ * The keys the three bundles must have for a component's keys: each key, and for a plural family
+ * (a key ending in a CLDR category, MOD-I235) at least its `.one` and `.other`, which English,
+ * Spanish and French use.
+ */
+export function requiredKeys(keys: readonly string[]): string[] {
+    const required = new Set(keys);
+    for (const key of keys) {
+        const family = /^(.+)\.(?:zero|one|two|few|many|other)$/.exec(key)?.[1];
+        if (family !== undefined) {
+            required.add(`${family}.one`);
+            required.add(`${family}.other`);
+        }
+    }
+    return [...required];
+}
+
 /** The {n} placeholders of a message, sorted. */
 function placeholders(message: string): string[] {
     return [...message.matchAll(/\{(\d+)[^}]*\}/g)].map((match) => match[1] ?? '').toSorted();
@@ -161,6 +178,19 @@ describe('parseProperties', () => {
     });
 });
 
+describe('requiredKeys', () => {
+    it('asks for .one and .other of each plural family', () => {
+        expect(requiredKeys(['title', 'items.other', 'rows.few'])).toEqual([
+            'title',
+            'items.other',
+            'rows.few',
+            'items.one',
+            'rows.one',
+            'rows.other',
+        ]);
+    });
+});
+
 describe('problems', () => {
     const english = new Map([
         ['k', 'Move {0} up'],
@@ -220,7 +250,7 @@ describe('the web components’ messages', () => {
     it.each([...components.keys()])(
         '%s has English, Spanish and French text for each key',
         (component) => {
-            const found = (components.get(component) ?? []).flatMap((key) =>
+            const found = requiredKeys(components.get(component) ?? []).flatMap((key) =>
                 problems(key, english, translations),
             );
             expect(found).toEqual([]);

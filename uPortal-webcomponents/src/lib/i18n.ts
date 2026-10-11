@@ -21,6 +21,70 @@ export function formatMessage(pattern: string, args: readonly (string | number)[
     });
 }
 
+/** The plural categories of Unicode CLDR, which `Intl.PluralRules` picks from. */
+export const PLURAL_CATEGORIES: readonly Intl.LDMLPluralRule[] = [
+    'zero',
+    'one',
+    'two',
+    'few',
+    'many',
+    'other',
+];
+
+const pluralRules = new Map<string, Intl.PluralRules>();
+
+function pluralRulesFor(locale: string): Intl.PluralRules {
+    let rules = pluralRules.get(locale);
+    if (rules === undefined) {
+        try {
+            rules = new Intl.PluralRules(locale);
+        } catch {
+            // Not a well-formed language tag
+            rules = new Intl.PluralRules('en');
+        }
+        pluralRules.set(locale, rules);
+    }
+    return rules;
+}
+
+/**
+ * The key of the plural form of `key` for `count` in the locale (MOD-I235). A plural message is a
+ * family of keys, one per CLDR category the language uses: `key.one` and `key.other` in English,
+ * Spanish and French, `key.one`, `key.few`, `key.many` and `key.other` in Polish, all six in
+ * Arabic. The result is `key.<category>` when `has` knows it, else `key.other`, else `key`.
+ */
+export function pluralKey(
+    key: string,
+    count: number,
+    locale: string,
+    has: (key: string) => boolean,
+): string {
+    const category = pluralRulesFor(locale).select(count);
+    for (const candidate of [`${key}.${category}`, `${key}.other`]) {
+        if (has(candidate)) {
+            return candidate;
+        }
+    }
+    return key;
+}
+
+/**
+ * The keys to ask the portal for: the given ones, and every category of each plural family (a key
+ * ending in `.other`), so a language's bundle can supply forms that English has no key for.
+ */
+export function messageKeys(keys: readonly string[]): string[] {
+    const result = new Set(keys);
+    for (const key of keys) {
+        if (key.endsWith('.other')) {
+            const family = key.slice(0, -'.other'.length);
+            for (const category of PLURAL_CATEGORIES) {
+                result.add(`${family}.${category}`);
+            }
+        }
+    }
+    return [...result];
+}
+
 /** Accepts `{ messages: { key: string } }`; ignores entries that are not strings. */
 export function validateMessages(body: unknown): Messages {
     if (typeof body !== 'object' || body === null) {
