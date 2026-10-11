@@ -13,6 +13,12 @@ const bundleSources = import.meta.glob<string>(
     { query: '?raw', import: 'default', eager: true },
 );
 
+/** Every Messages bundle in uPortal, main and test, for the duplicate key check. */
+const allBundleSources = import.meta.glob<string>(
+    ['../../../**/src/*/resources/**/*Messages*.properties', '!**/node_modules/**', '!**/build/**'],
+    { query: '?raw', import: 'default', eager: true },
+);
+
 const componentMessages = import.meta.glob<Record<string, Record<string, string>>>(
     '../components/*/messages.ts',
     { eager: true },
@@ -31,11 +37,22 @@ const SAME_AS_ENGLISH: Readonly<Record<string, Readonly<Record<string, string>>>
 
 const ESCAPES: Readonly<Record<string, string>> = { t: '\t', n: '\n', r: '\r', f: '\f' };
 
-/** Reads a .properties file as java.util.Properties does: comments, continuations, escapes. */
-export function parseProperties(source: string): Map<string, string> {
-    const entries = new Map<string, string>();
+/** One key and value of a .properties file, with the line it starts on (1-based). */
+export interface PropertiesEntry {
+    readonly key: string;
+    readonly value: string;
+    readonly line: number;
+}
+
+/**
+ * The entries of a .properties file in order, read as java.util.Properties does: comments,
+ * continuations, escapes. A key can appear more than once; Java keeps the last.
+ */
+export function propertiesEntries(source: string): PropertiesEntry[] {
+    const entries: PropertiesEntry[] = [];
     const lines = source.split(/\r?\n/);
     for (let i = 0; i < lines.length; i++) {
+        const start = i + 1;
         let line = (lines[i] ?? '').replace(/^[ \t\f]+/, '');
         if (line === '' || line.startsWith('#') || line.startsWith('!')) {
             continue;
@@ -48,9 +65,29 @@ export function parseProperties(source: string): Map<string, string> {
         const match = /^((?:\\.|[^\\=: \t\f])*)[ \t\f]*[=:]?[ \t\f]*(.*)$/s.exec(line);
         /* v8 ignore next -- the pattern matches any line */
         if (!match) continue;
-        entries.set(unescape(match[1] ?? ''), unescape(match[2] ?? ''));
+        entries.push({
+            key: unescape(match[1] ?? ''),
+            value: unescape(match[2] ?? ''),
+            line: start,
+        });
     }
     return entries;
+}
+
+/** Reads a .properties file into a map; for a key that appears twice, the last value wins. */
+export function parseProperties(source: string): Map<string, string> {
+    return new Map(propertiesEntries(source).map(({ key, value }) => [key, value]));
+}
+
+/** The keys a .properties file sets more than once, with the lines that set them. */
+export function duplicateKeys(source: string): string[] {
+    const lines = new Map<string, number[]>();
+    for (const { key, line } of propertiesEntries(source)) {
+        lines.set(key, [...(lines.get(key) ?? []), line]);
+    }
+    return [...lines]
+        .filter(([, at]) => at.length > 1)
+        .map(([key, at]) => `${key} (lines ${at.join(', ')})`);
 }
 
 function unescape(text: string): string {
@@ -232,6 +269,32 @@ describe('problems', () => {
         expect(problems('quote', english, { es: new Map(), fr: new Map() })[0]).toBe(
             'quote: Messages.properties has an apostrophe that is not doubled',
         );
+    });
+});
+
+describe('duplicateKeys', () => {
+    it('lists each key set more than once, with its lines', () => {
+        const source = ['a=1', '# comment', 'b=2', 'a = 3', 'c=4 \\', '  continued', 'b=5'].join(
+            '\n',
+        );
+        expect(duplicateKeys(source)).toEqual(['a (lines 1, 4)', 'b (lines 3, 7)']);
+        expect(parseProperties(source).get('a')).toBe('3');
+    });
+
+    it('finds none in a file without them', () => {
+        expect(duplicateKeys('a=1\nb=2\n')).toEqual([]);
+    });
+});
+
+describe('the Messages bundles', () => {
+    it('finds the main and the test bundles', () => {
+        const paths = Object.keys(allBundleSources);
+        expect(paths.some((path) => path.endsWith('/i18n/Messages_es.properties'))).toBe(true);
+        expect(paths.some((path) => path.includes('/src/test/resources/'))).toBe(true);
+    });
+
+    it.each(Object.keys(allBundleSources))('%s sets each key once', (path) => {
+        expect(duplicateKeys(allBundleSources[path] ?? '')).toEqual([]);
     });
 });
 
