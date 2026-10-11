@@ -1,5 +1,11 @@
 # Handoff: Self Edit Account and the password flows (WS14)
 
+**Update (MOD-D46, MOD-D45):** the owner chose the web component for Self Edit Account after
+all. The REST API and `<up-self-edit-account>` are back (the two `revert: bring back` commits),
+with the password manager change below. The confirmation, current password, neutral page and
+token expiry fixes are in, in the API and component as well as the old flow, which stays until MOD-I133. The text from here to "Next
+steps" records how the work got here.
+
 Self-Edit Account and the update-password and reset-password flows are Thymeleaf full-page flows in
 MOD-D19, and Thymeleaf waits for Spring 5.3 (P4-1). So this workstream records what those
 flows and Forgot Password do today, so that the Thymeleaf conversion can be checked against it, and
@@ -75,6 +81,11 @@ uPortal, oldest first:
 | `docs: add the password confirmation fix to UPGRADING-6.0` | The confirmation fix's UPGRADING section |
 | `fix(account): ask for the current password in self edit account` | `PersonForm.currentPassword`, `PersonFormValidator.validateEditOwnAccount`, the self-edit view-state renamed `editOwnAccount`, the JSP input, unit tests, UPGRADING section |
 | `fix(account): expire password reset tokens` | `loginTokenIssued`, `resetTokenLifetime` (default `PT1H`), the expired message, unit tests, UPGRADING section |
+| `docs: record the current password and token expiry fixes` | This note |
+| merge of `ccr-43ba0785-hzlrj5` | MOD-D45 to D53, `.claude/settings.json` |
+| `fix(account): give every forgot password request the same answer` | `requestPasswordReset`, the neutral page, ERROR on a failed send, unit tests, UPGRADING section |
+| `revert: bring back the self edit account api and component` | Reverts the revert, e9e5952 |
+| `fix(webcomponents): let password managers fill self edit account` | Light-DOM credentials form with `autocomplete` hints, browser tests |
 
 uPortal-start, oldest first:
 
@@ -92,6 +103,10 @@ uPortal-start, oldest first:
 | merges of `ccr-43ba0785-hzlrj5` | Integration branch updates |
 | `test(e2e): expect self edit account to ask for the current password` | Pairs with the current password fix |
 | `test(e2e): expect password reset links to expire` | Pairs with the token expiry fix; `loginTokenIssued` helper |
+| merge of `ccr-43ba0785-hzlrj5` | `.claude/settings.json` |
+| `test(e2e): expect the same forgot password page for every name` | Pairs with the neutral page fix |
+| `revert: bring back the self edit account component and data switch` | Reverts the revert, 26d722a73; the self-edit spec is left as it was |
+| `test(e2e): check self edit account's component and password manager` | The specs against the component, CSRF in its helpers, API password checks, the password manager test |
 
 ### The confirmation fix
 
@@ -147,6 +162,32 @@ storing an undated token, the three new or changed tests failed and no others. W
 always passing, four of the new unit tests failed. The existing `UserAccountHelperTest.setup`
 called `initMocks` last, which replaced the mocks given to the helper. It now runs first.
 
+### The neutral Forgot Password page
+
+Option (a) of MOD-D45: every user name gets "Check your email" and the same text. Only a local
+account with an email address gets a token and an email. A failed send is logged at ERROR with
+the account name; the unknown name is not logged, since people sometimes type a password there.
+Every bundle loses `reset.email.sent` and the "instructions have been sent" key. Unit tests cover a send that works
+(the test portal has no mail server) and each branch of `requestPasswordReset`. With the email
+check or the catch removed, one unit test failed each. With the deployed flow put back to the
+5.x transition, only the identical page test failed.
+
+### Password managers and the component
+
+Password managers search the document, not shadow roots. While the form shows, the component
+puts a `<form>` in its light DOM, slotted into the Password section, with a read-only Username
+input (`autocomplete="username"`) and the three password inputs (`current-password`,
+`new-password`). The attribute inputs stay in the shadow root. A browser test and a Playwright
+test look for the inputs from the document, as a password manager does. With the hints removed
+from the deployed bundle, only the Playwright test failed; in the browser tests, it and two
+others failed. Removing the API's confirmation check failed only `refusesAConfirmationThatDiffers`,
+and removing its current password check failed the three current password tests.
+
+A change to a deployed web component asset needs a Tomcat restart before the portal serves it.
+
+Local runs: the self-edit, component, Forgot Password, reset and User Administration specs, 36 of
+36; the web components suite, 770 of 770.
+
 ### A possible parallel-run flake
 
 On 2026-10-11 at about 09:02 UTC, a local run of every admin spec and the three account specs
@@ -157,12 +198,10 @@ so this looks like a flake under parallel load.
 
 ## Next steps
 
-This branch has three of the four fixes the owner approved. The fourth, Forgot Password, should
-give every user name the same answer and say when the email couldn't be sent. Those two
-asks conflict for an existing account whose email fails; that waits on
-the coordinator (one neutral page for everyone, or a failure message for existing accounts only,
-or that behind a setting), as does a mail sink for CI. Whether Self-Edit Account may be a web
-component is still open (a revert of the two revert commits brings it back).
+The password fixes, the neutral page and the password manager check are done. MOD-D53 leaves
+these to the follow-up branches, Spanish and French text for the new keys (-i18n), the Unicode
+input tests (-utf8-inputs) and `isComposing` handling (-i18n). The portlet, its flow and their
+fixes are removed with MOD-I133.
 
 ## Proposed LOG rows
 
