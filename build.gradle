@@ -124,6 +124,17 @@ allprojects {
         toolVersion = codenarcVersion
         reportFormat = 'console'
     }
+    // CodeNarc 3.7.0 brings Groovy 4.0.24, whose ASM cannot read the class files of a JDK 25
+    // ("Unsupported class file major version 69"). On JDK 25 the first rule that needed a file's
+    // syntax tree then threw, CodeNarc printed a stack trace and skipped every other rule for
+    // that file, yet the build passed. Run CodeNarc on the Groovy 4 that compiles the tests.
+    configurations.matching { it.name == 'codenarc' }.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'org.apache.groovy') {
+                details.useVersion groovyTestVersion
+            }
+        }
+    }
     tasks.withType(CodeNarc).configureEach {
         // Gradle 9 hands CodeNarc the compile classpath by default, which switches on its
         // "enhanced" rules (they were skipped before). Keep the previous rule set here; the
