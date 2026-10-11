@@ -25,19 +25,28 @@ Issue IDs: MOD-I140 to MOD-I149 (I140 to I143 are used).
   - The locale order of `JpaMessageDao.getMessagesByCode` reversed: the
     query golden fails, after commit "pin the order of the two ordered
     message queries".
+  - Interval starts and ends computed in UTC in
+    `AggregationInterval.determineStart` and `determineEnd`: the New
+    York aggregation golden fails with 1,263 differing lines (interval
+    bounds, then the aggregate rows); UTC passes, as expected. With only
+    `determineStart` changed, the New York case loops in
+    `doCloseAggregations` until the 10-minute timeout, which reports that
+    stack.
 - Manual run 38097192745 (all five databases, tip c2bfe4fdc):
   postgres-18 and mariadb-12.3 passed. mysql-9.7 failed on bag order
   and sqlserver-2025 on best-fit characters; both are fixed in the
   later commits. oracle-23 ran into the 45-minute job limit.
 
+- Manual run 38103140369 (tip c475017f3): postgres-18, mysql-9.7 and
+  mariadb-12.3 passed, and the three canaries passed. CI run 38103161766
+  (unit tests, SpotBugs, commit messages) passed.
+
 ## Half done
 
-- Oracle: the cause of the slow or stuck run is unknown. The commit
-  "time out stuck golden test cases with a stack" makes the next run
-  print the stuck test and its stack in the job log.
-- The aggregation seeded fault (interval start computed in UTC in
-  `AggregationInterval.determineStart`) did not finish locally within
-  30 minutes. Rerun it alone with the 10-minute timeout.
+- Oracle and SQL Server jobs of run 38103140369 are still running. The
+  cause of the first Oracle run's slowness is unknown. The commit "time
+  out stuck golden test cases with a stack" makes the job log print the
+  stuck test and its stack.
 
 ## Next steps
 
