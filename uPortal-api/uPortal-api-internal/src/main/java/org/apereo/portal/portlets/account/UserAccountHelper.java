@@ -401,12 +401,9 @@ public class UserAccountHelper {
                 }
                 return true;
             } else {
+                // Never log a token: the recorded one would let a log reader reset the account
                 if (log.isInfoEnabled()) {
-                    log.info(
-                            "Unable to validate security token;  recordedToken="
-                                    + recordedToken
-                                    + ", submitted token="
-                                    + token);
+                    log.info("Unable to validate security token for user:  " + username);
                 }
             }
         } else {

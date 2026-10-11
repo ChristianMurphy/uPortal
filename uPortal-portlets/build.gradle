@@ -22,6 +22,7 @@ dependencies {
     testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
     testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
+    testImplementation "ch.qos.logback:logback-classic:${logbackVersion}"
 
     compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
     compileOnly project(':uPortal-pluto:uPortal-pluto-container-driver-api')
