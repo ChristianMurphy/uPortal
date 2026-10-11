@@ -62,16 +62,23 @@ which 104 are new in 4 files (14 API, 15 machine, 23 browser, 52 model-based). E
   At the coordinator's request one commit corrects the word to "Language" and leaves the rest of
   each value as it was.
 
-## Running
+## Status
 
-Push runs on the new heads, after the MOD-D50 commits: uPortal `wc-user-locale` and uPortal-start
-`bba8c5c`.
+The coordinator merged the uPortal half (12 commits from `842351a`, without the seeded fault and
+its revert) into the integration branch at `ba327af`. The uPortal-start half (`55dfe99`) is replayed
+and goes in after the batch's queued uPortal-start runs. Commit `88bb916` there is a copy of the
+integration branch's `d230c6a`.
+
+The MOD-I322 follow-up comes after the merge of `ba327af` in uPortal. The component checks the
+language the page is in until the user chooses one. The API stops reporting a stored locale the
+portal no longer offers as the choice. Its uPortal-start commit changes the guest test of the
+characterisation spec.
 
 ## Next steps
 
-1. When the push runs on both heads are green, dispatch the full-matrix CI on the uPortal branch
-   and `integration.yml` on the uPortal-start branch, and send the coordinator the run IDs and
-   both head SHAs. If `ccr-43ba0785-hzlrj5` moves first, merge it again.
+1. Once the coordinator has merged the uPortal-start half, merge the integration branch into the
+   uPortal-start topic branch, put the follow-up's spec commit on top, and push it.
+2. Send the coordinator both new heads and the push run IDs.
 
 ## Merges from the integration branch
 
@@ -84,6 +91,7 @@ Push runs on the new heads, after the MOD-D50 commits: uPortal `wc-user-locale` 
 | uPortal-start `632a140` | `020eeb0` | Hibernate 5.2 harness changes | `intended-changes.txt`: kept +6 and the `generators declared -table(hibernate_sequences)` line |
 | uPortal `8ceae86` | `4e55485` | Hibernate 5.2 follow-ups | None |
 | uPortal `d524243` | `e2a6743` | LOG.md: MOD-D45 to MOD-D50 | None |
+| uPortal `999a14c` | `ba327af` | This branch's own commits, replayed, with Background Preference and Session Timeout | `vite.config.ts`, the guide and UPGRADING-6.0: took the integration branch's version, which contains every line of `842351a` |
 
 The specs didn't change for the CSRF rule: every PUT in `user-locale-component.spec.ts` already
 sends the token, except the one that expects 403. On the merged uPortal tree, `vp check`, `vp build`
@@ -116,20 +124,19 @@ same 400 answer through the running portal. It wasn't seeded separately.
 | uPortal-start Integration 38130065699 | `632a140` | Red in "Playwright: postgres-18" only: `cas-proxy-test.spec.ts` flaked (failed, then passed on retry), which `failOnFlakyTests` counts as a failure. The other 313 tests passed, the user locale specs among them |
 | uPortal-start Migration equivalence 38130065724 | `632a140` | Red: the reference still had the portlet, fixed in `e609638` |
 | uPortal CI 38132600820 (full matrix) | `8ceae86` | Replaced by the MOD-D50 commits before it started |
+| uPortal CI 38136562662, DB integration 38136562671, copy tool 38136562690 | `842351a` | Green, the evidence for the merge |
+| uPortal-start Integration 38136221538 | `bba8c5c` | Red: both Playwright jobs failed one test whose locator expected the exact label "French". Fixed in `55dfe99` |
+| uPortal-start G-index 38136221543 | `bba8c5c` | Red: the R1 allowlist entries had Hibernate 4 statement ids. Fixed by the copy of `d230c6a` |
+| uPortal-start Integration 38145631357 (all 7 jobs), CI 38145631365, Migration equivalence 38145631373, G-index 38145631363 | `55dfe99` | Green, the evidence for the merge. Integration built uPortal `842351a` |
 
-## Proposed LOG rows
+## LOG rows
 
-The coordinator numbers them.
+The coordinator added the MOD-D18 status line and two issues. Proposed status for MOD-I322 once
+the follow-up is merged:
 
-* MOD-D18 status: "User Locale: `/api/v6-0/locale` (GET, PUT) and `<up-user-locale>`. uPortal-start
-  publishes `user-locales-selector` as a Web Component channel. The `UserLocale` portlet and its
-  `locale-selector` flow stay until the 6.0 data migration converts existing definitions
-  (MOD-I133). The web components guide describes the conversion."
-* New issue: "The `UserLocale` portlet's flow passed any code the form sent to
-  `UserLocaleHelper.updateUserLocale`, which parses any string into a locale and stores it.
-  `/api/v6-0/locale` accepts only the locales in `portal_locales` and answers 400 to others.
-  UPGRADING-6.0 says so."
-* Fixed issue (MOD-I262): "The user locale selector checked no language for a user who never
-  saved one, though the page renders in the portal's default locale. `/api/v6-0/locale` now
-  returns `current`, the locale the page is rendered in, and the component checks it until the
-  user chooses. The JSP's own comparison worked: EL compares a String and a Locale as strings."
+* MOD-I321 (any locale code stored): fixed for the component, as logged.
+* MOD-I322 (no language marked): "**Fixed:** `/api/v6-0/locale` returns `current`, the portal
+  locale the page is rendered in, and the component checks it until the user chooses. A stored
+  locale the portal no longer offers isn't reported as `selected`, which the component refused as
+  malformed. The 5.17 JSP's comparison itself worked: EL compares a String and a Locale as
+  strings, so a saved choice was checked."
