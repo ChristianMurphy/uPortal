@@ -19,6 +19,7 @@
 package org.apereo.portal.portlets.search.portletregistry;
 
 import java.util.List;
+import java.util.Locale;
 import javax.portlet.PortletRequest;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.portlet.om.IPortletDefinition;
@@ -60,7 +61,7 @@ public class PortletRegistrySearchService implements IPortalSearchService {
 
     @Override
     public SearchResults getSearchResults(PortletRequest request, SearchRequest query) {
-        final String queryString = query.getSearchTerms().toLowerCase();
+        final String queryString = query.getSearchTerms().toLowerCase(Locale.ROOT);
         final List<IPortletDefinition> portlets =
                 portletDefinitionRegistry.getAllPortletDefinitions();
         final HttpServletRequest httpServletRequest =

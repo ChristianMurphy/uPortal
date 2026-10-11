@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
@@ -352,7 +353,9 @@ public class EntityPersonAttributesGroupStore
             case STARTS_WITH_CI:
                 for (IPersonAttributesGroupDefinition pagsGroup : pagsGroups) {
                     IEntityGroup g = convertPagsGroupToEntity(pagsGroup);
-                    if (g.getName().toUpperCase().startsWith(query.toUpperCase())) {
+                    if (g.getName()
+                            .toUpperCase(Locale.ROOT)
+                            .startsWith(query.toUpperCase(Locale.ROOT))) {
                         results.add(g.getEntityIdentifier());
                     }
                 }
@@ -368,7 +371,9 @@ public class EntityPersonAttributesGroupStore
             case ENDS_WITH_CI:
                 for (IPersonAttributesGroupDefinition pagsGroup : pagsGroups) {
                     IEntityGroup g = convertPagsGroupToEntity(pagsGroup);
-                    if (g.getName().toUpperCase().endsWith(query.toUpperCase())) {
+                    if (g.getName()
+                            .toUpperCase(Locale.ROOT)
+                            .endsWith(query.toUpperCase(Locale.ROOT))) {
                         results.add(g.getEntityIdentifier());
                     }
                 }
@@ -384,7 +389,8 @@ public class EntityPersonAttributesGroupStore
             case CONTAINS_CI:
                 for (IPersonAttributesGroupDefinition pagsGroup : pagsGroups) {
                     IEntityGroup g = convertPagsGroupToEntity(pagsGroup);
-                    if (g.getName().toUpperCase().indexOf(query.toUpperCase()) != -1) {
+                    if (g.getName().toUpperCase(Locale.ROOT).indexOf(query.toUpperCase(Locale.ROOT))
+                            != -1) {
                         results.add(g.getEntityIdentifier());
                     }
                 }

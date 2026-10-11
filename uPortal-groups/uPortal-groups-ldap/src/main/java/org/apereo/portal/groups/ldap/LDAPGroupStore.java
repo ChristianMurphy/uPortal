@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -598,7 +599,9 @@ public class LDAPGroupStore implements IEntityGroupStore, IEntityStore, IEntityS
                 break;
             case STARTS_WITH_CI:
                 for (i = 0; i < g.length; i++) {
-                    if (g[i].name.toUpperCase().startsWith(query.toUpperCase())) {
+                    if (g[i].name
+                            .toUpperCase(Locale.ROOT)
+                            .startsWith(query.toUpperCase(Locale.ROOT))) {
                         ids.add(new EntityIdentifier(g[i].key, group));
                     }
                 }
@@ -612,7 +615,9 @@ public class LDAPGroupStore implements IEntityGroupStore, IEntityStore, IEntityS
                 break;
             case ENDS_WITH_CI:
                 for (i = 0; i < g.length; i++) {
-                    if (g[i].name.toUpperCase().endsWith(query.toUpperCase())) {
+                    if (g[i].name
+                            .toUpperCase(Locale.ROOT)
+                            .endsWith(query.toUpperCase(Locale.ROOT))) {
                         ids.add(new EntityIdentifier(g[i].key, group));
                     }
                 }
@@ -626,7 +631,8 @@ public class LDAPGroupStore implements IEntityGroupStore, IEntityStore, IEntityS
                 break;
             case CONTAINS_CI:
                 for (i = 0; i < g.length; i++) {
-                    if (g[i].name.toUpperCase().indexOf(query.toUpperCase()) > -1) {
+                    if (g[i].name.toUpperCase(Locale.ROOT).indexOf(query.toUpperCase(Locale.ROOT))
+                            > -1) {
                         ids.add(new EntityIdentifier(g[i].key, group));
                     }
                 }

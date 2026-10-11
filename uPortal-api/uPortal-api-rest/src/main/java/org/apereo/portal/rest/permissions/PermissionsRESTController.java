@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -152,7 +153,7 @@ public class PermissionsRESTController {
     public ModelAndView getActivities(@RequestParam(value = "q", required = false) String query) {
 
         if (StringUtils.isNotBlank(query)) {
-            query = query.toLowerCase();
+            query = query.toLowerCase(Locale.ROOT);
         }
 
         List<IPermissionActivity> activities = new ArrayList<>();
@@ -161,7 +162,7 @@ public class PermissionsRESTController {
         for (IPermissionOwner owner : owners) {
             for (IPermissionActivity activity : owner.getActivities()) {
                 if (StringUtils.isBlank(query)
-                        || activity.getName().toLowerCase().contains(query)) {
+                        || activity.getName().toLowerCase(Locale.ROOT).contains(query)) {
                     activities.add(activity);
                 }
             }
@@ -196,8 +197,8 @@ public class PermissionsRESTController {
             targets = provider.searchTargets(query);
             for (IPermissionTarget target : targets) {
                 if ((StringUtils.isNotBlank(target.getName())
-                                && target.getName().toLowerCase().contains(query))
-                        || target.getKey().toLowerCase().contains(query)) {
+                                && target.getName().toLowerCase(Locale.ROOT).contains(query))
+                        || target.getKey().toLowerCase(Locale.ROOT).contains(query)) {
                     matchingTargets.addAll(targets);
                 }
             }
