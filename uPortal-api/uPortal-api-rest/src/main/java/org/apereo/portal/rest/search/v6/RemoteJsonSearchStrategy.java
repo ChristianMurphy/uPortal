@@ -122,10 +122,12 @@ public class RemoteJsonSearchStrategy implements ISearchStrategy {
         try {
             response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
         } catch (IOException e) {
-            throw new RemoteSearchException(settings.getName() + ": " + e, e);
+            // Only the exception's type: its message can quote the URL, and with it an API key
+            throw new RemoteSearchException(
+                    settings.getName() + ": " + e.getClass().getSimpleName());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RemoteSearchException(settings.getName() + ": interrupted", e);
+            throw new RemoteSearchException(settings.getName() + ": interrupted");
         }
         if (response.statusCode() < 200 || response.statusCode() > 299) {
             throw new RemoteSearchException(

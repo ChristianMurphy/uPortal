@@ -240,11 +240,13 @@ public class RemoteJsonSearchStrategyTest {
         exchange.delayMillis = 3000;
         final long start = System.nanoTime();
 
+        final Map<String, String> headers = Collections.singletonMap("X-Api-Key", "secret-key");
         try {
-            strategy(Collections.emptyMap(), Duration.ofMillis(200)).search("x", userRequest());
+            strategy(headers, Duration.ofMillis(200)).search("x", userRequest());
             fail("No timeout");
         } catch (RemoteSearchException e) {
             assertTrue(e.getMessage(), e.getMessage().startsWith("web: "));
+            assertKeepsSecrets(e);
         }
         assertTrue(
                 "took " + (System.nanoTime() - start) / 1_000_000 + " ms",
@@ -260,15 +262,28 @@ public class RemoteJsonSearchStrategyTest {
             fail("Searched without a server");
         } catch (RemoteSearchException e) {
             assertTrue(e.getMessage(), e.getMessage().startsWith("web: "));
+            assertKeepsSecrets(e);
         }
     }
 
     private void expectFailure(String message) {
         try {
-            strategy().search("x", userRequest());
+            strategy(Collections.singletonMap("X-Api-Key", "secret-key"), Duration.ofSeconds(5))
+                    .search("x", userRequest());
             fail("Expected a failure with " + message);
         } catch (RemoteSearchException e) {
             assertTrue(e.getMessage(), e.getMessage().contains(message));
+            assertKeepsSecrets(e);
+        }
+    }
+
+    /** Neither the URL's API key nor a header value appears in the error or its causes. */
+    private static void assertKeepsSecrets(Throwable error) {
+        for (Throwable e = error; e != null; e = e.getCause()) {
+            final String text = String.valueOf(e.getMessage());
+            assertFalse(text, text.contains("key=k1"));
+            assertFalse(text, text.contains("secret-key"));
+            assertFalse(text, text.contains("127.0.0.1"));
         }
     }
 }
