@@ -545,6 +545,16 @@ the body.
 `loading`, `failed`, `viewing`, `editing` (`idle` or `saving`) and `saved`, and the passwords stay
 in its context only while the form is open.
 
+### Reset My Layout
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/layout/reset` | `{"userName": "student"}`, the signed-in user whose layout a reset acts on. |
+| `POST /api/v6-0/layout/reset` | Resets that layout (`IUserLayoutHelper.resetUserLayout`, as the old flow did) and answers the same body. The request names no user. |
+
+Guests get 401, and answers are not cached. The default layout shows from the user's next
+sign-in, because the session keeps the layout it loaded.
+
 ### Background Preference
 
 | Request | Answer |
@@ -660,6 +670,17 @@ it means removing `AbstractFavoritesController`, `FavoritesController`,
 messages only those JSPs use. `FavoritesUtils` and the options-menu script
 (`modern-favorite.js`) stay: the API and the theme use them. Do it once the conversion above
 ships in the 6.0 data migration, and say so in UPGRADING-6.0.
+
+### Reset My Layout
+
+The Reset My Layout portlet (Spring Web Flow `reset-my-layout`, one JSP of its own and two of the
+shared `reset-user-layout` subflow) is `<up-reset-my-layout>`
+(`uPortal-webcomponents/src/components/up-reset-my-layout`). The flow's views are the machine's
+`ready` states: `start` (Reset Now), `confirming` (Reset Layout and Cancel), `resetting` and
+`done` (Continue). Its actions are the two requests above. The component keeps the portlet's
+message keys. A 403 from the reset is Spring Security refusing the CSRF token of a session that
+ended, so the component treats it like a 401 and asks the user to sign in again. The portlet, its
+context and its flow are deleted; the `reset-user-layout` subflow stays for User Administration.
 
 ### Background Preference
 

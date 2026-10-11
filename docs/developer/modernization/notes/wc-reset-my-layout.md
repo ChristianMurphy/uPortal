@@ -32,9 +32,9 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-reset-my-layout` in uPortal and uPortal-sta
 | 1. Characterisation spec | Done: uPortal-start `b138960`, `tests/ux/smoke/reset-my-layout.spec.ts`, 7 tests pass against the portlet (two runs in a row, then `per-role-pages.spec.ts` still passes) |
 | 2. REST API under `/api/v6-0/` | Done: uPortal `31f57f4` (`ResetMyLayoutRESTController`, 7 MockMvc tests), uPortal-start `f2db0a9` (`tests/api/reset-my-layout.spec.ts`, 5 tests pass on the deployed build) |
 | 3. `<up-reset-my-layout>` | Done: uPortal `034f94e`. 80 component tests (37 unit cases, 25 browser cases, 18 model cases). Every new file has 100% lines. `vp check`, `vp test --coverage` (301 tests) and `vp build` pass |
-| 4. Channel definition | Next |
-| 5. Spec against the component, seeded faults | Not started |
-| 6. UPGRADING-6.0 | Not started |
+| 4. Channel definition | Done: uPortal-start `e3c7803`, Web Component definition; `UP_PORTLET_DEF_PARAM` delta +2 to +4 on the existing line |
+| 5. Spec against the component, seeded faults | Done: uPortal-start `ec3c105`. The 7 characterisation tests pass unchanged against the component, and 4 component tests were added. The API spec reads the channel's element. A new test found the 403 case, fixed in uPortal `2f8f0f0` |
+| 6. UPGRADING-6.0 | Done: "Reset My Layout is a web component", with the portlet, its context and its flow deleted |
 
 ## Running locally
 
@@ -61,6 +61,14 @@ Each fault was seeded alone and reverted.
 | Machine doesn't set a notice when a reset answers 500 | 1 machine test, 1 browser test (before the machine tests covered each error kind, only the browser test) |
 | Confirmation heading not focused | 6 browser tests, 10 model tests (none before the model test listed the focus target of each state) |
 | Reset sent as PUT instead of POST | 1 API client test, 10 browser tests, 8 model tests |
+| Deployed bundle shows `admin` in the confirmation | e2e "asks for confirmation, naming the user" |
+| Deployed bundle resets on Cancel | e2e "Cancel goes back and keeps the layout", e2e keyboard test |
+| Deployed bundle never moves focus | e2e keyboard test |
+| Deployed controller answers guests as users | API spec, both guest tests |
+| Deployed controller resets the staff user's layout | e2e "the default tabs and portlets come back", e2e "leaves other users' layouts alone", API spec reset test |
+
+The e2e faults were edits of the deployed bundle or of the controller class in the deployed
+`uPortal-api-rest` jar, with Tomcat restarted for each.
 
 ## Design
 
@@ -68,7 +76,7 @@ Each fault was seeded alone and reverted.
   `POST /api/v6-0/layout/reset` (CSRF) calls `IUserLayoutHelper.resetUserLayout` with the session
   user's attributes and answers the same body. Guests get 401, answers are `no-store`.
 * `<up-reset-my-layout>` loads `GET` first. The confirmation shows the user name it returns. States:
-  `loading`, `failed` (retry), `signedOut` (401), and `ready` with `start`, `confirming`,
+  `loading`, `failed` (retry), `signedOut` (401 or 403), and `ready` with `start`, `confirming`,
   `resetting` and `done`. A failed reset goes back to `confirming` with a notice. It emits
   `up-layout-reset`. Focus moves to the new step's heading or button after a step, never on the
   first load.
@@ -76,11 +84,44 @@ Each fault was seeded alone and reverted.
   cancelled) and keeps one "Reset User Layout" heading. Reset Layout is a danger button.
 * New keys `reset.my.layout.load.fail`, `.reset.fail`, `.session.expired` and `.try.again`, in
   English, French and Spanish.
-* The `userLayoutHelper` bean stays in `flowsContext.xml`, because the admin `reset-user-layout`
-  flow uses it too.
+* A 403 from the API is Spring Security refusing the CSRF token. The controller never refuses a
+  signed-in user, and a session that ended gets a new token. The component treats 403 like 401.
+* Deleted: the `ResetMyLayout` entry of `WEB-INF/portlet.xml`,
+  `properties/contexts/portlet/ResetMyLayout-portlet.xml` and `WEB-INF/flows/reset-my-layout/`.
+  Nothing else used them. Checked on the running portal: with the definition set back to the
+  `ResetMyLayout` descriptor, `/p/reset-my-layout` shows the Welcome tab and the log warns "No
+  portlet descriptor could be found for the portlet definition".
+* Kept, because other code uses them: the `reset-user-layout` subflow and its two JSPs (User
+  Administration's `user-manager` flow), the `userLayoutHelper` bean in `flowsContext.xml`, and the
+  message keys, which the component reads.
+* Now unused: `IPersonLookupHelper.getSelf(ExternalContext)` in uPortal-api-internal, which only
+  the deleted flow called. It takes a Web Flow type. It is a public interface method, so it stays
+  for the Spring 5.3 step (P4-1) to remove.
+
+## Findings
+
+* When the session ends while a component is open, its next unsafe request gets 403. The CSRF
+  filter refuses the old token before the controller can answer 401. Other components that treat 403 as
+  "not allowed" show the wrong message in that case.
+* `/api/layout?action=addTab` answers 500 for a tab name longer than 35 characters.
+* A reset doesn't change the session's layout. If the user changes their layout before signing
+  in again (adds a tab, moves a portlet), the old layout is saved again and the reset is lost.
+  This is the portlet's behaviour too, and the note "You must sign on again" is the only warning.
+
+## Proposed LOG rows
+
+* MOD-D18 status line, Reset My Layout converted. `/api/v6-0/layout/reset` and
+  `<up-reset-my-layout>` in uPortal, the Web Component definition in uPortal-start. The
+  characterisation spec passes on the portlet and on the component. The `reset-my-layout` flow,
+  its portlet context and the `ResetMyLayout` portlet are deleted. `reset-user-layout` stays.
+* Issue: a session that ends while a component is open makes its next unsafe request fail with
+  403 (CSRF), not 401. Components should say "sign in again" for a 403 from an API that never
+  refuses signed-in users.
+* Issue: a layout reset is lost if the user changes the layout before signing in again (the
+  session saves its old layout). Clearing the session's layout after the reset would fix it.
+* Issue: `IPersonLookupHelper.getSelf(ExternalContext)` is unused. Remove it with P4-1.
 
 ## Next step
 
-Publish `reset-my-layout` as a Web Component channel in uPortal-start, list the
-`UP_PORTLET_DEF_PARAM` delta in `intended-changes.txt`, and run the characterisation spec against
-the component.
+Run CI.yml by hand on the uPortal topic branch and integration.yml on the uPortal-start topic
+branch, then report the run IDs and head SHAs to the coordinator.
