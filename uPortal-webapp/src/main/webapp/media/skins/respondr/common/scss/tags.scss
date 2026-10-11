@@ -125,3 +125,9 @@ a {
     text-decoration: underline;
   }
 }
+
+/* A link inside running text is underlined, so colour isn't the only thing that marks it (WCAG 1.4.1) */
+p a:not(.btn),
+footer a:not(.btn) {
+  text-decoration: underline;
+}
