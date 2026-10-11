@@ -1648,18 +1648,25 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 ### MOD-D43: the ArchUnit freeze store never grows
 
 * **Decision (project owner, 2026-10-11):** "Prefer using modern where possible, don't make
-  things worse." A change may remove recorded uses of the APIs the migration retires (MOD-D29's
-  freeze rules) but never add one. Code that has to cross between an old and a new API uses the
-  new one wherever it can.
+  things worse." For each of MOD-D29's freeze rules, a change may not record more uses of the
+  retired API than there were before it. Code that has to cross between an old and a new API uses
+  the new one wherever it can.
 * **Check:** `.github/scripts/check-freeze-store.py`, run by the CI workflow's `Commit messages`
-  job, fails when a push adds entries to `uPortal-webapp/src/test/resources/archunit_store`. It
-  ignores line numbers the way ArchUnit does. It lists a new rule's entries without failing,
-  because those record uses that already exist. Run against the commit that added the 12 entries
-  below, it reports exactly those 12.
-* **Status:** the 12 uses the java.time and Spring cache batches added (11 in
-  `JodaTimeConversions`, 1 in `InsufficientSizeCacheEventListener`) are re-examined.
-  `JodaTimeConversions` stays until the JPA mappings leave Joda-Time (P3-5). The cache listener
-  should move to the Spring Cache API now.
+  job, compares `uPortal-webapp/src/test/resources/archunit_store` before and after a push. It
+  fails when a rule's count of recorded uses goes up, and lists each added entry as a warning.
+  It ignores line numbers the way ArchUnit does. A new rule's entries are listed but not counted,
+  because they record uses that already exist.
+* **Counts, not entries:** a change that takes a retired type out of a service can leave one
+  call in the adapter that calls the service. 394fd8018 did this: the cache health report stopped
+  taking Ehcache objects, and the Ehcache 2 listener now calls `getName()` itself. That adds one
+  entry while the Ehcache rule as a whole shrinks. Failing on each entry would block a change
+  that reduces Ehcache use.
+* **Status:** the java.time and Spring cache batches (bc955a7bd) added 12 entries and removed
+  156: the Joda-Time rule went from 583 to 518 uses and the Ehcache 2 rule from 426 to 335. Of
+  the 12, the 11 in `JodaTimeConversions` stay until the JPA mappings leave Joda-Time (P3-5). The
+  one in `InsufficientSizeCacheEventListener` stays until the cache provider changes (P4-3).
+  Spring's Cache API has no eviction events, and JCache does not report evictions either, so the
+  listener becomes an Ehcache 3 event listener or a Caffeine removal listener (cause `SIZE`) then.
 
 ## Issues
 
