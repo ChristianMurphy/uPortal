@@ -55,22 +55,64 @@ Tests:
   database. `VendorDifferences.leftByRemove` (6 Oracle types with ORA-02292) is removed. The
   reload still misses the '' entries on Oracle, as the goldens expect, and no golden file changes.
 
+## Fixes made on r2 after the cherry-picks
+
+| Commit | Change |
+| --- | --- |
+| `377e5e28c` | `JpaPortalEventStore` sets `FlushModeType.COMMIT` on its `EntityManager` instead of calling `Session.setHibernateFlushMode`. The frozen `Session.setFlushMode` use leaves the ArchUnit store, and the store doesn't gain one. |
+| `24a283a72` | The `org.dom4j:dom4j` exclusion skips the `spotbugs*` configurations, so SpotBugs starts again. The MD5 in `PortalImplicitNamingStrategy.hashedName` gets `@SuppressFBWarnings`: it rebuilds the 4.3 `FK_`/`UK_` names. |
+| `7412afdfb` | `.gitattributes`: `*.sql` has LF line endings. The DDL golden files then match on Windows. |
+| `a19ebddc6` | `JpaClusterLockDaoTest.anAbandonedLockIsTakenOver` waits 1.1 s instead of 50 ms. MySQL rounds `DATETIME` to whole seconds, so a lock taken at .5 s or later is stored up to half a second ahead. The test failed 2 of 6 local runs on MySQL 9.7 against ccr `d864e63b6` (Hibernate 4.3) as well, so this is not a 5.2 change. MOD-I141 moves `ClusterMutex.lastUpdate` to `Instant` after P2 and looks at the column precision again. Check the 1.1 s wait then. |
+| `4a60a9f26`, `b917cc86e` | The MOD-I144 test inserts its NULL row in a transaction and without a cast, which MySQL rejects. |
+
 ## Test results
 
-To be filled in as the runs finish:
+- CI 38111358789 on `f2ea3e8fa` (the cherry-picks only): 907 of 908 tests passed, with the
+  persistence, query and analytics goldens on HSQLDB among them. The failure was the freeze rule
+  fixed in `377e5e28c`. SpotBugs could not start (`24a283a72`). Vale flagged the docs.
+- DB integration 38111412577 on `f2ea3e8fa`: the round-trip golden passed on Oracle with the old
+  assertion (six types left with ORA-02292), which shows that 5.2.18 still leaves the rows. On
+  Oracle, MariaDB and SQL Server the only failure was the freeze rule. MySQL also failed
+  `anAbandonedLockIsTakenOver` (`a19ebddc6`).
+- DB integration 38114017644 on `7eb70db29` (with the MOD-I144 fix): PostgreSQL 18, MariaDB 12.3,
+  SQL Server 2025 and Oracle 23 passed, with the goldens unchanged and Oracle deleting every
+  entity. MySQL 9.7 failed only on `anAbandonedLockIsTakenOver` and on the cast in the new test.
+  Canaries: PostgreSQL 19 and MariaDB 13 passed. MySQL 26 failed, and its failed tests
+  weren't checked (canaries may fail).
+- CI 38114016099 on `7eb70db29`: SpotBugs, Vale, the commit checks and the Spring 5.3 compile check
+  passed. Windows failed `PersistenceUnitDdlTest` (`7412afdfb`), and the other legs were
+  cancelled.
+- DB copy tool 38114019284 on `7eb70db29`: passed.
+- Pending on `b917cc86e`: CI 38116123147 and DB integration 38116124775. uPortal-start
+  Integration 38116235009 on uPortal-start `7943371`, with the full sets.
 
-- CI: run 38111358789 on `f2ea3e8fa` (the cherry-picks only). 907 of 908 tests passed,
-  with the persistence, query and analytics goldens on HSQLDB among them. The one failure was
-  `MigrationFreezeRulesTest.noNewHibernateSessionOutsidePersistence`: a frozen use is gone.
-  SpotBugs reported new findings in uPortal-webapp. Vale flagged the docs.
-- DB integration: run 38111412577 on `f2ea3e8fa`.
+## Open points
+
+- `PersistenceUnits.deleteAll`, the golden tests' clean-up, still deletes element-collection rows
+  with SQL before it removes entities. The MOD-I144 fix makes that step unnecessary. It was left
+  as it is.
+- uPortal-start: a manual Integration run on a workstream branch used the light profile until
+  uPortal-start `7943371`. The harness then covered PostgreSQL 18 only, and `db-harness.yml`
+  builds released 5.17, not this branch. Run 38116235009 is the first with the harness on all six
+  6.0 servers.
+- Upgrade path (5.17 data, then the 5.2 portal on the same database): this round relies on
+  uPortal-start's harness and G-migrate in CI. The first attempt's manual in-place upgrade on
+  PostgreSQL 16 was not repeated.
 
 ## Proposed LOG rows
 
 The coordinator numbers them.
 
-- **MOD-I144 (update):** on Hibernate 5.2.18, Oracle leaves the rows too. Fixed in 6.0 by
-  `ElementCollectionDeleteIntegrator`, and the round trip now asserts a clean delete on Oracle.
+- **MOD-I144 (update):** on Hibernate 5.2.18, Oracle leaves the rows too (run 38111412577). Fixed
+  in 6.0 by `ElementCollectionDeleteIntegrator`, and the round trip now asserts a clean delete on
+  Oracle (run 38114017644).
+- **New, Testing:** `JpaClusterLockDaoTest.anAbandonedLockIsTakenOver` failed at random on MySQL
+  because `DATETIME` rounds the lock time to whole seconds, also on 4.3. The test now waits 1.1 s
+  (`a19ebddc6`). Revisit with MOD-I141.
+- **New, Build:** the dom4j 2 exclusion from the 5.2 upgrade stopped SpotBugs from starting.
+  Fixed in `24a283a72`.
+- **New, Build:** `.sql` files had no line-ending rule, so the DDL golden files could get CRLF on
+  Windows. Fixed in `7412afdfb`.
 
 ## Findings carried over from the first attempt
 
