@@ -291,8 +291,10 @@
          */
 
         $("#groupName").on('input', function () {
-            var nameRegex = /^[\w ]{5,500}$/;
-            if (nameRegex.test($(this).val())) {
+            // Any text but control characters, / and \, 5 to 500 code points (as PagsService)
+            var nameRegex = /^[^\p{Cc}\/\\]{5,500}$/u;
+            var name = $(this).val();
+            if (nameRegex.test(name) && name.trim().length > 0) {
                 $("#${n}saveAdHocButton").prop('disabled', false);
                 $(this).parent().removeClass("is-invalid");
             } else {
