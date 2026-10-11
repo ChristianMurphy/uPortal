@@ -146,6 +146,15 @@ function inputValue(root: ShadowRoot, id: string): string | undefined {
     return root.querySelector<HTMLInputElement>(`input#${id}`)?.value;
 }
 
+/** A password input, which is in the element's light DOM so password managers can find it. */
+function passwordInput(element: UpSelfEditAccount, name: string): HTMLInputElement {
+    const found = element.querySelector<HTMLInputElement>(`input[name="${name}"]`);
+    if (!found) {
+        throw new Error(`no password input ${name}`);
+    }
+    return found;
+}
+
 /** Makes the element do what the step's event stands for. */
 async function replay(element: UpSelfEditAccount, portal: Portal, event: SelfEditAccountEvent) {
     const outcome = event as unknown as { type: string; output?: unknown; error?: ApiError };
@@ -172,7 +181,7 @@ async function replay(element: UpSelfEditAccount, portal: Portal, event: SelfEdi
             await userEvent.fill(find(element, `#attribute-${event.name}`), event.value);
             return;
         case 'password.change':
-            await userEvent.fill(find(element, `#${event.field}`), event.value);
+            await userEvent.fill(passwordInput(element, event.field), event.value);
             return;
         case 'cancel':
             await userEvent.click(find(element, '.cancel'));
@@ -226,9 +235,9 @@ function expectRendered(element: UpSelfEditAccount, snapshot: Snapshot): void {
     for (const attribute of account.editable) {
         expect(inputValue(root, `attribute-${attribute.name}`)).toBe(draft[attribute.name]);
     }
-    expect(inputValue(root, 'currentPassword')).toBe(currentPassword);
-    expect(inputValue(root, 'password')).toBe(password);
-    expect(inputValue(root, 'confirmPassword')).toBe(confirmPassword);
+    expect(passwordInput(element, 'currentPassword').value).toBe(currentPassword);
+    expect(passwordInput(element, 'password').value).toBe(password);
+    expect(passwordInput(element, 'confirmPassword').value).toBe(confirmPassword);
     const shown = root.querySelector('.notice');
     if (notice === undefined) {
         expect(shown).toBeNull();
