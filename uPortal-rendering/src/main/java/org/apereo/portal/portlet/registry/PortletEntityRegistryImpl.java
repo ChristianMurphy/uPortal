@@ -63,7 +63,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.orm.hibernate3.HibernateOptimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.util.WebUtils;
@@ -362,7 +362,7 @@ public class PortletEntityRegistryImpl implements IPortletEntityRegistry {
                 if (shouldBePersisted) {
                     try {
                         this.portletEntityDao.updatePortletEntity(persistentEntity);
-                    } catch (HibernateOptimisticLockingFailureException e) {
+                    } catch (ObjectOptimisticLockingFailureException e) {
                         // Check if this exception is from the entity being deleted from under us.
                         final boolean exists =
                                 this.portletEntityDao.portletEntityExists(
@@ -603,7 +603,7 @@ public class PortletEntityRegistryImpl implements IPortletEntityRegistry {
 
             try {
                 this.portletEntityDao.deletePortletEntity(persistentEntity);
-            } catch (HibernateOptimisticLockingFailureException e) {
+            } catch (ObjectOptimisticLockingFailureException e) {
                 this.logger.warn(
                         "This persistent portlet has already been deleted: "
                                 + persistentEntity
