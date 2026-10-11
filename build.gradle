@@ -104,7 +104,10 @@ allprojects {
         // Hibernate 5.2.18 moved from dom4j:dom4j 1.6.1 to org.dom4j:dom4j 2.1.1 without changing
         // the code that uses it (identical to 5.2.17, which ran on 1.6.1). Both jars hold
         // org.dom4j, and uPortal's own dom4j code is written against 1.6.1, so only that one stays.
-        exclude group: 'org.dom4j', module: 'dom4j'
+        // SpotBugs runs from its own configurations and needs org.dom4j:dom4j 2.
+        if (!name.startsWith('spotbugs')) {
+            exclude group: 'org.dom4j', module: 'dom4j'
+        }
     }
 
     dependencies {
