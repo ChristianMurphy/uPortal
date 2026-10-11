@@ -55,3 +55,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0002](0002-target-java-25-and-jakarta-ee-11-in-steps.md) | Target Java 25 and Jakarta EE 11 in 6.0, reached in tested steps | proposed | 2026-10-10 |
 | [0003](0003-build-with-gradle-9-before-raising-the-bytecode-level.md) | Build with Gradle 9 before raising the bytecode level | proposed | 2026-10-10 |
 | [0004](0004-deploy-uportal-as-a-war-on-an-external-tomcat-11.md) | Deploy uPortal as a WAR on an external Tomcat 11 | proposed | 2026-10-10 |
+| [0005](0005-prefer-spring-approaches-and-spring-cache-api.md) | Prefer the Spring approach for every migration, and cache through Spring's Cache API | proposed | 2026-10-10 |
