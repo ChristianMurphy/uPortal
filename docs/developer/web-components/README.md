@@ -219,7 +219,10 @@ npx vp build
 
 The browser tests need the Chromium build that the pinned Playwright expects. Run
 `./gradlew :uPortal-webcomponents:installChromium` once, or point `PLAYWRIGHT_BROWSERS_PATH` at
-an existing install of that revision.
+an existing install of that revision. A build without Chromium passes `-PskipWebComponentTests`,
+which leaves `vpTest` out; the unit and browser tests share one coverage threshold, so they run
+together or not at all. CI runs them in one cell, Linux with Temurin 21, and the other cells pass
+the property.
 
 ### The base library (`src/lib`)
 
