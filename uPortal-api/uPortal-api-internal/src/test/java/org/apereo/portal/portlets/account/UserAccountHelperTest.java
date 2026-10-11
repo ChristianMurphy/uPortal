@@ -25,6 +25,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +47,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.LoggerFactory;
 
 /**
  * The following methods are excluded from unit testing. It is difficult to mock objects that are
@@ -227,5 +232,32 @@ public class UserAccountHelperTest {
         personAttributes.put("pref_name_2", new StringListAttribute());
         personAttributes.put("pref_name_3", new StringListAttribute());
         return personAttributes;
+    }
+
+    /** The token check logs who and whether, never a token (MOD-D19 password flows). */
+    @Test
+    public void testValidateLoginTokenLogsNoToken() {
+        final Logger logger = (Logger) LoggerFactory.getLogger(UserAccountHelper.class);
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        final Level level = logger.getLevel();
+        logger.setLevel(Level.DEBUG);
+        final String submitted = "submitted-token-77";
+        try {
+            assertFalse(userAccountHelper.validateLoginToken(TEST_USER_NAME, submitted));
+            assertTrue(userAccountHelper.validateLoginToken(TEST_USER_NAME, TEST_USER_LOGIN_TOKEN));
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(level);
+        }
+
+        assertEquals(2, appender.list.size());
+        for (ILoggingEvent event : appender.list) {
+            final String message = event.getFormattedMessage();
+            assertTrue(message, message.contains(TEST_USER_NAME));
+            assertFalse(message, message.contains(TEST_USER_LOGIN_TOKEN));
+            assertFalse(message, message.contains(submitted));
+        }
     }
 }

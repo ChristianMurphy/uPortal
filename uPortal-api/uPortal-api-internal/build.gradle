@@ -13,4 +13,5 @@ dependencies {
 
     compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
     testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
+    testImplementation "ch.qos.logback:logback-classic:${logbackVersion}"
 }
