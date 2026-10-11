@@ -127,7 +127,7 @@ databases upgrading in place.
 * **Still open:** filter CKEditor's version-check request by URL in
   visual-resource-server, so the check is fully green offline.
 
-### MOD-D9: the portlet WAR bridge works; move Tomcat 11 portlet fixes into P5
+### MOD-D9: transformed portlet WARs run on Jakarta Tomcat; move Tomcat 11 portlet fixes into P5
 
 * **Evidence:** the non-merging spike converted the whole built 5.17
   portal (uPortal, all 12 portlet WARs including pluto-testsuite,
@@ -146,7 +146,8 @@ databases upgrading in place.
   and JDK 25 (XSLT extension functions: MOD-I63) break things. The jakarta
   rename itself does not.
 * **Decision:**
-  * MOD-Q5's bridge is validated for the bundled portlets.
+  * MOD-Q5's build-time WAR transformation is validated for the bundled
+    portlets.
   * Move the JSTL upgrade, the Spring 3.x WAR upgrades/retirements and the
     Notification Boot fix into P5 as javax-side pre-steps.
   * Fix MOD-I63 in code before the JDK 25 runtime move.
@@ -383,7 +384,8 @@ research report.
 ### MOD-D18: replace uPortal's own portlets with REST + web components before Jakarta
 
 * **Decision (project owner):** the copied Spring Portlet MVC / Web Flow
-  portlet glue (P3-1) is a bridge only through the Spring 5.3 step (P4).
+  portlet integration classes (P3-1) are kept only through the Spring 5.3
+  step (P4), until they are replaced.
   PortletMVC4Spring 5.3.4 shows the Spring 5 adaptations needed there.
   All 37 portlets in uPortal's own `portlet.xml`, plus the 26 admin flows,
   are replaced during P4/P5 by **REST APIs + Lit-based web components**,
@@ -416,10 +418,10 @@ research report.
   Portlet MVC / Web Flow dependency, and P6 requires that the copied code
   has been deleted.
 * **Alternatives considered:**
-  * Replace first, with no bridge. That stalls every framework upgrade on
-    the rewrite.
-  * Bridge through 6.0 and replace in 6.x. That means porting dead code
-    through Spring 6/7 and Jakarta.
+  * Replace first, without keeping the copied code in between. That stalls
+    every framework upgrade on the rewrite.
+  * Keep the copied code through 6.0 and replace it in 6.x. That means
+    porting dead code through Spring 6/7 and Jakarta.
   * Servlet Web Flow 4 with server-side views. That keeps a second UI
     stack.
 
@@ -474,7 +476,7 @@ chosen per portlet.
 * **Alternatives considered:**
   * Web components everywhere. That gives one UI stack, but it means a
     heavier rewrite for form-heavy admin wizards, more client-side
-    security surface and a JS build for every tool.
+    code to secure and a JS build for every tool.
   * Thymeleaf everywhere: widgets couldn't sit inside portal page regions
     without a server-fragment channel.
   * Keep JSP: works on Tomcat 11, but it's the legacy stack this work is
@@ -522,8 +524,9 @@ chosen per portlet.
   * Vite+ 1.x is days old. Pin exact versions, and keep the configuration
     portable (plain `vite.config.ts` + Vitest config) so it can fall back
     to plain Vite + Vitest if needed.
-  * Browser-mode tests in this sandbox need the Chromium shim; CI uses
-    the Playwright-installed browsers.
+  * Browser-mode tests in this sandbox need the pre-installed Chromium
+    linked under the revision Playwright expects; CI uses the
+    Playwright-installed browsers.
 
 ### MOD-D21: Bootstrap stays the theme; target Bootstrap 6
 
@@ -609,7 +612,7 @@ chosen per portlet.
 | --- | --- | --- |
 | Caching | Ehcache 2 API in 58 files, spring-modules-cache | Spring Cache abstraction (`@Cacheable`/`@CacheEvict`, `CacheManager`); providers Caffeine, JCache/Infinispan, Redis/Valkey (MOD-Q10) |
 | Sessions | Spring Session 1.3 (Redis, Jedis) | Spring Session 4.x (Lettuce; works with Valkey) |
-| Built-in portlets | Spring Portlet MVC + Web Flow portlet glue | Spring MVC: `@Controller` + Thymeleaf for pages, `@RestController` + Jackson for the web components' APIs (MOD-D18/D19) |
+| Built-in portlets | Spring Portlet MVC + Web Flow portlet integration classes | Spring MVC: `@Controller` + Thymeleaf for pages, `@RestController` + Jackson for the web components' APIs (MOD-D18/D19) |
 | REST auth for web components | Custom JWT (jjwt, 10 files) | Spring Security OAuth2 Resource Server (JWT); uPortal keeps issuing the tokens |
 | CAS integration | Jasig/Apereo cas-client filters wired by hand (8 files) | Evaluate `spring-security-cas` (re-added in Security 6.1) in P7 |
 | HTTP clients | `RestTemplate` (9 files) on HttpClient 4 | `RestClient` (Spring 6.1+) on the JDK or HttpClient 5 request factory |
@@ -648,7 +651,7 @@ chosen per portlet.
 * **Real bugs found:** MOD-I82 and MOD-I97 (product), MOD-I86 (tests).
 * **Done (2026-10-10):** MOD-I82 to I85 are fixed, and both repos'
   workflows no longer carry `continue-on-error`, `known-failure` or
-  `known-drift`. With drift fixed, the Oracle harness ran the API
+  `known-drift`. With drift fixed, the harness on Oracle ran the API
   specs for the first time and found MOD-I97.
   * uPortal 7ded7362d: CI 38072747439 and DB integration 38072747374
     (PostgreSQL, MariaDB, MySQL) green. DB integration 38068704548 green on
@@ -746,7 +749,7 @@ This supersedes MOD-D24's runtime matrix.
     `jsonb` on PostgreSQL, `JSON` on MySQL/MariaDB, native `json` on SQL
     Server 2025, `JSON` on Oracle 23. Mapped with Hibernate 7
     `@JdbcTypeCode(SqlTypes.JSON)`.
-  * **Native types:** the Oracle 23 `BOOLEAN` type; UUID types (`uuid`,
+  * **Native types:** the `BOOLEAN` type on Oracle 23; UUID types (`uuid`,
     `uniqueidentifier`, MariaDB `UUID`) for UUID ids, considering
     time-ordered UUIDv7 (PostgreSQL 18 `uuidv7()`) for insert locality.
   * **Time partitioning for high-volume analytics:** raw events, event
@@ -770,7 +773,7 @@ This supersedes MOD-D24's runtime matrix.
   The default is (a), unless the G-index workload shows (b) is better.
   Every other vendor uses native sequences.
 
-### MOD-D26: P3-1 merged, with Spring Portlet MVC and Web Flow's portlet glue vendored
+### MOD-D26: P3-1 merged, with Spring Portlet MVC and Web Flow's portlet integration classes vendored
 
 * **Commits** (merge `a5c27ca20`):
   * `65a04d252`: uPortal classes move out of Spring's packages (MOD-I12).
@@ -915,7 +918,7 @@ This supersedes MOD-D24's runtime matrix.
   itself (179e11d66) had one red Windows job, caused by a Maven Central
   403 (MOD-I98), not by the merge.
 
-### MOD-D29: test expansion that uses 5.17 as the oracle
+### MOD-D29: test expansion that uses 5.17's output as the reference
 
 * **Status (2026-10-10):** approved by the project owner ("Please do
   improve the tests to give more confidence in the migration"). Items 3,
@@ -951,9 +954,10 @@ This supersedes MOD-D24's runtime matrix.
      DST, month and year ends, several time zones) through 5.17 and the
      new build, then compare the aggregation tables.
 * **Coverage:**
-  4. *Portlet bridge conformance:* run the already-deployed Pluto JSR-286
-     test suite (`overlays/pluto-testsuite`, test-portlet-1/2) and
-     require PASS, both now and on the transformed WAR on Tomcat 11.
+  4. *Portlet conformance after the WAR transform:* run the
+     already-deployed Pluto JSR-286 test suite (`overlays/pluto-testsuite`,
+     test-portlet-1/2) and require PASS, both now and on the transformed
+     WAR on Tomcat 11.
   5. Smoke every bundled portlet in every mode and window state.
   6. *Characterisation specs* for each WS14 portlet and flow before it
      is replaced. The replacement passes the same spec.
@@ -1358,13 +1362,13 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I58 | Admin UI | **Found by the new specs.** The editPermission breadcrumbs are action URLs used as plain links, so following one returns HTTP 405. Import/Export `delete.jsp` has broken markup that leaves the form covered and unclickable. | The specs work around both (keyboard submit). Upstream bugs. |
 | MOD-I59 | API | `/api/entity` cannot delete groups or local accounts. | Spec cleanup goes through the UI. Possible API gap. |
 | MOD-I60 | Portlets | **Spike B3 (Tomcat 11 only, critical).** 13 of 16 WARs bundle JSTL 1.1.2, which uses `javax/jakarta.servlet.jsp.el`, removed in Pages 4.0. Any JSP using `<c:set>` fails on Tomcat 11. Tomcat 10.1 is fine. | P5: upgrade JSTL to Apache Taglibs 1.2.5 / Jakarta Tags in uPortal and every bundled portlet before P7-1. |
-| MOD-I61 | Portlets | **Spike B4 (Tomcat 11 only).** Spring 3.x WARs (Feedback, CAS 3.6, ResourceServingWebapp, esup-filemanager) fail on Tomcat 11 for the same reason. | P5: upgrade or retire them. A shared/lib shim jar worked in the spike. |
+| MOD-I61 | Portlets | **Spike B4 (Tomcat 11 only).** Spring 3.x WARs (Feedback, CAS 3.6, ResourceServingWebapp, esup-filemanager) fail on Tomcat 11 for the same reason. | P5: upgrade or retire them. A shared/lib jar that restores the removed `jakarta.servlet.jsp.el` classes worked in the spike. |
 | MOD-I62 | Portlets | **Spike B2 (Tomcat 11 only).** NotificationPortlet (Spring Boot 1.5) fails to deploy, because Boot references `AbstractHttp11JsseProtocol`, which Tomcat 11 removed. | P5: one property that excludes Boot's embedded-container auto-config. |
 | MOD-I63 | Runtime | **Spike B5 (JDK 25, critical).** JDK 25 disables XSLT extension functions by default, and uPortal's theme pipeline depends on them, so the portal is down on JDK 25. JDK 25 also tightens XML entity and depth limits. | **Fixed** in `9a2eea868`. `TemplatesBuilder` now enables `http://www.oracle.com/xml/jaxp/properties/enableExtensionFunctions` on its factory only, and the processor is the JDK's built-in XSLTC (`xalan/java` extensions). The fix was verified on JDK 11/17/21/25, and the guest and admin pages render on JDK 25 without the JVM flag. uPortal's XSL and the Woodstox-based import aren't affected by the JDK 25 XML limits. Upstream candidate. |
 | MOD-I64 | Tooling | **Spike B1.** `icu4j-2.6.1.jar` (in Calendar and NewsReader) contains a corrupt class. The migration tool aborts the whole WAR because of it, so Tomcat's `legacyAppBase` deploy-time conversion can't handle these two WARs. | The transform pipeline needs a per-WAR `-exclude` list and must fail the build on a non-zero exit. |
 | MOD-I65 | Tooling | The jakartaee-migration default TOMCAT profile also renames `javax.persistence`, `javax.transaction`, `javax.ejb`, `javax.mail` and the annotation classes. Each WAR is still self-consistent, so it works. A narrow profile needs about 20 lines of Java (`NarrowMigrate.java`), and it passed too. | P5-5: use the narrow profile. It rewrites fewer classes and leaves `javax.persistence.*` property keys unchanged. |
 | MOD-I66 | Tooling | A removed-Servlet-API scanner must check linkage, not grep method names. The hard failures came from removed *classes* in signatures and exception tables, reached through Jasper tag introspection and Tomcat internals. | Prototype `JakartaLinkScan.java` (in research/spike-jakarta/scripts). Class-level hits predicted every hard failure. |
-| MOD-I67 | Correction | MOD-I36 said CAS 3.6 cannot run on Jakarta Tomcat. In fact, once transformed it runs on 10.1 as-is, and on 11 with the jsp.el shim. | CAS 3.6 can be a stop-gap through P6. Making CAS opt-in or external (MOD-Q3) is still right because CAS 3.6 is EOL. |
+| MOD-I67 | Correction | MOD-I36 said CAS 3.6 cannot run on Jakarta Tomcat. In fact, once transformed it runs on 10.1 as-is, and on 11 with the shared/lib jar that restores the jsp.el classes. | CAS 3.6 can be a stop-gap through P6. Making CAS opt-in or external (MOD-Q3) is still right because CAS 3.6 is EOL. |
 | MOD-I68 | Runtime | Tomcat 10.1/11 silently ignore `compressableMimeType` (uPortal-start `server.xml`) and `disableURLRewriting` (Feedback). Several WARs bundle `spring-test` and two JSTL implementations. | Fix in the P6-2 overlays. Dependency hygiene in P5. |
 | MOD-I69 | Runtime | `DatabaseHealthChecker` creates a new thread pool on every health check and never shuts it down. | Small upstream fix. |
 | MOD-I70 | Tests | Six uPortal-webapp tests create their own TransformerFactory (e.g. `XsltPortalUrlProviderTest`, `PortletDataUpgradeTest`), so they still fail on a JDK 25 test JVM. | Route them through `TemplatesBuilder` or enable the feature in test setup when the CI test JDK moves to 25. |
@@ -1394,7 +1398,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I94 | Portlets/data | Notification and SimpleContent also store data in PostgreSQL OID LOB columns, so the `vacuumlo` risk (MOD-I24) extends to portlet tables. | Include them in the adopter warning. The copy tool handles them. |
 | MOD-I95 | Persistence | On MySQL/MariaDB, 5.17 timestamp columns have no fractional seconds (34 columns), so PostgreSQL → MariaDB loses sub-second precision. The tool reports it. | The 6.0 schema uses `DATETIME(6)` / `TIMESTAMP(6)` on MySQL/MariaDB. |
 | MOD-I96 | Tooling | With externally supplied drivers, a driver also bundled in the jar caused a sealed-package error, and `DriverManager` rejected the class-loader-loaded drivers. | **Fixed:** drivers stay out of the jar and are instantiated directly. |
-| MOD-I97 | Persistence | **Found by the Oracle harness.** `SQLNextExceptionLoggerAspect` called `initCause` on Oracle's `BatchUpdateException`, whose cause is already set (to null). That threw `IllegalStateException` and hid the ORA-00001 constraint error, so two duplicate-name portlet-list API specs got 500 instead of 400. | **Fixed** (7ded7362d): the aspect logs the next exception instead of chaining it. A unit test reproduces the exact CI error on the old code. Upstream candidate. |
+| MOD-I97 | Persistence | **Found by the harness on Oracle.** `SQLNextExceptionLoggerAspect` called `initCause` on Oracle's `BatchUpdateException`, whose cause is already set (to null). That threw `IllegalStateException` and hid the ORA-00001 constraint error, so two duplicate-name portlet-list API specs got 500 instead of 400. | **Fixed** (7ded7362d): the aspect logs the next exception instead of chaining it. A unit test reproduces the exact CI error on the old code. Upstream candidate. |
 | MOD-I98 | CI | uPortal CI run 38072243202 (179e11d66) failed on Windows only, because Maven Central returned HTTP 403 for `spring-core-7.0.9.pom` while resolving the copy tool's Spring Boot 4 dependencies. The next run, with the same build files, was green on all 8 jobs. On the prototype branch, setup-gradle's cache is read-only (it writes only on the default branch, which the fork never builds). Every job then downloads everything from Central and is exposed to its rate limits. | The cause is external and doesn't need a code change. If it recurs, let setup-gradle write the cache on push builds of the integration branch (push events only, never PRs, to avoid cache poisoning), and recheck with zizmor. Upstream runs on `master` get a written cache and are unaffected. |
 | MOD-I100 | api-rest | **Found by SpotBugs.** `EntityService.java:221` uses `&&` where `\|\|` is meant, so a null entity type with an ID set throws an NPE at :225. | **Fixed** (8dcab6efd): returns null when the type is unknown or the ID is blank (`\|\|`). `EntityServiceTest`: the unknown-type and null-type cases threw the NPE at :225 on the old code. Upstream candidate. |
 | MOD-I101 | io-types | **Found by SpotBugs.** `ExternalPortletDefinitionUnmarshaller.java:243` compares `Calendar.equals(Date)`, which is always false, so lifecycle entries meant to get the current time keep the placeholder date on import. | **Fixed** (20b19918e): compares the Calendar's instant (`getTime()`) with the placeholder. `ExternalPortletDefinitionUnmarshallerTest` imports a MAINTENANCE entry with the placeholder. On the old code the entry kept 1999-12-31 and sorted before PUBLISHED, and the portlet left maintenance mode. Upstream candidate. |
@@ -1422,10 +1426,10 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-Q2 | Kotlin DSL / version catalog / convention plugins? | **Proposed:** order is Gradle 9 in Groovy → a `build-logic` included build with convention plugins plus `gradle/libs.versions.toml` (Renovate supports it) → configuration cache (Gradle 9's preferred mode) → Kotlin DSL file by file, last. Kotlin DSL has been the default since 8.2, but Groovy is not deprecated. There is no OpenRewrite recipe for Groovy→Kotlin. |
 | MOD-Q3 | Local SSO in uPortal-start? | **Proposed:** default to uPortal local login (`SimpleSecurityContextFactory`, already on). CAS becomes opt-in as a separate CAS 7.3/8.0 Initializr overlay or Docker container. java-cas-client 4.x is used once uPortal is on Jakarta. |
 | MOD-Q4 | Schema management after hbm2ddl? (**Superseded by MOD-D11** for the 5.17 → 6.0 path, while Flyway vs Liquibase is still open for changes *after* 6.0) | **Open (licence issue).** Liquibase 5.0 moved to the FSL (not OSI), which Apereo may not accept. Flyway OSS is Apache-2.0 with `baselineOnMigrate`, but needs per-vendor SQL. The candidate is Hibernate 7 `SchemaManager` for fresh installs, plus Flyway versioned migrations (baseline = 5.17 schema) for upgrades, tested on all vendors with Testcontainers. Needs community input. |
-| MOD-Q5 | Portlets: transform or port the WARs, or replace them with web components / Soffit? | **Proposed:** follow Sakai's approach and keep Pluto in-tree on `jakarta.servlet`, with the `javax.portlet` 2.0 API rebuilt against `jakarta.servlet`. Fork Spring Portlet MVC for the 37 built-in portlets. Use build-time conversion of the bundled portlet WARs as a *bridge* only. Over time, move content portlets to web components (Vue 2 is EOL, so Lit or Vue 3) and Soffit. The prototype will verify the bridge. |
+| MOD-Q5 | Portlets: transform or port the WARs, or replace them with web components / Soffit? | **Proposed:** follow Sakai's approach and keep Pluto in-tree on `jakarta.servlet`, with the `javax.portlet` 2.0 API rebuilt against `jakarta.servlet`. Fork Spring Portlet MVC for the 37 built-in portlets. Use build-time conversion of the bundled portlet WARs only *until they are replaced*. Over time, move content portlets to web components (Vue 2 is EOL, so Lit or Vue 3) and Soffit. The prototype will verify that the converted WARs run. |
 | MOD-Q6 | Propose 6.0 as an RFC in `uPortal-Project/community` Discussions before opening the large PRs? | **Recommended** |
 | MOD-Q7 | What scale defines "high traffic" for G-index (users, concurrent sessions, events per day, retention)? | **Answered:** large campus. About 100k users, 5k concurrent sessions, 5M raw events/day, 30 days of raw events kept, 2 years of aggregations. |
 | MOD-Q8 | Can an adopter share anonymised production query statistics (`pg_stat_statements` or MySQL performance_schema digests)? | Asked |
-| MOD-Q9 | Which open-source alternatives exist for the portlet container, Spring Portlet MVC and Web Flow's portlet support, and what could replace the uPortal parts that need them? | **Proposed:** only Liferay maintains alternatives. Plutonium (Jakarta Portlet 4.0 container) and PortletMVC4Spring, which includes a `webflow` module, are both Apache-2.0. But they are milestones hosted outside Maven Central, and they have one maintainer. They target Spring 6.2 only and need Portlet 3/4 with `jakarta.portlet`, so every portlet would have to be rebuilt. Sakai maintains a copy of Pluto in its own tree. A community mirror (`sustain/portals-pluto-jakarta`, Dec 2025) shows little activity. Servlet-mode Spring Web Flow 4.0.x is maintained for Spring 7, and the flow XML can be reused. Plan: 6.0 includes the vendored Portlet MVC + Web Flow portlet glue (P3-1) as a bridge, and PortletMVC4Spring 5.3.4 is the reference for adapting the vendored code to Spring 5. In 6.x, the 37 built-in portlets and 26 admin flows move to a servlet-based admin console (Spring MVC + servlet Web Flow 4, or REST + web components), one flow at a time, checked by the `tests/ux/admin` specs. Content moves to a native web-component channel, and Soffit becomes a pipeline component. The container is then kept only as a compatibility layer for third-party portlets until 7.0. Next step: a spike converting one admin flow (Groups Manager) to measure the effort. |
+| MOD-Q9 | Which open-source alternatives exist for the portlet container, Spring Portlet MVC and Web Flow's portlet support, and what could replace the uPortal parts that need them? | **Proposed:** only Liferay maintains alternatives. Plutonium (Jakarta Portlet 4.0 container) and PortletMVC4Spring, which includes a `webflow` module, are both Apache-2.0. But they are milestones hosted outside Maven Central, and they have one maintainer. They target Spring 6.2 only and need Portlet 3/4 with `jakarta.portlet`, so every portlet would have to be rebuilt. Sakai maintains a copy of Pluto in its own tree. A community mirror (`sustain/portals-pluto-jakarta`, Dec 2025) shows little activity. Servlet-mode Spring Web Flow 4.0.x is maintained for Spring 7, and the flow XML can be reused. Plan: 6.0 includes the vendored Portlet MVC + Web Flow portlet integration classes (P3-1) until they are replaced, and PortletMVC4Spring 5.3.4 is the reference for adapting the vendored code to Spring 5. In 6.x, the 37 built-in portlets and 26 admin flows move to a servlet-based admin console (Spring MVC + servlet Web Flow 4, or REST + web components), one flow at a time, checked by the `tests/ux/admin` specs. Content moves to a native web-component channel, and Soffit becomes a pipeline component. The container is then kept only as a compatibility layer for third-party portlets until 7.0. Next step: a spike converting one admin flow (Groups Manager) to measure the effort. |
 | MOD-Q10 | Should 6.0 offer Valkey/Redis as a cache provider, alongside local and embedded-cluster caching? | **Proposed:** yes, behind the JCache abstraction from P3-3 / P4-3. The supported profiles are (a) single node with Caffeine or Ehcache 3; (b) embedded cluster with Infinispan + JGroups invalidation, closest to today's Ehcache 2 + JGroups; (c) external Valkey/Redis through Redisson's JCache and Hibernate L2 support, with a local near-cache for hot regions (layout, permissions, groups, XSLT). Today Redis is used only for optional Spring Session storage (uPortal-session, Jedis), so (c) lets clustered sites run one Valkey for both sessions and caches. Before committing to (c): spike Redisson against Hibernate 7.4 (unverified, MOD-D12 research gap), Spring Session 4.x with Lettuce against Valkey 8, and latency against the 184 regions. CI runs a Valkey service container. **Refinement:** the interface is **Spring's Cache abstraction** (`@Cacheable`/`@CacheEvict`/`@CachePut`, `@Cacheable(sync=true)` in place of `SelfPopulatingCache`, and programmatic `CacheManager`/`Cache` for the rest), not raw JCache. Spring 4.3 already includes `CaffeineCacheManager` and `JCacheCacheManager`, so P3-3 can land before any Spring upgrade. Provider profiles map to Spring cache managers (Caffeine for local, JCache→Infinispan for embedded cluster, and Spring Data Redis `RedisCacheManager` or Redisson for Valkey). Hibernate L2 stays on Hibernate's own SPI (`hibernate-jcache`, or Infinispan's region factory) and shares the same underlying provider, so clustered profiles invalidate entities across nodes too. Spring's abstraction doesn't cover the following, so they need redesign. Ehcache 2 search-API uses become DB queries or indexes, the 29 `SpringCacheEventListenerFactory` listeners become explicit evictions or application events, and per-cache TTL and size limits move to provider config generated from one region list. |
 | MOD-Q11 | How should background and scheduled jobs work in 6.0? | **Proposed:** keep Spring scheduling, the Spring approach (MOD-D22). Today `schedulerContext.xml` defines `uPortalTaskScheduler` (a `DelegatingThreadPoolTaskScheduler` with a 120 s initial delay, running on the `uPortalTaskExecutor` pool) and `task:scheduled` fixed-delay jobs with prime-number periods. Every portal JVM runs them. *Local jobs* (each node): raw-event queue flush (~1 s), Ehcache expired-element eviction (~1 min), cache health reports (~1 min), Lucene search-index updates (~1 min), and the TinCan/xAPI batch sender (2 s, `tincanAPIContext.xml`). *Clustered jobs* (one node at a time through `IClusterLockService.doInTryLock` on the `UP_MUTEX` table / `JpaClusterLockDao`): raw-event aggregation (~1 min), event-session and raw-event purges (~1 min), dimension population (~24 h), portlet lifecycle publish/expire (~1 min), portlet rating aggregation (~6 h), and expired portlet-cookie purge (~1 h). MOD-I82 means these clustered jobs fail on MySQL/MariaDB the first time each mutex is used. **Plan:** fix MOD-I82 now. Convert the XML `task:` config to `@Configuration` + `@Scheduled` when touched. Evaluate Spring Integration `JdbcLockRegistry` (vendor DDL included, TTL and renewal, `LockRegistryLeaderInitiator`) to replace the custom `UP_MUTEX` lock in the 6.0 schema. On JDK 21+, use virtual threads for the task executor, and Micrometer observations for job timing and failures. Add tests for activity → aggregated rows, purge retention honored, and lifecycle publish/expire. These jobs are also part of the G-index workload (MOD-D12). |
