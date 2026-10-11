@@ -2,9 +2,9 @@
 
 # Stale local accounts from the nonstrict second-level cache (MOD-I310)
 
-Branch `ccr-43ba0785-hzlrj5-cache-races` in uPortal, from the integration branch. It lands alone,
-ahead of the feature branches, because it is a security fix. The uPortal-start branch of the same
-name has no commit of its own. Its Integration run builds this uPortal branch.
+Branch `ccr-43ba0785-hzlrj5-cache-races` in uPortal, from the integration branch. It is merged in a
+normal batch with the other cache fixes. The uPortal-start branch of the same name has no commit of
+its own. Its Integration run builds this uPortal branch.
 
 `ccr-43ba0785-hzlrj5-cache-races-2` continues the same workstream for PAGS definitions (MOD-I311)
 and stylesheet user preferences (MOD-I312); its `notes/cache-races.md` is the fuller version of
@@ -31,9 +31,9 @@ context turns them off.
 
 | ID | Area | Finding | Resolution |
 | --- | --- | --- | --- |
-| MOD-I310 | Persistence | **Security.** `LocalAccountPersonImpl`, its attributes and the attribute values used `NONSTRICT_READ_WRITE` (the MOD-I204 race). A login (by user name, then the password check) that read the account before a password change, an attribute change or a delete committed put the old account back into the cache. Until the entry expired, the old password logged in whenever the login's name query came from the query cache, the new password failed, the account screens and password self-service (which load by id) saw the old hash and attributes, and a deleted account still loaded by id. `LocalAccountCacheRaceTest` fails on the integration branch with `[login with old password=true, login with new password=false, ...]`, the old-password login after a removal, and the deleted account still loading by id. | **Fixed** (e71d3e7f4): `READ_WRITE` for `LocalAccountPersonImpl`, its `attributes` collection and `LocalAccountPersonAttributeImpl.values`. The attribute entity keeps `NONSTRICT_READ_WRITE` (the test passes with it seeded back). |
+| MOD-I310 | Persistence | **Cache bug.** A password, attribute or account change can be hidden by a stale cache entry for up to 30 minutes on one server, and only for local-login accounts. `LocalAccountPersonImpl`, its attributes and the attribute values used `NONSTRICT_READ_WRITE` (the MOD-I204 race). A login (by user name, then the password check) that read the account before a password change, an attribute change or a delete committed put the old account back into the cache. Until the entry expired, the old password logged in whenever the login's name query came from the query cache, the new password failed, the account screens and password self-service (which load by id) saw the old hash and attributes, and a deleted account still loaded by id. `LocalAccountCacheRaceTest` fails on the integration branch with `[login with old password=true, login with new password=false, ...]`, the old-password login after a removal, and the deleted account still loading by id. | **Fixed** (e71d3e7f4): `READ_WRITE` for `LocalAccountPersonImpl`, its `attributes` collection and `LocalAccountPersonAttributeImpl.values`. The attribute entity keeps `NONSTRICT_READ_WRITE` (the test passes with it seeded back). |
 
-## How long a stale entry lasts (for UPGRADING and the security report)
+## How long a stale entry lasts (for UPGRADING)
 
 `ehcache.xml` gives the `LocalAccountPersonImpl` region, its attributes, the attribute values and
 the per-name query region `timeToLiveSeconds=1800` and `timeToIdleSeconds=900`.
