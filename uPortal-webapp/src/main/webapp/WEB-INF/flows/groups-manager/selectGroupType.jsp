@@ -35,10 +35,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div class="card portlet grp-mgr view-selectgroup" role="section">
+<div class="card portlet grp-mgr view-selectgroup">
     
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading">
             <spring:message code="groups.by.type" />
         </h2>

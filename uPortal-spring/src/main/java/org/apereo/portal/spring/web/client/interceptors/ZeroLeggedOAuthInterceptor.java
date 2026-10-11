@@ -17,6 +17,7 @@ package org.apereo.portal.spring.web.client.interceptors;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 import javax.annotation.Resource;
 import net.oauth.OAuthAccessor;
 import net.oauth.OAuthConsumer;
@@ -83,7 +84,10 @@ public class ZeroLeggedOAuthInterceptor implements ClientHttpRequestInterceptor 
         RealmOAuthConsumer consumer = getConsumer();
         OAuthAccessor accessor = new OAuthAccessor(consumer);
 
-        String method = req.getMethod().name();
+        // RestTemplate requests always carry a standard HTTP method (MOD-I225)
+        String method =
+                Objects.requireNonNull(req.getMethod(), "Request without a standard HTTP method")
+                        .name();
         URI uri = req.getURI();
 
         OAuthMessage msg = accessor.newRequestMessage(method, uri.toString(), null);

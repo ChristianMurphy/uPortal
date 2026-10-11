@@ -654,6 +654,11 @@ public class CopyFaultIT {
             ToolRun run = copyWithFault(s, t, (thread, blocker) -> server.stop());
             assertFailedClosed(run);
             assertEquals(run.toString(), DbMigrate.FAILED, run.status);
+            // The table being copied when the server stopped failed for the lost connection, not
+            // for a fault of the tool (any exception ends as FAILED)
+            String error = run.table("UP_SEQUENCE").error;
+            assertNotNull(run.toString(), error);
+            assertTrue(error, error.toLowerCase(Locale.ROOT).contains("connection"));
         } finally {
             server.stop();
         }
@@ -861,14 +866,16 @@ public class CopyFaultIT {
         assertPlanRefused(
                 CopyFaultIT::noChange,
                 t -> t.execute(notNull("UP_THING", "CODE", "CHAR(8)")),
-                "CODE");
+                "UP_THING.CODE is NOT NULL, but");
     }
 
     @Test
     public void aTargetColumnTooShortForTheDataFailsThePlan() throws Exception {
         // TITLE values are up to 10 characters long
         assertPlanRefused(
-                CopyFaultIT::noChange, t -> t.execute(resize("UP_THING", "TITLE", 5)), "TITLE");
+                CopyFaultIT::noChange,
+                t -> t.execute(resize("UP_THING", "TITLE", 5)),
+                "UP_THING.TITLE holds 5 characters, but");
     }
 
     @Test
@@ -877,7 +884,7 @@ public class CopyFaultIT {
         assertPlanRefused(
                 CopyFaultIT::noChange,
                 t -> t.execute("CREATE UNIQUE INDEX UQ_THING_TYPE ON UP_THING (TYPE_ID)"),
-                "UP_THING");
+                "has a unique key on [TYPE_ID], but");
     }
 
     @Test
@@ -888,7 +895,7 @@ public class CopyFaultIT {
                     s.execute("UPDATE UP_THING SET TYPE_ID = 77 WHERE THING_ID = 15");
                 },
                 CopyFaultIT::noChange,
-                "UP_THING_TYPE");
+                "reference no row of UP_THING_TYPE");
     }
 
     /** An emoji in one source title (THING_ID 9). */

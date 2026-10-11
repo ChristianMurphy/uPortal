@@ -16,6 +16,7 @@ package org.apereo.portal.portlets.sqlquery;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 import javax.portlet.RenderRequest;
@@ -126,7 +127,13 @@ public class SqlQueryPortletController extends AbstractController {
 
         if (results == null) {
             // generate a JDBC template for the requested data source
-            DataSource ds = (DataSource) getApplicationContext().getBean(dsName);
+            // Spring sets the context before the controller handles a request (MOD-I225)
+            DataSource ds =
+                    (DataSource)
+                            Objects.requireNonNull(
+                                            getApplicationContext(),
+                                            "SqlQueryPortletController has no ApplicationContext")
+                                    .getBean(dsName);
             JdbcTemplate template = new JdbcTemplate(ds);
 
             // Execute the SQL query and build a results object.  This result will consist of one

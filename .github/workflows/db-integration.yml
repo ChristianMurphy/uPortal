@@ -33,6 +33,16 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  # Prototype only (MOD-D53): a topic branch (ccr-*) saves its own Gradle cache. setup-gradle
+  # writes the cache only on the default branch by default, and none of our work branches is that
+  # one, so no job ever saved or restored a cache. Pull requests keep the action's default.
+  GRADLE_CACHE_READ_ONLY: ${{ github.event.repository.default_branch != github.ref_name && !startsWith(github.ref_name, 'ccr-') }}
+  # Prototype only (MOD-D53): the first job of a key to finish saves its Gradle cache, and an entry
+  # is never replaced. So one job per runner OS and set of build files saves it, the one whose
+  # Gradle work is the broadest, and the other jobs of the key only read (this variable). On the
+  # default branch and in pull requests every job keeps the action's default.
+  GRADLE_CACHE_READ_ONLY_SHARED: ${{ github.event.repository.default_branch != github.ref_name }}
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   # Prototype only (MOD-D30): a newer push to a workstream branch cancels the older run.
@@ -100,6 +110,7 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-read-only: ${{ env.GRADLE_CACHE_READ_ONLY_SHARED }}
       - name: Run uPortal-webapp's tests on ${{ matrix.vendor }}
         env:
           DB_DRIVER: ${{ matrix.driver }}
@@ -107,7 +118,7 @@ jobs:
           DB_USERNAME: ${{ matrix.username }}
           DB_PASSWORD: ${{ matrix.password }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           "-Duportal.test.db.username=$DB_USERNAME" "-Duportal.test.db.password=$DB_PASSWORD"
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on
@@ -219,6 +230,7 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-read-only: ${{ env.GRADLE_CACHE_READ_ONLY_SHARED }}
       # The SQL Server image has no setting that creates a database
       - name: Create the uportal database
         if: ${{ startsWith(matrix.vendor, 'sqlserver-') }}
@@ -234,7 +246,7 @@ jobs:
           DB_USERNAME: ${{ matrix.username }}
           DB_PASSWORD: ${{ matrix.password }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           "-Duportal.test.db.username=$DB_USERNAME" "-Duportal.test.db.password=$DB_PASSWORD"
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on
@@ -340,12 +352,13 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-read-only: ${{ env.GRADLE_CACHE_READ_ONLY_SHARED }}
       - name: Run uPortal-webapp's tests on ${{ matrix.vendor }}
         env:
           DB_DRIVER: ${{ matrix.driver }}
           DB_URL: ${{ matrix.url }}
         run: >-
-          ./gradlew -S --stacktrace --no-daemon --no-parallel :uPortal-webapp:test
+          ./gradlew -S --stacktrace --no-daemon --no-parallel -PquietCompile :uPortal-webapp:test
           "-Duportal.test.db.driver=$DB_DRIVER" "-Duportal.test.db.url=$DB_URL"
           -Duportal.test.db.username=uportal -Duportal.test.db.password=uportal
       # Artifacts cannot be downloaded everywhere (e.g. behind a proxy); show each failed test on

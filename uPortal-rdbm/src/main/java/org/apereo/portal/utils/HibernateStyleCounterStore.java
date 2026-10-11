@@ -41,6 +41,7 @@ package org.apereo.portal.utils;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -209,30 +210,36 @@ public class HibernateStyleCounterStore implements ICounterStore {
                                                             // Try and load the current value,
                                                             // returns true if the expected row
                                                             // exists, null otherwise
+                                                            // The extractor returns true
+                                                            // or false (MOD-I225)
                                                             final boolean selected =
-                                                                    jdbcOperations.query(
-                                                                            SELECT_QUERY,
-                                                                            new ResultSetExtractor<
-                                                                                    Boolean>() {
-                                                                                @Override
-                                                                                public Boolean
-                                                                                        extractData(
-                                                                                                ResultSet
-                                                                                                        rs)
-                                                                                                throws
-                                                                                                        SQLException,
-                                                                                                        DataAccessException {
-                                                                                    if (rs.next()) {
-                                                                                        value
-                                                                                                .initialize(
-                                                                                                        rs,
-                                                                                                        1);
-                                                                                        return true;
-                                                                                    }
-                                                                                    return false;
-                                                                                }
-                                                                            },
-                                                                            counterName);
+                                                                    Objects.requireNonNull(
+                                                                            jdbcOperations.query(
+                                                                                    SELECT_QUERY,
+                                                                                    new ResultSetExtractor<
+                                                                                            Boolean>() {
+                                                                                        @Override
+                                                                                        public
+                                                                                        Boolean
+                                                                                                extractData(
+                                                                                                        ResultSet
+                                                                                                                rs)
+                                                                                                        throws
+                                                                                                                SQLException,
+                                                                                                                DataAccessException {
+                                                                                            if (rs
+                                                                                                    .next()) {
+                                                                                                value
+                                                                                                        .initialize(
+                                                                                                                rs,
+                                                                                                                1);
+                                                                                                return true;
+                                                                                            }
+                                                                                            return false;
+                                                                                        }
+                                                                                    },
+                                                                                    counterName),
+                                                                            "No answer from the counter SELECT");
 
                                                             // No row exists for the counter, insert
                                                             // it

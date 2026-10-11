@@ -45,10 +45,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div class="card portlet ptl-mgr view-confirmremove" role="section">
+<div class="card portlet ptl-mgr view-confirmremove">
 
   <!-- Portlet Title -->
-  <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+  <div class="card-header titlebar portlet-titlebar">
 
     <div class="breadcrumb">
         <c:forEach items="${ breadcrumbs }" var="breadcrumb" varStatus="status">

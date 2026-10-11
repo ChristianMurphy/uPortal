@@ -4,6 +4,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import { waitFor } from 'xstate';
 import type { Messages } from '../../lib/i18n';
+import { ignoreComposing } from '../../lib/keyboard';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
 import type { Favorite, FavoritesData } from './favorites-api';
@@ -87,10 +88,6 @@ export class UpFavorites extends UpElement {
                 align-items: center;
                 gap: var(--spacer-3);
                 min-width: 0;
-            }
-
-            .favorite-name {
-                overflow-wrap: anywhere;
             }
 
             .icon,
@@ -506,7 +503,8 @@ export class UpFavorites extends UpElement {
         this.#favorites.send({ type: 'move', nodeId, direction, control });
     }
 
-    #onKeydown = (event: KeyboardEvent): void => {
+    // Keys an input method composes with (Enter, the arrows) choose its candidates (MOD-D51)
+    #onKeydown = ignoreComposing((event: KeyboardEvent): void => {
         const snapshot = this.#favorites.snapshot;
         if (event.key === 'Escape') {
             if (snapshot.can({ type: 'edit.stop' })) {
@@ -541,7 +539,7 @@ export class UpFavorites extends UpElement {
             event.preventDefault();
             this.#favorites.send(move);
         }
-    };
+    });
 
     #focus(request: FocusRequest): void {
         if ('element' in request) {

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.pluto.container.PortletRequestContext;
@@ -133,32 +134,36 @@ public class PortletEntityPreferencesImpl extends AbstractPortletPreferencesImpl
                 locked = true;
             }
 
-            return this.transactionOperations.execute(
-                    new TransactionCallback<Boolean>() {
-                        @Override
-                        public Boolean doInTransaction(TransactionStatus status) {
-                            // Refresh the entity to avoid optimistic locking errors
-                            final IPortletEntity portletEntity =
-                                    portletEntityRegistry.getPortletEntity(
-                                            containerRequest, portletEntityId);
+            // The callback returns TRUE or FALSE (MOD-I225)
+            return Objects.requireNonNull(
+                    this.transactionOperations.execute(
+                            new TransactionCallback<Boolean>() {
+                                @Override
+                                public Boolean doInTransaction(TransactionStatus status) {
+                                    // Refresh the entity to avoid optimistic locking errors
+                                    final IPortletEntity portletEntity =
+                                            portletEntityRegistry.getPortletEntity(
+                                                    containerRequest, portletEntityId);
 
-                            final Map<String, IPortletPreference> targetPortletPreferences =
-                                    getTargetPortletPreferences();
-                            final Collection<IPortletPreference> values =
-                                    targetPortletPreferences.values();
-                            final boolean modified =
-                                    portletEntity.setPortletPreferences(new ArrayList<>(values));
-                            if (!modified) {
-                                // Nothing actually changed, skip the store
-                                return Boolean.FALSE;
-                            }
+                                    final Map<String, IPortletPreference> targetPortletPreferences =
+                                            getTargetPortletPreferences();
+                                    final Collection<IPortletPreference> values =
+                                            targetPortletPreferences.values();
+                                    final boolean modified =
+                                            portletEntity.setPortletPreferences(
+                                                    new ArrayList<>(values));
+                                    if (!modified) {
+                                        // Nothing actually changed, skip the store
+                                        return Boolean.FALSE;
+                                    }
 
-                            portletEntityRegistry.storePortletEntity(
-                                    containerRequest, portletEntity);
+                                    portletEntityRegistry.storePortletEntity(
+                                            containerRequest, portletEntity);
 
-                            return Boolean.TRUE;
-                        }
-                    });
+                                    return Boolean.TRUE;
+                                }
+                            }),
+                    "No answer from the preferences store transaction");
         } finally {
             // check if locked, needed due to slightly more complex logic around the tryLock and
             // logging

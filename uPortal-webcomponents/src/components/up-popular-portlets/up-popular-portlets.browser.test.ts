@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
 import { page, userEvent } from 'vite-plus/test/browser';
-import { clearMessageCache, MESSAGES_PATH } from '../../lib/i18n';
+import { clearMessageCache, messageKeys, MESSAGES_PATH } from '../../lib/i18n';
 import { axeViolations } from '../../test-support/axe';
 import { FetchStub, json, text } from '../../test-support/fetch-stub';
 import { cleanupFixtures, fixture } from '../../test-support/fixture';
@@ -401,7 +401,7 @@ describe('up-popular-portlets filters', () => {
         await choose(title, 'courses');
         expect(title.value).toBe('');
         expect(fnames(element)).toEqual(['courses']);
-        expect(info(element)).toBe('Viewing page 1. Showing records 1 to 1 of 1 items.');
+        expect(info(element)).toBe('Viewing page 1. Showing records 1 to 1 of 1 item.');
         const term = view(element).getByRole('button', { name: 'Remove the filter courses' });
         await expect.element(term).toBeVisible();
         expect(find(element, '.filter-term').textContent).toContain('courses');
@@ -447,6 +447,47 @@ describe('up-popular-portlets filters', () => {
     });
 });
 
+describe('up-popular-portlets long text', () => {
+    it('wraps long titles and descriptions in a narrow column', async () => {
+        const word = 'Donaudampfschifffahrtsgesellschaftskapitänsmütze'.repeat(3);
+        // The Title filter lists fnames, so the fname is long too
+        server.on('GET', API, json(body([portlet(word.toLowerCase(), word, 3, word), CALENDAR])));
+        const element = await render();
+        element.style.width = '240px';
+        await element.updateComplete;
+
+        await expect.poll(() => element.scrollWidth).toBeLessThanOrEqual(element.clientWidth);
+        const container = shadow(element).querySelector('.popular') as HTMLElement;
+        expect(container.scrollWidth).toBeLessThanOrEqual(container.clientWidth);
+        for (const control of shadow(element).querySelectorAll('select')) {
+            expect(control.getBoundingClientRect().width).toBeLessThanOrEqual(240);
+        }
+    });
+});
+
+describe('up-popular-portlets right to left', () => {
+    it.each([
+        ['ar', 'left'],
+        ['en-US', 'right'],
+    ])('in %s draws each select arrow on the %s, clear of the value', async (locale, side) => {
+        const element = await render(ATTRIBUTES.replace('locale="en-US"', `locale="${locale}"`));
+        for (const control of shadow(element).querySelectorAll('select')) {
+            const style = getComputedStyle(control);
+            // Chromium writes the right edge as "right 7.5px" or "calc(100% - 7.5px)"
+            const arrowAt = /(?:^right\b)|(?:100%)/.test(style.backgroundPositionX)
+                ? 'right'
+                : 'left';
+            expect(arrowAt, `${control.id}: ${style.backgroundPositionX}`).toBe(side);
+            // The padding that leaves room for the arrow is on the same side
+            const [arrowSide, valueSide] =
+                side === 'left'
+                    ? [style.paddingLeft, style.paddingRight]
+                    : [style.paddingRight, style.paddingLeft];
+            expect(Number.parseFloat(arrowSide)).toBeGreaterThan(Number.parseFloat(valueSide));
+        }
+    });
+});
+
 describe('up-popular-portlets messages and events', () => {
     it('uses the messages the portal returns, also those written as HTML', async () => {
         server.on(
@@ -456,7 +497,7 @@ describe('up-popular-portlets messages and events', () => {
                 messages: {
                     'most.frequently.added': 'Les plus ajoutés',
                     'datatables.paginate.previous': '&lt; Précédent',
-                    'popular.portlets.page.info': 'Page {0} : {1} à {2} sur {3}.',
+                    'popular.portlets.page.info.other': 'Page {0} : {1} à {2} sur {3}.',
                 },
             }),
         );
@@ -469,9 +510,30 @@ describe('up-popular-portlets messages and events', () => {
         expect(info(element)).toBe('Page 1 : 1 à 3 sur 3.');
         const [request] = server.requestsTo(`/uPortal${MESSAGES_PATH}`);
         const keys = new URL(request?.url ?? '', location.href).searchParams.get('keys');
+        // With every plural category of popular.portlets.page.info, for the user's language
         expect(keys?.split(',').toSorted()).toEqual(
-            Object.keys(POPULAR_PORTLETS_MESSAGES).toSorted(),
+            messageKeys(Object.keys(POPULAR_PORTLETS_MESSAGES)).toSorted(),
         );
+    });
+
+    it('picks the plural form of the page info for the locale, also one English lacks', async () => {
+        // A language a site adds with only a bundle: Polish has one, few, many and other
+        server.on(
+            'GET',
+            `/uPortal${MESSAGES_PATH}`,
+            json({
+                messages: {
+                    'popular.portlets.page.info.one': 'Strona {0}: {1}–{2} z {3} pozycji (one)',
+                    'popular.portlets.page.info.few': 'Strona {0}: {1}–{2} z {3} pozycji (few)',
+                    'popular.portlets.page.info.many': 'Strona {0}: {1}–{2} z {3} pozycji (many)',
+                    'popular.portlets.page.info.other': 'Strona {0}: {1}–{2} z {3} pozycji (other)',
+                },
+            }),
+        );
+        const element = await render(ATTRIBUTES.replace('locale="en-US"', 'locale="pl"'));
+
+        // Three portlets: "few" in Polish
+        await expect.poll(() => info(element)).toBe('Strona 1: 1–3 z 3 pozycji (few)');
     });
 
     it('announces each load with up-popular-portlets-loaded', async () => {
