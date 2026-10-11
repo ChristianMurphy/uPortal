@@ -1112,6 +1112,16 @@ This supersedes MOD-D24's runtime matrix.
   are queued until memory frees up. P2 (Hibernate 5.2) merges only after
   it passes the new goldens unchanged, or with each difference explained
   here.
+* **Status (2026-10-11, WS14, item 6 for Favorites):** uPortal-start's
+  `favorites.spec.ts` keeps its four Options-menu tests unchanged against
+  the Web Component channel and adds four for `<up-favorites>` (list,
+  unfavorite, reorder, refusal without the CSRF token).
+  `web-component-channel.spec.ts` adds three for the channel type. Two
+  local full-suite runs on HSQLDB against uPortal from source passed all
+  of them; the only failures were the two sandbox web-proxy tests and,
+  in one run, a portlet-list test that times out under load. CI: uPortal
+  CI 38104024957, uPortal-start CI 38104005708 and Integration
+  38104005683 (uPortal 9c996809b, uPortal-start 4bddf44a7).
 
 * **Gap:** today's suites (124 Playwright tests in 24 specs, 244 unit-test
   classes, the DB harness on 7 databases, copy-tool row hashes) show the
