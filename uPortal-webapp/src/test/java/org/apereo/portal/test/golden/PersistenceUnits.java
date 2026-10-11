@@ -14,21 +14,16 @@
  */
 package org.apereo.portal.test.golden;
 
-import java.lang.reflect.Field;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.persistence.CollectionTable;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.JoinTable;
-import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.Metamodel;
 
@@ -53,13 +48,11 @@ public final class PersistenceUnits {
      * collection tables are handled), retrying the types that are still referenced. When a pass
      * deletes no type, fails with each type left and the root cause of its last failure.
      *
-     * <p>The rows of their element collections are deleted with SQL first. Oracle stores '' as
-     * NULL, and Hibernate neither reads nor deletes a NULL element, so that row would block the
-     * delete of its owner (ORA-02292, MOD-I144).
+     * <p>An element collection row that holds NULL (Oracle stores '' as NULL) is deleted with its
+     * owner by {@code ElementCollectionDeleteIntegrator} (MOD-I144), as in the portal.
      */
     public static void deleteAll(EntityManagerFactory emf, Predicate<Class<?>> types) {
         final Set<EntityType<?>> selected = selected(emf, types);
-        deleteElementCollectionRows(emf, selected);
         final Map<String, String> left = remove(emf, selected);
         if (!left.isEmpty()) {
             final StringBuilder message = new StringBuilder("Cannot delete:");
@@ -128,44 +121,6 @@ public final class PersistenceUnits {
             remaining = failed;
         }
         return new TreeMap<>();
-    }
-
-    private static void deleteElementCollectionRows(
-            EntityManagerFactory emf, Set<EntityType<?>> types) {
-        final Set<String> tables = new TreeSet<>();
-        for (final EntityType<?> type : types) {
-            for (final Attribute<?, ?> attribute : type.getAttributes()) {
-                if (attribute.getPersistentAttributeType()
-                                == Attribute.PersistentAttributeType.ELEMENT_COLLECTION
-                        && attribute.getJavaMember() instanceof Field) {
-                    final Field field = (Field) attribute.getJavaMember();
-                    final CollectionTable collectionTable =
-                            field.getAnnotation(CollectionTable.class);
-                    final JoinTable joinTable = field.getAnnotation(JoinTable.class);
-                    if (collectionTable != null && !collectionTable.name().isEmpty()) {
-                        tables.add(collectionTable.name());
-                    } else if (joinTable != null && !joinTable.name().isEmpty()) {
-                        tables.add(joinTable.name());
-                    }
-                }
-            }
-        }
-        if (tables.isEmpty()) {
-            return;
-        }
-        final EntityManager em = emf.createEntityManager();
-        try {
-            em.getTransaction().begin();
-            for (final String table : tables) {
-                em.createNativeQuery("DELETE FROM " + table).executeUpdate();
-            }
-            em.getTransaction().commit();
-        } finally {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-            em.close();
-        }
     }
 
     private static String rootCause(Throwable e) {

@@ -2,7 +2,7 @@
 
 Branches: `ccr-43ba0785-hzlrj5-wc-search` in uPortal and in uPortal-start, both from
 `ccr-43ba0785-hzlrj5`. Nothing is on the integration branch yet. The coordinator merges it. The
-developer guide's section "The Search conversion" and UPGRADING-6.0's "Search is a web
+developer guide's section on the Search conversion and UPGRADING-6.0's "Search is a web
 component" describe the result.
 
 ## Decisions (coordinator, 2026-10-11)

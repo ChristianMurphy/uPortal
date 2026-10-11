@@ -461,6 +461,17 @@ its `url` (`<context path>/p/<fname>`) and its `count`. `PopularPortletsService`
 portlet-layout aggregations of the group of all users, as the portlet did, and leaves out portlets
 the user may not subscribe to and portlets that no longer exist.
 
+### Background Preference
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/background-preference/{fname}` | `{"containerSelector": ..., "images": [{"url", "thumbnailUrl", "caption"}, ...], "selected": url or null}` |
+| `PUT /api/v6-0/background-preference/{fname}` with `{"selected": url or null}` | Saves the choice and answers the same body; 400 for a URL that is not one of the offered images. |
+
+`fname` must be a Background Preference channel (the web component or the old portlet) that the
+user may use, else 404. The choice is the `*SelectedBackgroundImage` preference of the user's own
+portlet entity for the channel, the one the portlet used.
+
 ## Reference conversion: Favorites
 
 The Favorites portlet (Spring Portlet MVC, four JSPs, an EDIT mode) is the first portlet
@@ -546,7 +557,31 @@ messages only those JSPs use. `FavoritesUtils` and the options-menu script
 (`modern-favorite.js`) stay: the API and the theme use them. Do it once the conversion above
 ships in the 6.0 data migration, and say so in UPGRADING-6.0.
 
-## The Search conversion
+### Background Preference
+
+The Background Preference portlet (Spring Portlet MVC, one JSP that wrote `<style>` elements) is
+`<up-background-preference>` (`uPortal-webcomponents/src/components/up-background-preference`).
+Its machine has `loading`, `failed`, `signedOut` and `ready` (`closed`, `open`, `saving`). The
+background belongs to the page, outside the shadow root, so `page-background.ts` keeps one
+constructable stylesheet per document in `document.adoptedStyleSheets` and replaces its single
+rule on every change. The rule is built with `insertRule` and the CSSOM, so a selector or URL
+cannot add rules, and the URL comes only from the API's list. The portlet stays until the data
+migration converts its definitions (MOD-I133).
+
+### Converting the next portlet
+
+1. Write the REST API first (`@RestController` under `/api/v6-0/`, a service on the portal's
+   existing services, MockMvc and unit tests).
+2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its machine
+   (`<tag>.machine.ts`, see "State machines"), its API client and validators, its messages, and
+   its tests (machine, model-based and browser); add the tag to `components` in
+   `vite.config.ts`.
+3. Turn portlet modes into in-place states, preferences into `webComponent.preferenceAttributes`,
+   and portlet actions into REST calls.
+4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
+   and document how existing definitions are converted.
+
+## Conversion: Search
 
 The Search portlet had two modes, chosen by its `RESTSearch` preference. uPortal-start used the
 REST mode, which the components replace. The event mode, where portlets answered `SearchRequest`
@@ -558,7 +593,7 @@ UPGRADING-6.0).
 | `SearchPortletController` in REST mode, `jsp/Search/searchRest.jsp` | `<up-search>` (`src/components/up-search/up-search.ts`) |
 | The launcher view, `jsp/Search/searchLauncher.jsp` (`searchLaunchFname` preference) | `<up-search-launcher>`, `search-fname` attribute |
 | `/api/v5-0/portal/search` | `GET /api/v6-0/search` |
-| Portlet action, then a render with the `query` parameter | A link to `/p/search/max?query=...`; `<up-search>` reads `?query=` |
+| Portlet action, then a render with the `query` parameter | A link to `/p/search/max?query=...`, which the portal redirects to the render URL with `pP_query`; `<up-search>` reads `pP_query`, else `query` |
 | jQuery UI autocomplete over `/api/portletList` (`autosuggestHandler.js`) | `<up-search-box>`, shared by both elements: a search field with a listbox of suggestions |
 | Bootstrap 5 pills from `<template>`s | ARIA tabs (`tablist`, `tab`, `tabpanel`) with the arrow, Home and End keys |
 | Hardcoded "No Results Found" and tab names from the JSON keys | `search.no.results.found`, `search.results.people`, `search.results.portlets`; a provider's `label`; other types are named after the type |
@@ -582,21 +617,9 @@ The field stays a search box for assistive technology, as the portlet's did, wit
 and a live region that says how many there are. Escape closes the suggestions or cancels the
 pause before the browser clears the field.
 
-Page navigation (opening a URL, reading and updating `?query=`) goes through `navigation.ts`, so
-the browser tests replace it instead of leaving the test page.
-
-## Converting the next portlet
-
-1. Write the REST API first (`@RestController` under `/api/v6-0/`, a service on the portal's
-   existing services, MockMvc and unit tests).
-2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its machine
-   (`<tag>.machine.ts`, see "State machines"), its API client and validators, its messages, and
-   its tests (machine, model-based and browser); add the tag to `components` in
-   `vite.config.ts`.
-3. Turn portlet modes into in-place states, preferences into `webComponent.preferenceAttributes`,
-   and portlet actions into REST calls.
-4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
-   and document how existing definitions are converted.
+Page navigation (opening a URL, reading and updating the query in the URL) goes through
+`navigation.ts`, so the browser tests replace it instead of leaving the test page. Only a test
+against a started portal sees the redirect that turns `query` into `pP_query`.
 
 ## Conversion: Popular Portlets
 

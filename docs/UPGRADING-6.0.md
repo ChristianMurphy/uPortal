@@ -125,8 +125,13 @@ The servlet contexts for login and logout (`authenticationServletContext.xml`), 
 (`renderingServletContext.xml`, `jsonRenderingServletContext.xml`) and the `/s/*` redirection
 service (`redirectionServletContext.xml`) now map their controllers with Spring MVC's
 `RequestMappingHandlerMapping` and `RequestMappingHandlerAdapter`. Spring Framework 5 removed the
-`DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter` they used before. URLs and
-behaviour are unchanged.
+`DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter` they used before. URLs are
+unchanged.
+
+One answer changes. A GET for a path under `/api/` that no controller maps now answers 404 Not
+Found. uPortal 5.17 answered 405 Method Not Allowed with `Allow: POST`, because the `/api`
+dispatcher also loaded the page-rendering mapping, whose catch-all accepted POST. A client that
+took a 405 as a sign that an API exists should expect a 404 for paths that never existed.
 
 If your overlay replaces one of these files, make the same change. The old mapping's
 `useDefaultSuffixPattern` property is called `useSuffixPatternMatch` on the new one. If you added
@@ -140,6 +145,23 @@ whole path within the servlet, not just the part the pattern's wildcards matched
 on `/resources/*`. It served static files packaged in jars such as `spring-js`, nothing in uPortal
 requested them, and Web Flow 2.5 removed the class. If your overlay links to files under
 `/uPortal/resources/`, serve them from the web application instead.
+
+## uPortal-start runs Tomcat 9
+
+uPortal-start installs Tomcat 9.0 instead of 8.5, and these answers look different:
+
+* Tomcat's own error pages, such as the 404 page for a missing file, show the Tomcat version,
+  now 9.0. They showed 8.5 before. To hide the version, set
+  `showServerInfo="false"` on the `ErrorReportValve` in `server.xml`.
+* JSON error responses from the `/api` controllers (401, 403 and 404) say
+  `Content-Type: application/json;charset=UTF-8`. On Tomcat 8.5 the same responses said
+  `charset=ISO-8859-1`, although their bodies were UTF-8. A client that decodes by the declared
+  charset now reads non-ASCII characters correctly.
+
+## Fixes made after uPortal 5.17.9
+
+* The portal's analytics script (`scripts/portal-analytics.js`) no longer stops Bootstrap drop-down
+  menus from opening (uPortal f301239691).
 
 ## Favorites is a web component
 
@@ -305,6 +327,50 @@ mark those searches with `submitted=true`, and other API calls are not counted. 
 statistics from events stored before the upgrade still aggregate, and the aggregation tables don't
 change. An `ignoredEvents` filter in `eventHandlerContext.xml` that drops
 `PortletActionExecutionEvent` no longer affects search terms.
+
+## Background Preference is a web component
+
+The Background Preference channel (`background-preference`) was the backgroundPreference portlet.
+It is now a **Web Component** channel that renders `<up-background-preference>`. The element
+reads the offered images and the user's choice from
+`GET /api/v6-0/background-preference/{fname}` and saves a choice with a `PUT` to the same path.
+The API accepts only one of the offered images (or none), and answers anything else with 400.
+Guests get 401.
+
+Users see the same control: "Change Background Image" opens a list of None and the images with
+their thumbnails, and the chosen image shows behind the page at once and on every page after.
+Some things are different:
+
+* The background is set through one stylesheet that the element adopts into the page
+  (`document.adoptedStyleSheets`), not through `<style>` elements, so a Content-Security-Policy
+  that forbids inline styles no longer blocks it.
+* The element applies the background after it has loaded the choice, so it appears a moment
+  after the page.
+* None removes the chosen image, and the skin's own background shows, as after a reload with the
+  portlet. The portlet also set the page's background color to transparent when an image was
+  chosen, until the next page.
+* "Change Background Image" and "None" are messages now (`background.preference.change`,
+  `background.preference.none`), translated into French and Spanish.
+
+The preferences keep their names and meaning: `defaultBackgroundImages`,
+`defaultBackgroundThumbnailImages`, `backgroundImageCaptions`,
+`defaultBackgroundContainerSelector`, and the `mobile*` versions for users in the "Mobile Device
+Access" group. Paths may still contain `${portalContext}`. The user's choice is still the
+`defaultSelectedBackgroundImage` (or `mobileSelectedBackgroundImage`) preference of their portlet
+entity, so choices made with the portlet stay. The container selector defaults to
+`body.portal #portalPageBody::before` (`body.portal #portalPageBody` for mobile), as the
+portlet's `portlet.xml` did, and must be one CSS style rule's selector. `applyOpacityTo` and
+`opacityCssValue` were never used by the portlet's view and are ignored.
+
+To convert an existing portal, import uPortal-start's Web Component portlet type (if another
+conversion has not imported it already), then its
+`data/quickstart/portlet-definition/background-preference.portlet-definition.xml`. The import
+updates the channel by fname and keeps its ID, layout placements and users' choices. A
+definition with another fname is converted by the same changes: the type becomes `Web Component`
+with the `WebComponent` framework portlet, and two parameters are added,
+`webComponent.tagName` and `webComponent.moduleUrl`, both `up-background-preference`. The
+backgroundPreference portlet, `ViewBackgroundPreferenceController` and its JSP stay in this
+release for definitions that are not converted yet, and will be removed later.
 
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
@@ -492,6 +558,51 @@ Hibernate does not load a NULL value of an element collection, so it did not del
 its owner, and the owner's delete failed with ORA-02292. This hit a portlet entity with an empty
 window state, a layout attribute with an empty target element name, and a portlet definition with
 an empty localization. uPortal now deletes those rows with their owner.
+
+## Timestamps are stored in UTC
+
+uPortal 5.17 stored some timestamp columns as the clock time of the portal server's JVM. The value
+in the database depended on the server's time zone, and in the hour that repeats when daylight
+time ends, two different instants were stored as the same clock time. uPortal 6.0 stores these
+columns as UTC clock time (`hibernate.jdbc.time_zone=UTC` in `hibernate.properties`):
+
+| Table | Columns |
+| --- | --- |
+| `UP_PORTLET_LIFECYCLE` | `ENTRY_DATE` (portlet publish and expiry dates) |
+| `UP_MUTEX` | `LOCK_START`, `LOCK_UPDATE`, `LOCK_END` (cluster locks) |
+| `UP_PERSON_DIR` | `LST_PSWD_CGH_DT` (last password change of local accounts) |
+| `UP_PORTLET_LIST` | `CREATED_ON`, `UPDATED_ON` |
+
+`UP_MUTEX.LOCK_END` was not on the first list of affected columns. The persistence tests found
+that it is stored the same way, so it is converted too.
+
+The other timestamps (raw events, aggregation, event sessions, cookies) were already stored in
+UTC, and the analytics date and time dimensions keep their local dates and times.
+
+**Upgrade with the copy tool and the source server's zone.** Copy the 5.17 database into a 6.0
+database with `--target-profile 6.0` and `--source-zone` set to the time zone of the 5.17
+portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
+
+```sh
+db-migrate --source-properties 517.properties --target-properties 60.properties \
+    --target-profile 6.0 --source-zone America/New_York
+```
+
+The copy converts the columns above from that zone's clock time to UTC. If any of them holds a
+value and `--source-zone` is missing, the copy stops before writing anything and names the
+columns. A copy between two 5.17 databases (the default `--target-profile 5.17`) leaves the values
+as they are.
+
+**The repeated hour.** A clock time in the hour that repeats when daylight time ends (01:00 to
+01:59 on the first Sunday of November in New York) can be either of two instants, and 5.17 didn't
+record which. The copy takes the earlier one, the daylight-time offset: 01:30 on 2026-11-01 in New
+York becomes 05:30 UTC. A value that was written in the second 01:00 to 01:59 hour ends up one hour
+early. A clock time in the hour that is skipped when daylight time starts can't come from 5.17;
+if one is there, the copy moves it forward by an hour, as `java.time` does.
+
+Code that reads these columns with SQL of its own gets UTC clock times from 6.0 on. The Java API
+(`IPortletLifecycleEntry.getDate()`, `ILocalAccountPerson.getLastPasswordChange()`, the portlet
+list REST API) returns the same instants as before.
 
 ## PostgreSQL: do not run `vacuumlo`
 
