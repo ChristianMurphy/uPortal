@@ -14,12 +14,13 @@
  */
 package org.apereo.portal.rendering.xslt;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.apereo.portal.i18n.LocaleDirection;
 import org.apereo.portal.i18n.LocaleManager;
 import org.apereo.portal.user.IUserInstance;
 import org.apereo.portal.user.IUserInstanceManager;
@@ -28,7 +29,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/** Present's the user's preferred locale as a transformer parameter */
+/**
+ * Presents the user's preferred locale (USER_LANG) and the direction of its text (USER_DIR, rtl or
+ * ltr) as transformer parameters
+ */
 public class LocaleTransformerConfigurationSource extends TransformerConfigurationSourceAdapter {
     protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -56,8 +60,12 @@ public class LocaleTransformerConfigurationSource extends TransformerConfigurati
         if (locales != null && locales.size() > 0 && locales.get(0) != null) {
             final String locale = locales.get(0).toString();
             final String xslLocale = locale.replace('_', '-');
-            this.logger.debug("Setting USER_LANG to {}", xslLocale);
-            return Collections.singletonMap("USER_LANG", (Object) xslLocale);
+            final String direction = LocaleDirection.of(locales.get(0));
+            this.logger.debug("Setting USER_LANG to {} and USER_DIR to {}", xslLocale, direction);
+            final Map<String, Object> parameters = new HashMap<>();
+            parameters.put("USER_LANG", xslLocale);
+            parameters.put("USER_DIR", direction);
+            return parameters;
         }
 
         return null;
