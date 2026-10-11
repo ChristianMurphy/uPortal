@@ -42,6 +42,10 @@ abstract class Spring53ProbeCompile extends DefaultTask {
     @Classpath
     abstract ConfigurableFileCollection getProcessorPath()
 
+    /** The Java platform release the module's regular build compiles for. */
+    @Input
+    abstract Property<Integer> getRelease()
+
     @OutputFile
     abstract RegularFileProperty getReport()
 
@@ -70,7 +74,7 @@ abstract class Spring53ProbeCompile extends DefaultTask {
         def generated = new File(classes, 'generated')
         generated.mkdirs()
         // Annotation processors run as in the regular build (Lombok, the JPA metamodel)
-        def options = ['--release', '11', '-parameters', '-encoding', 'UTF-8',
+        def options = ['--release', release.get().toString(), '-parameters', '-encoding', 'UTF-8',
                        '-nowarn', '-Xmaxerrs', '100000', '-implicit:none',
                        '-d', classes.path, '-s', generated.path,
                        '-classpath', classpath.asPath, '-processorpath', processorPath.asPath]
@@ -129,6 +133,8 @@ subprojects {
                 })
                 classpath.from(probe)
                 processorPath.from(sourceSet.annotationProcessorPath)
+                // As the regular build: uPortal-pluto compiles its unchanged sources for Java 8
+                release.set(compileTask.flatMap { it.options.release }.orElse(11))
                 if (setName == 'test') {
                     classpath.from(sourceSets.main.output)
                 }
