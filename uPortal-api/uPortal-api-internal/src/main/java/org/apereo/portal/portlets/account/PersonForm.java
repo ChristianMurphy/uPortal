@@ -33,6 +33,7 @@ public class PersonForm implements Serializable {
     private String username;
     private String password;
     private String confirmPassword;
+    private String currentPassword;
 
     @SuppressWarnings("unchecked")
     private Map<String, StringListAttribute> attributes =
@@ -103,5 +104,14 @@ public class PersonForm implements Serializable {
 
     public void setConfirmPassword(String confirmPassword) {
         this.confirmPassword = confirmPassword;
+    }
+
+    /** The user's current password, which Self Edit Account needs for a new one. */
+    public String getCurrentPassword() {
+        return currentPassword;
+    }
+
+    public void setCurrentPassword(String currentPassword) {
+        this.currentPassword = currentPassword;
     }
 }

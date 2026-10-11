@@ -101,7 +101,19 @@
                         </thead>
                         <tbody>
 
-                            <!--  Password and confirm password -->
+                            <!--  Current password, then the new password and its confirmation -->
+                            <tr>
+                                <td class="attribute-name">
+                                  <label for="${n}currentPassword" class="form-label">
+                                      <strong>
+                                          <spring:message code="current.password"/>
+                                      </strong>
+                                  </label>
+                                </td>
+                                <td>
+                                    <form:password autocomplete="current-password" id="${n}currentPassword" path="currentPassword"/>
+                                </td>
+                            </tr>
                             <tr>
                                 <td class="attribute-name">
                                   <label for="${n}password" class="form-label">

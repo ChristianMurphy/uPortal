@@ -35,12 +35,14 @@
     
     <!-- show account summary -->
     <view-state id="viewAccountDetails">
-        <transition on="editAccount" to="editLocalAccount"/>
+        <transition on="editAccount" to="editOwnAccount"/>
     </view-state>
     
-    <!-- if allowed, show edit form, then save and forward back to summary -->
+    <!-- if allowed, show edit form, then save and forward back to summary. The state has its own
+         id so that Web Flow calls PersonFormValidator.validateEditOwnAccount, which also checks the
+         current password; edit-account's editLocalAccount state does not. -->
     
-    <view-state id="editLocalAccount" model="accountForm">
+    <view-state id="editOwnAccount" view="editLocalAccount" model="accountForm">
         <on-entry>
             <set name="flowScope.account" value="localAccountDao.getPerson(person.name)"/>
             <set name="flowScope.accountForm" value="userAccountHelper.getForm(person.name)"/>
