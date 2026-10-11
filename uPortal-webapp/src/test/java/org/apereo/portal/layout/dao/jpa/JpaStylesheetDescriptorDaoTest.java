@@ -374,7 +374,7 @@ public class JpaStylesheetDescriptorDaoTest extends BasePortalJpaDaoTest {
                             return stylesheetDescriptor.getId();
                         });
 
-        this.execute(
+        this.executeInTransaction(
                 () ->
                         getEntityManager()
                                 .createNativeQuery(
