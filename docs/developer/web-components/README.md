@@ -378,6 +378,11 @@ replacing `fetch` with a small router of real `Response` objects (`src/test-supp
 rather than with MSW: there is no service worker to install in the browser runner, and the stub
 records each request for assertions. Snapshots are only for small, stable markup.
 
+A component that waits or counts down takes its timers from a `clock` property (`now`, `after`,
+`every`), and its tests pass a `ManualClock` (`src/test-support/manual-clock.ts`), which fires
+timers only when the test moves it. Vitest's fake timers are not used in the browser project,
+because they also stop the timers of the test runner itself.
+
 A component with a machine adds two kinds of tests:
 
 * **Machine tests** (`<tag>.machine.unit.test.ts`, Node): every transition, guard, action and
@@ -563,6 +568,32 @@ constructable stylesheet per document in `document.adoptedStyleSheets` and repla
 rule on every change. The rule is built with `insertRule` and the CSSOM, so a selector or URL
 cannot add rules, and the URL comes only from the API's list. The portlet stays until the data
 migration converts its definitions (MOD-I133).
+
+## Conversion: Session Timeout
+
+| Portlet | Web component |
+| --- | --- |
+| `SessionTimeoutViewController`, `jsp/SessionTimeout/*.jsp`, `scripts/session-timeout.js` | `<up-session-timeout>` (`uPortal-webcomponents/src/components/up-session-timeout`) |
+| Session timeout read in the controller (`getMaxInactiveInterval`) | `GET /api/v6-0/session` |
+| Keep-alive: `GET` of `resetSessionURLFragment` (`/api/ajax-success`) | `POST /api/v6-0/session/keep-alive` with the CSRF token |
+| jQuery UI modal dialog | Native `<dialog>` shown with `showModal()`, Bootstrap 6 Dialog styles |
+| `alert('Error resetting your session!')` | The same text in an alert inside the dialog (`session-timeout.keep-alive.failed`) |
+| Preferences `enabled`, `dialogDisplaySeconds`, `logoutURLFragment` | Attributes `enabled`, `dialog-display-seconds`, `logout-url`, through `webComponent.preferenceAttributes` |
+| Preference `resetSessionURLFragment` | Dropped: the keep-alive is the API |
+
+The timing is the portlet's: the warning opens 30 seconds plus `dialog-display-seconds` before
+the session expires, and the user is logged out when the countdown reaches zero. Tabs share the
+logout time under the portlet's `localStorage` key, `UportalSessionTimeoutLogoutTime`, so a tab
+that still runs the portlet and one that runs the component postpone each other's warning.
+`logout-url` must be a path in the portal; anything else falls back to `/Logout`.
+
+Its machine, `up-session-timeout.machine.ts`, has the states `disabled`, `loading`, `inactive`
+(a guest, a session that never expires, or no answer), `waiting`, `warning` (`idle`,
+`extending` or `failed`) and `ended`. The two timers are invoked callback actors that send
+`warning.due`, `tick`, `postponed` and `expired` with the times in the event, so the machine
+never reads the clock. The model-based tests walk every state but `disabled` through 38
+shortest paths and 23 simple paths, moving the element's clock to the time each timer event
+stands for.
 
 ### Converting the next portlet
 
