@@ -113,7 +113,7 @@ public class JpaPortletLayoutAggregationDao
                                 criteriaQuery.orderBy(
                                         cb.desc(dd.get(DateDimensionImpl_.date)),
                                         cb.desc(td.get(TimeDimensionImpl_.time)),
-                                        cb.asc(ba.get(PortletLayoutAggregationImpl_.id)));
+                                        cb.asc(id(ba)));
 
                                 return criteriaQuery;
                             }

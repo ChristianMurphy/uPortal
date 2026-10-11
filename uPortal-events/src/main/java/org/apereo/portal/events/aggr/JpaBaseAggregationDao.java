@@ -86,7 +86,7 @@ public abstract class JpaBaseAggregationDao<
      * The id of an aggregation, the last sort key of the ordered queries, so that rows tied on
      * their date and time come back in the same order on every database (MOD-I191)
      */
-    private static Path<?> id(Root<?> root) {
+    protected static Path<?> id(Root<?> root) {
         final EntityType<?> model = root.getModel();
         return root.get(model.getId(model.getIdType().getJavaType()).getName());
     }
