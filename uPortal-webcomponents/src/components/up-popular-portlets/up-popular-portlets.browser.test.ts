@@ -401,7 +401,7 @@ describe('up-popular-portlets filters', () => {
         await choose(title, 'courses');
         expect(title.value).toBe('');
         expect(fnames(element)).toEqual(['courses']);
-        expect(info(element)).toBe('Viewing page 1. Showing records 1 to 1 of 1 items.');
+        expect(info(element)).toBe('Viewing page 1. Showing records 1 to 1 of 1 item.');
         const term = view(element).getByRole('button', { name: 'Remove the filter courses' });
         await expect.element(term).toBeVisible();
         expect(find(element, '.filter-term').textContent).toContain('courses');
