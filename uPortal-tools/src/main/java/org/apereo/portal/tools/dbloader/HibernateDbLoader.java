@@ -16,9 +16,6 @@ package org.apereo.portal.tools.dbloader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -28,21 +25,13 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apereo.portal.hibernate.DelegatingHibernateIntegrator.HibernateConfiguration;
 import org.apereo.portal.hibernate.HibernateConfigurationAware;
+import org.apereo.portal.hibernate.SchemaTool;
+import org.apereo.portal.hibernate.TableDefinition;
 import org.apereo.portal.jpa.BasePortalJpaDao;
-import org.hibernate.cfg.Configuration;
-import org.hibernate.cfg.Environment;
-import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.spi.Mapping;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.mapping.ForeignKey;
-import org.hibernate.mapping.Index;
-import org.hibernate.mapping.Table;
-import org.hibernate.mapping.UniqueKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ResourceLoaderAware;
@@ -73,8 +62,7 @@ public class HibernateDbLoader
         implements IDbLoader, ResourceLoaderAware, HibernateConfigurationAware {
     protected final Log logger = LogFactory.getLog(this.getClass());
 
-    private Configuration configuration;
-    private Dialect dialect;
+    private SchemaTool schemaTool;
     private JdbcOperations jdbcOperations;
     private TransactionOperations transactionOperations;
     private ResourceLoader resourceLoader;
@@ -100,9 +88,7 @@ public class HibernateDbLoader
     @Override
     public void setConfiguration(
             String persistenceUnit, HibernateConfiguration hibernateConfiguration) {
-        final SessionFactoryImplementor sessionFactory = hibernateConfiguration.getSessionFactory();
-        this.dialect = sessionFactory.getDialect();
-        this.configuration = hibernateConfiguration.getConfiguration();
+        this.schemaTool = hibernateConfiguration.getSchemaTool();
     }
 
     @Override
@@ -121,25 +107,19 @@ public class HibernateDbLoader
             script = new LinkedList<String>();
         }
 
-        final ITableDataProvider tableData = this.loadTables(configuration, dialect);
+        final ITableDataProvider tableData = this.loadTables(configuration);
 
         // Handle table drop/create
         if (configuration.isDropTables() || configuration.isCreateTables()) {
             // Load Table object model
-            final Map<String, Table> tables = tableData.getTables();
-
-            final Mapping mapping = this.configuration.buildMapping();
-            final String defaultCatalog =
-                    this.configuration.getProperty(Environment.DEFAULT_CATALOG);
-            final String defaultSchema = this.configuration.getProperty(Environment.DEFAULT_SCHEMA);
+            final Map<String, TableDefinition> tables = tableData.getTables();
 
             final Map<String, DataAccessException> failedSql =
                     new LinkedHashMap<String, DataAccessException>();
 
             // Generate and execute drop table scripts
             if (configuration.isDropTables()) {
-                final List<String> dropScript =
-                        this.dropScript(tables.values(), dialect, defaultCatalog, defaultSchema);
+                final List<String> dropScript = this.schemaTool.getDropScript(tables.values());
 
                 if (script == null) {
                     this.logger.info("Dropping existing tables");
@@ -170,9 +150,7 @@ public class HibernateDbLoader
 
             // Generate and execute create table scripts
             if (configuration.isCreateTables()) {
-                final List<String> createScript =
-                        this.createScript(
-                                tables.values(), dialect, mapping, defaultCatalog, defaultSchema);
+                final List<String> createScript = this.schemaTool.getCreateScript(tables.values());
 
                 if (script == null) {
                     this.logger.info("Creating tables");
@@ -208,7 +186,7 @@ public class HibernateDbLoader
         }
     }
 
-    protected ITableDataProvider loadTables(DbLoaderConfig configuration, Dialect dialect)
+    protected ITableDataProvider loadTables(DbLoaderConfig configuration)
             throws ParserConfigurationException, SAXException, IOException {
         // Locate tables.xml
         final String tablesFileName = configuration.getTablesFile();
@@ -219,94 +197,10 @@ public class HibernateDbLoader
 
         // Setup parser with custom handler to generate Table model and parse
         final SAXParser saxParser = SAXParserFactory.newInstance().newSAXParser();
-        final TableXmlHandler dh = new TableXmlHandler(dialect);
+        final TableXmlHandler dh = new TableXmlHandler();
         saxParser.parse(new InputSource(tablesFile.getInputStream()), dh);
 
         return dh;
-    }
-
-    /** Generate the drop scripts and add them to the script list */
-    @SuppressWarnings("unchecked")
-    protected List<String> dropScript(
-            Collection<Table> tables,
-            Dialect dialect,
-            String defaultCatalog,
-            String defaultSchema) {
-        final List<String> script = new ArrayList<String>(tables.size() * 2);
-
-        if (dialect.dropConstraints()) {
-            for (final Table table : tables) {
-                if (table.isPhysicalTable()) {
-                    for (final Iterator<ForeignKey> subIter = table.getForeignKeyIterator();
-                            subIter.hasNext(); ) {
-                        final ForeignKey fk = subIter.next();
-                        if (fk.isPhysicalConstraint()) {
-                            script.add(fk.sqlDropString(dialect, defaultCatalog, defaultSchema));
-                        }
-                    }
-                }
-            }
-        }
-
-        for (final Table table : tables) {
-            if (table.isPhysicalTable()) {
-                script.add(table.sqlDropString(dialect, defaultCatalog, defaultSchema));
-            }
-        }
-
-        return script;
-    }
-
-    /** Generate create scripts and add them to the script list */
-    @SuppressWarnings("unchecked")
-    protected List<String> createScript(
-            Collection<Table> tables,
-            Dialect dialect,
-            Mapping mapping,
-            String defaultCatalog,
-            String defaultSchema) {
-        final List<String> script = new ArrayList<String>(tables.size() * 2);
-
-        for (final Table table : tables) {
-            if (table.isPhysicalTable()) {
-                script.add(table.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema));
-            }
-        }
-
-        for (final Table table : tables) {
-            if (table.isPhysicalTable()) {
-                for (final Iterator<UniqueKey> subIter = table.getUniqueKeyIterator();
-                        subIter.hasNext(); ) {
-                    final UniqueKey uk = subIter.next();
-                    final String constraintString =
-                            uk.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema);
-                    if (StringUtils.isNotBlank(constraintString)) {
-                        script.add(constraintString);
-                    }
-                }
-
-                for (final Iterator<Index> subIter = table.getIndexIterator();
-                        subIter.hasNext(); ) {
-                    final Index index = subIter.next();
-                    script.add(
-                            index.sqlCreateString(dialect, mapping, defaultCatalog, defaultSchema));
-                }
-
-                if (dialect.hasAlterTable()) {
-                    for (final Iterator<ForeignKey> subIter = table.getForeignKeyIterator();
-                            subIter.hasNext(); ) {
-                        final ForeignKey fk = subIter.next();
-                        if (fk.isPhysicalConstraint()) {
-                            script.add(
-                                    fk.sqlCreateString(
-                                            dialect, mapping, defaultCatalog, defaultSchema));
-                        }
-                    }
-                }
-            }
-        }
-
-        return script;
     }
 
     protected void populateTables(

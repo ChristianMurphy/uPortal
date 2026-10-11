@@ -29,18 +29,17 @@ import javax.persistence.JoinColumn;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
+import org.hibernate.annotations.MapKeyType;
 import org.hibernate.annotations.Type;
 
 /** JPA-backed implementation of {@link ITenant}. */
 @Entity
 @Table(name = "UP_TENANT")
 @SequenceGenerator(name = "UP_TENANT_GEN", sequenceName = "UP_TENANT_SEQ", allocationSize = 1)
-@TableGenerator(name = "UP_TENANT_GEN", pkColumnValue = "UP_TENANT", allocationSize = 1)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 /* package-private */ class JpaTenant implements ITenant {
@@ -61,7 +60,11 @@ import org.hibernate.annotations.Type;
     @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyColumn(name = "ATTR_NAME", nullable = false, length = 500)
     @Column(name = "ATTR_VALUE", nullable = false, length = 2000)
-    @Type(type = "nullSafeString") // only applies to map values
+    // Hibernate 4.3 applied this @Type to the map keys as well, so existing rows store the keys
+    // with NullSafeStringType's "_" prefix too. Hibernate 5 applies @Type to the values only;
+    // @MapKeyType keeps the keys in the stored format.
+    @MapKeyType(@Type(type = "nullSafeString"))
+    @Type(type = "nullSafeString")
     @CollectionTable(
             name = "UP_TENANT_ATTRIBUTES",
             joinColumns = @JoinColumn(name = "TENANT_ID", nullable = false))

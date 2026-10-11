@@ -22,13 +22,13 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.AggregationInterval;
@@ -41,42 +41,28 @@ import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMappingImpl;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
 
 @Entity
-@Table(name = "UP_PORTLET_EXEC_AGGR")
+@Table(
+        name = "UP_PORTLET_EXEC_AGGR",
+        indexes = {
+            @Index(
+                    name = "IDX_UP_PLT_EXEC_AGGR_DTI",
+                    columnList = "DATE_DIMENSION_ID, TIME_DIMENSION_ID, AGGR_INTERVAL"),
+            @Index(
+                    name = "IDX_UP_PLT_EXEC_AGGR_DTIC",
+                    columnList =
+                            "DATE_DIMENSION_ID, TIME_DIMENSION_ID, AGGR_INTERVAL, STATS_COMPLETE"),
+            @Index(name = "IDX_UP_PLT_EXEC_INTRVL", columnList = "AGGR_INTERVAL"),
+            @Index(name = "IDX_UP_PLT_EXEC_GRP", columnList = "AGGR_GROUP_ID")
+        })
 @Inheritance(strategy = InheritanceType.JOINED)
 @SequenceGenerator(
         name = "UP_PORTLET_EXEC_AGGR_GEN",
         sequenceName = "UP_PORTLET_EXEC_AGGR_SEQ",
         allocationSize = 10000)
-@TableGenerator(
-        name = "UP_PORTLET_EXEC_AGGR_GEN",
-        pkColumnValue = "UP_PORTLET_EXEC_AGGR_PROP",
-        allocationSize = 10000)
-@org.hibernate.annotations.Table(
-        appliesTo = "UP_PORTLET_EXEC_AGGR",
-        indexes = {
-            @Index(
-                    name = "IDX_UP_PLT_EXEC_AGGR_DTI",
-                    columnNames = {"DATE_DIMENSION_ID", "TIME_DIMENSION_ID", "AGGR_INTERVAL"}),
-            @Index(
-                    name = "IDX_UP_PLT_EXEC_AGGR_DTIC",
-                    columnNames = {
-                        "DATE_DIMENSION_ID",
-                        "TIME_DIMENSION_ID",
-                        "AGGR_INTERVAL",
-                        "STATS_COMPLETE"
-                    }),
-            @Index(
-                    name = "IDX_UP_PLT_EXEC_INTRVL",
-                    columnNames = {"AGGR_INTERVAL"}),
-            @Index(
-                    name = "IDX_UP_PLT_EXEC_GRP",
-                    columnNames = {"AGGR_GROUP_ID"})
-        })
 @NaturalIdCache(
         region =
                 "org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregationImpl-NaturalId")

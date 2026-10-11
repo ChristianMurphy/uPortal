@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apereo.portal.hibernate.DelegatingHibernateIntegrator.HibernateConfiguration;
 import org.apereo.portal.hibernate.HibernateConfigurationAware;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -148,8 +147,7 @@ public class DialectAwareTransactionInterceptor
     @Override
     public void setConfiguration(
             String persistenceUnit, HibernateConfiguration hibernateConfiguration) {
-        final SessionFactoryImplementor sessionFactory = hibernateConfiguration.getSessionFactory();
-        this.dialects.put(persistenceUnit, sessionFactory.getDialect().getClass());
+        this.dialects.put(persistenceUnit, hibernateConfiguration.getDialect().getClass());
     }
 
     @Override

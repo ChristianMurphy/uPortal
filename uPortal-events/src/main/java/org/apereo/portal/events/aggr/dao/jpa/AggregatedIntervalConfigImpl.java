@@ -29,7 +29,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.AggregatedIntervalConfig;
@@ -47,10 +46,6 @@ import org.hibernate.annotations.NaturalId;
 @SequenceGenerator(
         name = "UP_EVENT_AGGR_CONF_INTRVL_GEN",
         sequenceName = "UP_EVENT_AGGR_CONF_INTRVL_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_EVENT_AGGR_CONF_INTRVL_GEN",
-        pkColumnValue = "UP_EVENT_AGGR_CONF_INTRVL",
         allocationSize = 1)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
