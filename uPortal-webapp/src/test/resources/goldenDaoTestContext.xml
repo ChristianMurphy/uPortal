@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Apereo under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Apereo licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License.  You may obtain a
+    copy of the License at the following location:
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+    express or implied.  See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<!--
+ | The PortalDb DAOs whose queries the query goldens characterise (MOD-D29 item 7). The raw-event
+ | and aggregation DAOs are characterised by the aggregation goldens, on the data the pipeline
+ | writes.
+ +-->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+    <import resource="classpath:goldenPersistenceTestContext.xml"/>
+
+    <bean id="jdbcOperations" class="org.springframework.jdbc.core.JdbcTemplate">
+        <qualifier value="PortalDb" />
+        <property name="dataSource" ref="PortalDb" />
+    </bean>
+
+    <bean id="portletTypeDao" class="org.apereo.portal.portlet.dao.jpa.JpaPortletTypeDao" />
+    <bean id="portletDefinitionDao" class="org.apereo.portal.portlet.dao.jpa.JpaPortletDefinitionDao" />
+    <bean id="portletEntityDao" class="org.apereo.portal.portlet.dao.jpa.JpaPortletEntityDao" />
+    <bean id="portletCookieDao" class="org.apereo.portal.portlet.dao.jpa.JpaPortletCookieDaoImpl" />
+    <bean id="marketplaceRatingDao" class="org.apereo.portal.portlet.dao.jpa.JpaMarketplaceRatingDao" />
+    <bean id="messageDao" class="org.apereo.portal.i18n.dao.jpa.JpaMessageDao" />
+    <bean id="stylesheetDescriptorDao" class="org.apereo.portal.layout.dao.jpa.JpaStylesheetDescriptorDao" />
+    <bean id="stylesheetUserPreferencesDao" class="org.apereo.portal.layout.dao.jpa.JpaStylesheetUserPreferencesDao" />
+    <bean id="profileSelectionDao" class="org.apereo.portal.layout.profile.dao.jpa.ProfileSelectionDaoImpl" />
+    <bean id="fragmentDefinitionDao" class="org.apereo.portal.layout.dlm.FragmentDefinitionDao" />
+    <bean id="localAccountDao" class="org.apereo.portal.persondir.dao.jpa.JpaLocalAccountDaoImpl" />
+    <bean id="permissionOwnerDao" class="org.apereo.portal.permission.dao.jpa.JpaPermissionOwnerDao" />
+    <bean id="tenantDao" class="org.apereo.portal.tenants.JpaTenantDao" />
+    <bean id="versionDao" class="org.apereo.portal.version.dao.jpa.JpaVersionDao" />
+    <bean id="pagsGroupDefinitionDao" class="org.apereo.portal.groups.pags.dao.jpa.JpaPersonAttributesGroupDefinitionDao" />
+    <bean id="pagsTestGroupDefinitionDao" class="org.apereo.portal.groups.pags.dao.jpa.JpaPersonAttributesGroupTestGroupDefinitionDao" />
+    <bean id="pagsTestDefinitionDao" class="org.apereo.portal.groups.pags.dao.jpa.JpaPersonAttributesGroupTestDefinitionDao" />
+    <bean id="portletListDao" class="org.apereo.portal.dao.portletlist.jpa.PortletListDao" />
+    <bean id="authDao" class="org.apereo.portal.jgroups.auth.JdbcAuthDao">
+        <property name="jdbcOperations" ref="jdbcOperations" />
+    </bean>
+</beans>
