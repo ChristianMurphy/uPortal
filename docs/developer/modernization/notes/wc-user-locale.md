@@ -30,6 +30,9 @@ uPortal-start:
 | Commit subject | What |
 | --- | --- |
 | `test(e2e): record what the user locale selector does today` | `tests/ux/smoke/user-locale.spec.ts`, the characterisation spec: 4 tests, role and name locators only |
+| `test(e2e): start the user locale spec from a saved english choice` | The portlet doesn't check any radio button for a student who never saved a language. Each signed-in test now saves English first. The guest test checks that a new session has every radio button unchecked |
+| `feat(data): render the user locale selector as a web component channel` | `user-locales-selector` as a Web Component channel. `UP_PORTLET_DEF_PARAM rows +4` in the harness's intended changes |
+| `test(e2e): cover the user locale web component` | `tests/ux/smoke/user-locale-component.spec.ts`, 3 tests. The element gets the portal's context attributes. The API refuses a PUT without the CSRF token (403) or with an unknown code (400). A failed save shows an alert |
 
 Local results for `uPortal-webcomponents`: `vp check` clean. `vp test`: 328 tests in 13 files, of
 which 104 are new in 4 files (14 API, 15 machine, 23 browser, 52 model-based). Every new file has
@@ -38,21 +41,22 @@ which 104 are new in 4 files (14 API, 15 machine, 23 browser, 52 model-based). E
 
 ## Running
 
-See the CI section below for the run IDs as they finish.
+Integration on uPortal-start `b51fdde`: both specs against the component.
 
 ## Next steps
 
-1. Integration on uPortal-start `78647e6` must pass `user-locale.spec.ts` against the portlet.
-2. Then push the uPortal-start channel switch (`user-locales-selector` as a Web Component channel,
-   `UP_PORTLET_DEF_PARAM rows +4` in `tests/db/snapshots/5.17/intended-changes.txt`) together with
-   `tests/ux/smoke/user-locale-component.spec.ts`. Integration must then pass both specs against
-   the component, unchanged characterisation spec included.
-3. Seed one fault in each new check, show the red run, revert in a new commit.
-4. Report to the coordinator with CI run IDs and the proposed LOG rows.
+1. Integration on `b51fdde` must pass `user-locale.spec.ts` unchanged and
+   `user-locale-component.spec.ts`, with the harness accepting `UP_PORTLET_DEF_PARAM rows +4`.
+2. Seed one fault in each new check, show the red run, revert in a new commit.
+3. Report to the coordinator with CI run IDs and the proposed LOG rows.
 
 ## CI
 
-None finished yet.
+| Run | Commit | Result |
+| --- | --- | --- |
+| uPortal CI 38115501518 | `3da8e6c` (REST API and component) | Green |
+| uPortal-start Integration 38114907893 | `78647e6` (spec against the portlet) | Red: the order problem fixed in `a95e9cb`. The other 138 tests passed on hsqldb and postgres-18 |
+| uPortal-start Integration 38116706216 | `a95e9cb` (spec against the portlet) | Green, all 7 jobs |
 
 ## Proposed LOG rows
 
