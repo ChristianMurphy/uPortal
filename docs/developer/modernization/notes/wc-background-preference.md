@@ -133,6 +133,13 @@ Playwright 1.64.
 | The wrap removed | browser "wraps a caption too long for its width" (2061px in a 200px element) |
 | The test doesn't set the language | e2e "speaks es": the element's locale stays `en-US` |
 
+## Landing
+
+The coordinator landed uPortal `7769bf8` and uPortal-start `283b22d` as uPortal `5a7276803` and
+uPortal-start `ad9521267`. Evidence: uPortal CI 38130739840 (full matrix, green) and uPortal-start
+Integration 38130741635 (18 jobs, green). The MOD-D49 to MOD-D51 work above (`ee07cbf`, `0ea55db`
+and the uPortal-start es/fr spec) follows in a later batch with its own push run.
+
 ## Next step
 
 Run CI.yml by hand on the uPortal topic branch and integration.yml on the uPortal-start topic
