@@ -21,6 +21,20 @@ commit body.
 | 6: pre-delete in `PersistenceUnits` | removed; passes on HSQLDB, needs the six-vendor run | see `git log` | |
 | 7: `TransientPortletEntityDao` NPE | reproduced and fixed | see `git log` | |
 
+## Full-matrix runs (head `bcf049d`)
+
+Started 2026-10-11 11:04 UTC with workflow_dispatch:
+
+| Workflow | Run | Why |
+| --- | --- | --- |
+| CI | 38134202155 | full CI matrix |
+| DB integration | 38134204060 | the goldens on the six databases |
+| DB copy tool | 38134205546 | this branch changes the tool |
+
+Next step:
+read their results. A red golden on a vendor other than HSQLDB is this branch's to fix. If Oracle
+fails on the removed pre-delete (fix 6), revert `502d3e2` and record why.
+
 ## Running tests in this container
 
 Gradle runs here with JDK 21 and an init script outside the repos
