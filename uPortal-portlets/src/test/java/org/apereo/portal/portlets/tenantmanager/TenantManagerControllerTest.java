@@ -21,19 +21,23 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Map;
+import javax.portlet.ActionRequest;
+import javax.portlet.ActionResponse;
+import javax.portlet.PortletSession;
 import org.apereo.portal.tenants.TenantService;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.mock.web.portlet.MockActionRequest;
-import org.springframework.mock.web.portlet.MockActionResponse;
 import org.springframework.test.util.ReflectionTestUtils;
 
 /**
@@ -53,14 +57,17 @@ public class TenantManagerControllerTest {
         doCallRealMethod().when(tenantService).validateFname(anyString());
     }
 
-    private MockActionRequest add(String name, String fname) {
-        final MockActionRequest request = new MockActionRequest();
-        if (fname != null) {
-            request.setParameter("fname", fname);
-        }
-        controller.doAddTenant(
-                request, new MockActionResponse(), request.getPortletSession(), name, fname);
-        return request;
+    /**
+     * Adds a tenant through the controller, with Mockito portlet objects: Spring 5 has no portlet
+     * mocks. Returns the session, where an invalid form leaves its fields.
+     */
+    private PortletSession add(String name, String fname) {
+        final ActionRequest request = mock(ActionRequest.class);
+        final PortletSession session = mock(PortletSession.class);
+        when(request.getPortletSession()).thenReturn(session);
+        when(request.getParameter("fname")).thenReturn(fname);
+        controller.doAddTenant(request, mock(ActionResponse.class), session, name, fname);
+        return session;
     }
 
     private void createdWithFname(String name, String fname) {
@@ -92,10 +99,11 @@ public class TenantManagerControllerTest {
     @Test
     @SuppressWarnings("unchecked")
     public void asksForAnFnameWhenTheNameHasNoLatinLetters() {
-        final MockActionRequest request = add("北海道大学", null);
+        final PortletSession session = add("北海道大学", null);
         verify(tenantService, never()).createTenant(any(), any(), anyMap(), any(), any());
-        final Map<String, Object> invalid =
-                (Map<String, Object>) request.getPortletSession().getAttribute("invalidFields");
+        final ArgumentCaptor<Object> fields = ArgumentCaptor.forClass(Object.class);
+        verify(session).setAttribute(eq("invalidFields"), fields.capture());
+        final Map<String, Object> invalid = (Map<String, Object>) fields.getValue();
         assertNotNull(invalid);
         assertEquals(Collections.singleton("fname"), invalid.keySet());
     }
