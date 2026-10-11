@@ -15,7 +15,7 @@ its error message lists the allowed characters.
 | 2. MOD-I233 tenant names | done, names and fnames |
 | 3. Other text fields | committed, with MOD-I270 to MOD-I277 below; MOD-I278 is open |
 | 4. Storage | already covered by the round trip's UNICODE variant on six vendors; Oracle uses CHAR semantics; limits listed below |
-| 5. Portlet search with accented terms | waits for MOD-I142 (persistence-fixes branch) to reach `ccr-43ba0785-hzlrj5` |
+| 5. Portlet search with accented terms | committed: the query golden searches "École de Musique" and "Σοφία Πύλη" (see below) |
 | 6. Passwords | committed: UTF-8 on every step of sign-in, UPGRADING text |
 
 ## Audit
@@ -127,6 +127,21 @@ one list. From this audit it has SQL Server `nvarchar` text (MOD-D44), `utf8mb4`
 MariaDB DDL, Oracle's 4000-byte `varchar2` limit under `MAX_STRING_SIZE=STANDARD` for the columns
 over 1000 characters (EXTENDED or `clob` is an owner decision), and
 `UP_PROFILE_SELECTION.USERNAME` widened from 70 to 100 characters.
+
+## Portlet search with accented and Greek terms (item 5)
+
+The query golden has a portlet "École de Musique" titled "Σοφία Πύλη". The partial search folds
+case in any script, so "école", "ÉCOLE", "σοφία" and "ΠΎΛΗ" find it, and accents count, so
+"ecole" doesn't. The exact search for "Σοφία Πύλη" finds it. `QueryVendorDifferences` lists
+where vendors differ:
+
+- MySQL and MariaDB: "ecole" finds it, because their default `_ai_` collations ignore accents.
+- SQL Server: no Greek search finds it, because the `varchar` title holds the Greek letters as
+  `?` (MOD-D44).
+
+The same branch fixes MOD-I203: the portlet searcher refused the `_CI` search methods, so the
+entity selector's portlet search answered 500. The `_CI` methods now map to the partial
+searches, which ignore case, and `DISCRETE_CI` to an exact search that ignores case.
 
 ## LOG rows MOD-I270 to MOD-I278
 
