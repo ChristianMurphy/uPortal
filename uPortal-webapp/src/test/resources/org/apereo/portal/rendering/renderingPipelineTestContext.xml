@@ -230,6 +230,8 @@
     </bean>
 
     <bean id="messageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <!-- MOD-I232: the bundles are UTF-8; \u escapes still work -->
+        <property name="defaultEncoding" value="UTF-8" />
         <property name="alwaysUseMessageFormat" value="true" />
         <property name="cacheSeconds" value="60" />
         <property name="useCodeAsDefaultMessage" value="true" />
