@@ -286,14 +286,14 @@ production uses (third row).
 
 ## Checks
 
-**Status (2026-10-10 23:55 UTC): local checks and uPortal CI green. DB integration and uPortal-start Integration still running.**
+**Status (2026-10-11 00:15 UTC): local checks, uPortal CI and DB integration green. uPortal-start Integration still queued.**
 GitHub Actions is saturated across the workstreams; runs on this branch queue for a long time,
 and each new push cancels the older run.
 
 | Check | Run | Result |
 | --- | --- | --- |
 | uPortal CI, light profile for workstream branches (Linux leg, SpotBugs and commit messages) | [38091362346](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362346) on `066fbd9` | green (23:46 UTC), and SpotBugs found nothing new |
-| uPortal DB integration | [38091362114](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362114) | queued |
+| uPortal DB integration | [38091362114](https://github.com/ChristianMurphy/uPortal/actions/runs/38091362114) on `066fbd9` | green (00:02 UTC) |
 | uPortal-start Integration: DB harness and Playwright on three databases | [38091366801](https://github.com/ChristianMurphy/uPortal-start/actions/runs/38091366801), building uPortal `ccr-43ba0785-hzlrj5-cache-seam` | queued |
 | uPortal CI, full matrix, first commit only | [38088762888](https://github.com/ChristianMurphy/uPortal/actions/runs/38088762888) on `6e7d045` | Build and Test green on windows-latest temurin 25 and ubuntu zulu 21; the other legs had not finished |
 | SpotBugs baseline | local `spotbugsMain` on all 14 modules the branch touches | no new findings, baseline unchanged |
