@@ -78,6 +78,10 @@ export default defineConfig({
     },
     lint: {
         ignorePatterns: ['build/**', 'node_modules/**'],
+        // uportal/logical-css: no physical CSS (margin-left, text-align: right, …), so the
+        // components mirror in right-to-left locales (src/lint/logical-css.ts)
+        jsPlugins: ['./src/lint/logical-css.ts'],
+        rules: { 'uportal/logical-css': 'error' },
         categories: {
             correctness: 'error',
             suspicious: 'error',

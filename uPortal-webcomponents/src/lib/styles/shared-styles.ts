@@ -21,4 +21,9 @@ export const hostStyles = css`
     :host([hidden]) {
         display: none;
     }
+
+    /* An icon that points left or right (a chevron, an arrow) mirrors in right-to-left locales */
+    .mirror-rtl:dir(rtl) {
+        transform: scaleX(-1);
+    }
 `;
