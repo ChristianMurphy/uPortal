@@ -440,6 +440,51 @@ its owner, and the owner's delete failed with ORA-02292. This hit a portlet enti
 window state, a layout attribute with an empty target element name, and a portlet definition with
 an empty localization. uPortal now deletes those rows with their owner.
 
+## Timestamps are stored in UTC
+
+uPortal 5.17 stored some timestamp columns as the clock time of the portal server's JVM. The value
+in the database depended on the server's time zone, and in the hour that repeats when daylight
+time ends, two different instants were stored as the same clock time. uPortal 6.0 stores these
+columns as UTC clock time (`hibernate.jdbc.time_zone=UTC` in `hibernate.properties`):
+
+| Table | Columns |
+| --- | --- |
+| `UP_PORTLET_LIFECYCLE` | `ENTRY_DATE` (portlet publish and expiry dates) |
+| `UP_MUTEX` | `LOCK_START`, `LOCK_UPDATE`, `LOCK_END` (cluster locks) |
+| `UP_PERSON_DIR` | `LST_PSWD_CGH_DT` (last password change of local accounts) |
+| `UP_PORTLET_LIST` | `CREATED_ON`, `UPDATED_ON` |
+
+`UP_MUTEX.LOCK_END` was not on the first list of affected columns. The persistence tests found
+that it is stored the same way, so it is converted too.
+
+The other timestamps (raw events, aggregation, event sessions, cookies) were already stored in
+UTC, and the analytics date and time dimensions keep their local dates and times.
+
+**Upgrade with the copy tool and the source server's zone.** Copy the 5.17 database into a 6.0
+database with `--target-profile 6.0` and `--source-zone` set to the time zone of the 5.17
+portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
+
+```sh
+db-migrate --source-properties 517.properties --target-properties 60.properties \
+    --target-profile 6.0 --source-zone America/New_York
+```
+
+The copy converts the columns above from that zone's clock time to UTC. If any of them holds a
+value and `--source-zone` is missing, the copy stops before writing anything and names the
+columns. A copy between two 5.17 databases (the default `--target-profile 5.17`) leaves the values
+as they are.
+
+**The repeated hour.** A clock time in the hour that repeats when daylight time ends (01:00 to
+01:59 on the first Sunday of November in New York) can be either of two instants, and 5.17 didn't
+record which. The copy takes the earlier one, the daylight-time offset: 01:30 on 2026-11-01 in New
+York becomes 05:30 UTC. A value that was written in the second 01:00 to 01:59 hour ends up one hour
+early. A clock time in the hour that is skipped when daylight time starts can't come from 5.17;
+if one is there, the copy moves it forward by an hour, as `java.time` does.
+
+Code that reads these columns with SQL of its own gets UTC clock times from 6.0 on. The Java API
+(`IPortletLifecycleEntry.getDate()`, `ILocalAccountPerson.getLastPasswordChange()`, the portlet
+list REST API) returns the same instants as before.
+
 ## PostgreSQL: do not run `vacuumlo`
 
 On PostgreSQL, uPortal stores the raw event data (`UP_RAW_EVENTS.EVENT_DATA` and

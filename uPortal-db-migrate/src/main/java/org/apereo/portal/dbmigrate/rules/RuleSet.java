@@ -269,6 +269,11 @@ public final class RuleSet {
         return skipColumns.contains(Names.key(sourceTable + "." + sourceColumn));
     }
 
+    /** The source columns with a transform, as upper-case {@code TABLE.COLUMN} */
+    public Set<String> transformedColumns() {
+        return Collections.unmodifiableSet(transforms.keySet());
+    }
+
     public TransformRule transform(String sourceTable, String sourceColumn) {
         return transforms.get(Names.key(sourceTable + "." + sourceColumn));
     }

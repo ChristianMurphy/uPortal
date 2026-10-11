@@ -14,6 +14,12 @@
  */
 package org.apereo.portal.dbmigrate.plan;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import org.apereo.portal.dbmigrate.catalog.GeneratorCatalog;
 import org.apereo.portal.dbmigrate.rules.RuleSet;
 
@@ -46,6 +52,29 @@ public final class SchemaProfile {
         GeneratorCatalog catalog =
                 GeneratorCatalog.fromResource(dir + "generators.tsv").addRules(rules);
         return new SchemaProfile(name, rules, catalog);
+    }
+
+    /**
+     * The rules a copy from {@code sourceProfile} into this profile adds, from {@code
+     * from-<source>.rules} next to this profile's {@code schema.rules}, with {@code ${source-zone}}
+     * replaced by {@code sourceZone}; null when the copy needs none.
+     */
+    public RuleSet conversionsFrom(String sourceProfile, String sourceZone) {
+        String resource = BASE + name + "/from-" + sourceProfile + ".rules";
+        InputStream in = SchemaProfile.class.getClassLoader().getResourceAsStream(resource);
+        if (in == null) {
+            return null;
+        }
+        try (Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
+            StringBuilder text = new StringBuilder();
+            char[] buffer = new char[4096];
+            for (int n = reader.read(buffer); n >= 0; n = reader.read(buffer)) {
+                text.append(buffer, 0, n);
+            }
+            return RuleSet.parse(text.toString().replace("${source-zone}", sourceZone), resource);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     public String name() {

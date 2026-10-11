@@ -1,0 +1,27 @@
+#
+# Licensed to Apereo under one or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information regarding copyright ownership. Apereo
+# licenses this file to you under the Apache License, Version 2.0 (the "License"); you may not use
+# this file except in compliance with the License. You may obtain a copy of the License at the
+# following location:
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the
+# License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied. See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# A copy from 5.17 into 6.0 (rule syntax: RuleSet). ${source-zone} is the zone given with
+# --source-zone; the copy refuses to start without it when one of these columns holds a value.
+#
+# 5.17 stored these java.util.Date and Timestamp columns as the JVM's local clock time; 6.0
+# stores UTC clock time (MOD-I141). A time in the hour the zone repeats when it leaves daylight
+# time takes the earlier offset.
+transform UP_PORTLET_LIFECYCLE.ENTRY_DATE   local-time-to-utc zone=${source-zone}
+transform UP_MUTEX.LOCK_START               local-time-to-utc zone=${source-zone}
+transform UP_MUTEX.LOCK_UPDATE              local-time-to-utc zone=${source-zone}
+transform UP_MUTEX.LOCK_END                 local-time-to-utc zone=${source-zone}
+transform UP_PERSON_DIR.LST_PSWD_CGH_DT     local-time-to-utc zone=${source-zone}
+transform UP_PORTLET_LIST.CREATED_ON        local-time-to-utc zone=${source-zone}
+transform UP_PORTLET_LIST.UPDATED_ON        local-time-to-utc zone=${source-zone}

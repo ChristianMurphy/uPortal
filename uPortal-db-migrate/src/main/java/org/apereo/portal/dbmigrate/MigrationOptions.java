@@ -15,6 +15,7 @@
 package org.apereo.portal.dbmigrate;
 
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +53,7 @@ public final class MigrationOptions {
     private boolean verify = true;
     private String sourceProfile = "5.17";
     private String targetProfile = "5.17";
+    private ZoneId sourceZone;
     private final List<Path> ruleFiles = new ArrayList<>();
     private MissingLobPolicy missingLobPolicy = MissingLobPolicy.FAIL;
     private Path report;
@@ -167,6 +169,19 @@ public final class MigrationOptions {
 
     public MigrationOptions targetProfile(String v) {
         this.targetProfile = v;
+        return this;
+    }
+
+    /**
+     * The zone of the source portal's JVM, which 5.17 used for its {@code java.util.Date} columns;
+     * null when not given.
+     */
+    public ZoneId sourceZone() {
+        return sourceZone;
+    }
+
+    public MigrationOptions sourceZone(ZoneId v) {
+        this.sourceZone = v;
         return this;
     }
 

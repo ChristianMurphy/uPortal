@@ -89,8 +89,9 @@ dependencies {
 
 /*
  * The catalog describes the entity mappings of the code being built, which is the 5.17 schema
- * today. When the 6.0 schema change lands, freeze this output as a checked-in 5.17 resource and
- * point the task at the 6.0 profile directory. The scanner (its own source set, Java 11, no Spring)
+ * today, and so also the 6.0 profile's until the 6.0 schema step: the task writes the same file
+ * into both profile directories. When the 6.0 schema change lands, freeze this output as a
+ * checked-in 5.17 resource and point the task at the 6.0 profile directory only. The scanner (its own source set, Java 11, no Spring)
  * runs against the entity modules' classes, apart from the tool's own classpath.
  */
 sourceSets {
@@ -104,9 +105,11 @@ def generateGeneratorCatalog = tasks.register('generateGeneratorCatalog', JavaEx
     group = 'build'
     description = 'Writes the ID generator catalog (generator -> table.column, allocationSize) from the JPA entity annotations'
     def outputFile = generatedResourcesDir.map { it.file('org/apereo/portal/dbmigrate/profiles/5.17/generators.tsv') }
+    def sixFile = generatedResourcesDir.map { it.file('org/apereo/portal/dbmigrate/profiles/6.0/generators.tsv') }
     def scanned = configurations.entityScan
     inputs.files(scanned).withNormalizer(ClasspathNormalizer)
     outputs.file(outputFile)
+    outputs.file(sixFile)
     classpath = sourceSets.scanner.output + scanned
     mainClass = 'org.apereo.portal.dbmigrate.catalog.EntityGeneratorScanner'
     argumentProviders.add({
@@ -116,6 +119,12 @@ def generateGeneratorCatalog = tasks.register('generateGeneratorCatalog', JavaEx
                 .collect { it.file.absolutePath }
         [outputFile.get().asFile.absolutePath] + jars.sort()
     } as CommandLineArgumentProvider)
+    doLast {
+        def six = sixFile.get().asFile
+        six.parentFile.mkdirs()
+        java.nio.file.Files.copy(outputFile.get().asFile.toPath(), six.toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+    }
 }
 sourceSets.main.output.dir(generatedResourcesDir, builtBy: generateGeneratorCatalog)
 
