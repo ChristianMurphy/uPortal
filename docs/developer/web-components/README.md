@@ -151,7 +151,9 @@ module only once anyway; this keeps the page free of duplicate script tags.
 * The module script lives in the body, next to the first element that needs it, not in the
   page's `<head>`. Module scripts are deferred, so this only delays the start of the download a
   little.
-* There is no page-wide `<meta>` CSRF token: each element carries the token itself.
+* Each element has the CSRF token in its own attributes. Respondr pages also put it in `_csrf`
+  and `_csrf_header` meta tags for the portal's own scripts (`up.csrfHeaders()`), but a
+  component reads its attributes, which are set wherever the channel renders.
 * Channel output delivered as an HTML fragment that a client inserts with `innerHTML` (for
   example the portlet-content REST API) does not run its `<script>`. Such clients must load the
   module themselves.
