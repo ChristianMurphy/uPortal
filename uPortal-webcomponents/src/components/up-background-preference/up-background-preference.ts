@@ -41,6 +41,7 @@ export class UpBackgroundPreference extends UpElement {
             :host {
                 display: block;
                 position: relative;
+                overflow-wrap: anywhere;
             }
 
             .toggle {
@@ -53,9 +54,9 @@ export class UpBackgroundPreference extends UpElement {
                 position: absolute;
                 inset-inline-end: 0;
                 z-index: 1000;
-                min-width: 100%;
-                max-height: 515px;
-                overflow-y: auto;
+                min-inline-size: 100%;
+                max-block-size: 515px;
+                overflow-block: auto;
                 background: var(--bg-body);
                 box-shadow: var(--box-shadow);
             }
@@ -73,7 +74,7 @@ export class UpBackgroundPreference extends UpElement {
             }
 
             .choice img {
-                width: 80%;
+                inline-size: 80%;
             }
 
             .alert p {
@@ -231,6 +232,10 @@ export class UpBackgroundPreference extends UpElement {
     }
 
     readonly #keydown = (event: KeyboardEvent): void => {
+        // While an input method composes text, its keys belong to it (MOD-D51)
+        if (event.isComposing) {
+            return;
+        }
         if (event.key === 'Escape' && this.#background.snapshot.can({ type: 'close' })) {
             event.preventDefault();
             this.#background.send({ type: 'close' });
