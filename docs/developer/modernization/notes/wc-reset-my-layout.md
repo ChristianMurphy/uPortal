@@ -34,7 +34,7 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-reset-my-layout` in uPortal and uPortal-sta
 | 3. `<up-reset-my-layout>` | Done: uPortal `034f94e`. 80 component tests (37 unit cases, 25 browser cases, 18 model cases). Every new file has 100% lines. `vp check`, `vp test --coverage` (301 tests) and `vp build` pass |
 | 4. Channel definition | Done: uPortal-start `e3c7803`, Web Component definition; `UP_PORTLET_DEF_PARAM` delta +2 to +4 on the existing line |
 | 5. Spec against the component, seeded faults | Done: uPortal-start `ec3c105`. The 7 characterisation tests pass unchanged against the component, and 4 component tests were added. The API spec reads the channel's element. A new test found the 403 case, fixed in uPortal `2f8f0f0` |
-| 6. UPGRADING-6.0 | Done: "Reset My Layout is a web component", with the portlet, its context and its flow deleted |
+| 6. UPGRADING-6.0 | Done: "Reset My Layout is a web component". The portlet, its context and its flow stay until MOD-I133 |
 
 ## Running locally
 
@@ -86,17 +86,16 @@ The e2e faults were edits of the deployed bundle or of the controller class in t
   English, French and Spanish.
 * A 403 from the API is Spring Security refusing the CSRF token. The controller never refuses a
   signed-in user, and a session that ended gets a new token. The component treats 403 like 401.
-* Deleted: the `ResetMyLayout` entry of `WEB-INF/portlet.xml`,
+* Kept until the 6.0 data migration converts existing channels (MOD-I133), as for Favorites: the
+  `ResetMyLayout` entry of `WEB-INF/portlet.xml`,
   `properties/contexts/portlet/ResetMyLayout-portlet.xml` and `WEB-INF/flows/reset-my-layout/`.
-  Nothing else used them. Checked on the running portal: with the definition set back to the
-  `ResetMyLayout` descriptor, `/p/reset-my-layout` shows the Welcome tab and the log warns "No
-  portlet descriptor could be found for the portlet definition".
+  `28ade18` deleted them, and the plain revert after the merge of the integration branch restores
+  them. A channel whose definition still uses the `ResetMyLayout` portlet keeps rendering it.
 * Kept, because other code uses them: the `reset-user-layout` subflow and its two JSPs (User
   Administration's `user-manager` flow), the `userLayoutHelper` bean in `flowsContext.xml`, and the
   message keys, which the component reads.
-* Now unused: `IPersonLookupHelper.getSelf(ExternalContext)` in uPortal-api-internal, which only
-  the deleted flow called. It takes a Web Flow type. It is a public interface method, so it stays
-  for the Spring 5.3 step (P4-1) to remove.
+* `IPersonLookupHelper.getSelf(ExternalContext)` in uPortal-api-internal is used only by the old
+  flow. It goes when the flow goes.
 
 ## Findings
 
@@ -113,13 +112,33 @@ The e2e faults were edits of the deployed bundle or of the controller class in t
 * MOD-D18 status line, Reset My Layout converted. `/api/v6-0/layout/reset` and
   `<up-reset-my-layout>` in uPortal, the Web Component definition in uPortal-start. The
   characterisation spec passes on the portlet and on the component. The `reset-my-layout` flow,
-  its portlet context and the `ResetMyLayout` portlet are deleted. `reset-user-layout` stays.
+  its portlet context and the `ResetMyLayout` portlet stay until MOD-I133. `reset-user-layout`
+  stays.
 * Issue: a session that ends while a component is open makes its next unsafe request fail with
   403 (CSRF), not 401. Components should say "sign in again" for a 403 from an API that never
   refuses signed-in users.
 * Issue: a layout reset is lost if the user changes the layout before signing in again (the
   session saves its old layout). Clearing the session's layout after the reset would fix it.
-* Issue: `IPersonLookupHelper.getSelf(ExternalContext)` is unused. Remove it with P4-1.
+* Issue: `IPersonLookupHelper.getSelf(ExternalContext)` is used only by the old flow. Remove it
+  with the flow after MOD-I133.
+
+## Owner rulings of 2026-10-11
+
+* MOD-D46 makes Reset My Layout a web component. The branch merged the integration branch and
+  reverted `28ade18`. The old portlet stays until MOD-I133.
+* MOD-D49: the four new keys have Spanish and French text, written with `\u` escapes and with
+  the apostrophe doubled in French. The Spanish bundle has `layout.for.name.has.been.reset`
+  twice, from before this branch. Java reads the second one.
+* MOD-D50: uPortal-start's `reset-my-layout.spec.ts` renders the channel for a user whose
+  language is es_ES and one whose language is fr_FR, through the User Locales Selector channel
+  (`tests/ux/utils/user-locale.ts`). The portal ignores the browser's Accept-Language. The tests
+  sign in as the quickstart developer user, which no other spec uses, since the selector also
+  saves the language for the user. Each test restores en_US. The component has no text inputs, so
+  the Unicode round trip doesn't apply.
+* MOD-D51: the styles already used logical properties only, and the component has no key
+  handlers of its own. Long words now wrap (`overflow-wrap: anywhere` on the host), with a
+  browser test that a 210-character user name stays inside a 200px element. With the wrap
+  removed, the test fails (1394px).
 
 ## Next step
 

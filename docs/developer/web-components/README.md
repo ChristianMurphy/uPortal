@@ -680,7 +680,8 @@ shared `reset-user-layout` subflow) is `<up-reset-my-layout>`
 `done` (Continue). Its actions are the two requests above. The component keeps the portlet's
 message keys. A 403 from the reset is Spring Security refusing the CSRF token of a session that
 ended, so the component treats it like a 401 and asks the user to sign in again. The portlet, its
-context and its flow are deleted; the `reset-user-layout` subflow stays for User Administration.
+context and its flow stay until the 6.0 data migration converts existing channels (MOD-I133), as
+for Favorites; the `reset-user-layout` subflow stays for User Administration.
 
 ### Background Preference
 
