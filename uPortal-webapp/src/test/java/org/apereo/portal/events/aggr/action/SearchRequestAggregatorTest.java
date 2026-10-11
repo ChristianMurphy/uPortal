@@ -36,7 +36,7 @@ public class SearchRequestAggregatorTest {
 
     private static final String STORED =
             "\"timestamp\":1371745598080,\"serverId\":\"example.com\","
-                + "\"eventSessionId\":\"1234567890123_student_AAAAAAAAAAA\",\"userName\":\"student\"";
+                    + "\"eventSessionId\":\"1234567890123_student_AAAAAAAAAAA\",\"userName\":\"student\"";
 
     /** An action of the Search portlet, as uPortal 5.17 stored it. */
     private static final String PORTLET_SEARCH =
