@@ -1722,6 +1722,33 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
      email couldn't be sent.
 * **Found by:** the Self-Edit Account characterisation specs.
 
+### MOD-D46: Self-Edit Account and Reset My Layout are web components
+
+* **Decision (project owner, 2026-10-11):** both become REST APIs plus web components, which
+  changes MOD-D19's default mapping for these two (it listed them as Thymeleaf full-page flows).
+* **Condition.** Self-Edit Account's password fields work with browser password managers. They
+  carry `autocomplete` hints (`username`, `current-password`, `new-password`), and a browser
+  test checks that the fields can be found, since shadow DOM can hide fields from autofill.
+* **Why:** both conversions were built and tested before the mapping was checked. The API is
+  CSRF-protected, no log line contains a password, and a Thymeleaf page would have to wait for
+  Spring 5.3. Forgot Password and the reset-password flow keep MOD-D19's mapping.
+
+### MOD-D47: hide the Tomcat version and fix the existing accessibility violations
+
+* **Decision (project owner, 2026-10-11):** Tomcat's error pages and headers stop showing the
+  server version. The accessibility violations in the axe baseline (`tests/a11y/baseline.ts`
+  in uPortal-start) are fixed, starting with the Respondr skin, and the baseline only shrinks.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`.
+
+### MOD-D48: fix how uPortal holds database connections before changing pool defaults
+
+* **Decision (project owner, 2026-10-11):** the pool defaults stay as they are for now. First,
+  uPortal stops taking a connection per portlet render to read a cached portlet definition,
+  and stops holding the request's connection while the page waits for its portlets. The
+  budget (MOD-I190) is then set from new measurements.
+* **Why:** with 5.x defaults, 16 users reach about 127 PostgreSQL connections, more than the
+  default limit of 100. A pool of 60 avoids errors, but most of its connections are idle.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
