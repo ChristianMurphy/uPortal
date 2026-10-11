@@ -46,6 +46,7 @@ const EVENTS = [
     { type: 'xstate.done.actor.resetLayout', output: { userName: 'student' } },
     { type: 'xstate.error.actor.resetLayout', error: new ApiError('server', 500, 'boom') },
     { type: 'xstate.error.actor.resetLayout', error: new ApiError('unauthorized', 401, 'gone') },
+    { type: 'xstate.error.actor.resetLayout', error: new ApiError('forbidden', 403, 'csrf') },
 ] as unknown as ResetMyLayoutEvent[];
 
 /** States differ by their value and by the context the element renders. */
