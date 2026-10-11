@@ -548,6 +548,7 @@ ships in the 6.0 data migration, and say so in UPGRADING-6.0.
 | `alert('Error resetting your session!')` | The same text in an alert inside the dialog (`session-timeout.keep-alive.failed`) |
 | Preferences `enabled`, `dialogDisplaySeconds`, `logoutURLFragment` | Attributes `enabled`, `dialog-display-seconds`, `logout-url`, through `webComponent.preferenceAttributes` |
 | Preference `resetSessionURLFragment` | Dropped: the keep-alive is the API |
+| `session-timeout.body1` for every count | `session-timeout.body1.one` when the locale's plural rules call the count singular (1 second; 0 and 1 in French) |
 
 The timing is the portlet's: the warning opens 30 seconds plus `dialog-display-seconds` before
 the session expires, and the user is logged out when the countdown reaches zero. Tabs share the
