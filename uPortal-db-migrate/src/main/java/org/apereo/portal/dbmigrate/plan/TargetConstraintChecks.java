@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.dbmigrate.plan;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -323,6 +324,13 @@ public final class TargetConstraintChecks {
                 jdbc, "SELECT COUNT(*) FROM " + d.qualify(m.source().name()) + " WHERE " + where);
     }
 
+    @SuppressFBWarnings(
+            value = "SQL_INJECTION_SPRING_JDBC",
+            justification =
+                    "Table and column names come from the source database's own metadata, quoted by"
+                            + " Dialect.quote and Dialect.qualify; the only condition besides the"
+                            + " fixed SQL is the plan's large-object filter, which the tool builds"
+                            + " from those names. No row value or command-line text enters it.")
     private static long scalar(JdbcOperations jdbc, String sql) {
         Long n = jdbc.queryForObject(sql, Long.class);
         return n == null ? 0 : n;
