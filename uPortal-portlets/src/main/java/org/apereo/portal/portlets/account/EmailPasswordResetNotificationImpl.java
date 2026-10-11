@@ -80,7 +80,8 @@ public class EmailPasswordResetNotificationImpl implements IPasswordResetNotific
 
     @Override
     public void sendNotification(URL resetUrl, ILocalAccountPerson account, Locale locale) {
-        log.debug("Sending password reset instructions to user with url {}", resetUrl.toString());
+        // The URL carries the account's reset token, so it is not logged
+        log.debug("Sending password reset instructions to user {}", account.getName());
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
