@@ -21,13 +21,15 @@ below. This note says what is done and what comes next, so the work can resume f
 | uPortal-start: removed-API allowlist entry for Spring Session 2's `HttpSessionAdapter` | **Done** on uPortal-start branch `ccr-43ba0785-hzlrj5-spring53` |
 | Portal from uPortal-start, Playwright suite | **Done** locally: 324 of 326 pass. The 2 Web Proxy specs fetch `http://example.com/`, which this container can't resolve |
 | HTTP replay | **Done** locally: the Spring differences are fixed (health check, `.html` content type) or registered on uPortal-start's branch. 54 exchanges stay unexplained, all from the Background Preference web component on the integration branch, not from Spring |
-| SpotBugs: 41 findings that Spring 5's `@Nullable` annotations expose in unchanged code | **Expected red** on this branch. The fixes are on `ccr-43ba0785-hzlrj5-spring53-nullness` (Spring 4.3, one commit per module), which is merged before P4-1. Merge the integration branch after that; the baselines don't grow |
+| SpotBugs: 41 findings that Spring 5's `@Nullable` annotations expose in unchanged code | **Done**: fixed on Spring 4.3 by the nullness branch (MOD-I225, integration `7df6001`). With the integration branch merged in, `spotbugsMain` has no findings and the baselines are unchanged |
 | UPGRADING-6.0.md, "Spring Framework 5.3" | **Done**: versions, URL suffixes under `/api`, Redis sessions, logging |
 
 ## Unit suite (local, JDK 21)
 
 `./gradlew --continue test` on the branch ran 1566 tests with 1 failure before the test fix below,
 and that test passes after it.
+With integration `7df6001` merged in, the suite ran 1600 tests with no failures, and
+`spotlessCheck`, `checkWarSpringJars` and `spotbugsMain` pass.
 
 * `GoogleCustomSearchServiceTest` used `MappingJackson2HttpMessageConverter.DEFAULT_CHARSET`,
   which Spring 5.3 sets to null, and stubbed `ClientHttpResponse.getStatusCode()`, which 5.3's
@@ -63,12 +65,11 @@ Registered as intended on uPortal-start (`tests/replay/intended-differences.json
 
 ## SpotBugs findings on Spring 5.3
 
-`./gradlew spotbugsMain` on this branch reports 41 findings outside the baselines, none in code
-the branch changes. Spring 5 annotates its API with `@Nullable` (such as
+Before the nullness branch was merged, `./gradlew spotbugsMain` on this branch reported 41
+findings outside the baselines, none in code the branch changes. Spring 5 annotates its API with `@Nullable` (such as
 `JdbcOperations.queryForObject`, `TransactionOperations.execute`, `AnnotationUtils.findAnnotation`,
 `ApplicationContext.getBean` through `getApplicationContext()`), so SpotBugs now sees results
-that could be null on 4.3 as well. The SpotBugs job fails here until the nullness branch
-is merged.
+that could be null on 4.3 as well. With integration `7df6001` merged in, it reports none.
 
 | Module | Location | Pattern |
 | --- | --- | --- |
