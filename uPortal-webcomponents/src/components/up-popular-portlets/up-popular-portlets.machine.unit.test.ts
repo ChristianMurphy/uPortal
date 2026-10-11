@@ -130,13 +130,16 @@ describe('popularPortletsMachine: loading', () => {
 
 describe('popularPortletsMachine: days', () => {
     it('loads the chosen days, back on the first page', async () => {
-        const { actor, loads } = await loaded();
+        const many = Array.from({ length: 12 }, (_, index) => portlet(`p${index}`, index + 1));
+        const { actor, loads } = await loaded(many);
         actor.send({ type: 'page.size', size: 5 });
+        actor.send({ type: 'page.go', page: 2 });
+        expect(actor.getSnapshot().context.page).toBe(2);
         actor.send({ type: 'days.change', days: 365 });
         expect(actor.getSnapshot().matches('loading')).toBe(true);
         expect(loads[1]?.days).toBe(365);
 
-        loads[1]?.answer.resolve(data(365));
+        loads[1]?.answer.resolve(data(365, many));
         await waitFor(actor, (snapshot) => snapshot.matches('list'));
         expect(actor.getSnapshot().context).toMatchObject({ days: 365, page: 0, pageSize: 5 });
     });
