@@ -465,6 +465,25 @@ describe('up-popular-portlets long text', () => {
     });
 });
 
+describe('up-popular-portlets right to left', () => {
+    it.each([
+        ['ar', 'left'],
+        ['en-US', 'right'],
+    ])('in %s draws each select arrow on the %s, clear of the value', async (locale, side) => {
+        const element = await render(ATTRIBUTES.replace('locale="en-US"', `locale="${locale}"`));
+        for (const control of shadow(element).querySelectorAll('select')) {
+            const style = getComputedStyle(control);
+            expect(style.backgroundPosition.startsWith(side), control.id).toBe(true);
+            // The padding that leaves room for the arrow is on the same side
+            const [arrowSide, valueSide] =
+                side === 'left'
+                    ? [style.paddingLeft, style.paddingRight]
+                    : [style.paddingRight, style.paddingLeft];
+            expect(Number.parseFloat(arrowSide)).toBeGreaterThan(Number.parseFloat(valueSide));
+        }
+    });
+});
+
 describe('up-popular-portlets messages and events', () => {
     it('uses the messages the portal returns, also those written as HTML', async () => {
         server.on(
