@@ -16,7 +16,7 @@ package org.apereo.portal.tenants;
 
 import java.util.Collections;
 import java.util.Set;
-import javax.mail.internet.InternetAddress;
+import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.IUserIdentityStore;
 import org.apereo.portal.persondir.ILocalAccountDao;
@@ -41,6 +41,15 @@ public final class ResetPasswordTenantOperationsListener extends AbstractTenantO
 
     public static final String ADMIN_CONTACT_USERNAME = "adminContactUsername";
     public static final String ADMIN_CONTACT_EMAIL = "adminContactEmail";
+
+    /**
+     * The shape of an email address, internationalized ones included (MOD-I273): a local part
+     * without spaces, control characters or @, then @ and a domain of two or more labels, in any
+     * script, at most 254 code points in all (the SMTP path limit)
+     */
+    private static final Pattern EMAIL_SHAPE =
+            Pattern.compile(
+                    "^(?=.{3,254}$)[^\\s\\p{Cc}@]+@[^\\s\\p{Cc}@.]+(\\.[^\\s\\p{Cc}@.]+)+$");
 
     private static final String TENANT_ADMIN_EMAIL_SENT = "tenant.admin.email.sent";
     private static final String UNABLE_TO_SEND_TENANT_ADMIN_EMAIL =
@@ -118,8 +127,9 @@ public final class ResetPasswordTenantOperationsListener extends AbstractTenantO
                 }
                 break;
             case ADMIN_CONTACT_EMAIL:
-                InternetAddress emailAddr = new InternetAddress(value);
-                emailAddr.validate();
+                if (value == null || !EMAIL_SHAPE.matcher(value).matches()) {
+                    throw new IllegalArgumentException("Invalid email address:  " + value);
+                }
                 break;
             default:
                 // No problem;  fall through
