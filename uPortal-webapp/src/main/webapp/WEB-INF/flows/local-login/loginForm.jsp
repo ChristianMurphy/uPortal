@@ -55,6 +55,9 @@
         </c:if>
 
         <form class="" role="form" action="${ loginUrl }" method="POST">
+          <c:if test="${ not empty refUrl }">
+            <input type="hidden" name="refUrl" value="${ fn:escapeXml(refUrl) }"/>
+          </c:if>
           <div class="row mb-3">
             <label class="col-form-label col-sm-4" for="${n}userName"><spring:message code="username"/></label>
             <div class="col-sm-8">
