@@ -81,7 +81,7 @@ public class EventProviderImpl implements EventProvider {
                 final Class clazz = value.getClass();
                 try {
                     currentThread.setContextClassLoader(this.portletClassLoader);
-                    final JAXBContext jc = JAXBContext.newInstance(clazz);
+                    final JAXBContext jc = this.newJaxbContext(clazz);
                     final Marshaller marshaller = jc.createMarshaller();
                     final JAXBElement<Serializable> element =
                             new JAXBElement<Serializable>(qname, clazz, value);
@@ -100,6 +100,40 @@ public class EventProviderImpl implements EventProvider {
             }
         }
         return null;
+    }
+
+    /**
+     * A JAXB context for an event payload class. JAXB finds its implementation through the thread's
+     * context class loader, which is the portlet application's here, so a portlet application that
+     * ships its own JAXB implementation keeps using it. Java 11 and later have no JAXB
+     * implementation of their own: when the portlet application has none either, the context comes
+     * from the implementation in uPortal's class loader.
+     */
+    private JAXBContext newJaxbContext(Class<?> clazz) throws JAXBException {
+        try {
+            return JAXBContext.newInstance(clazz);
+        } catch (JAXBException e) {
+            final Thread currentThread = Thread.currentThread();
+            final ClassLoader portletLoader = currentThread.getContextClassLoader();
+            final ClassLoader portalLoader = EventProviderImpl.class.getClassLoader();
+            if (portalLoader == null || portalLoader.equals(portletLoader)) {
+                throw e;
+            }
+            logger.debug(
+                    "No JAXB context for "
+                            + clazz.getName()
+                            + " from the portlet application's class loader; using uPortal's",
+                    e);
+            try {
+                currentThread.setContextClassLoader(portalLoader);
+                return JAXBContext.newInstance(clazz);
+            } catch (JAXBException retry) {
+                e.addSuppressed(retry);
+                throw e;
+            } finally {
+                currentThread.setContextClassLoader(portletLoader);
+            }
+        }
     }
 
     private boolean isDeclaredAsPublishingEvent(QName qname) {
