@@ -8,6 +8,7 @@ export const SELF_EDIT_ACCOUNT_MESSAGES = {
     edit: 'Edit',
     'edit.my.account': 'Edit My Account',
     'my.account.details': 'My Account Details',
+    username: 'Username',
     'current.password': 'Current Password',
     password: 'Password',
     'confirm.password': 'Confirm Password',
