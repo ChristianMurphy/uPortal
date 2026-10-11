@@ -1123,6 +1123,21 @@ This supersedes MOD-D24's runtime matrix.
   CI 38104024957, uPortal-start CI 38104005708 and Integration
   38104005683 (uPortal 9c996809b, uPortal-start 4bddf44a7).
 
+* **Status (2026-10-11, copy-tool strength tests):** in
+  `uPortal-db-migrate`, described in
+  `docs/developer/other/DB_COPY_TOOL_TESTING.md`. jqwik properties check
+  the load order, the conversions against the verification, the table
+  hash and the generator formula. Integration tests copy random values of
+  every column type between each pair of PostgreSQL 18, MariaDB 12.3 and
+  MySQL 9.7 (SQL Server 2025 and Oracle Free 23.26 nightly), take ids
+  from the copied generators, and inject faults: lost target, corrupted
+  rows, plans the target can't take. They found MOD-I160 to MOD-I164,
+  each fixed with a test that failed before the fix, and MOD-I109 on
+  their own. PIT, opt-in and nightly: the copy tool's core went from 55 %
+  to 65 % of mutants killed (94 % of the mutants some test covers), and
+  `JpaClusterLockDao` from 58 % to 75 %. The owner kept jqwik after its
+  notice to AI agents. Its output is filtered (MOD-I179). CI: DB copy tool
+  runs 38097849648 and 38106385464 (push), 38106391935 (all legs, by hand).
 * **Gap:** today's suites (124 Playwright tests in 24 specs, 244 unit-test
   classes, the DB harness on 7 databases, copy-tool row hashes) show the
   portal still works on the paths they click. They miss silent changes:
@@ -1650,7 +1665,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I136 | Tests | uPortal-start `npm run lint` fails on `tests/db/migrate/matrix.mjs` (8 `no-undef` errors for `console` and `process`): `eslint.config.js` declares globals for TypeScript files only. The linter runs in `./gradlew playwrightRun`, which no workflow calls. | Add Node globals for `*.mjs` in `eslint.config.js`. |
 | MOD-I137 | DB harness | **Found by the WS14 hsqldb harness run.** `dataInit` runs the import in a Spring context that also starts uPortal's scheduled event-aggregation jobs. On this loaded machine the context took 2 min 47 s to start, and the jobs ran after the tables existed. Before the snapshot they filled the date and time dimensions (365 and 1440 rows) and wrote rows to `UP_MUTEX` (4) and `UP_EVENT_AGGR_STATUS` (2). The harness reported these as DATA and GENERATORS drift. Faster runs (CI, the earlier local run) take the snapshot first. | Turn the aggregation jobs off in the import context, or snapshot right after the import ends. Harness owners (DB matrix). |
 | MOD-I160 | Copy tool | **Found by the copy tool's property tests (MOD-D29).** The load order breaks a foreign-key cycle one nullable key per round, but stopped after as many rounds as there are tables. A pair of tables that reference each other through three nullable keys each was refused as an unbreakable cycle, a plan error for a schema that loads. | **Fixed** (b09875d19): the bound is the number of keys. `LoadOrderProperties` checks random graphs of up to 12 tables. |
-| MOD-I161 | Copy tool | **Found by the copy tool's property tests.** Fractional-second digits came from the driver's display size on MySQL and MariaDB, and MariaDB Connector/J sizes TIME(0) as 10 characters, read as TIME(1). HSQLDB reports no DECIMAL_DIGITS for TIMESTAMP(0), which the tool read as 6 digits, so a copy into it was not reported as truncating. | **Fixed** (2e2276a3e): `information_schema.COLUMNS.DATETIME_PRECISION` on MySQL and MariaDB. The display size is the fallback on every vendor. |
+| MOD-I161 | Copy tool | **Found by the copy tool's property tests.** Fractional-second digits came from the driver's display size on MySQL and MariaDB, and MariaDB Connector/J sizes TIME(0) as 10 characters, read as TIME(1): a PostgreSQL to MariaDB copy with a TIME column failed verification. HSQLDB reports no DECIMAL_DIGITS for TIMESTAMP(0), which the tool read as 6 digits, so a copy into it was not reported as truncating. | **Fixed** (2e2276a3e): `information_schema.COLUMNS.DATETIME_PRECISION` on MySQL and MariaDB. The display size is the fallback on every vendor. |
 | MOD-I162 | Copy tool | **Found by the copy tool's property tests.** `lob-oid` rules counted only from the schema profiles. A rule given with `--rules`, which the plan error for an undeclared OID column asks for, had no effect: from a PostgreSQL source the plan error came back, and into a PostgreSQL target the text went into the column instead of a large object. | **Fixed** (3487db560): a rule from `--rules` now applies to the source column, and to the target column under the source or the target table's name. |
 | MOD-I163 | Copy tool | **Found by the copy tool's property tests**, which require every conversion that changes a value to be reported. The plan's notes (fewer fractional digits, MOD-I95; SQL Server's 1/300 s) reached only the JSON report, and two conversions had no note at all: '' into Oracle (stored as NULL) and DECIMAL into a binary double (about 15 digits). | **Fixed** (ce2133d0d, 137053530): the console summary lists the notes, and both conversions have one. |
 | MOD-I164 | Copy tool | **Found by the fault-injection tests.** A target NOT NULL, length, unique or foreign key that the source rows violate failed the copy half-way with status 1, after the earlier levels and part of the table were committed, although status 2 promises a refused plan with nothing written. | **Fixed** (7691dadc3): the plan counts the violating source rows for each target constraint the source does not declare, and refuses with status 2. Lengths in bytes, collation-only duplicates and CHECK constraints are still found by the copy. |

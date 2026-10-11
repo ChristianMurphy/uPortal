@@ -102,14 +102,15 @@ source:
 | A missing target table (MOD-I92), an unexpected source column, a target NOT NULL column nothing fills | exit 2, nothing written |
 | A target NOT NULL, length, unique key or foreign key the source rows violate | exit 2, nothing written |
 
-The four faults that hit a running copy hold the copy first. A second
-session inserts one of the source's keys (`COUNTER_15000`) into the target
-and leaves it uncommitted, so the copy waits on that key's unique index
-with thousands of rows already committed. The test injects the fault once
-the server reports the copy waiting for that lock, then rolls the row
-back. So the fault always reaches a running copy, however fast the copy
-or slow the machine. `-PdbMigrateRepeat=N` runs each fault test N times
-per server.
+Before a lost-target fault, the test stops the copy at a known row. A
+second session inserts one of the source's keys (`COUNTER_15000`) into the
+target and leaves it uncommitted. The copy then waits on that key's unique
+index, with thousands of rows already committed. The test injects the
+fault once the server's lock views show the copy waiting, or once five
+seconds pass without a new committed row, and then rolls the row back.
+The copy is still running when the fault comes, however fast the copy or
+slow the machine. `-PdbMigrateRepeat=N` runs each fault test N times per
+server.
 
 #### After a failed copy
 
@@ -128,8 +129,8 @@ again.
 
 [PIT](https://pitest.org) changes the compiled code one small mutation at a
 time (a flipped condition, a removed call, a changed constant) and runs the
-tests against each mutant. A mutant that survives with every test passing
-shows code whose behaviour the tests don't pin down.
+tests against each mutant. When every test still passes with a mutant in
+place, the tests don't pin down that piece of code.
 
 ```sh
 ./gradlew :uPortal-db-migrate:pitest   # planning, load order, conversions, verification, generators
@@ -175,4 +176,22 @@ counts differently from run to run. `-PpitestThreshold=N` and
 
 ### JpaClusterLockDao
 
-Not measured yet.
+PIT mutates `JpaClusterLockDao` (MOD-I82, MOD-I99) and runs
+`JpaClusterLockDaoTest` and `JpaClusterLockDaoSnapshotIsolationTest` on
+HSQLDB.
+
+| | Mutants | Killed | No coverage | Score | Line coverage |
+| --- | --- | --- | --- | --- | --- |
+| The existing tests | 52 | 30 | 10 | 58 % | 74 % |
+| With three new tests | 52 | 39 | 1 | 75 % | 89 % |
+
+`JpaClusterLockDaoTest` ignores its takeover tests as nondeterministic.
+Nothing ran the update and the takeover of an abandoned lock, and no test
+failed without the READ COMMITTED isolation of MOD-I99, since HSQLDB reads
+committed rows anyway. The new tests give a
+DAO of their own an abandoned-lock age of 1 ms or one hour, so a lock is
+taken over or kept without timing races, and check the transaction the
+DAO asks for with a mock transaction manager. The survivors left remove
+`persist` and `flush` calls on entities the session already manages,
+which matters only when two servers race, or change the `<` boundary of
+a millisecond clock. The run fails below 70 %.
