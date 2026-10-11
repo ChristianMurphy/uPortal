@@ -52,6 +52,26 @@
         <property name="rejectedExecutionHandler" ref="loggingAbortHandler" />
     </bean>
 
+    <!--
+     | Flushes the portal event queue to the database from the moment uPortal starts. The
+     | aggregator reads only events newer than the last one it aggregated, so on a cluster an event
+     | stored after another node's aggregator passed its time is never aggregated: the flush must
+     | not wait for the other tasks' initial delay.
+     +-->
+    <bean id="uPortalEventFlushScheduler" class="org.apereo.portal.utils.threading.DelegatingThreadPoolTaskScheduler">
+        <property name="initialDelay" value="${org.apereo.portal.events.handlers.db.PortalEventDaoQueuingEventHandler.flushInitialDelay:PT0S}" />
+        <property name="executorService" ref="uPortalTaskExecutor" />
+        <property name="poolSize" value="1" />
+        <property name="threadGroupName" value="uP-EventFlushTG" />
+        <property name="threadNamePrefix" value="uP-EventFlush-" />
+        <property name="daemon" value="true" />
+        <property name="rejectedExecutionHandler" ref="loggingAbortHandler" />
+    </bean>
+
+    <task:scheduled-tasks scheduler="uPortalEventFlushScheduler">
+        <task:scheduled ref="portalEventDaoQueuingEventHandler" method="flush" fixed-delay="997"/> <!-- ~1 second period -->
+    </task:scheduled-tasks>
+
     <task:scheduled-tasks scheduler="uPortalTaskScheduler">
         <!--
          | Prime numbers are used so that executions will be distributed over time. Use this site for
@@ -60,7 +80,6 @@
          +-->
 
         <!-- local tasks -->
-        <task:scheduled ref="portalEventDaoQueuingEventHandler" method="flush" fixed-delay="997"/> <!-- ~1 second period -->
         <task:scheduled ref="cacheManagerExpiredElementEvictor" method="evictExpiredElements" fixed-delay="61900"/> <!-- ~1 minute period -->
         <task:scheduled ref="cacheHealthReporterService" method="generateReports" fixed-delay="60013"/> <!-- ~1 minute period -->
         <task:scheduled ref="portalSearchIndexer" method="updateIndex" fixed-delay="${org.apereo.portal.index.portalSearchIndexer.updateIndexPeriod:58001}"/> <!-- ~1 minute period -->
