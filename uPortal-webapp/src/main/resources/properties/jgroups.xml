@@ -93,4 +93,7 @@
     />
     <FRAG2 frag_size="60K" />
     <pbcast.STATE_TRANSFER />
+    <!-- Reports each MergeView, when the two sides of a split join again, to
+         org.apereo.portal.utils.cache.MergeViewCacheClearer, which empties the caches -->
+    <org.apereo.portal.utils.cache.MergeViewNotifier />
 </config>

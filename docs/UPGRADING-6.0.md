@@ -646,12 +646,24 @@ row, and the restarted server then starts at once.
 **Caches are emptied when a split heals.** Servers split by the network, or by a server that
 failed to join, drop each other's cache invalidations. JGroups doesn't resend them when the two
 sides merge again, and in uPortal 5 an entry read during the split kept its old value until it
-expired. In 6.0 each server empties every cache that has a JGroups replicator in `ehcache.xml`
-when JGroups installs a MergeView, and logs one INFO line from `ReplicatedCachesMergeClearer`
-with the view and the number of caches. The servers then read those entries again from the
-database, which costs a short burst of load right after the heal. A plain view change, such as a
-server joining or leaving, clears nothing. The setting
-`org.apereo.portal.cache.clearReplicatedCachesOnMerge` (default `true`) switches it off.
+expired. In 6.0 the JGroups stack in `jgroups.xml` ends with a protocol that reports each
+MergeView, and `MergeViewCacheClearer` then empties the caches and logs one INFO line with the
+view and the number of caches. It leaves alone the caches that store the only copy of something,
+such as lock objects and CAS tickets (`excludedCacheNames` in `cacheContext.xml`). The servers read the entries again from
+the database, which costs a short burst of load right after the heal. A plain view change, such as
+a server joining or leaving, clears nothing.
+
+A portal with its own `jgroups.xml` must add this line as the last protocol, after
+`pbcast.STATE_TRANSFER`:
+
+```xml
+<org.apereo.portal.utils.cache.MergeViewNotifier />
+```
+
+Without it, the servers don't empty their caches after a heal, and an entry read during a split
+keeps its old value until it expires (6 hours for portlet definitions), as in uPortal 5. At start
+uPortal logs at INFO when no JGroups stack has the protocol. The setting
+`org.apereo.portal.cache.clearCachesOnMerge` (default `true`) switches the clear off.
 
 ## Deep links and failed logins with local login
 
