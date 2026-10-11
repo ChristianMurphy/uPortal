@@ -21,6 +21,9 @@ import org.springframework.binding.message.MessageContext;
 /** GroupFormValidator validates GroupForm objects in the group editing Spring Web Flow. */
 public class GroupFormValidator {
 
+    /** UP_GROUP.GROUP_NAME and UP_GROUP.DESCRIPTION hold 255 characters (MOD-I272) */
+    private static final int MAX_LENGTH = 255;
+
     /**
      * Validate the detail editing group view
      *
@@ -33,6 +36,21 @@ public class GroupFormValidator {
         if (StringUtils.isBlank(group.getName())) {
             context.addMessage(
                     new MessageBuilder().error().source("name").code("please.enter.name").build());
+        }
+        checkLength(group.getName(), "name", context);
+        checkLength(group.getDescription(), "description", context);
+    }
+
+    /** Adds an error when {@code value} has more characters (code points) than its column holds */
+    private static void checkLength(String value, String source, MessageContext context) {
+        if (value != null && value.codePointCount(0, value.length()) > MAX_LENGTH) {
+            context.addMessage(
+                    new MessageBuilder()
+                            .error()
+                            .source(source)
+                            .code("field.too.long")
+                            .arg(MAX_LENGTH)
+                            .build());
         }
     }
 }
