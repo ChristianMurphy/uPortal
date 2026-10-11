@@ -366,8 +366,10 @@ research report.
     `--release 11`, compiled with `-parameters`.
   * `maven-publish` with an `install` alias. `jcenter` dropped.
   * Spotless 8.10.4 + gjf 1.36.1 (1.37.0 fails inside Spotless) with
-    `verGJF`/`goJF` aliases. The reformat touched 409 files and is listed
-    in `.git-blame-ignore-revs`.
+    `verGJF`/`goJF` aliases. The reformat (`246b5e05f`, 409 files) ran
+    with gjf 1.24.0, the newest release that runs on JDK 11. 1.36.1 gives
+    the same output, and moving to it (`9dc3ca7ad`) didn't change any
+    file. The reformat is listed in `.git-blame-ignore-revs`.
   * Error Prone 2.50.0, SpotBugs plugin 6.5.12, JaCoCo 0.8.15, CodeNarc
     groovy-4 build, nebula.lint 21.3.0.
   * Mockito 5.24.0 loaded as a javaagent. Groovy 4.0.33 + Spock 2.4.
