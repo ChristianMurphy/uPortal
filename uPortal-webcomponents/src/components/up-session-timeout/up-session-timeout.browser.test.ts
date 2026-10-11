@@ -5,13 +5,13 @@ import { axeViolations } from '../../test-support/axe';
 import { FetchStub, json, text } from '../../test-support/fetch-stub';
 import { ManualClock } from '../../test-support/manual-clock';
 import { SESSION_TIMEOUT_MESSAGES } from './messages';
-import { KEEP_ALIVE_PATH, SESSION_PATH } from './session-api';
 import { LOGOUT_TIME_KEY, type LogoutTimeStore } from './session-clock';
 import './up-session-timeout';
 import type { UpSessionTimeout } from './up-session-timeout';
 
-const SESSION = `/uPortal${SESSION_PATH}`;
-const KEEP_ALIVE = `/uPortal${KEEP_ALIVE_PATH}`;
+// Literal paths: the tests pin the REST API's URLs instead of reusing the component's constants
+const SESSION = '/uPortal/api/v6-0/session';
+const KEEP_ALIVE = '/uPortal/api/v6-0/session/keep-alive';
 const ATTRIBUTES =
     'locale="en-US" window-state="normal" context-path="/uPortal" fname="session-timeout"' +
     ' csrf-header="X-CSRF-TOKEN" csrf-token="token-1"';
