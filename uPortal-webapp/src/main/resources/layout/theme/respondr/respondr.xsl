@@ -166,6 +166,8 @@
  | Localization Settings can be used to change the localization of the theme.
  -->
 <xsl:param name="USER_LANG">en</xsl:param>
+<!-- The direction of USER_LANG's text: rtl or ltr (LocaleTransformerConfigurationSource) -->
+<xsl:param name="USER_DIR">ltr</xsl:param>
 <!-- ======================================== -->
 
 
@@ -639,7 +641,7 @@
  | be any valid XSL or XHTML.
  -->
 <xsl:template name="document.normal">
-    <html lang="{$USER_LANG}" class="respondr">
+    <html lang="{$USER_LANG}" dir="{$USER_DIR}" class="respondr">
         <head>
             <chunk-point/> <!-- Performance Optimization, see ChunkPointPlaceholderEventSource -->
             <xsl:call-template name="page.title" />
@@ -786,7 +788,7 @@
  | This template displays one portlet at a time in detached window state.
  -->
 <xsl:template name="document.detached">
-  <html lang="{$USER_LANG}" class="respondr">
+  <html lang="{$USER_LANG}" dir="{$USER_DIR}" class="respondr">
     <head>
         <xsl:call-template name="page.title" />
         <xsl:call-template name="page.meta" />
