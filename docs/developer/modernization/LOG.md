@@ -1718,8 +1718,13 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
      This also stops "Create a User" from overwriting an existing account (MOD-I195).
   2. Self-Edit Account asks for the current password before a change.
   3. Forgot Password gives the same answer for known and unknown user names.
-  4. Password reset links expire (default one hour, as a property), and the page says when the
-     email couldn't be sent.
+  4. Password reset links expire (default one hour, as a property).
+* **Resolved conflict (coordinator, 2026-10-11):** fixes 3 and 4 first asked for the page to say
+  when the email couldn't be sent. For an unknown user name nothing is sent, so a "could not be
+  sent" page would show that an account exists. Known and unknown user names get the same neutral page ("if that
+  user name has a local account with an email address, reset instructions were sent; contact the
+  help desk if nothing arrives"), and a failed send is logged at ERROR for administrators,
+  without the token.
 * **Found by:** the Self-Edit Account characterisation specs.
 
 ### MOD-D46: Self-Edit Account and Reset My Layout are web components
