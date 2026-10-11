@@ -175,6 +175,9 @@
  | Portal Settings should generally not be (and not need to be) modified.
  -->
 <xsl:param name="AUTHENTICATED" select="'false'"/>
+<!-- The session's CSRF token, for the page's scripts:  see up.csrfHeaders() in modern-util.js -->
+<xsl:param name="CSRF_TOKEN"></xsl:param>
+<xsl:param name="CSRF_HEADER">X-CSRF-TOKEN</xsl:param>
 <xsl:param name="PORTAL_PROTOCOL_AND_SERVER"></xsl:param>
 <xsl:param name="HOST_NAME"></xsl:param>
 <xsl:param name="USER_ID">guest</xsl:param>
@@ -256,6 +259,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="description" content="{upMsg:getMessage('portal.page.meta.description', $USER_LANG)}" />
     <meta name="keywords" content="{upMsg:getMessage('portal.page.meta.keywords', $USER_LANG)}" />
+    <xsl:if test="$CSRF_TOKEN != ''">
+        <meta name="_csrf" content="{$CSRF_TOKEN}" />
+        <meta name="_csrf_header" content="{$CSRF_HEADER}" />
+    </xsl:if>
 </xsl:template>
 <!-- ========================================================================= -->
 
