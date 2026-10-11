@@ -18,7 +18,7 @@ These override any instinct to "be helpful by doing more."
 - **Spring 4.3.30** (XML + annotation DI, no Spring Boot), **Hibernate 4.3.11** with JPA
 - **Portlet API 2.1** (JSR-286); **Soffit** REST alternative
 - **JUnit 4.13.2 + Mockito 5.24.0** (NOT JUnit 5); **Groovy 4.0** + Spock 2.4 for the Groovy tests in uPortal-webapp (the runtime Groovy shipped in the war stays 3.0)
-- **JavaScript ES2021 + jQuery** (no React/Vue), **LESS** + **Bootstrap 3.4.1**, **Node 20.15.1** for linting only
+- **JavaScript ES2021 + jQuery** (no React/Vue), **SCSS** + **Bootstrap 5.3.8** (webjar; one deprecated `common.less` remains), **Node 20.15.1** for linting only
 - **XSLT** rendering pipeline (calls Java extension functions, so JDK 24+ needs `-Djdk.xml.enableExtensionFunctions=true`); **CAS 3.6.2** SSO, **LDAP/Grouper** groups; **HSQLDB** dev / RDBMS prod
 - **AOSP Java style** via google-java-format 1.36.1 (driven by Spotless 8.10.4); Error Prone 2.50 at compile time
 
@@ -53,7 +53,7 @@ End-to-end Playwright tests (TypeScript) also live in uPortal-start under `tests
 ./gradlew codenarcMain codenarcTest           # Groovy static analysis
 ./gradlew spotbugsMain                        # SpotBugs + FindSecBugs; fails on findings not in config/spotbugs/baseline/
 npx eslint . --report-unused-disable-directives --max-warnings 0   # lint JS; npm run format-js to fix
-npm run lint-less                             # lint LESS
+npm run lint-scss                             # lint SCSS
 npx remark -f *.md docs/**                    # lint Markdown
 .github/scripts/check-commit-messages.sh origin/master..HEAD  # check commit subjects (CI runs it)
 .github/scripts/vale.sh commits origin/master..HEAD  # check commit messages for AI writing tells (CI runs it)
@@ -74,7 +74,7 @@ uPortal-groups/           # Group providers (LDAP, Grouper, PAGS, filesystem)
 uPortal-events/           # Event/analytics tracking
 uPortal-io/               # Import/export (JAXB, XML)
 uPortal-spring/  uPortal-hibernate/           # Spring + Hibernate integration
-uPortal-webapp/           # WAR assembly, JSP, LESS, JS, config properties
+uPortal-webapp/           # WAR assembly, JSP, SCSS, JS, config properties
   src/main/resources/properties/portal.properties, security.properties, i18n/Messages.properties
 docs/                     # Markdown/Jekyll;  .github/workflows/CI.yml
 ```
@@ -103,7 +103,7 @@ Key config files: `portal.properties` (overridable via `${portal.home}/uPortal.p
 - **Null safety:** JSpecify, as in Spring 7. In a `@NullMarked` package or class (`org.jspecify.annotations`) everything is non-null unless annotated `@Nullable` (type-use: `public @Nullable String find()`); NullAway fails the compile on violations there. Mark new packages `@NullMarked`; fix findings with `@Nullable` or null handling, never suppress. See `docs/developer/other/STATIC_ANALYSIS.md`.
 - **Tests:** JUnit 4 + Mockito — `@Before`/`@Test`, `@Mock`/`@InjectMocks`, `MockitoAnnotations.initMocks(this)`. Static-import `org.junit.Assert.*` and `org.mockito.Mockito.*`.
 - **JavaScript:** Prettier (single quotes, 4-space indent, ES5 trailing commas). Globals: `jQuery`, `$`, `_`, `up`, `fluid`.
-- **LESS:** 2-space indent, Prettier via stylelint-prettier.
+- **SCSS:** 2-space indent, Prettier via stylelint-prettier.
 - **Gradle:** all versions in `gradle.properties` as named vars — never hardcode in `build.gradle`.
 - **Git:** branch `GH-{issue}` off `master`. [Conventional Commits](https://www.conventionalcommits.org/): `feat(security): add LDAP group caching`. Subject imperative, lowercase, no period, ≤72 chars. Reference the issue in the footer (`Closes GH-42` / `Refs GH-42`). Breaking changes: `!` after type or `BREAKING CHANGE:` footer.
 
