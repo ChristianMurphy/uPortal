@@ -60,6 +60,9 @@ tasks.register('vpTest', NpmTask) {
     dependsOn tasks.named('npmInstall')
     args = ['run', 'test']
     inputs.files(workspaceInputs).withPathSensitivity(PathSensitivity.RELATIVE)
+    // src/lib/translations.unit.test.ts checks the components' keys in these bundles (MOD-D50)
+    inputs.dir(project(':uPortal-webapp').file('src/main/resources/properties/i18n'))
+            .withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.dir(layout.buildDirectory.dir('coverage'))
 }
 
