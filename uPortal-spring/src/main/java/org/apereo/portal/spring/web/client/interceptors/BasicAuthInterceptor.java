@@ -15,6 +15,7 @@
 package org.apereo.portal.spring.web.client.interceptors;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,7 +78,7 @@ public class BasicAuthInterceptor implements ClientHttpRequestInterceptor {
                                 + ".password\" must be set.");
 
                 String auth = username + ":" + password;
-                authCode = new String(Base64.encodeBase64(auth.getBytes()));
+                authCode = new String(Base64.encodeBase64(auth.getBytes(StandardCharsets.UTF_8)));
             }
 
             authHeader = "Basic " + authCode;

@@ -17,6 +17,7 @@ package org.apereo.portal.spring.security;
 import com.google.common.collect.Iterators;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
@@ -47,7 +48,8 @@ public class RemoteUserSettingFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         final String remoteUser =
-                StringUtils.trimToNull(FileUtils.readFileToString(this.remoteUserFile));
+                StringUtils.trimToNull(
+                        FileUtils.readFileToString(this.remoteUserFile, StandardCharsets.UTF_8));
 
         if (remoteUser != null) {
             request =

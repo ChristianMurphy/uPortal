@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -583,7 +584,8 @@ public class JaxbPortalDataHandlerService implements IPortalDataHandlerService {
         try {
             reportWriter =
                     new PrintWriter(
-                            new PeriodicFlushingBufferedWriter(500, new FileWriter(importReport)));
+                            new PeriodicFlushingBufferedWriter(
+                                    500, new FileWriter(importReport, StandardCharsets.UTF_8)));
         } catch (IOException e) {
             throw new RuntimeException("Failed to create FileWriter for: " + importReport, e);
         }
@@ -1017,7 +1019,10 @@ public class JaxbPortalDataHandlerService implements IPortalDataHandlerService {
         final File exportReport = new File(logDirectory, "data-export.txt");
         final PrintWriter reportWriter;
         try {
-            reportWriter = new PrintWriter(new BufferedWriter(new FileWriter(exportReport)));
+            reportWriter =
+                    new PrintWriter(
+                            new BufferedWriter(
+                                    new FileWriter(exportReport, StandardCharsets.UTF_8)));
         } catch (IOException e) {
             throw new RuntimeException("Failed to create FileWriter for: " + exportReport, e);
         }
@@ -1193,7 +1198,10 @@ public class JaxbPortalDataHandlerService implements IPortalDataHandlerService {
                                                 + ".txt");
                         final File dataReportFile = new File(reportDirectory, dataReportName);
                         final PrintWriter dataReportWriter =
-                                new PrintWriter(new BufferedWriter(new FileWriter(dataReportFile)));
+                                new PrintWriter(
+                                        new BufferedWriter(
+                                                new FileWriter(
+                                                        dataReportFile, StandardCharsets.UTF_8)));
                         try {
                             dataReportWriter.println(
                                     "FAIL: "

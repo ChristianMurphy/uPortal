@@ -54,6 +54,21 @@ public class BasicAuthInterceptorTest {
         doInterceptorTest(resolver, id, "dGVzdDp0ZXN0");
     }
 
+    /** Credentials are sent as UTF-8 whatever the JVM's default charset (MOD-I275) */
+    @Test
+    public void testInterceptorWithNonAsciiPassword() throws Exception {
+        final String id = "test";
+
+        PropertyResolver resolver = mock(PropertyResolver.class);
+        when(resolver.getProperty(eq("org.jasig.rest.interceptor.basic-auth." + id + ".username")))
+                .thenReturn("José");
+        when(resolver.getProperty(eq("org.jasig.rest.interceptor.basic-auth." + id + ".password")))
+                .thenReturn("pässwörd");
+
+        // base64 of the UTF-8 bytes of "José:pässwörd"
+        doInterceptorTest(resolver, id, "Sm9zw6k6cMOkc3N3w7ZyZA==");
+    }
+
     @Test
     public void testInterceptorWithAuthCode() throws Exception {
         final String id = "test";
