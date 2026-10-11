@@ -22,16 +22,27 @@ import org.jspecify.annotations.Nullable;
 public final class UserLocale {
 
     private final @Nullable String selected;
+    private final @Nullable String current;
     private final List<LocaleOption> locales;
 
-    public UserLocale(@Nullable String selected, List<LocaleOption> locales) {
+    public UserLocale(
+            @Nullable String selected, @Nullable String current, List<LocaleOption> locales) {
         this.selected = selected;
+        this.current = current;
         this.locales = Collections.unmodifiableList(locales);
     }
 
     /** The code of the user's chosen locale, or null when the user has not chosen one. */
     public @Nullable String getSelected() {
         return selected;
+    }
+
+    /**
+     * The code of the portal locale the page is rendered in: the chosen one, else the first of
+     * {@code portal_locales}. Null only when the portal offers no locales.
+     */
+    public @Nullable String getCurrent() {
+        return current;
     }
 
     /** The portal's locales, in the order of {@code portal_locales}. */
