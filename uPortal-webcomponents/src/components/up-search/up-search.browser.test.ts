@@ -478,6 +478,34 @@ describe('up-search states', () => {
         expect(shadow(element).querySelectorAll('dl')).toHaveLength(1);
     });
 
+    it('names a remote provider tab by its label and shows its failure in the tab only', async () => {
+        server.on(
+            'GET',
+            SEARCH_API,
+            json({
+                query: 'x',
+                groups: [
+                    { type: 'people', label: null, results: [STEVEN], failed: false },
+                    { type: 'web', label: 'Campus web', results: [], failed: true },
+                ],
+            }),
+        );
+        const element = await renderSearch(`${ATTRIBUTES} query="x"`);
+        const locator = page.elementLocator(element);
+
+        expect(shadow(element).querySelector('h3')?.textContent?.trim()).toBe('Steven Student');
+        await userEvent.click(locator.getByRole('tab', { name: 'Campus web' }));
+
+        await expect
+            .poll(
+                () =>
+                    shadow(element).querySelector('[role="tabpanel"] [role="alert"] p')
+                        ?.textContent,
+            )
+            .toBe('These results could not be loaded. The other results are complete.');
+        expect(await axeViolations(element)).toEqual([]);
+    });
+
     it('names other result types after the type', async () => {
         server.on(
             'GET',

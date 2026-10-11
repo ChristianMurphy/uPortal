@@ -53,7 +53,8 @@ export function startCase(type: string): string {
  *
  * The query comes from the `query` attribute, else from the page URL's `query` parameter, which
  * `<up-search-launcher>` sets. A search from the element's own box runs in place and updates that
- * parameter. Each result shows its title, linked when it opens something (a portlet, maximized),
+ * parameter. A result type whose search failed (a remote provider that did not answer, say) shows
+ * an error in its own tab. Each result shows its title, linked when it opens something (a portlet, maximized),
  * and the attributes the Search portlet showed (net ID, names, email, phone, name, description,
  * relevance).
  *
@@ -260,7 +261,7 @@ export class UpSearch extends UpElement {
                                 this.#select(candidate.type);
                             }}
                         >
-                            ${this.#groupLabel(candidate.type)}
+                            ${candidate.label ?? this.#groupLabel(candidate.type)}
                         </button>`;
                     },
                 )}
@@ -271,6 +272,11 @@ export class UpSearch extends UpElement {
     }
 
     #renderGroup(group: SearchResultGroup): TemplateResult {
+        if (group.failed) {
+            return html`<div class="alert theme-warning group-failed" role="alert">
+                <p>${this.msg('search.group.fail')}</p>
+            </div>`;
+        }
         if (group.results.length === 0) {
             return this.#renderNoResults();
         }

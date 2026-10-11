@@ -30,9 +30,11 @@ const ATTRIBUTES =
 const FOUND: SearchResults = {
     query: 'cal',
     groups: [
-        { type: 'people', results: [] },
+        { type: 'people', label: null, results: [], failed: false },
         {
             type: 'portlets',
+            label: null,
+            failed: false,
             results: [
                 {
                     title: 'Calendar',
