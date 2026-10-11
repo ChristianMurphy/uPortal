@@ -190,13 +190,42 @@ local time in the JVM zone's spring gap moves by an hour. 6.0 has no in-place up
 
 ### Follow-ups
 
-- **Waiting for uPortal-start access:** pass `--source-zone` in G-migrate and the equivalence
-  jobs, then switch the tool's default target profile to 6.0 in a uPortal commit that lands
-  together with that harness change.
+- **uPortal-start side (owner, 2026-10-11):** the end-to-end agent makes it after this branch
+  lands. The coordinator hands over the section "Handover: MOD-I141 in uPortal-start" below.
 - **6.0 schema step (with Hibernate 7):** `dataInit` and the copy tool write a marker (a row in
   `UP_VERSIONS`), and a 6.0 portal refuses to start on a database without the marker whose
   converted columns hold values. The message gives the copy command. There is no override
   property, since starting would read wrong times.
+
+### Handover: MOD-I141 in uPortal-start
+
+For the end-to-end agent, once this branch is on `ccr-43ba0785-hzlrj5`:
+
+1. Every uPortal-start job that copies a 5.17 database into a 6.0 one passes two options to the
+   copy tool (uPortal's `db-migrate`, run by `./gradlew dbMigrate -PsourceDbVendor=...
+   -PtargetDbVendor=...`):
+   - `--target-profile 6.0`
+   - `--source-zone <zone>`, where `<zone>` is the IANA id of the time zone the 5.17 portal's JVM
+     ran in when it wrote the source database (its `user.timezone`, else the container's zone).
+     In a CI container without a zone setting that is `UTC`.
+
+   Change G-migrate (the 5.17 to 6.0 copy on every vendor) and the migration-equivalence jobs, and
+   check the other callers of `dbMigrate` too.
+2. Without `--source-zone`, a copy with `--target-profile 6.0` stops with exit 2 and writes
+   nothing when any of the seven converted columns holds a value, and lists the columns that do.
+   They are `UP_PORTLET_LIFECYCLE.ENTRY_DATE`, `UP_MUTEX.LOCK_START`, `LOCK_UPDATE`,
+   `LOCK_END`, `UP_PERSON_DIR.LST_PSWD_CGH_DT`, `UP_PORTLET_LIST.CREATED_ON` and `UPDATED_ON`. A
+   `--source-zone` without `--target-profile 6.0` also stops with exit 2.
+3. Expected data differences in the equivalence check: those seven columns hold UTC clock time in
+   the 6.0 database, shifted from the 5.17 values by the source zone's offset. With
+   `--source-zone UTC` they are equal. Every other column copies unchanged.
+4. When the harness passes both options everywhere, switch the tool's default target profile
+   from 5.17 to 6.0 in uPortal (`MigrationOptions.targetProfile` and the `--target-profile` line
+   of `DbMigrateCli.USAGE`). That uPortal commit lands with the uPortal-start change. A job that
+   copies between two 5.17 databases then passes `--target-profile 5.17`.
+5. The in-place harness legs start intermediate builds on 5.17 databases on purpose and need no
+   change: 6.0 has no in-place upgrade path (MOD-D11). The 6.0 schema step adds the marker and the
+   start check (see the table above).
 
 ### Proposed LOG text
 
