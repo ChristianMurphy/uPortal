@@ -791,6 +791,7 @@
                         position: ''
                     },
                     type: 'POST',
+                    headers: up.csrfHeaders(),
                     dataType: 'json'
                 });
 
