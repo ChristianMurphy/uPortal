@@ -52,11 +52,10 @@ G-index in uPortal-start). Integration builds the uPortal branch of the same nam
 
 1. Characterisation spec green against the portlet (Integration on uPortal-start `7bacc1dee`,
    run 38115662860).
-2. Waiting on the coordinator: search analytics. `SearchRequestAggregator` counts portlet action
-   events for fname `search` with a `query` parameter, which only the portlet produced, so the
-   Activity portlet's popular searches stop counting new searches. Proposed: a new portal event
-   that `/api/v6-0/search` publishes for searches the user submits, counted by the same
-   aggregator.
+2. Search analytics (coordinator's option a): `/api/v6-0/search?submitted=true` publishes a
+   `SearchRequestEvent`; `SearchRequestAggregator` counts it and the stored 5.17 portlet action
+   events (`SearchRequestAggregatorTest` reads both from stored JSON). The aggregation golden
+   doesn't change: its event stream has no search events.
 3. Push the channel switch; the same spec must pass against the components, with the new specs.
 4. The harness: the intended changes are `UP_PORTLET_DEF_PARAM +7`, `UP_PORTLET_PREF -8` and
    `UP_PORTLET_PREF_VALUES -8` (the last two estimated: eight preferences with one value each).
@@ -84,7 +83,25 @@ To be filled in from the CI runs.
   keep the event mode as a portlet (it needs the portlet container, which 6.0 keeps only for
   bundled and adopters' portlets), or give `IPortalSearchService` a servlet-request variant (keeps
   the GSA and CSE code, still loses portlet-event results).
-* Issue: removing the portlet stops search analytics (`SearchRequestAggregator` counts the
-  portlet's action events). Fix proposed to the coordinator, see "Next steps".
+* Decision (search statistics, coordinator): `SearchRequestEvent(searchTerms)`, published by
+  `/api/v6-0/search` for searches the components submit (`submitted=true`), counted by
+  `SearchRequestAggregator` with the 5.17 action events of the `search` portlet. The aggregation
+  tables don't change. Alternatives: a synthetic portlet action event (needs a portlet window
+  for a channel that is no longer a portlet), or no statistics.
+* Removals (for the LOG): `uPortal-api-search` and `portal-search-4.0.xsd`, the Search portlet
+  and its JSPs and Spring context, `IPortalSearchService`, `PortalSearchResults`, the GSA,
+  Google CSE, portlet registry and marketplace search services, the search event definitions and
+  global event, the Directory portlet's search event handler, `portletUrl.tld` and
+  `PortletUtils.getStringFromPortletUrl`, `autosuggestHandler.js` and its CSS. UPGRADING-6.0
+  lists each with its replacement.
+* Finding: the Search portlet's header button had no accessible name (the skin hides its
+  "Search" text and leaves an icon). The components' button is named "Search" (message
+  `search.submit`), and a browser test checks it.
+* Finding: axe in the model test sometimes measured a tab's color halfway through Bootstrap's
+  color transition and reported a contrast failure. `axeViolations` now waits for running
+  animations.
+* Leftover: the Respondr skin still styles `#webSearchContainer` and `#webSearchSubmit`
+  (`header.scss`, `search.scss`), which nothing renders now. They go with the skin migration
+  (MOD-D21).
 * Open question: the import upgrader and copy-tool rule for converting Search definitions belong
   with MOD-I133 (the same gap as Favorites).
