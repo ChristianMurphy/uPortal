@@ -15,6 +15,7 @@
 package org.apereo.portal.rest.search.v6;
 
 import com.fasterxml.jackson.core.JsonPointer;
+import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -80,6 +81,13 @@ public final class RemoteJsonSearchSettings {
         if (!urlTemplate.contains(QUERY_PLACEHOLDER)) {
             throw new IllegalArgumentException(
                     "Remote search provider " + name + ": url has no " + QUERY_PLACEHOLDER);
+        }
+        try {
+            URI.create(urlTemplate.replace(QUERY_PLACEHOLDER, "q"));
+        } catch (IllegalArgumentException e) {
+            // Without the URL: it can hold an API key
+            throw new IllegalArgumentException(
+                    "Remote search provider " + name + ": url is not a valid URL");
         }
         for (String pointer :
                 new String[] {resultsPointer, titlePointer, linkPointer, descriptionPointer}) {

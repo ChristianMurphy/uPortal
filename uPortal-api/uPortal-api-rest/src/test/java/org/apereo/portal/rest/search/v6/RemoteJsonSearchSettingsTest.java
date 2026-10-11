@@ -15,6 +15,7 @@
 package org.apereo.portal.rest.search.v6;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -90,6 +91,9 @@ public class RemoteJsonSearchSettingsTest {
         expectRefused(google().withProperty(P + "google.timeout", "0"), "positive");
         expectRefused(google().withProperty(P + "google.headers", "X-Api-Key abc"), "Name: value");
         expectRefused(google().withProperty(P + "google.results", "items"), "JSON Pointer");
+        expectRefused(
+                google().withProperty(P + "google.url", "https://x/search?key=SECRET q={query}"),
+                "not a valid URL");
     }
 
     @Test
@@ -131,6 +135,9 @@ public class RemoteJsonSearchSettingsTest {
             fail("Accepted settings without " + message);
         } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage(), e.getMessage().contains(message));
+            // The URL can hold an API key: errors never quote it
+            assertFalse(e.getMessage(), e.getMessage().contains("SECRET"));
+            assertFalse(e.getMessage(), e.getMessage().contains("key=K"));
         }
     }
 }
