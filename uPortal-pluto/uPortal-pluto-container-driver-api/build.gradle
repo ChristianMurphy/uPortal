@@ -7,4 +7,10 @@ dependencies {
     compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${plutoServletApiDependency}"
     compileOnly "javax.ccpp:ccpp:${ccppVersion}"
+
+    // PortletServletRegistrationTest (MOD-I350) runs the servlet against the APIs that Tomcat's
+    // shared/lib provides
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    testImplementation "${plutoServletApiDependency}"
+    testImplementation "javax.ccpp:ccpp:${ccppVersion}"
 }
