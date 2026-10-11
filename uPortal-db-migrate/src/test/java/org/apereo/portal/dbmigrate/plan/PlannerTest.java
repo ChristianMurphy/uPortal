@@ -16,6 +16,7 @@ package org.apereo.portal.dbmigrate.plan;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.sql.Types;
@@ -121,8 +122,12 @@ public class PlannerTest {
         TableMapping events = p.table("UP_RAW_EVENTS");
         assertTrue(events.columns().get(1).pair().source().postgresOidText());
         assertFalse(events.columns().get(1).pair().target().postgresLargeObject());
-        // The self-reference is loaded in a second pass
+        // The self-reference is loaded in a second pass, and the report says so
         assertEquals(1, p.table("UP_USER").deferredForeignKeys().size());
+        assertTrue(
+                p.table("UP_USER").notes().toString(),
+                p.table("UP_USER").notes().get(0).endsWith("loaded in a second pass"));
+        assertEquals(2, p.order().ordered().size());
         // Generators: sequences on the source, one-row tables on the target
         assertEquals(2, p.generators().size());
         GeneratorTarget users = p.generators().get(1);
@@ -220,5 +225,132 @@ public class PlannerTest {
 
         MigrationPlan back = planner("lob-oid UP_NOTE.BODY").plan(target, source);
         assertTrue(back.table("UP_NOTE").columns().get(1).pair().target().postgresOidText());
+    }
+
+    @Test
+    public void foreignKeyCyclesWithoutANullableKeyAreRefused() {
+        // Two tables that each require a row of the other: no order loads them with constraints on
+        SchemaModel source = postgres();
+        SchemaModel target = mariadb();
+        for (SchemaModel m : Arrays.asList(source, target)) {
+            String catalog = m == target ? "uportal" : null;
+            String schema = m == target ? null : "public";
+            m.addTable(
+                    new Table(catalog, schema, "up_a")
+                            .addColumn(col("a_id", Types.BIGINT, "BIGINT", false))
+                            .addColumn(col("b_id", Types.BIGINT, "BIGINT", false))
+                            .primaryKey(Collections.singletonList("a_id"))
+                            .addForeignKey(
+                                    new ForeignKey(
+                                            "fk_a_b",
+                                            "up_a",
+                                            Arrays.asList("b_id"),
+                                            "up_b",
+                                            Arrays.asList("b_id"))));
+            m.addTable(
+                    new Table(catalog, schema, "up_b")
+                            .addColumn(col("b_id", Types.BIGINT, "BIGINT", false))
+                            .addColumn(col("a_id", Types.BIGINT, "BIGINT", false))
+                            .primaryKey(Collections.singletonList("b_id"))
+                            .addForeignKey(
+                                    new ForeignKey(
+                                            "fk_b_a",
+                                            "up_b",
+                                            Arrays.asList("a_id"),
+                                            "up_a",
+                                            Arrays.asList("a_id"))));
+        }
+        MigrationPlan p = planner("").plan(source, target);
+        assertEquals(p.errors().toString(), 1, p.errors().size());
+        assertTrue(
+                p.errors().get(0),
+                p.errors().get(0).startsWith("Foreign key cycle without a nullable column"));
+    }
+
+    @Test
+    public void identityAndTargetOnlyColumnsAreListed() {
+        SchemaModel target = mariadb();
+        target.table("up_raw_events")
+                .addColumn(
+                        new Column("ROW_NO", Types.BIGINT, "BIGINT", 19, 0, true, false, true, 3));
+        MigrationPlan p = planner("").plan(postgres(), target);
+        assertEquals(p.errors().toString(), 0, p.errors().size());
+        assertEquals(1, p.identityColumns().size());
+        assertEquals("ROW_NO", p.identityColumns().get(0).column().name());
+        assertTrue(
+                p.table("UP_RAW_EVENTS").notes().toString(),
+                p.table("UP_RAW_EVENTS")
+                        .notes()
+                        .contains("target-only column ROW_NO left to its default"));
+    }
+
+    @Test
+    public void generatorsOnOneSideOnly() {
+        // A target sequence that neither the source nor the profile knows stays as it is
+        SchemaModel target = postgres();
+        target.addSequence("up_extra_seq");
+        MigrationPlan p = planner("").plan(mariadb(), target);
+        assertEquals(p.errors().toString(), 0, p.errors().size());
+        GeneratorTarget extra = null;
+        for (GeneratorTarget g : p.generators()) {
+            if (g.name().equals("up_extra_seq")) {
+                extra = g;
+            } else {
+                assertEquals(g.name(), "entities", g.origin());
+                assertEquals(GeneratorTarget.Storage.TABLE, g.sourceStorage());
+            }
+        }
+        assertEquals(3, p.generators().size());
+        assertEquals("database", extra.origin());
+        assertEquals(GeneratorTarget.Storage.NONE, extra.sourceStorage());
+        assertNull(extra.sourceName());
+        assertNull(extra.sourceTable());
+        assertEquals(0, extra.allocationSize());
+        assertTrue(
+                p.warnings().toString(),
+                p.warnings()
+                        .contains(
+                                "Generator up_extra_seq exists only in the target and no rule says which"
+                                        + " ids it serves; it is left as it is"));
+
+        // A generator the profile's entities need, missing from the target, fails the plan
+        SchemaModel pg = postgres();
+        SchemaModel noUserSeq =
+                new SchemaModel(pg.dialect(), "PostgreSQL", "18", "pgjdbc")
+                        .addTable(pg.table("up_user"))
+                        .addTable(pg.table("up_raw_events"))
+                        .addSequence("up_raw_events_seq");
+        MigrationPlan missing = planner("").plan(mariadb(), noUserSeq);
+        assertEquals(missing.errors().toString(), 1, missing.errors().size());
+        assertTrue(
+                missing.errors().get(0),
+                missing.errors()
+                        .get(0)
+                        .startsWith("The target has no sequence or sequence table UP_USER_SEQ"));
+    }
+
+    @Test
+    public void lobOidRulesFollowARenamedColumn() {
+        // Rules name the source column; the target column has another name
+        SchemaModel source = postgres();
+        source.addTable(
+                new Table(null, "public", "up_note")
+                        .addColumn(col("note_id", Types.BIGINT, "int8", false))
+                        .addColumn(col("body", Types.VARCHAR, "text", true))
+                        .primaryKey(Collections.singletonList("note_id")));
+        SchemaModel target = postgres();
+        target.addTable(
+                new Table(null, "public", "up_note")
+                        .addColumn(col("note_id", Types.BIGINT, "int8", false))
+                        .addColumn(col("content", Types.VARCHAR, "text", true))
+                        .primaryKey(Collections.singletonList("note_id")));
+        MigrationPlan p =
+                planner("lob-oid UP_NOTE.BODY\nrename-column UP_NOTE.BODY CONTENT")
+                        .plan(source, target);
+        assertEquals(p.errors().toString(), 0, p.errors().size());
+        ColumnMapping body = p.table("UP_NOTE").columns().get(1);
+        assertEquals("content", body.target().name());
+        assertTrue(body.pair().source().postgresOidText());
+        assertTrue(body.pair().target().postgresOidText());
     }
 }
