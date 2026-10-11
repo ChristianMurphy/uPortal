@@ -1322,9 +1322,11 @@ This supersedes MOD-D24's runtime matrix.
 
 ### MOD-D36: ADRs in MADR format replace the RFC
 
-* **Asked by the owner:** uPortal has no RFC process, so record decisions as ADRs instead. Neither
-  repository had an ADR folder or a proposal process in the tree; the nearest documents are
-  `docs/developer/other/ARCHITECTURE.md` and `docs/architecture/subsystem-analysis.md`.
+* **Asked by the owner:** record decisions as ADRs instead of one RFC. uPortal's code repositories
+  have no written proposal process. The `uPortal-Project/community` README names that repository's
+  Discussions as the place for design proposals and RFCs (MOD-Q6). Neither uPortal nor
+  uPortal-start had an ADR folder; the nearest documents are `docs/developer/other/ARCHITECTURE.md`
+  and `docs/architecture/subsystem-analysis.md`.
 * **Decision (owner, 2026-10-11):**
   * Architecture decision records go in `docs/developer/adr/NNNN-title.md`, using the MADR template
     (context and problem, decision drivers, considered options, outcome, consequences, pros and
