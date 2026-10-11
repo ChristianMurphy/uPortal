@@ -114,7 +114,7 @@
 </style>
 
 <!-- Portlet -->
-<div class="card portlet" role="section">
+<div class="card portlet">
   
   <!-- Portlet Body -->
   <div id="${n}resultBrowser" class="card-body portlet-body">

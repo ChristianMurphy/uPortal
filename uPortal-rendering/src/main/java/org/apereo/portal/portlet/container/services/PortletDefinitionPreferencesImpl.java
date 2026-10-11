@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.pluto.container.om.portlet.PortletDefinition;
 import org.apache.pluto.container.om.portlet.Preference;
 import org.apache.pluto.container.om.portlet.Preferences;
@@ -96,29 +97,34 @@ public class PortletDefinitionPreferencesImpl
     @Override
     protected boolean storeInternal() {
 
-        return this.transactionOperations.execute(
-                new TransactionCallback<Boolean>() {
-                    @Override
-                    public Boolean doInTransaction(TransactionStatus status) {
-                        // Refresh the entity to avoid optimistic locking errors
-                        final IPortletDefinition portletDefinition =
-                                portletDefinitionRegistry.getPortletDefinition(portletDefinitionId);
+        // The callback returns TRUE or FALSE (MOD-I225)
+        return Objects.requireNonNull(
+                this.transactionOperations.execute(
+                        new TransactionCallback<Boolean>() {
+                            @Override
+                            public Boolean doInTransaction(TransactionStatus status) {
+                                // Refresh the entity to avoid optimistic locking errors
+                                final IPortletDefinition portletDefinition =
+                                        portletDefinitionRegistry.getPortletDefinition(
+                                                portletDefinitionId);
 
-                        final Map<String, IPortletPreference> targetPortletPreferences =
-                                getTargetPortletPreferences();
-                        final Collection<IPortletPreference> values =
-                                targetPortletPreferences.values();
-                        final boolean modified =
-                                portletDefinition.setPortletPreferences(new ArrayList<>(values));
-                        if (!modified) {
-                            // Nothing actually changed, skip the store
-                            return Boolean.FALSE;
-                        }
+                                final Map<String, IPortletPreference> targetPortletPreferences =
+                                        getTargetPortletPreferences();
+                                final Collection<IPortletPreference> values =
+                                        targetPortletPreferences.values();
+                                final boolean modified =
+                                        portletDefinition.setPortletPreferences(
+                                                new ArrayList<>(values));
+                                if (!modified) {
+                                    // Nothing actually changed, skip the store
+                                    return Boolean.FALSE;
+                                }
 
-                        portletDefinitionRegistry.savePortletDefinition(portletDefinition);
+                                portletDefinitionRegistry.savePortletDefinition(portletDefinition);
 
-                        return Boolean.TRUE;
-                    }
-                });
+                                return Boolean.TRUE;
+                            }
+                        }),
+                "No answer from the preferences store transaction");
     }
 }

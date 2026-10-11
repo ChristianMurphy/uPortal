@@ -124,6 +124,17 @@ allprojects {
         toolVersion = codenarcVersion
         reportFormat = 'console'
     }
+    // CodeNarc 3.7.0 brings Groovy 4.0.24, whose ASM cannot read the class files of a JDK 25
+    // ("Unsupported class file major version 69"). On JDK 25 the first rule that needed a file's
+    // syntax tree then threw, CodeNarc printed a stack trace and skipped every other rule for
+    // that file, yet the build passed. Run CodeNarc on the Groovy 4 that compiles the tests.
+    configurations.matching { it.name == 'codenarc' }.configureEach {
+        resolutionStrategy.eachDependency { details ->
+            if (details.requested.group == 'org.apache.groovy') {
+                details.useVersion groovyTestVersion
+            }
+        }
+    }
     tasks.withType(CodeNarc).configureEach {
         // Gradle 9 hands CodeNarc the compile classpath by default, which switches on its
         // "enhanced" rules (they were skipped before). Keep the previous rule set here; the
@@ -152,8 +163,24 @@ allprojects {
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.add('-parameters')
     }
+    // -PquietCompile prints compile errors but no warnings (MOD-D53). A CI log that holds
+    // thousands of Error Prone and javac warnings hides the one error that failed the build.
+    // Errors are unchanged: javac errors, and Error Prone checks at ERROR level (NullAway, and
+    // the checks Error Prone ships as errors) still fail the compile. One CI leg (Linux, Temurin
+    // 21) runs without it and so keeps listing the warnings.
+    def quietCompile = providers.gradleProperty('quietCompile').map { it != 'false' }.getOrElse(false)
+    if (quietCompile) {
+        tasks.withType(JavaCompile).configureEach {
+            options.warnings = false // javac -nowarn
+            options.compilerArgs.add('-Xlint:none')
+            // -Xlint:none still prints "Note: ... uses or overrides a deprecated API" lines
+            options.compilerArgs.add('-XDsuppressNotes')
+        }
+    }
     tasks.withType(JavaCompile).configureEach {
         options.errorprone {
+            // Error Prone checks at WARNING level are off with -PquietCompile
+            disableAllWarnings = quietCompile
             // ERROR-level checks added to Error Prone after 2.3.4 that flag existing code.
             // Disabled so the toolchain upgrade needs no production change; each finding
             // should be fixed (and its check re-enabled) separately.
@@ -193,7 +220,7 @@ allprojects {
     // SpotBugs + FindSecBugs as a ratchet (MOD-D27): `./gradlew spotbugsMain` fails on any
     // finding that is not in the module's committed baseline,
     // config/spotbugs/baseline/<module>.xml. `build` and `check` leave SpotBugs out (it is
-    // slow at effort max); CI runs it in its own job. `./gradlew spotbugsBaseline` rewrites the
+    // slow at effort max); CI runs it in the Linux, Temurin 21 cell after the build. `./gradlew spotbugsBaseline` rewrites the
     // baselines; see docs/developer/other/STATIC_ANALYSIS.md.
     spotbugs {
         toolVersion = spotbugsVersion

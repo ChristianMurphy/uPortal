@@ -30,6 +30,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
@@ -144,6 +145,23 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
         this.portletDefinitionRegistry = portletDefinitionRegistry;
     }
 
+    /**
+     * The part of the layout query after the UP_LAYOUT_STRUCT columns: the parameter columns and
+     * the join when the database supports outer joins, then the user, the layout and the order.
+     */
+    static String layoutRowsQueryTail(IDatabaseMetadata databaseMetadata, int userId, int layoutId)
+            throws SQLException {
+        final String where = " ULS.USER_ID=" + userId + " AND ULS.LAYOUT_ID=" + layoutId;
+        if (databaseMetadata.supportsOuterJoins()) {
+            return ",USP.STRUCT_PARM_NM,USP.STRUCT_PARM_VAL FROM "
+                    + databaseMetadata.getJoinQuery().getQuery("layout")
+                    + where
+                    + " ORDER BY ULS.STRUCT_ID, USP.STRUCT_PARM_NM";
+        }
+        // Without the join there is no USP: STRUCT_ID alone is unique here (MOD-I191)
+        return " FROM UP_LAYOUT_STRUCT ULS WHERE " + where + " ORDER BY ULS.STRUCT_ID";
+    }
+
     @Override
     public void afterPropertiesSet() {
         if (databaseMetadata.supportsOuterJoins()) {
@@ -191,10 +209,13 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
                 protected IPerson createSingleton(Object... args) {
                     // be sure we only do this once...
                     // Load the "system" user id from the database
+                    // USER_ID is the primary key: a row has one, and no row throws (MOD-I225)
                     final int systemUserId =
-                            jdbcOperations.queryForObject(
-                                    "SELECT USER_ID FROM UP_USER WHERE USER_NAME = 'system'",
-                                    Integer.class);
+                            Objects.requireNonNull(
+                                    jdbcOperations.queryForObject(
+                                            "SELECT USER_ID FROM UP_USER WHERE USER_NAME = 'system'",
+                                            Integer.class),
+                                    "No USER_ID for the 'system' user in UP_USER");
                     logger.info("Found user id {} for the 'system' user.", systemUserId);
                     return new SystemUser(systemUserId);
                 }
@@ -430,153 +451,179 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
 
                                 // First time, grab the default layout for this user
                                 if (layoutId == 0) {
+                                    // The callback always returns a Tuple (MOD-I225)
                                     final Tuple<Integer, Integer> userLayoutIds =
-                                            transactionOperations.execute(
-                                                    status ->
-                                                            jdbcOperations.execute(
-                                                                    (ConnectionCallback<
-                                                                                    Tuple<
-                                                                                            Integer,
-                                                                                            Integer>>)
-                                                                            con1 -> {
-                                                                                int newUserId =
-                                                                                        getSystemUser()
-                                                                                                .getID();
-                                                                                int newLayoutId;
+                                            Objects.requireNonNull(
+                                                    transactionOperations.execute(
+                                                            status ->
+                                                                    jdbcOperations.execute(
+                                                                            (ConnectionCallback<
+                                                                                            Tuple<
+                                                                                                    Integer,
+                                                                                                    Integer>>)
+                                                                                    con1 -> {
+                                                                                        int
+                                                                                                newUserId =
+                                                                                                        getSystemUser()
+                                                                                                                .getID();
+                                                                                        int
+                                                                                                newLayoutId;
 
-                                                                                String sQuery =
-                                                                                        "SELECT USER_DFLT_LAY_ID FROM UP_USER WHERE USER_ID="
-                                                                                                + realUserId;
-                                                                                logger.debug(
-                                                                                        "getUserLayout(): {}",
-                                                                                        sQuery);
-                                                                                ResultSet rs1 =
-                                                                                        stmt
-                                                                                                .executeQuery(
-                                                                                                        sQuery);
-                                                                                try {
-                                                                                    if (rs1
-                                                                                            .next()) {
-                                                                                        newLayoutId =
-                                                                                                rs1
-                                                                                                        .getInt(
-                                                                                                                1);
-                                                                                    } else {
-                                                                                        final String
-                                                                                                msg =
-                                                                                                        "Unable to find default user for USER_ID="
+                                                                                        String
+                                                                                                sQuery =
+                                                                                                        "SELECT USER_DFLT_LAY_ID FROM UP_USER WHERE USER_ID="
                                                                                                                 + realUserId;
-                                                                                        throw new SQLException(
-                                                                                                msg);
-                                                                                    }
-                                                                                } finally {
-                                                                                    rs1.close();
-                                                                                }
-
-                                                                                // Make sure the
-                                                                                // next struct
-                                                                                // id is set in case
-                                                                                // the
-                                                                                // user adds a
-                                                                                // channel
-                                                                                sQuery =
-                                                                                        "SELECT NEXT_STRUCT_ID FROM UP_USER WHERE USER_ID="
-                                                                                                + newUserId;
-                                                                                logger.debug(
-                                                                                        "getUserLayout(): {}",
-                                                                                        sQuery);
-                                                                                int nextStructId;
-                                                                                rs1 =
-                                                                                        stmt
-                                                                                                .executeQuery(
+                                                                                        logger
+                                                                                                .debug(
+                                                                                                        "getUserLayout(): {}",
                                                                                                         sQuery);
-                                                                                try {
-                                                                                    if (rs1
-                                                                                            .next()) {
-                                                                                        nextStructId =
-                                                                                                rs1
-                                                                                                        .getInt(
-                                                                                                                1);
-                                                                                    } else {
-                                                                                        final String
-                                                                                                msg =
-                                                                                                        "Unable to find NEXT_STRUCT_ID for USER_ID="
-                                                                                                                + realUserId;
-                                                                                        throw new SQLException(
-                                                                                                msg);
-                                                                                    }
-                                                                                } finally {
-                                                                                    rs1.close();
-                                                                                }
-
-                                                                                int
-                                                                                        realNextStructId =
-                                                                                                0;
-
-                                                                                if (realUserId
-                                                                                        != newUserId) {
-                                                                                    // But never
-                                                                                    // make the
-                                                                                    // existing
-                                                                                    // value
-                                                                                    // SMALLER,
-                                                                                    // change it
-                                                                                    // only to make
-                                                                                    // it
-                                                                                    // LARGER
-                                                                                    // (so, get
-                                                                                    // existing
-                                                                                    // value)
-                                                                                    sQuery =
-                                                                                            "SELECT NEXT_STRUCT_ID FROM UP_USER WHERE USER_ID="
-                                                                                                    + realUserId;
-                                                                                    logger.debug(
-                                                                                            "getUserLayout(): {}",
-                                                                                            sQuery);
-                                                                                    rs1 =
-                                                                                            stmt
-                                                                                                    .executeQuery(
-                                                                                                            sQuery);
-                                                                                    try {
-                                                                                        if (rs1
-                                                                                                .next()) {
-                                                                                            realNextStructId =
-                                                                                                    rs1
-                                                                                                            .getInt(
-                                                                                                                    1);
-                                                                                        } else {
-                                                                                            final
-                                                                                            String
-                                                                                                    msg =
-                                                                                                            "Unable to find NEXT_STRUCT_ID for USER_ID="
-                                                                                                                    + realUserId;
-                                                                                            throw new SQLException(
-                                                                                                    msg);
+                                                                                        ResultSet
+                                                                                                rs1 =
+                                                                                                        stmt
+                                                                                                                .executeQuery(
+                                                                                                                        sQuery);
+                                                                                        try {
+                                                                                            if (rs1
+                                                                                                    .next()) {
+                                                                                                newLayoutId =
+                                                                                                        rs1
+                                                                                                                .getInt(
+                                                                                                                        1);
+                                                                                            } else {
+                                                                                                final
+                                                                                                String
+                                                                                                        msg =
+                                                                                                                "Unable to find default user for USER_ID="
+                                                                                                                        + realUserId;
+                                                                                                throw new SQLException(
+                                                                                                        msg);
+                                                                                            }
+                                                                                        } finally {
+                                                                                            rs1
+                                                                                                    .close();
                                                                                         }
-                                                                                    } finally {
-                                                                                        rs1.close();
-                                                                                    }
-                                                                                }
 
-                                                                                if (nextStructId
-                                                                                        > realNextStructId) {
-                                                                                    sQuery =
-                                                                                            "UPDATE UP_USER SET NEXT_STRUCT_ID="
-                                                                                                    + nextStructId
-                                                                                                    + " WHERE USER_ID="
-                                                                                                    + realUserId;
-                                                                                    logger.debug(
-                                                                                            "getUserLayout(): {}",
-                                                                                            sQuery);
-                                                                                    stmt
-                                                                                            .executeUpdate(
-                                                                                                    sQuery);
-                                                                                }
+                                                                                        // Make sure
+                                                                                        // the
+                                                                                        // next
+                                                                                        // struct
+                                                                                        // id is set
+                                                                                        // in case
+                                                                                        // the
+                                                                                        // user adds
+                                                                                        // a
+                                                                                        // channel
+                                                                                        sQuery =
+                                                                                                "SELECT NEXT_STRUCT_ID FROM UP_USER WHERE USER_ID="
+                                                                                                        + newUserId;
+                                                                                        logger
+                                                                                                .debug(
+                                                                                                        "getUserLayout(): {}",
+                                                                                                        sQuery);
+                                                                                        int
+                                                                                                nextStructId;
+                                                                                        rs1 =
+                                                                                                stmt
+                                                                                                        .executeQuery(
+                                                                                                                sQuery);
+                                                                                        try {
+                                                                                            if (rs1
+                                                                                                    .next()) {
+                                                                                                nextStructId =
+                                                                                                        rs1
+                                                                                                                .getInt(
+                                                                                                                        1);
+                                                                                            } else {
+                                                                                                final
+                                                                                                String
+                                                                                                        msg =
+                                                                                                                "Unable to find NEXT_STRUCT_ID for USER_ID="
+                                                                                                                        + realUserId;
+                                                                                                throw new SQLException(
+                                                                                                        msg);
+                                                                                            }
+                                                                                        } finally {
+                                                                                            rs1
+                                                                                                    .close();
+                                                                                        }
 
-                                                                                return new Tuple<>(
-                                                                                        newUserId,
-                                                                                        newLayoutId);
-                                                                            }));
+                                                                                        int
+                                                                                                realNextStructId =
+                                                                                                        0;
+
+                                                                                        if (realUserId
+                                                                                                != newUserId) {
+                                                                                            // But
+                                                                                            // never
+                                                                                            // make
+                                                                                            // the
+                                                                                            // existing
+                                                                                            // value
+                                                                                            // SMALLER,
+                                                                                            // change it
+                                                                                            // only
+                                                                                            // to
+                                                                                            // make
+                                                                                            // it
+                                                                                            // LARGER
+                                                                                            // (so,
+                                                                                            // get
+                                                                                            // existing
+                                                                                            // value)
+                                                                                            sQuery =
+                                                                                                    "SELECT NEXT_STRUCT_ID FROM UP_USER WHERE USER_ID="
+                                                                                                            + realUserId;
+                                                                                            logger
+                                                                                                    .debug(
+                                                                                                            "getUserLayout(): {}",
+                                                                                                            sQuery);
+                                                                                            rs1 =
+                                                                                                    stmt
+                                                                                                            .executeQuery(
+                                                                                                                    sQuery);
+                                                                                            try {
+                                                                                                if (rs1
+                                                                                                        .next()) {
+                                                                                                    realNextStructId =
+                                                                                                            rs1
+                                                                                                                    .getInt(
+                                                                                                                            1);
+                                                                                                } else {
+                                                                                                    final
+                                                                                                    String
+                                                                                                            msg =
+                                                                                                                    "Unable to find NEXT_STRUCT_ID for USER_ID="
+                                                                                                                            + realUserId;
+                                                                                                    throw new SQLException(
+                                                                                                            msg);
+                                                                                                }
+                                                                                            } finally {
+                                                                                                rs1
+                                                                                                        .close();
+                                                                                            }
+                                                                                        }
+
+                                                                                        if (nextStructId
+                                                                                                > realNextStructId) {
+                                                                                            sQuery =
+                                                                                                    "UPDATE UP_USER SET NEXT_STRUCT_ID="
+                                                                                                            + nextStructId
+                                                                                                            + " WHERE USER_ID="
+                                                                                                            + realUserId;
+                                                                                            logger
+                                                                                                    .debug(
+                                                                                                            "getUserLayout(): {}",
+                                                                                                            sQuery);
+                                                                                            stmt
+                                                                                                    .executeUpdate(
+                                                                                                            sQuery);
+                                                                                        }
+
+                                                                                        return new Tuple<>(
+                                                                                                newUserId,
+                                                                                                newLayoutId);
+                                                                                    })),
+                                                    "No user and layout ids for the default layout copy");
 
                                     userId = userLayoutIds.first;
                                     layoutId = userLayoutIds.second;
@@ -628,21 +675,7 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
                                                 "SELECT ULS.STRUCT_ID,ULS.NEXT_STRUCT_ID,ULS.CHLD_STRUCT_ID,ULS.CHAN_ID,ULS.NAME,ULS.TYPE,ULS.HIDDEN,"
                                                         + "ULS.UNREMOVABLE,ULS.IMMUTABLE";
                                     }
-                                    if (databaseMetadata.supportsOuterJoins()) {
-                                        sql +=
-                                                ",USP.STRUCT_PARM_NM,USP.STRUCT_PARM_VAL FROM "
-                                                        + databaseMetadata
-                                                                .getJoinQuery()
-                                                                .getQuery("layout");
-                                    } else {
-                                        sql += " FROM UP_LAYOUT_STRUCT ULS WHERE ";
-                                    }
-                                    sql +=
-                                            " ULS.USER_ID="
-                                                    + userId
-                                                    + " AND ULS.LAYOUT_ID="
-                                                    + layoutId
-                                                    + " ORDER BY ULS.STRUCT_ID";
+                                    sql += layoutRowsQueryTail(databaseMetadata, userId, layoutId);
                                     logger.debug("getUserLayout(): {}", sql);
                                     rs = stmt.executeQuery(sql);
 
@@ -832,7 +865,7 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
                                                     + layoutId
                                                     + " AND STRUCT_ID IN ("
                                                     + structIdsSB.toString()
-                                                    + ") ORDER BY STRUCT_ID";
+                                                    + ") ORDER BY STRUCT_ID, STRUCT_PARM_NM";
                                     logger.debug("getUserLayout(): {}", sql);
                                     rs = stmt.executeQuery(sql);
                                     try {
@@ -1489,38 +1522,41 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
      * @return The layout_id field or 0 if it does not exist or is null
      */
     private int getLayoutID(final int userId, final int profileId) {
-        return jdbcOperations.execute(
-                (ConnectionCallback<Integer>)
-                        con -> {
-                            String query =
-                                    "SELECT LAYOUT_ID "
-                                            + "FROM UP_USER_PROFILE "
-                                            + "WHERE USER_ID=? AND PROFILE_ID=?";
+        // The callback always returns an int (MOD-I225)
+        return Objects.requireNonNull(
+                jdbcOperations.execute(
+                        (ConnectionCallback<Integer>)
+                                con -> {
+                                    String query =
+                                            "SELECT LAYOUT_ID "
+                                                    + "FROM UP_USER_PROFILE "
+                                                    + "WHERE USER_ID=? AND PROFILE_ID=?";
 
-                            int layoutId = 0;
-                            PreparedStatement pstmt = con.prepareStatement(query);
+                                    int layoutId = 0;
+                                    PreparedStatement pstmt = con.prepareStatement(query);
 
-                            logger.debug(
-                                    "getLayoutID(userId={}, profileId={} ): {}",
-                                    userId,
-                                    profileId,
-                                    query);
+                                    logger.debug(
+                                            "getLayoutID(userId={}, profileId={} ): {}",
+                                            userId,
+                                            profileId,
+                                            query);
 
-                            pstmt.setInt(1, userId);
-                            pstmt.setInt(2, profileId);
-                            try {
-                                ResultSet rs = pstmt.executeQuery();
-                                if (rs.next()) {
-                                    layoutId = rs.getInt(1);
+                                    pstmt.setInt(1, userId);
+                                    pstmt.setInt(2, profileId);
+                                    try {
+                                        ResultSet rs = pstmt.executeQuery();
+                                        if (rs.next()) {
+                                            layoutId = rs.getInt(1);
 
-                                    if (rs.wasNull()) {
-                                        layoutId = 0;
+                                            if (rs.wasNull()) {
+                                                layoutId = 0;
+                                            }
+                                        }
+                                    } finally {
+                                        pstmt.close();
                                     }
-                                }
-                            } finally {
-                                pstmt.close();
-                            }
-                            return layoutId;
-                        });
+                                    return layoutId;
+                                }),
+                "No LAYOUT_ID from UP_USER_PROFILE for user " + userId + ", profile " + profileId);
     }
 }

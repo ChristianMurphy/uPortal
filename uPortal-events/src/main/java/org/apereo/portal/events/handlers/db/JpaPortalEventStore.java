@@ -27,6 +27,7 @@ import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
+import javax.persistence.metamodel.EntityType;
 import org.apereo.portal.concurrency.FunctionWithoutResult;
 import org.apereo.portal.events.PortalEvent;
 import org.apereo.portal.jpa.BaseRawEventsJpaDao;
@@ -81,6 +82,12 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
         this.startTimeParameter = this.createParameterExpression(DateTime.class, "startTime");
         this.endTimeParameter = this.createParameterExpression(DateTime.class, "endTime");
 
+        // The id is the last sort key (MOD-I191). Its name comes from the metamodel at run time,
+        // because SpotBugs reads the generated PersistentPortalEvent_.id field as unwritten.
+        final EntityType<PersistentPortalEvent> model =
+                this.getEntityManager().getMetamodel().entity(PersistentPortalEvent.class);
+        final String id = model.getId(model.getIdType().getJavaType()).getName();
+
         this.selectQuery =
                 "SELECT e "
                         + "FROM "
@@ -98,6 +105,8 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
                         + " "
                         + "ORDER BY e."
                         + PersistentPortalEvent_.timestamp.getName()
+                        + " ASC, e."
+                        + id
                         + " ASC";
 
         this.selectUnaggregatedQuery =
@@ -127,6 +136,8 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
                         + " = false) "
                         + "ORDER BY e."
                         + PersistentPortalEvent_.timestamp.getName()
+                        + " ASC, e."
+                        + id
                         + " ASC";
 
         this.deleteQuery =
