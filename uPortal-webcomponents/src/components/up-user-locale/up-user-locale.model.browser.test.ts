@@ -32,16 +32,16 @@ const ATTRIBUTES =
 const IN_ENGLISH: UserLocaleData = {
     selected: 'en_US',
     locales: [
-        { code: 'en_US', tag: 'en-US', name: 'English' },
-        { code: 'fr_FR', tag: 'fr-FR', name: 'French' },
+        { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' },
+        { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' },
     ],
 };
 const NONE_CHOSEN: UserLocaleData = { ...IN_ENGLISH, selected: null };
 const IN_FRENCH: UserLocaleData = {
     selected: 'fr_FR',
     locales: [
-        { code: 'en_US', tag: 'en-US', name: 'anglais' },
-        { code: 'fr_FR', tag: 'fr-FR', name: 'français' },
+        { code: 'en_US', tag: 'en-US', name: 'anglais', nativeName: 'English' },
+        { code: 'fr_FR', tag: 'fr-FR', name: 'français', nativeName: 'Français' },
     ],
 };
 
@@ -175,8 +175,16 @@ function expectRendered(element: UpUserLocale, snapshot: Snapshot): void {
     expect(form?.getAttribute('aria-busy')).toBe(busy ? 'true' : null);
     expect(root.querySelector('.update')?.hasAttribute('disabled')).toBe(busy);
     const radios = [...root.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    // Each language in its own language, then in the user's when that reads differently
     expect(radios.map((radio) => radio.labels?.[0]?.textContent)).toEqual(
-        data.locales.map((locale) => locale.name),
+        data.locales.map((locale) =>
+            locale.nativeName.toLowerCase() === locale.name.toLowerCase()
+                ? locale.nativeName
+                : `${locale.nativeName} (${locale.name})`,
+        ),
+    );
+    expect(radios.map((radio) => radio.labels?.[0]?.querySelector('span')?.lang)).toEqual(
+        data.locales.map((locale) => locale.tag),
     );
     expect(radios.find((radio) => radio.checked)?.value).toBe(choice);
     expect(radios.every((radio) => radio.disabled === busy)).toBe(true);

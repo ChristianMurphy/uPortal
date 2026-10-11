@@ -49,7 +49,7 @@ public class UserLocaleService {
         this.userLocaleHelper = userLocaleHelper;
     }
 
-    /** The portal's locales, named in the user's language, and the user's choice. */
+    /** The portal's locales, named in the user's language and in their own, and the choice. */
     public UserLocale getUserLocale(HttpServletRequest request) {
         final @Nullable Locale current = getCurrentLocale(request);
         final List<LocaleOption> options = new ArrayList<>();
@@ -58,7 +58,8 @@ public class UserLocaleService {
                     new LocaleOption(
                             bean.getCode(),
                             bean.getLocale().toLanguageTag(),
-                            bean.getDisplayLanguage()));
+                            bean.getDisplayLanguage(),
+                            nativeName(bean.getLocale())));
         }
         return new UserLocale(current == null ? null : current.toString(), options);
     }
@@ -74,6 +75,20 @@ public class UserLocaleService {
         }
         userLocaleHelper.updateUserLocale(request, code);
         return getUserLocale(request);
+    }
+
+    /**
+     * The language's name in that language, with a capital first letter as it starts a list item:
+     * Java names French "français" in French, and the list shows "Français".
+     */
+    static String nativeName(Locale locale) {
+        final String name = locale.getDisplayLanguage(locale);
+        if (name.isEmpty()) {
+            return locale.toString();
+        }
+        final int first = name.codePointAt(0);
+        final int end = Character.charCount(first);
+        return name.substring(0, end).toUpperCase(locale) + name.substring(end);
     }
 
     private boolean isPortalLocale(String code) {

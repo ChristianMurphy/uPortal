@@ -20,11 +20,13 @@ public final class LocaleOption {
     private final String code;
     private final String tag;
     private final String name;
+    private final String nativeName;
 
-    public LocaleOption(String code, String tag, String name) {
+    public LocaleOption(String code, String tag, String name, String nativeName) {
         this.code = code;
         this.tag = tag;
         this.name = name;
+        this.nativeName = nativeName;
     }
 
     /** The portal's code for the locale, such as {@code fr_FR}; what a client sends back. */
@@ -40,5 +42,10 @@ public final class LocaleOption {
     /** The language's name in the user's current language, such as {@code français}. */
     public String getName() {
         return name;
+    }
+
+    /** The language's name in that language, as a list item starts, such as {@code Français}. */
+    public String getNativeName() {
+        return nativeName;
     }
 }

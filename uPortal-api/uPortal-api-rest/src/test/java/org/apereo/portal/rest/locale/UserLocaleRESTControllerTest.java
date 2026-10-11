@@ -54,13 +54,15 @@ public class UserLocaleRESTControllerTest {
             new UserLocale(
                     "fr_FR",
                     Arrays.asList(
-                            new LocaleOption("en_US", "en-US", "anglais"),
-                            new LocaleOption("fr_FR", "fr-FR", "français")));
+                            new LocaleOption("en_US", "en-US", "anglais", "English"),
+                            new LocaleOption("fr_FR", "fr-FR", "français", "Français")));
 
     private static final String FRENCH_JSON =
             "{\"selected\":\"fr_FR\",\"locales\":["
-                    + "{\"code\":\"en_US\",\"tag\":\"en-US\",\"name\":\"anglais\"},"
-                    + "{\"code\":\"fr_FR\",\"tag\":\"fr-FR\",\"name\":\"français\"}]}";
+                    + "{\"code\":\"en_US\",\"tag\":\"en-US\",\"name\":\"anglais\","
+                    + "\"nativeName\":\"English\"},"
+                    + "{\"code\":\"fr_FR\",\"tag\":\"fr-FR\",\"name\":\"français\","
+                    + "\"nativeName\":\"Français\"}]}";
 
     private UserLocaleService service;
     private MockMvc mockMvc;
