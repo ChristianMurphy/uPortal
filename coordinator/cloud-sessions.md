@@ -62,3 +62,12 @@ Hourly check-in routine: trig_01CXTm9dZGeia9okTQddSNLe (cron :51).
 - jqwik filter: commit 42f5817cd (backup branch above). With filter: 0 notices, 95 tests pass. Control run (no filter) was still going; if the container was lost, rerun scratchpad jqwik-filter-check.sh from coordinator/ and push with ccr-push.sh.
 - Pluto session confirmed the replay matches its branch (verify-import.sh passes on b319ded). Done.
 - Landing CI dispatched (01:28 and 01:33): uPortal CI 38101924741, DB 38101926236 (landing); CI 38102214490, DB 38102216331 (landing2). uPortal-start CI 38101927617, Integration 38101929051 (landing); Integration 38102217848 (landing2).
+
+## 02:10 status
+- Owner rulings: DB versions are hard minimums (no workarounds for older servers, no version check): landed 16080b035 (MOD-D25, ADR 0009, UPGRADING). Flyway vs Liquibase: owner asked which is better; recommended Flyway, awaiting their answer. Playwright error-context.md: owner asked whether it injects instructions; answered (Playwright's own prompt header, benign); no filter unless asked.
+- Integration branch red on SpotBugs since 7691dadc3 (TargetConstraintChecks.scalar, SQL_INJECTION_SPRING_JDBC). Sent to copy-tool agent a3f910cda1ef31f61 as top priority (suppress with justification, not baseline).
+- Manual runs failed Commit messages on 2dd6334ce (later jargon rule): exception added, ae9c14ac7.
+- Spring 5.3 probe: hard-coded --release 11 broke on Pluto (release 8). Fix 0b695896d in batch 1 (probe uses module's release; baseline uPortal-pluto/uPortal-pluto-portal-driver=3).
+- Batch 1 = land-pluto 0b695896d (on ae9c14ac7) pushed to -landing (push CI starts). Batch 2 = 6e57f78d2 on -landing2 ([skip ci] tip). Re-dispatch both after the SpotBugs fix lands (rebase first).
+- jqwik: first check counted nothing because Gradle hides test stdout; rerun with show-streams.init.gradle (jqwik-filter-check2.sh).
+- Agent rules updated: topic branches and backup/ branches allowed.
