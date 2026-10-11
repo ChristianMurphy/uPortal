@@ -1847,6 +1847,33 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   the right-to-left theme (MOD-I234) are measured against it. The checks run inside the
   existing Playwright jobs, not new ones.
 
+### MOD-D53: faster landing with the same checks
+
+* **Measured (2026-10-11, 11:55 UTC):** of 24 pending workflow runs, 22 were waiting for a runner
+  or running, one for close to two hours. A branch needs about 40 jobs before it is merged, and
+  about 20 runner slots serve both repositories. Pushes cancelled running checks: one branch
+  started 32 runs. Cloud sessions couldn't run Gradle, so each compile check went through the
+  queue or the coordinator.
+* **Decision (project owner, 2026-10-11):** the runner pool stays as it is, and:
+  1. Cloud sessions may run Gradle. `.claude/settings.json` in both repositories allows
+     `./gradlew`. The init script that points Gradle at a Maven mirror is kept outside the
+     repositories. A session
+     compiles and tests its change before it pushes.
+  2. A session pushes when a step has passed locally, not after every commit, since each push
+     cancels its branch's running checks.
+  3. Before it is merged, a branch runs the checks for what it changes: the light profile on push,
+     plus the six-vendor database workflows when it changes persistence, SQL, the schema or
+     the copy tool. Branches are then merged in batches of up to four, and the full matrix runs once
+     on the result. If that run fails, the coordinator finds the branch that broke it and
+     reverts its commits with revert commits. The other branches stay.
+  4. A rule the owner adds for every component goes into one follow-up branch that applies it
+     to every component, which also keeps the wording consistent. Branches that pass are
+     merged without it. A security or data-loss rule still goes into each branch before it is
+     merged.
+* **Unchanged:** seeded faults, characterisation specs, zero schema drift until the 6.0 schema
+  step, no re-runs for flakes, and a full matrix on the integration branch after each batch.
+  This refines MOD-D32's landing steps.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
