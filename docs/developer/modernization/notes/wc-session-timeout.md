@@ -35,6 +35,26 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-session-timeout` in uPortal and uPortal-sta
 | 5. Spec against the component, seeded faults | Done: uPortal-start `7764e92`. The 9 characterisation tests pass unchanged against the component, and 4 component tests and a guest-with-session API test were added |
 | 6. UPGRADING-6.0 | Done: "Session Timeout is a web component" |
 | Equivalence reference | uPortal-start `3e544bc`: the Migration equivalence reference holds the converted `session-timeout` definition (run 38130202417 on `a154519` failed without it) |
+| Owner rules MOD-D49 to D51 | uPortal `c2c49a3` and `f06042d` add the Spanish and French `session-timeout.keep-alive.failed`, and logical margins and `overflow-wrap: anywhere`, with a browser test. uPortal-start `3f299e3`: the warning in es_ES and fr_FR (Playwright, as developer). The component has no text inputs and no key handlers, so the Unicode input and `isComposing` rules have nothing to apply to |
+
+## CI evidence for landing (MOD-D53)
+
+Heads: uPortal `f06042d`, uPortal-start `3f299e3`. Push runs:
+
+| Repo | Run | Result |
+| --- | --- | --- |
+| uPortal | CI 38136185868, DB integration 38136186038, DB copy tool 38136185915 | All green |
+| uPortal-start | CI 38137511464, Migration equivalence 38137511485 | Green |
+| uPortal-start | Integration 38137511507 | Green. Playwright postgres-18 died in its first attempt while Gradle resolved POMs from Maven Central, before any spec; the one re-run passed 327 of 327 |
+| uPortal-start | G-index 38137511571 | Failed on the known `up_person_attr` seq-scans (@894770f1, @d57b24fc) |
+
+The G-index workload's Playwright run on this branch logged 29 failed, 1 flaky, 287 passed in
+21.0 min. Other branches logged 1 to 3 failures in 16 to 17 min. The test names are only in the
+run's artifact, which the proxy refuses. A local G-index run on `3f299e3` (same image digest,
+scale 0.01, full suite, 30 s driver) gave 3 failed, 1 flaky, 313 passed in 17.0 min. The failures were Popular
+Portlets' aggregation check (as on other branches) and two Web Proxy tests that fetch
+example.com, which the sandbox's proxy blocks. No Session Timeout test failed, and the warning
+cannot open in the suite: it starts 28.5 minutes after a page loads.
 
 Local runs on the last commits: the session API and session timeout specs, `favorites.spec.ts`
 and `web-component-channel.spec.ts`, 29 of 29; `:uPortal-webcomponents:check` with 385 tests;
@@ -144,6 +164,6 @@ with Tomcat restarted so the page cache served them.
 
 ## Next step
 
-Wait for CI on both topic branches, fix what it finds, then report to the coordinator. The
-portlet's Java, JSP and script stay until the 6.0 data migration converts the definition
-(MOD-I133), like Favorites.
+The coordinator merges both topic branches. The portlet's Java, JSP and script stay until the 6.0
+data migration converts the definition (MOD-I133), like Favorites. When the i18n branch is merged, the
+countdown moves to its plural keys.
