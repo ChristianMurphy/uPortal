@@ -453,6 +453,17 @@ the body.
 `loading`, `failed`, `viewing`, `editing` (`idle` or `saving`) and `saved`, and the passwords stay
 in its context only while the form is open.
 
+### Background Preference
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/background-preference/{fname}` | `{"containerSelector": ..., "images": [{"url", "thumbnailUrl", "caption"}, ...], "selected": url or null}` |
+| `PUT /api/v6-0/background-preference/{fname}` with `{"selected": url or null}` | Saves the choice and answers the same body; 400 for a URL that is not one of the offered images. |
+
+`fname` must be a Background Preference channel (the web component or the old portlet) that the
+user may use, else 404. The choice is the `*SelectedBackgroundImage` preference of the user's own
+portlet entity for the channel, the one the portlet used.
+
 ## Reference conversion: Favorites
 
 The Favorites portlet (Spring Portlet MVC, four JSPs, an EDIT mode) is the first portlet
@@ -537,6 +548,17 @@ it means removing `AbstractFavoritesController`, `FavoritesController`,
 messages only those JSPs use. `FavoritesUtils` and the options-menu script
 (`modern-favorite.js`) stay: the API and the theme use them. Do it once the conversion above
 ships in the 6.0 data migration, and say so in UPGRADING-6.0.
+
+### Background Preference
+
+The Background Preference portlet (Spring Portlet MVC, one JSP that wrote `<style>` elements) is
+`<up-background-preference>` (`uPortal-webcomponents/src/components/up-background-preference`).
+Its machine has `loading`, `failed`, `signedOut` and `ready` (`closed`, `open`, `saving`). The
+background belongs to the page, outside the shadow root, so `page-background.ts` keeps one
+constructable stylesheet per document in `document.adoptedStyleSheets` and replaces its single
+rule on every change. The rule is built with `insertRule` and the CSSOM, so a selector or URL
+cannot add rules, and the URL comes only from the API's list. The portlet stays until the data
+migration converts its definitions (MOD-I133).
 
 ### Converting the next portlet
 

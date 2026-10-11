@@ -447,22 +447,9 @@ public class AggregationGoldenTest {
                                     });
                             return null;
                         });
-        // In time order; the events of one second come in any order
-        final List<String> byTime = new ArrayList<>(read);
-        byTime.sort(
-                java.util.Comparator.comparing((String event) -> event.split("[@ ]")[1])
-                        .thenComparing(java.util.Comparator.naturalOrder()));
-        boolean inTimeOrder = true;
-        for (int i = 1; i < read.size(); i++) {
-            inTimeOrder &=
-                    read.get(i - 1).split("[@ ]")[1].compareTo(read.get(i).split("[@ ]")[1]) <= 0;
-        }
+        // In the order the store returns them: by time, then by id (MOD-I191)
         lines.add(
-                prefix
-                        + "portalEventDao.getPortalEvents(first visit) "
-                        + read.size()
-                        + (inTimeOrder ? " in time order " : " NOT in time order ")
-                        + byTime);
+                prefix + "portalEventDao.getPortalEvents(first visit) " + read.size() + " " + read);
 
         final DateDimensionDao dateDimensions = ctx.getBean(DateDimensionDao.class);
         final TimeDimensionDao timeDimensions = ctx.getBean(TimeDimensionDao.class);
@@ -523,6 +510,8 @@ public class AggregationGoldenTest {
                         + renderAll(renderer, logins.getAggregatedGroupMappings()));
         final DateTime start = first.minusDays(1);
         final DateTime end = last.plusDays(1);
+        // Everyone's logins per day: from the HOUR rows, and from the DAY row
+        final Map<String, int[]> everyoneByDay = new TreeMap<>();
         for (final AggregationInterval interval :
                 Arrays.asList(
                         AggregationInterval.HOUR,
@@ -535,22 +524,44 @@ public class AggregationGoldenTest {
                             new LoginAggregationKeyImpl(interval, everyone),
                             everyone,
                             students);
-            // Ordered by date and time only, so the rank counts distinct times: the rows of one
-            // time (one per group) may come in any order
-            int rank = 0;
-            for (int i = 0; i < found.size(); i++) {
-                if (i > 0 && !found.get(i).getDateTime().equals(found.get(i - 1).getDateTime())) {
-                    rank++;
+            for (final LoginAggregation aggregation : found) {
+                if (interval != AggregationInterval.MONTH
+                        && "Everyone".equals(aggregation.getAggregatedGroup().getGroupName())) {
+                    everyoneByDay
+                                    .computeIfAbsent(
+                                            aggregation
+                                                    .getDateDimension()
+                                                    .getDate()
+                                                    .toLocalDate()
+                                                    .toString(),
+                                            day -> new int[2])[
+                                    interval == AggregationInterval.HOUR ? 0 : 1] +=
+                            aggregation.getLoginCount();
                 }
+            }
+            // Ordered by date and time, then by id (MOD-I191)
+            for (int i = 0; i < found.size(); i++) {
                 lines.add(
                         prefix
                                 + "loginAggregationDao.getAggregations("
                                 + interval
                                 + ", Everyone+Students)#"
-                                + rank
+                                + i
                                 + " "
                                 + renderer.render(found.get(i)));
             }
+        }
+        // The HOUR rows of a day sum to its DAY row, except where a local hour repeats: there the
+        // second hour is dropped from the HOUR rows (MOD-I140, fixed in the 6.0 schema step)
+        for (final Map.Entry<String, int[]> day : everyoneByDay.entrySet()) {
+            lines.add(
+                    prefix
+                            + "logins of Everyone on "
+                            + day.getKey()
+                            + ": HOUR rows sum to "
+                            + day.getValue()[0]
+                            + ", DAY row counts "
+                            + day.getValue()[1]);
         }
         @SuppressWarnings("unchecked")
         final ConcurrentUserAggregationDao<ConcurrentUserAggregation> concurrent =
