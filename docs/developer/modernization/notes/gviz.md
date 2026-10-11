@@ -152,12 +152,11 @@ Light profile on `ccr-43ba0785-hzlrj5-gviz`:
 * CI run 38101149669 on `d6e525f`: passed. Build and Test (all module tests, including the
   new report tests and `LoginTotalsStatisticsControllerTest`), Spotless, SpotBugs, the
   JavaScript lint and the commit-message checks all passed.
-* DB integration run 38101149658 on `d6e525f`: running at the 01:38 UTC checkpoint. The two
-  earlier DB integration runs on this branch passed.
+* DB integration run 38101149658 on `d6e525f`: passed.
 
-## Status at the checkpoint (2026-10-11 01:38 UTC)
+## Status (2026-10-11 01:51 UTC)
 
-* Done: the code change, its tests and docs. Light-profile CI is green on `d6e525f`.
-* Running: DB integration run 38101149658.
-* Next step: when that run passes, add its result above and tell the coordinator the branch
-  is ready to land. If it fails, read its job logs and fix the cause.
+* Done: the code change, its tests and docs. CI 38101149669 and DB integration 38101149658
+  are both green on `d6e525f`. Later commits only touch this note.
+* Next step: the coordinator merges the branch into the integration branch, then runs the
+  portal and Playwright to check that the statistics and SQL Query chart pages render.
