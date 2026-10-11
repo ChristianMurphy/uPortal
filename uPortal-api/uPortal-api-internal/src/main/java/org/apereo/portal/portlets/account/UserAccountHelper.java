@@ -16,6 +16,10 @@ package org.apereo.portal.portlets.account;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -66,6 +70,14 @@ public class UserAccountHelper {
     protected final Log log = LogFactory.getLog(getClass());
     private static final String PORTLET_FNAME_LOGIN = "login";
 
+    /** The local account attribute that holds the password reset token. */
+    static final String ATTR_LOGIN_TOKEN = "loginToken";
+
+    /**
+     * The local account attribute that holds when the reset token was issued (an ISO-8601 instant).
+     */
+    static final String ATTR_LOGIN_TOKEN_ISSUED = "loginTokenIssued";
+
     private ILocaleStore localeStore;
     private LocaleManagerFactory localeManagerFactory;
     private ILocalAccountDao accountDao;
@@ -77,6 +89,8 @@ public class UserAccountHelper {
     private IGroupListHelper groupListHelper;
     private IPasswordResetNotification passwordResetNotification;
     private String loginPortletFolderName = "welcome";
+    private Duration resetTokenLifetime = Duration.ofHours(1);
+    private Clock clock = Clock.systemUTC();
 
     @Autowired
     public void setLocaleStore(ILocaleStore localeStore) {
@@ -131,6 +145,26 @@ public class UserAccountHelper {
     @Value("${org.apereo.portal.folder.login-layout:welcome}")
     public void setLoginPortletFolderName(String loginPortletFolderName) {
         this.loginPortletFolderName = loginPortletFolderName;
+    }
+
+    /**
+     * How long a password reset token works after it is issued, as an ISO-8601 duration such as
+     * PT1H.
+     */
+    @Value("${org.apereo.portal.portlets.account.resetTokenLifetime:PT1H}")
+    public void setResetTokenLifetime(String resetTokenLifetime) {
+        final Duration lifetime = Duration.parse(resetTokenLifetime);
+        if (lifetime.isZero() || lifetime.isNegative()) {
+            throw new IllegalArgumentException(
+                    "org.apereo.portal.portlets.account.resetTokenLifetime must be positive: "
+                            + resetTokenLifetime);
+        }
+        this.resetTokenLifetime = lifetime;
+    }
+
+    /** The clock that dates reset tokens; tests set a fixed one. */
+    void setClock(Clock clock) {
+        this.clock = clock;
     }
 
     public PersonForm getNewAccountForm() {
@@ -379,7 +413,8 @@ public class UserAccountHelper {
         if (StringUtils.isNotBlank(form.getPassword())) {
             account.setPassword(passwordService.encryptPassword(form.getPassword()));
             account.setLastPasswordChange(new Date());
-            account.removeAttribute("loginToken");
+            account.removeAttribute(ATTR_LOGIN_TOKEN);
+            account.removeAttribute(ATTR_LOGIN_TOKEN_ISSUED);
         }
 
         accountDao.updateAccount(account);
@@ -391,11 +426,51 @@ public class UserAccountHelper {
         return token;
     }
 
+    /**
+     * Give the account a new password reset token, dated now. The caller saves the account. A token
+     * works for the reset token lifetime after this.
+     */
+    public void issueLoginToken(ILocalAccountPerson account) {
+        account.setAttribute(ATTR_LOGIN_TOKEN, getRandomToken());
+        account.setAttribute(ATTR_LOGIN_TOKEN_ISSUED, clock.instant().toString());
+    }
+
+    /**
+     * Whether the token is the account's reset token but too old to use. A token without an issue
+     * time, such as one issued before uPortal 6.0, counts as expired.
+     */
+    public boolean isLoginTokenExpired(String username, String token) {
+        final ILocalAccountPerson person = accountDao.getPerson(username);
+        return person != null
+                && token != null
+                && token.equals(person.getAttributeValue(ATTR_LOGIN_TOKEN))
+                && !isLoginTokenCurrent(person);
+    }
+
+    private boolean isLoginTokenCurrent(ILocalAccountPerson person) {
+        final Object issued = person.getAttributeValue(ATTR_LOGIN_TOKEN_ISSUED);
+        if (issued == null) {
+            return false;
+        }
+        try {
+            return !clock.instant()
+                    .isAfter(Instant.parse(issued.toString()).plus(resetTokenLifetime));
+        } catch (DateTimeParseException e) {
+            return false;
+        }
+    }
+
     public boolean validateLoginToken(String username, String token) {
         ILocalAccountPerson person = accountDao.getPerson(username);
         if (person != null) {
-            Object recordedToken = person.getAttributeValue("loginToken");
+            Object recordedToken = person.getAttributeValue(ATTR_LOGIN_TOKEN);
             if (recordedToken != null && recordedToken.equals(token)) {
+                if (!isLoginTokenCurrent(person)) {
+                    if (log.isInfoEnabled()) {
+                        log.info("Expired security token for user:  " + username);
+                    }
+                    return false;
+                }
                 if (log.isInfoEnabled()) {
                     log.info("Successfully validated security token for user:  " + username);
                 }
@@ -431,7 +506,7 @@ public class UserAccountHelper {
         IPortletUrlBuilder portletUrlBuilder = builder.getTargetedPortletUrlBuilder();
         portletUrlBuilder.addParameter("username", account.getName());
         portletUrlBuilder.addParameter(
-                "loginToken", (String) account.getAttributeValue("loginToken"));
+                "loginToken", (String) account.getAttributeValue(ATTR_LOGIN_TOKEN));
         portletUrlBuilder.setPortletMode(PortletMode.VIEW);
         portletUrlBuilder.setWindowState(WindowState.MAXIMIZED);
 
@@ -476,7 +551,8 @@ public class UserAccountHelper {
             ILocalAccountPerson account = accountDao.getPerson(username);
             account.setPassword(passwordService.encryptPassword(password));
             account.setLastPasswordChange(new Date());
-            account.removeAttribute("loginToken");
+            account.removeAttribute(ATTR_LOGIN_TOKEN);
+            account.removeAttribute(ATTR_LOGIN_TOKEN_ISSUED);
             accountDao.updateAccount(account);
             if (log.isInfoEnabled()) {
                 log.info("Password created for account:  " + account);
