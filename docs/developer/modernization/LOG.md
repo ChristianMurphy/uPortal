@@ -1249,6 +1249,44 @@ This supersedes MOD-D24's runtime matrix.
 * **Alternative considered:** krishnasunkam/vale-ai-tells, a smaller package with 17 rules. The tbhb
   package is the one Vale's catalog lists as `ai-tells`, and it has the commit-message rules.
 
+### MOD-D36: ADRs in MADR format replace the RFC
+
+* **Asked by the owner:** uPortal has no RFC process, so record decisions as ADRs instead. Neither
+  repository had an ADR folder or a proposal process in the tree; the nearest documents are
+  `docs/developer/other/ARCHITECTURE.md` and `docs/architecture/subsystem-analysis.md`.
+* **Decision (owner, 2026-10-11):**
+  * Architecture decision records go in `docs/developer/adr/NNNN-title.md`, using the MADR template
+    (context and problem, decision drivers, considered options, outcome, consequences, pros and
+    cons). One ADR per decision that matters upstream. Each starts with status `proposed`, because
+    the uPortal community hasn't reviewed them.
+  * `RFC-uPortal-6.0.md` is deleted. LOG.md maps each ADR to the MOD-D entries behind it.
+  * Upstream pull requests contain the ADRs, `docs/UPGRADING-6.0.md` and user-facing docs. LOG.md,
+    the research reports and the workstream notes stay on the prototype branch as evidence. So ADRs
+    summarize their evidence instead of linking into `docs/developer/modernization/`.
+
+### MOD-D37: the integration branch history is rewritten once, after the current work is merged
+
+* **Asked by the owner:** clean up the git history. In uPortal, the integration branch had 166
+  commits beyond master: 13 merges, 80 docs or log updates and 12 prototype-only CI changes. In
+  uPortal-start it had 77: 8 merges and 11 prototype-only CI changes.
+* **Decision (owner, 2026-10-11):** rewrite `ccr-43ba0785-hzlrj5` in place in both repositories,
+  after the workstreams in flight have landed, rather than now or on a copy branch.
+* **Plan:**
+  1. Announce a push freeze to every agent and session, and wait for in-flight pushes.
+  2. Tag the old head (`archive/ccr-43ba0785-hzlrj5-<date>`) in both repositories before anything
+     is rewritten.
+  3. Rebuild the history without merge commits. Commits are grouped into the units that become
+     upstream pull requests, and messages pass both commit checks, so
+     `.github/vale/commit-exceptions.txt` empties. Log and note updates fold into fewer commits.
+     Prototype-only changes (the `ccr-*` CI conditions, `docs/developer/modernization/`) sit in
+     their own commits, never mixed with upstream content.
+  4. Check that the final tree is byte-identical to the old head, then push with
+     `--force-with-lease`.
+  5. Every agent and session rebases its unlanded work with
+     `git rebase --onto <new head> <old head>`.
+* **Until then:** keep each commit self-contained, keep prototype-only files out of commits that
+  change upstream content, and don't create merge commits.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
