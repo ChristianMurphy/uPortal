@@ -127,12 +127,21 @@ CI runs: see the bottom of this note.
   and the ICU4J/opencsv it brought are removed. Golden tests prove the JSON, CSV and HTML match
   5.17, except the null-cell JSON fix.
 * **New decision (MOD-D?):**
-  * Own small formats instead of keeping unmaintained libraries, when uPortal uses only a
-    sliver of them.
-  * The chart pages move to REST plus an Apache ECharts web component, and Google Charts goes with that move.
+  * Write a small uPortal class instead of keeping an unmaintained library, when uPortal
+    uses about 14 of its classes, as here.
+  * The chart pages move to REST plus an Apache ECharts web component (MOD-D34), and Google
+    Charts goes with that move.
   * The `WEB-INF/tags/google-visualization` tags and the "Google Visualization" HTML title stay
     until that move.
 * **Follow-ups:**
   * The SqlQuery chart JSPs still load `www.google.com/jsapi` over plain http.
 
 ## CI
+
+Light profile on `ccr-43ba0785-hzlrj5-gviz`:
+
+* DB integration run 38096951795 on `1ad79c3`: passed.
+* CI run 38096951802 on `1ad79c3`: the commit-message and SpotBugs jobs passed. Build and Test failed
+  only in `spotlessJavaCheck`, because google-java-format 1.36.1 indents one string
+  concatenation in `LoginTotalsStatisticsControllerTest` four spaces deeper than 1.35.0. The
+  next commit re-indents it.
