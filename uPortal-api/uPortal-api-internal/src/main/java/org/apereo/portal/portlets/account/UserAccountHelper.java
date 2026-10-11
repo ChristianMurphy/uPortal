@@ -489,6 +489,38 @@ public class UserAccountHelper {
         return false;
     }
 
+    /**
+     * Forgot Password: give the user name's local account a new reset token and email it a link.
+     * The caller shows the same page whatever happens here, so that the page does not tell anyone
+     * which accounts exist. Nothing is sent to an unknown user name or an account without an email
+     * address, and a failed send is logged at ERROR for administrators.
+     */
+    public void requestPasswordReset(HttpServletRequest request, String username) {
+        final ILocalAccountPerson account =
+                StringUtils.isBlank(username) ? null : accountDao.getPerson(username.trim());
+        if (account == null) {
+            // The user name is not logged: people sometimes type a password into that field
+            log.debug("Forgot Password: no local account has the user name given");
+            return;
+        }
+        final Object mail = account.getAttributeValue(ILocalAccountPerson.ATTR_MAIL);
+        if (mail == null || StringUtils.isBlank(mail.toString())) {
+            log.warn(
+                    "Forgot Password: account "
+                            + account.getName()
+                            + " has no email address, so no reset email was sent");
+            return;
+        }
+        issueLoginToken(account);
+        accountDao.updateAccount(account);
+        try {
+            sendLoginToken(request, account);
+        } catch (RuntimeException e) {
+            log.error(
+                    "Unable to send the password reset email for account " + account.getName(), e);
+        }
+    }
+
     public void sendLoginToken(HttpServletRequest request, ILocalAccountPerson account) {
         sendLoginToken(request, account, passwordResetNotification);
     }
