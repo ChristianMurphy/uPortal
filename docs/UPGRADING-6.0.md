@@ -25,6 +25,11 @@ If your 5.17 database runs on an older server, use it as a migration source. The
 (`uPortal-db-migrate`, run with `./gradlew dbMigrate` in uPortal-start) copies 5.17 data from it
 into a new server of any supported vendor and checks every table after the copy.
 
+Before it writes a row, the copy tool also checks that the target can store your text. On SQL
+Server's default collation, `varchar` columns keep only windows-1252, so emoji or CJK text in
+group names, portlet titles, layout names or user attributes doesn't fit. The tool then stops
+and reports each such column, the number of rows and the key of one of them.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
