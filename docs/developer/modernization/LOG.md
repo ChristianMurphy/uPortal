@@ -1126,6 +1126,39 @@ This supersedes MOD-D24's runtime matrix.
   intended changes. uPortal CI 38104024957 failed on Windows
   because `.ts` files were checked out with CRLF. CI 38105388258 on the
   fix (95493437d) passed on every leg.
+* **Status of items 3 and 7 and the ArchUnit rules (2026-10-11):**
+  delivered as uPortal-webapp tests. They run on HSQLDB in
+  `:uPortal-webapp:test` and on the five databases of `db-integration.yml`
+  through the existing `uportal.test.db.*` properties. The goldens under
+  `uPortal-webapp/src/test/resources/golden` were recorded on HSQLDB with
+  Hibernate 4.3, Spring 4.3 and Joda-Time. `-Duportal.golden.record=true`
+  re-records them, on HSQLDB only. CI never sets it. Each vendor
+  difference is a documented rule in `VendorDifferences` or
+  `QueryVendorDifferences` that maps the expected value. No test is
+  skipped on any database.
+  * `EntityRoundTripGoldenTest`: all 61 entity types of the PortalDb,
+    RawEventsDb and AggrEventsDb units (2 abstract types are covered by
+    their subclasses), in four variants: maximum lengths and values,
+    minimum and empty values, multi-byte text with emoji and RTL scripts
+    plus instants on the New York and London DST changes, and nulls. Each
+    entity is reloaded in a new persistence context and compared field by
+    field. The stored rows are compared too, so the `_` prefix that 4.3
+    writes on the keys of the four `nullSafeString` maps is pinned
+    (MOD-I120). Runs under the JVM zones UTC and America/New_York.
+  * `DaoQueryGoldenTest`: 45 query methods of 17 PortalDb DAOs on a fixed
+    data set, with result classes, order, nulls and exceptions.
+  * `AggregationGoldenTest`: 462 generated raw events of 10 types (logins
+    and logouts, page renders, portlet executions, layout changes) in
+    three windows that cross the November and March DST changes, a month
+    end and the year end, aggregated by the real pipeline in both zones.
+    It pins the 1,153 (UTC) and 1,131 (New York) aggregation, event
+    session and status rows, and the read-side DAO queries.
+  * `MigrationFreezeRulesTest` (ArchUnit 1.5.1, test scope of
+    uPortal-webapp): a new use of `org.joda.time`, Ehcache 2, the legacy
+    Hibernate `Criteria` API, or `org.hibernate.Session` outside the DAO
+    packages fails. The existing uses are frozen in
+    `src/test/resources/archunit_store`.
+  * Findings: MOD-I140 to MOD-I143.
 
 * **Status (2026-10-11, copy-tool strength tests):** in
   `uPortal-db-migrate`, described in
@@ -1668,6 +1701,10 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I135 | CI | uPortal-start `CI.yml` runs the full Playwright suite against released uPortal 5.17.9. Data and specs that need unreleased uPortal fail there: with the WS14 data and specs (uPortal-start "feat(data): render favorites as a web component channel" and "test(e2e): cover the favorites web component and the channel type"), 5.17.9 has no `WebComponent` portlet, `/api/v6-0/` or `/webcomponents/`. There the Favorites channel shows an error and the seven new tests fail. `integration.yml` (uPortal built from source) runs them on the matching uPortal. | **Decided (coordinator, 2026-10-11):** CI.yml skips its released-uPortal Playwright job on every `ccr-*` branch (uPortal-start "ci(prototype): skip the released-uportal playwright run on ccr branches"). Integration runs the suite there against uPortal built from source. Ordering rule: a uPortal-start change that needs a new uPortal lands after that uPortal release, so upstream the job keeps running on master and pull requests. |
 | MOD-I136 | Tests | uPortal-start `npm run lint` fails on `tests/db/migrate/matrix.mjs` (8 `no-undef` errors for `console` and `process`): `eslint.config.js` declares globals for TypeScript files only. The linter runs in `./gradlew playwrightRun`, which no workflow calls. | Add Node globals for `*.mjs` in `eslint.config.js`. |
 | MOD-I137 | DB harness | **Found by the WS14 hsqldb harness run.** `dataInit` runs the import in a Spring context that also starts uPortal's scheduled event-aggregation jobs. On this loaded machine the context took 2 min 47 s to start, and the jobs ran after the tables existed. Before the snapshot they filled the date and time dimensions (365 and 1440 rows) and wrote rows to `UP_MUTEX` (4) and `UP_EVENT_AGGR_STATUS` (2). The harness reported these as DATA and GENERATORS drift. Faster runs (CI, the earlier local run) take the snapshot first. | Turn the aggregation jobs off in the import context, or snapshot right after the import ends. Harness owners (DB matrix). |
+| MOD-I140 | Analytics | **Found by the analytics goldens.** With the portal JVM in a zone with DST, events in the repeated autumn hour are dropped from the sub-day aggregations. The date and time dimensions hold local wall-clock time, so 01:00 to 02:00 EST maps to the same aggregation row as 01:00 to 02:00 EDT, which is already closed. `LoginAggregationImpl` and the other aggregations log "is already closed ... will be ignored". In `aggregation/America_New_York.txt` the HOUR rows of 2025-11-02 sum to 6 logins while the DAY row counts 8. A UTC JVM is unaffected. | Characterised, not fixed: the goldens pin 5.17's behaviour. The fix belongs with the java.time move (UTC dimensions, or the offset in the time dimension) and re-records the New York golden on purpose. |
+| MOD-I141 | Persistence | **Found by the entity round trip.** `java.util.Date` columns mapped as timestamps are written as JVM-local wall-clock time. The stored value depends on the JVM zone, and an instant in the repeated autumn hour reads back an hour late under America/New_York (2026-11-01T05:30Z, 01:30 EDT, comes back as 06:30Z). Affected: `ClusterMutex.lastUpdate` and `lockStart`, `PortletLifecycleEntryImpl.date`, `PortletList.createdOn` and `updatedOn`, `LocalAccountPersonImpl.lastPasswordChange`. The Jadira `DateTime` columns (`databaseZone=UTC`) are not affected. | Characterised in `roundtrip/*-America_New_York.txt`. From P2 on, keep `hibernate.jdbc.time_zone` unset until these columns move to `Instant` stored in UTC, and re-record on purpose then. |
+| MOD-I142 | Portlets | **Found by the query goldens.** `JpaPortletDefinitionDao.searchForPortlets(term, true)` upper-cases the term but not the name and title it is compared with, and does not escape `%` or `_`. The partial search (the groups `PortletDefinitionSearcher`) finds only upper-case names on HSQLDB, PostgreSQL and Oracle, and matches case-insensitively on MySQL, MariaDB and SQL Server. `STARTS_WITH` and `ENDS_WITH` searches also behave as `CONTAINS`, because the DAO wraps the term in `%` on both sides. | Characterised per vendor (`QueryVendorDifferences`). Fix with `upper()` on both sides and an escape character when the portlet search is reworked, and re-record then. |
+| MOD-I143 | Persistence | **Found by the query goldens and the round trip.** `LocalAccountPersonImpl.attributes` is an eager `FetchMode.JOIN` bag over the indexed `values` list. A loaded person repeats each attribute once per value, and `JpaLocalAccountDaoImpl.getAllAccounts()` returns one row per attribute value (7 for 3 accounts). `getAttributes()` builds a map, so callers of the person API don't see the duplicates. Hibernate 6 de-duplicates root entities, so `getAllAccounts()` changes at P4. | Characterised. Production code doesn't call `getAllAccounts()`. At P4, re-record the golden with the de-duplicated list and note it here. |
 | MOD-I150 | Portlets | **Found by the Pluto test suite spec** (uPortal-start `pluto-testsuite.spec.ts`, MiscTest.checkContextServerInfo). `PortletContext.getServerInfo()` returned `Pluto/${pluto.version}`. uPortal-webapp's own `pluto-configuration.properties`, which shadows the jar's, kept the Maven placeholder, which the Gradle build did not fill in. | **Fixed** (d20564691): processResources fills in `plutoVersion`. `PlutoConfigurationTest` fails on the old file. Upstream candidate. |
 | MOD-I151 | Portlets | **Found by the Pluto test suite spec** (SimpleAttributeTest.checkEnumerateAttributes). A removed portlet request attribute stayed in `getAttributeNames()`. Pluto removes with `setAttribute(name, null)`, and `PortletRequestContextImpl` stored the null. The check failed only when it ran after the removal, and the suite's reflection order changes with each JVM start. | **Fixed** (104858ea0): a null value removes the attribute. `PortletRequestContextImplTest` covers it. Upstream candidate. |
 | MOD-I152 | Portlets | **Found by the Pluto test suite spec** (PreferenceCommonTest.checkGetNoValuePreference, in action and render). `PortletPreferences.getValues(name, def)` returned `{}` instead of `def` for a portlet.xml `<preference>` without `<value>` (PLT.17.1). | **Fixed** (b1c8ec22e): `getValues` answers the default for a descriptor preference without values, as Pluto's own container does. `PortletPreferenceImplTest` and `AbstractPortletPreferencesImplTest` cover it. Upstream candidate. |
