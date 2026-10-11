@@ -40,6 +40,7 @@ uPortal, oldest first:
 | `fix(search): read remote providers from the propertyResolver bean` | the startup bug below; `RemoteJsonSearchProvidersTest` in a root and a servlet context |
 | `fix(search): leave input method keys alone and use logical css` | MOD-D51: `event.isComposing`; logical margins; long words wrap |
 | `fix(search): read the query from the render url the portal redirects to` | the `pP_query` bug below |
+| `docs(search): say what to do about the removed type-ahead files` | UPGRADING-6.0's section "The type-ahead script and stylesheet are gone", which the replay's lost-access entry names |
 
 uPortal-start, oldest first:
 
@@ -49,6 +50,7 @@ uPortal-start, oldest first:
 | `feat(data): render search as web component channels` | `search` and `search-launcher` as Web Component channels; intended row changes; `search-web-component.spec.ts` (5 tests) and `tests/api/search-v6-0.spec.ts` (4 tests) |
 | `test(e2e): check search in spanish, french and any unicode text` | es_ES and fr_FR users (through the locale selector, set back to en_US), the Unicode query from both boxes, the API's limit in characters |
 | `test(e2e): read the search query from the portlet parameter` | the specs read `pP_query`, as the component does |
+| `test(e2e): register the search web component replay` | HTTP replay registry entries for the search pages and APIs (`search-web-component-page`, `search-web-component-registry`) and for the 404 of the removed autosuggest files (`search-autosuggest-removed`) |
 
 ## Running
 
@@ -75,6 +77,13 @@ G-index in uPortal-start). Integration builds the uPortal branch of the same nam
    `search-web-component.spec.ts` and `search-v6-0.spec.ts` (see "Seeded faults" for the setup).
 5. Landing evidence: the push runs on the branch heads (uPortal CI, and uPortal-start CI,
    Integration, equivalence and G-index).
+6. The HTTP replay (run 38151285626, on uPortal `38fe16ec1`) found 137 unexplained exchanges, all
+   from Search, and 12 lost-access errors for the removed autosuggest files. It also reported that four
+   entries didn't match anything (`csrf-meta-tags`, `local-login-link`, and the Favorites and
+   Popular Portlets page entries). Those entries match the same pages, and a page with any
+   unexplained line doesn't count its matches. Locally, on uPortal `3765f5ee8` with the new
+   entries and the Background Preference entries from `-replay-wc`, the replay reports 0
+   unexplained exchanges and no stale entries (`--upgrading` on this branch's UPGRADING-6.0).
 
 ## Seeded faults
 
@@ -116,6 +125,15 @@ again.
 | the search field's `maxlength` 100 in the deployed `up-search` bundle | `search.spec.ts` | fails: "the header offers a search box" (expected "200", received "100") |
 | `ArrowRight` no longer moves the results tabs, in the deployed bundle | `search-web-component.spec.ts` | fails: "the results tabs follow the keyboard" |
 | the blank-query message reads "Type something to search for", in a rebuilt `uPortal-api-rest` jar | `search-v6-0.spec.ts` | fails: "refuses a blank query" |
+
+HTTP replay, re-evaluated with `replay.mjs replay --actual` on the saved local run, one fault at a
+time in copies of the registry and of UPGRADING-6.0:
+
+| Fault | Result |
+| --- | --- |
+| `search-web-component-page` no longer matches the autosuggest stylesheet line | fails: 100 exchanges unexplained, and `local-login-link` doesn't match anything |
+| UPGRADING-6.0's section renamed "The type-ahead files" | fails: `search-autosuggest-removed` names a section that doesn't exist |
+| `search-autosuggest-removed` removed | fails: 12 exchanges lose access without an UPGRADING-6.0.md section (rule 2) |
 
 ## Proposed LOG rows (the coordinator numbers them)
 
