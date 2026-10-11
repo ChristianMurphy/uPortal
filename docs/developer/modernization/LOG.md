@@ -1879,6 +1879,45 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   run, so it cancels none. A landing can go out under a `[skip ci]` LOG commit while a
   batch's run is in progress, and the next batch's run covers it. Clean-ups of superseded runs
   leave runs started by hand alone.
+* **Lesson (coordinator, 2026-10-11):** a uPortal change to persistence or SQL also needs one
+  Integration run on uPortal-start with that uPortal build. The six-vendor DB integration
+  workflow runs uPortal's own tests, which didn't load a layout through the path that lost its
+  table alias. The portal's PostgreSQL run would have shown it before the merge.
+
+### MOD-D54: servers clear their replicated caches after a healed network split
+
+* **Decision (project owner, 2026-10-11):** when the JGroups channel reports a merge view (the two
+  halves of a split rejoining), each server clears its replicated caches and reloads from the
+  database. A normal join doesn't clear anything.
+* **Why:** during a split each server misses the other's invalidations, so a portlet definition
+  or a permission decision could stay out of date until its cache entry expires, up to six hours.
+  The join fix (MOD-I210, more join attempts) covers restarts, not a real network split.
+* **Cost:** a short burst of database load after a split heals.
+* **Work:** `ccr-43ba0785-hzlrj5-cluster`, with a harness leg that splits and heals the two
+  nodes and a seeded fault.
+
+### MOD-D55: fewer CI jobs on each push and batch
+
+* **Measured (2026-10-11):** six full runs took 391 runner-minutes. Jobs waited 16 to 123 minutes
+  for a runner and then ran for 3 to 40. Each job waits on its own, so every job a push starts
+  adds a wait. `npm ci` downloaded every package again in each of 16 Integration jobs
+  (34 minutes). uPortal CI compiled the same code 10 times and installed Chromium 8 times. A
+  3-second planning job held back the replay workflow's uPortal build for 44 minutes. G-index,
+  at 39 minutes, is the longest job, and it ran on every uPortal-start topic push.
+* **Changes that keep every test (coordinator):** cache npm and the Playwright browsers; run the
+  web component tests, the JavaScript lint and SpotBugs in one uPortal CI job instead of each
+  OS and Java job; make each planning job the first step of the job that needs its answer;
+  split the long harness steps into timed phases so the next savings are measured.
+* **Decision (project owner, 2026-10-11):**
+  1. The Zulu and Corretto jobs run in the nightly run only. Each batch keeps Temurin 21 and 25
+     on Linux, and Temurin 25 on macOS and Windows.
+  2. A uPortal-start topic push runs G-index only when it, or the uPortal branch of the same
+     name, changes persistence, SQL, the schema, the data files or G-index itself. A batch, a
+     run started by hand and the nightly run always run it.
+* **Cost:** a problem with one vendor's JDK shows up in the next nightly run instead of at
+  landing. A G-index failure that a web component change causes shows up in its batch run,
+  which then reverts that branch. The Session Timeout workload failures were found this way
+  on a topic push.
 
 ## Issues
 
@@ -2073,6 +2112,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I221 | Persistence | `hibernate.jdbc.time_zone=UTC` alone moves `UP_TIME_DIMENSION.TD_TIME` by the JVM's offset (00:00 stored as 05:00 in New York). Without a zone, Jadira's `localTime` binds through Hibernate's time descriptor. | **Fixed:** `JvmZoneLocalTimeType` binds with the JVM zone's calendar, as before. |
 | MOD-I222 | Portlets | `TransientPortletEntityDao.getPortletEntity` threw a NullPointerException for a transient node the layout lacks or whose portlet is gone (seen on `layout.json` with `user=null` in the first P2 runs). | **Fixed:** returns null. |
 | MOD-I223 | Portlets | On SQL Server, `[` in a portlet search term starts a LIKE character class. HSQLDB and Oracle reject `![`, so one escape set can't serve every vendor. | **Fixed:** the DAO escapes `[` on SQL Server only, from PortalDb's dialect. The query golden checks that the vendors agree. |
+| MOD-I224 | Persistence | **Found by the cluster harness.** MOD-I191's tie-breaker added `USP.STRUCT_PARM_NM` to the ORDER BY of `RDBMUserLayoutStore.getUserLayout`, which both of its queries share. Without outer joins the query reads `UP_LAYOUT_STRUCT` alone, and `dataInit` always takes that path: the portal tables don't exist yet when it starts, so `supportsOuterJoins()` returns false for the whole run. PostgreSQL 18 answered "missing FROM-clause entry for table usp" while importing the welcome-lo fragment layout. uPortal's DB integration tests never load a layout through this store. | **Fixed** (`ccr-43ba0785-hzlrj5-layout-order`): each query orders only by columns it reads, and `RDBMUserLayoutStoreQueryTest` runs both on HSQLDB. MOD-D53 now asks for an Integration run on uPortal-start for uPortal persistence changes. |
 | MOD-I230 | Persistence | **Found by the background-preference conversion.** When one user saves portlet-entity preferences from two sessions at once, Hibernate refuses one save, and a stale cached `PortletPreferenceImpl` can remain. The user's next sign-in then fails with `EntityNotFoundException` until Tomcat restarts. It is the existing `PortletEntityPreferencesAPIImpl` store, which the portlets use too. Seen when two Playwright workers changed the student's background at once. | **Open.** Write a test that saves the same user's entity preferences from two sessions at once and then signs in, and show the failure. Then fix the cache handling (evict on a failed save, or retry). A refused save must not leave a stale entity in the cache. Until then a user can be locked out by saving preferences in two tabs. |
 | MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Open.** Translate them on `ccr-43ba0785-hzlrj5-i18n`. The MOD-D50 check stops it from happening again. |
 | MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Open.** Read message bundles as UTF-8 after checking that each one is valid UTF-8, and test the French line. Existing `\u` escapes keep working. |
