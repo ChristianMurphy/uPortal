@@ -102,12 +102,17 @@ public class EmailPasswordResetNotificationImplTest {
 
         verify(mockedMimeMessage).setFrom(fromCaptor.capture());
         verify(mockedMimeMessage).addRecipient(eq(RecipientType.TO), toCaptor.capture());
-        verify(mockedMimeMessage).setSubject(eq(subject));
+        // the subject and body are encoded as UTF-8 (MOD-I275)
+        verify(mockedMimeMessage).setSubject(eq(subject), eq("UTF-8"));
         verify(mockedMimeMessage).setContent(bodyCaptor.capture());
 
         assertThat(fromCaptor.getValue().getAddress(), equalTo(fromAddress));
         assertThat(toCaptor.getValue().getAddress(), equalTo(toAddress));
         assertThat(getBodyHtml(bodyCaptor.getValue()), containsString(resetUrl));
+        final Multipart related = (Multipart) bodyCaptor.getValue().getBodyPart(0).getContent();
+        assertThat(
+                related.getBodyPart(0).getDataHandler().getContentType(),
+                equalTo("text/html;charset=UTF-8"));
     }
 
     private String getBodyHtml(Multipart msg) throws Exception {
@@ -115,7 +120,7 @@ public class EmailPasswordResetNotificationImplTest {
             BodyPart part = msg.getBodyPart(i);
             String type = part.getContentType();
 
-            if ("text/plain".equals(type) || "text/html".equals(type)) {
+            if (type.startsWith("text/plain") || type.startsWith("text/html")) {
                 DataHandler handler = part.getDataHandler();
                 String val = IOUtils.toString(handler.getInputStream());
                 return val;
