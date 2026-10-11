@@ -60,4 +60,31 @@ used least recently when it is exceeded.
 
 ## Measurement
 
-Pending: the runs of the second design had not finished when this note was written.
+Times are the job's `started_at` to `completed_at`, and the step times, from `list_workflow_jobs`.
+
+| Job | Run and job | Cache | Job | Step | Setup Gradle |
+| --- | --- | --- | --- | --- | --- |
+| uPortal `DB copy tool`, before | 38143056181, 114480677246 | none (log-diet) | 312 s | 304 s | 2 s |
+| uPortal `DB copy tool`, first push | 38150884890, 114503920254 | none found, saved 416 MB | 353 s | 334 s | 4 s, then 5 s to save |
+| uPortal `DB copy tool`, second push | 38154644977, 114514996485 | restored the 416 MB entry | 278 s | 259 s | 6 s |
+| uPortal-start `Build uPortal`, before | 38143061751, 114480693369 | none (log-diet) | 223 s | 206 s | 3 s |
+| uPortal-start `Build uPortal`, later push | 38154646593, 114515004580 | restored, "entry with key already exists" | 168 s | n/a | 8 s |
+| uPortal-start `CI` build job, before | 38143061745, 114480693351 | none (log-diet) | 398 s | `Build` 139 s | 1 s |
+| uPortal-start `CI` build job, roles push | 38154646614, 114515055949 | none yet | 430 s | `Build` 167 s | 2 s |
+
+* The step is `Copy between postgres,mariadb` for the copy tool, `Build and install uPortal` for
+  `Build uPortal` (the job time is all that was read for the second build), and `Build` for `CI`.
+* **Copy tool:** restoring the entry that the previous push saved cut the step by 45 s (15%) and the
+  job by 34 s against the run without a cache. The first push, which didn't find an entry and saved one,
+  took 41 s longer than the run without a cache, 5 s of it for the save.
+* **`Build uPortal`:** the entry came from an earlier run on the branch. The job took 55 s less
+  (25%). Most of the 168 s is compiling uPortal, which a cache doesn't change.
+* **`CI` build job:** no gain, and none was possible. The job started while the saver of its key,
+  the `Playwright: postgres-18` job of `Integration`, was still running, so there was no entry to
+  restore. Its `Build` step differs by 28 s in the other direction, which is the run-to-run spread
+  of downloads from Maven Central. The first run of a key is always cold.
+* The `Setup Gradle` times include the restore. Restoring 416 MB took about 6 s.
+
+The runs of the uPortal `CI` build job and of the uPortal-start `Integration` savers had not
+finished when this note was written, so the sizes of their entries are open. The sizes of the other
+entries are in the log of the saving job (`Sent N of N`).
