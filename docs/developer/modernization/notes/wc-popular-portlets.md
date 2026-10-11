@@ -103,6 +103,19 @@ For the coordinator to number:
 * Issue: in uPortal-start on the integration branch, `./gradlew dataImport -Dfile=...` fails with
   "Task with path ':overlays:uPortal:prepareSkinResources' not found" (MOD-I91, fixed on the
   tests-e2e topic branch). The conversion was tested with `dataInit` instead.
+* Issue: intermittently, one bundled portlet webapp's output is missing from a whole
+  `Playwright: postgres-18` run in uPortal-start's Integration workflow. Run 38110595100 on
+  `07f4545` failed twice. The first attempt (job 114386349300) failed 22 tests, all with the
+  SimpleContent/CMS portlets missing (portal logo, waffle menu, notification icon, Courses,
+  CKEditor, uportal-links, feedback link). The re-run (job 114405187791) failed 8 tests,
+  all with the Announcements portlet missing: five in `announcements.spec.ts`, two in
+  `per-role-pages.spec.ts` (Student "Academics tab has Announcements and Courses", Faculty
+  "Academics tab has portlets") and one in `portlet-options.spec.ts` ("Announcements portlet has
+  My Subscriptions and Archives links"). It isn't tied to `07f4545`'s changes, which are two
+  Playwright specs and a read-only REST API and touch neither webapp. The same branch with the
+  data change passed postgres-18 on `50d47e7` (run 38114778350), as did the integration branch.
+  The cause is open. The Tomcat logs are in the jobs' artifacts, and the sandbox proxy blocks
+  them from here.
 * Issue: uPortal-start commit `07f4545` on this topic branch has the phrase "the 403 answer to",
   which Vale's commit rule refuses. Its push's commit-message job fails. Fix the wording when the
   branch lands (MOD-D37).
