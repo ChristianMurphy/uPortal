@@ -112,6 +112,16 @@ export class UpPopularPortlets extends UpElement {
 
             select.form-control {
                 width: auto;
+                /* A filter lists fnames, which can be long: the select and the flex items
+                   around it may shrink below their longest option */
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .filter-widgets,
+            .filter-widget {
+                min-width: 0;
+                max-width: 100%;
             }
 
             .filter-term {
