@@ -44,12 +44,17 @@ Eleven commits, oldest first:
 
 ## Runs in progress
 
-* Playwright on 5.17.10-SNAPSHOT, built from the integration branch with the four fixes: the API
-  specs, `pluto-testsuite.spec.ts` and `portlet-modes.spec.ts`.
-* Next in the same slot: `tests/db/equivalence.sh in-place hsqldb`, then three seeded faults on
-  the database it leaves. The faults are the MOD-I120 map keys (`'_' || ATTR_NAME` in
+* Playwright on 5.17.10-SNAPSHOT with the four fixes: the API specs and all 42 Pluto tests passed,
+  and 165 of 172 tests passed in all. The 7 failures were config-mode console errors (MOD-I159),
+  now named exceptions on the topic branch. CI on the topic branch checks the portlets' other modes.
+* In the same slot: `tests/db/equivalence.sh in-place hsqldb`, then three seeded faults on the
+  database it leaves. The faults are the MOD-I120 map keys (`'_' || ATTR_NAME` in
   `UP_SS_USER_PREF_LAY_ATTR_VAL`), a changed portlet parameter, and a re-encoded and cut user
   attribute. Each must make `dataExportCompare` fail with a readable diff.
+* Resources that portlets load from other hosts fail in the sandbox, such as the retired Google image
+  chart API in Feedback Administration, Daily Business Cartoon's image and CKEditor 4's version
+  check.
+  The modes spec records them as annotations.
 
 ## Next steps
 
