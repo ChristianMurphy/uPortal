@@ -83,7 +83,8 @@ dependencies {
     // properties, the Vintage engine for the JUnit 4 tests.
     testImplementation "net.jqwik:jqwik:${jqwikVersion}"
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Compile scope for the launcher session listener that filters jqwik's agent notice (MOD-I179)
+    testImplementation 'org.junit.platform:junit-platform-launcher'
 }
 
 /*
