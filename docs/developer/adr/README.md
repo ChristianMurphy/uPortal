@@ -61,3 +61,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0008](0008-move-to-an-improved-6-0-schema-with-a-copy-tool.md) | Move to an improved 6.0 schema with a cross-vendor copy tool | proposed | 2026-10-10 |
 | [0009](0009-run-on-current-database-servers-with-a-measured-index-set.md) | Run 6.0 on current database servers, with an index set measured under load | proposed | 2026-10-10 |
 | [0010](0010-compare-each-step-with-5-17-on-each-database.md) | Compare each step with 5.17's output, on each supported database | proposed | 2026-10-10 |
+| [0011](0011-keep-portlet-mvc-and-pluto-in-uportal-and-transform-portlet-wars.md) | Keep Spring Portlet MVC and Pluto in uPortal's source, and transform portlet WARs for Jakarta | proposed | 2026-10-10 |
