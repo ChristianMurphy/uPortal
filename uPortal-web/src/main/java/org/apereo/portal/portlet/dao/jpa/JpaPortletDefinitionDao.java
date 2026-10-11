@@ -151,16 +151,22 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
                                 final Root<PortletDefinitionImpl> definitionRoot =
                                         criteriaQuery.from(PortletDefinitionImpl.class);
                                 criteriaQuery.select(definitionRoot);
+                                // Ignores case on every database; exactMatches then keeps
+                                // the rows equal to the term
                                 criteriaQuery.where(
                                         cb.or(
                                                 cb.equal(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.name),
-                                                        nameParameter),
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .name)),
+                                                        cb.upper(nameParameter)),
                                                 cb.equal(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.title),
-                                                        titleParameter)));
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .title)),
+                                                        cb.upper(titleParameter))));
 
                                 return criteriaQuery;
                             }
@@ -273,7 +279,27 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
         query.setParameter("title", term);
 
         final List<PortletDefinitionImpl> portletDefinitions = query.getResultList();
+        if (match == SearchMatch.EXACT) {
+            return exactMatches(portletDefinitions, term);
+        }
         return new ArrayList<>(portletDefinitions);
+    }
+
+    /**
+     * The rows whose name or title equals {@code term}, case and trailing spaces included. MySQL,
+     * MariaDB and SQL Server compare strings ignoring case (and MariaDB and SQL Server ignoring
+     * trailing spaces) through their collations, so the database can't decide this the same way
+     * everywhere (MOD-I142).
+     */
+    static List<IPortletDefinition> exactMatches(
+            List<? extends IPortletDefinition> rows, String term) {
+        final List<IPortletDefinition> result = new ArrayList<>();
+        for (IPortletDefinition row : rows) {
+            if (term.equals(row.getName()) || term.equals(row.getTitle())) {
+                result.add(row);
+            }
+        }
+        return result;
     }
 
     @Override

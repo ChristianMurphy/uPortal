@@ -76,11 +76,6 @@ final class QueryVendorDifferences {
                     golden,
                     "portletDefinitionDao.getPortletDefinitionByName(\"weather\")",
                     "portletDefinitionDao.getPortletDefinitionByName(\"Weather\")");
-            sameAs(
-                    differences,
-                    golden,
-                    "portletDefinitionDao.searchForPortlets(\"calendar\", false)",
-                    "portletDefinitionDao.searchForPortlets(\"Calendar\", false)");
             // The unique key (CODE, LOCALE) rejects "Greeting" next to "greeting"
             differences.put(
                     "messageDao.createMessage(\"Greeting\", en, ...) next to \"greeting\"",

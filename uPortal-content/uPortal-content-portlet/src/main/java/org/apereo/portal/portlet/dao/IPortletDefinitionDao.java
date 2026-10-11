@@ -51,7 +51,7 @@ public interface IPortletDefinitionDao {
 
     /** How {@link #searchForPortlets(String, SearchMatch)} compares a term with a name or title */
     enum SearchMatch {
-        /** Equal to the term, compared as the database compares strings */
+        /** Equal to the term, case-sensitive on every database */
         EXACT,
         /** Starts with the term, ignoring case */
         STARTS_WITH,
