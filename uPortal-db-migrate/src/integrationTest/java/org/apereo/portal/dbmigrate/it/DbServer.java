@@ -91,6 +91,7 @@ public final class DbServer {
 
     private final Kind kind;
     private final JdbcDatabaseContainer<?> container;
+    private volatile List<String> lastKillFailures = new ArrayList<>();
 
     private DbServer(Kind kind, JdbcDatabaseContainer<?> container) {
         this.kind = kind;
@@ -289,11 +290,32 @@ public final class DbServer {
                         "DROP DATABASE " + db.name());
                 break;
             case ORACLE:
-                killSessions(db);
-                admin("DROP USER " + db.name() + " CASCADE");
+                dropOracleUser(db);
                 break;
             default:
                 throw new IllegalStateException(kind.toString());
+        }
+    }
+
+    /** Drops a test user, waiting for its killed sessions to end (ORA-01940 until they have). */
+    private void dropOracleUser(TestDatabase db) throws SQLException {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.MINUTES.toNanos(2);
+        while (true) {
+            killSessions(db);
+            try {
+                admin("DROP USER " + db.name() + " CASCADE");
+                return;
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1940 || System.nanoTime() > deadline) {
+                    throw e;
+                }
+            }
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new SQLException("interrupted while dropping " + db, e);
+            }
         }
     }
 
@@ -364,16 +386,29 @@ public final class DbServer {
                     throw new UnsupportedOperationException("kill sessions on " + kind);
             }
             int n = 0;
+            List<String> failures = new ArrayList<>();
             for (String sql : kills) {
                 try (Statement st = c.createStatement()) {
                     st.execute(sql);
                     n++;
                 } catch (SQLException e) {
-                    // The session ended meanwhile
+                    if (kind == Kind.ORACLE && e.getErrorCode() == 31) {
+                        // ORA-00031: marked for kill; Oracle ends the session shortly
+                        n++;
+                    } else {
+                        // The session may have ended meanwhile
+                        failures.add(sql + ": " + e.getMessage());
+                    }
                 }
             }
+            lastKillFailures = failures;
             return n;
         }
+    }
+
+    /** The statements of the last {@link #killSessions} call that failed, with the errors. */
+    public List<String> lastKillFailures() {
+        return lastKillFailures;
     }
 
     /**
