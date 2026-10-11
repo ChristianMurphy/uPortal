@@ -540,10 +540,13 @@ The timing is the portlet's: the warning opens 30 seconds plus `dialog-display-s
 the session expires, and the user is logged out when the countdown reaches zero. Tabs share the
 logout time under the portlet's `localStorage` key, `UportalSessionTimeoutLogoutTime`, so a tab
 that still runs the portlet and one that runs the component postpone each other's warning.
-`logout-url` must be a path in the portal; anything else falls back to `/Logout`.
+`logout-url` must be a path in the portal; anything else falls back to `/Logout`. When
+`GET /api/v6-0/session` fails with a 5xx, a network error or a malformed body, the element
+assumes the portlet script's default of 30 minutes and still warns; only a 401 turns the warning
+off.
 
 Its machine, `up-session-timeout.machine.ts`, has the states `disabled`, `loading`, `inactive`
-(a guest, a session that never expires, or no answer), `waiting`, `warning` (`idle`,
+(a guest, or a session that never expires), `waiting`, `warning` (`idle`,
 `extending` or `failed`) and `ended`. The two timers are invoked callback actors that send
 `warning.due`, `tick`, `postponed` and `expired` with the times in the event, so the machine
 never reads the clock. The model-based tests walk every state but `disabled` through 38

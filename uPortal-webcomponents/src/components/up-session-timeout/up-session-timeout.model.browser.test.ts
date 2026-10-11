@@ -59,7 +59,8 @@ const OTHER_TAB = FIRST.logoutTime + 10 * MINUTE;
 const EVENTS = [
     { type: 'xstate.done.actor.loadSession', output: FIRST },
     { type: 'xstate.done.actor.loadSession', output: null },
-    { type: 'xstate.error.actor.loadSession', error: new Error('500') },
+    // Only a 401 fails the load; other failures fall back to the default timeout
+    { type: 'xstate.error.actor.loadSession', error: new Error('401') },
     { type: 'warning.due', secondsLeft: 60 },
     { type: 'tick', secondsLeft: 30 },
     { type: 'postponed', logoutTime: OTHER_TAB },
@@ -173,7 +174,7 @@ async function replay(harness: Harness, before: Snapshot, event: SessionTimeoutE
             );
             return;
         case 'xstate.error.actor.loadSession':
-            await portal.answer('loadSession', text('', 500));
+            await portal.answer('loadSession', text('', 401));
             return;
         case 'xstate.done.actor.keepAlive':
             // The answer arrives at a known time, so the element computes the expected period

@@ -130,10 +130,27 @@ describe('sessionTimeoutMachine: starting', () => {
     });
 
     it.each([
-        ['a guest (401)', { status: 401, body: { message: 'Sign in' } }],
         ['a server error', { status: 500 }],
         ['a network failure', { status: 0 }],
         ['a malformed body', { status: 200, body: { maxInactiveIntervalSeconds: 'soon' } }],
+    ])('falls back to a 30-minute session after %s, as the portlet did', async (_name, answer) => {
+        portal.get = [answer];
+        const { actor } = start();
+        await settle();
+
+        expect(actor.getSnapshot().value).toBe('waiting');
+        expect(actor.getSnapshot().context.period).toEqual({
+            sessionTimeoutMs: 30 * MINUTE,
+            displayMs: MINUTE,
+            logoutTime: LOGOUT_AT,
+        });
+        expect(store.writes).toEqual([LOGOUT_AT]);
+        await advanceTo(WARNING_AT);
+        expect(actor.getSnapshot().value).toEqual({ warning: 'idle' });
+    });
+
+    it.each([
+        ['a guest (401)', { status: 401, body: { message: 'Sign in' } }],
         ['a session that never expires', { status: 200, body: { maxInactiveIntervalSeconds: -1 } }],
     ])('stays inactive for %s', async (_name, answer) => {
         portal.get = [answer];
