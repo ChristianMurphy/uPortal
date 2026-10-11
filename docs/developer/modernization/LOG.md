@@ -1754,6 +1754,35 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 * **Why:** with 5.x defaults, 16 users reach about 127 PostgreSQL connections, more than the
   default limit of 100. A pool of 60 avoids errors, but most of its connections are idle.
 
+### MOD-D49: text inputs accept any Unicode text
+
+* **Decision (project owner, 2026-10-11):** the portal has international users, so a field where
+  people type text accepts any Unicode text, sent as UTF-8. That covers names, titles,
+  descriptions, search terms, email addresses, passwords and tenant names. A field limits its
+  characters only when its value is an identifier that the portal puts in URLs or keys, such as
+  fnames, tenant fnames and event types. Its error message then lists the characters it allows.
+* **Tests:** each new API and component sends a value with accented letters, a non-Latin script
+  and a character outside the Basic Multilingual Plane (four bytes in UTF-8), and reads it back.
+  The persistence goldens do the same on all six vendors.
+* **Storage:** SQL Server follows MOD-D44. A MySQL or MariaDB column must use `utf8mb4` to hold
+  four-byte characters, and any change it needs joins the 6.0 schema step (MOD-D11).
+* **Work:** `ccr-43ba0785-hzlrj5-utf8-inputs` (audit, MOD-I233); each conversion tests its own
+  fields.
+
+### MOD-D50: web components come in English, Spanish and French
+
+* **Decision (project owner, 2026-10-11):** each message a web component uses has English,
+  Spanish and French text (`Messages.properties`, `Messages_es.properties`,
+  `Messages_fr.properties`) in the commit that adds it. A check fails the build when a
+  component's key is missing from one of the three. The other bundles (de, ja, lv, mk, sv) show
+  English for new keys until someone translates them, as today.
+* **Format:** messages go through `MessageFormat` (`alwaysUseMessageFormat`), so an apostrophe
+  is written twice (`l''élément`) and placeholders stay `{0}`, `{1}`.
+* **Tests:** a Playwright test renders each component for a user whose locale is Spanish and
+  one whose locale is French, and finds a translated text.
+* **Work:** `ccr-43ba0785-hzlrj5-i18n` (MOD-I231, MOD-I232, the check); each open conversion
+  adds its own translations.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1942,6 +1971,9 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I201 | Copy tool | **Found by the migration-equivalence nightly set** (run 38120962016, job 114422262436). 6.0 on SQL Server can't hold text outside windows-1252: the build under test creates `varchar` columns on the default collation. A 5.17 site on another database with emoji or CJK in group names, portlet titles, layout names or user attributes can't move to 6.0 on SQL Server. The copy from MariaDB 10.6 wrote all 2,185 rows, and verification refused 14 tables (same row counts, other hashes): `news_definition`, `news_role`, `up_dlm_evaluator`, `up_group`, `up_pags_group`, `up_pags_test`, `up_permission`, `up_permission_owner`, `up_permission_activity`, `up_layout_struct`, `up_portlet_def`, `up_portlet_pref`, `up_portlet_pref_values`, `up_person_attr_values`. The copy failed, so nothing was lost without notice. The plan reported 0 warnings. | Open, schema decision with the project owner: `nvarchar` through Hibernate's nationalized strings, or a UTF-8 collation with lengths sized in characters. The nightly copy into SQL Server fails until that decision is made. MOD-I202 makes the plan refuse such a copy before it starts. |
 | MOD-I202 | Copy tool | The plan doesn't compare the target's text encoding with the source's text. A copy into a code-page column (SQL Server's default collation, MOD-I201) of text it can't hold copies every row, and only verification refuses the tables afterwards. | In progress on `ccr-43ba0785-hzlrj5-copy-codepage-warning`. The plan reads the collation of each target text column. For a source value with characters outside the target's code page, it reports a plan error with the table, the column and the row's key. |
 | MOD-I230 | Persistence | **Found by the background-preference conversion.** When one user saves portlet-entity preferences from two sessions at once, Hibernate refuses one save, and a stale cached `PortletPreferenceImpl` can remain. The user's next sign-in then fails with `EntityNotFoundException` until Tomcat restarts. It is the existing `PortletEntityPreferencesAPIImpl` store, which the portlets use too. Seen when two Playwright workers changed the student's background at once. | **Open.** Write a test that saves the same user's entity preferences from two sessions at once and then signs in, and show the failure. Then fix the cache handling (evict on a failed save, or retry). A refused save must not leave a stale entity in the cache. Until then a user can be locked out by saving preferences in two tabs. |
+| MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Open.** Translate them on `ccr-43ba0785-hzlrj5-i18n`. The MOD-D50 check stops it from happening again. |
+| MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Open.** Read message bundles as UTF-8 after checking that each one is valid UTF-8, and test the French line. Existing `\u` escapes keep working. |
+| MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
 
 ## Open questions
 
