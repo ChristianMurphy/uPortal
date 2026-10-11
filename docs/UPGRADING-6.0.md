@@ -263,6 +263,23 @@ answers `SearchRequest` events keeps working, but nothing sends it the event any
 | `scripts/search/autosuggestHandler.js` (`up.initSearchAuto`) and `css/search/autosuggest.css` | The type-ahead built into `<up-search-box>` |
 | `portletUrl.tld` (`pURL:getStringFromPortletUrl`), which an overlay's JSP could use, and `PortletUtils.getStringFromPortletUrl`; `PortletUtils` is no longer a Spring bean | Nothing. Build portlet URLs with `IPortalUrlProvider` |
 
+### The type-ahead script and stylesheet are gone
+
+`/uPortal/scripts/search/autosuggestHandler.js` and `/uPortal/css/search/autosuggest.css` now
+answer 404. In 5.x only the Search portlet's JSPs linked them, so every page that showed the
+search box loaded both. Find other links in your skin, overlay JSPs, XSL and static content
+(`autosuggestHandler.js`, `autosuggest.css`, `up.initSearchAuto`), and do one of these:
+
+* **For a search box with type-ahead**, place the `search-launcher` channel, or another Web
+  Component channel with `webComponent.tagName=up-search-launcher` and
+  `webComponent.moduleUrl=up-search`. The portal loads the module by its current name. Don't link
+  the file under `/webcomponents/assets/` yourself: its name changes with each build.
+* **For a page that only loaded the files**, remove the `<script>` and `<link>` elements.
+* **To keep your own `up.initSearchAuto` box**, copy both files from uPortal 5.17 into your
+  overlay under the same paths. They need jQuery UI's autocomplete. Only the mode that prefills
+  the suggestions from `prepopulateAutoSuggestUrl` (`/api/portletList`, which stays) still
+  works. The other mode asked the Search portlet as the user typed.
+
 ### Remote search providers instead
 
 `/api/v6-0/search` gets all results from server-side search strategies (`ISearchStrategy` beans).
