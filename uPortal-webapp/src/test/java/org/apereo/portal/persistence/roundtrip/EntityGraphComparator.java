@@ -40,6 +40,7 @@ import javax.persistence.metamodel.PluralAttribute;
 import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type.PersistenceType;
 import org.apereo.portal.test.golden.DatabaseVendor;
+import org.apereo.portal.test.golden.GoldenRenderer;
 import org.joda.time.DateTime;
 
 /**
@@ -376,24 +377,9 @@ final class EntityGraphComparator {
         }
     }
 
-    /**
-     * Whether a collection attribute has a defined order: a list with an index column or an
-     * {@code @OrderBy}. Any other collection (a bag) comes back in whatever order the database
-     * returns its rows.
-     */
+    /** See {@link GoldenRenderer#isOrdered} */
     static boolean isOrdered(Field field) {
-        if (!List.class.isAssignableFrom(field.getType())) {
-            return false;
-        }
-        for (final java.lang.annotation.Annotation annotation : field.getAnnotations()) {
-            final String name = annotation.annotationType().getName();
-            if (name.equals("javax.persistence.OrderColumn")
-                    || name.equals("javax.persistence.OrderBy")
-                    || name.equals("org.hibernate.annotations.IndexColumn")) {
-                return true;
-            }
-        }
-        return false;
+        return GoldenRenderer.isOrdered(field);
     }
 
     static boolean basicEquals(Object expected, Object actual) {

@@ -39,9 +39,10 @@ import org.joda.time.DateTimeZone;
 /**
  * Renders query results and entities as stable, vendor-neutral text for the goldens: basic
  * attributes in name order, generated ids and versions left out, associations by their natural id
- * (or their basic attributes when they have none), collections sorted unless they are lists,
- * instants in UTC, and floating point numbers to 9 significant digits (a stored double may come
- * back a few units of the last place off on some databases; real changes are far larger).
+ * (or their basic attributes when they have none), collections sorted unless the mapping orders
+ * them (an order column or {@code @OrderBy}), instants in UTC, and floating point numbers to 9
+ * significant digits (a stored double may come back a few units of the last place off on some
+ * databases; real changes are far larger).
  */
 public final class GoldenRenderer {
     private static final MathContext DOUBLE_PRECISION = new MathContext(9);
@@ -117,7 +118,7 @@ public final class GoldenRenderer {
                         // Collections of nested entities: only their size
                         rendered = attributeValue == null ? "null" : "size " + size(attributeValue);
                     } else {
-                        rendered = renderCollection(attributeValue, depth + 1);
+                        rendered = renderCollection(attributeValue, field, depth + 1);
                     }
             }
             if (!first) {
@@ -129,7 +130,7 @@ public final class GoldenRenderer {
         return result.append('}').toString();
     }
 
-    private String renderCollection(Object collection, int depth) {
+    private String renderCollection(Object collection, Field field, int depth) {
         if (collection == null) {
             return "null";
         }
@@ -144,11 +145,34 @@ public final class GoldenRenderer {
             for (final Object element : (Collection<?>) collection) {
                 elements.add(render(element, depth));
             }
-            if (!(collection instanceof List)) {
+            // A bag (a list without an order column or @OrderBy) comes back in whatever order the
+            // database returns its rows
+            if (!isOrdered(field)) {
                 elements.sort(Comparator.naturalOrder());
             }
         }
         return elements.toString();
+    }
+
+    /**
+     * Whether a collection attribute has a defined order: a list with an index column or an
+     * {@code @OrderBy}. Any other collection (a bag) comes back in whatever order the database
+     * returns its rows. Annotations are matched by name, so this works with the Hibernate 4.3
+     * {@code @IndexColumn} and with JPA's {@code @OrderColumn}.
+     */
+    public static boolean isOrdered(Field field) {
+        if (!List.class.isAssignableFrom(field.getType())) {
+            return false;
+        }
+        for (final Annotation annotation : field.getAnnotations()) {
+            final String name = annotation.annotationType().getName();
+            if (name.equals("javax.persistence.OrderColumn")
+                    || name.equals("javax.persistence.OrderBy")
+                    || name.equals("org.hibernate.annotations.IndexColumn")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int size(Object collection) {
