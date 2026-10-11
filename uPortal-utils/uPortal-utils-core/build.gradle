@@ -51,6 +51,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     testImplementation project(':uPortal-events')
+    testImplementation "org.jasig.ehcache:ehcache-jgroups3replication:${ehcacheJgroups3ReplicationVersion}"
     testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
 
