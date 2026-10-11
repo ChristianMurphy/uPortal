@@ -56,8 +56,8 @@ if summary:
 print('\n'.join(lines))
 for title, text in failures[:10]:
     rows = text.splitlines()
-    keep = rows[:12]
-    for i, row in enumerate(rows[12:], 12):
+    keep = rows[:30]
+    for i, row in enumerate(rows[30:], 30):
         if row.startswith('Caused by:'):
             keep += ['...'] + rows[i:i + 4]
     text = '\n'.join(keep[:80]).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
