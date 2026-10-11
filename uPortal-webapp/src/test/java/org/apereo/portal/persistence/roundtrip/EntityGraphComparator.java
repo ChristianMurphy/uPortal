@@ -213,6 +213,11 @@ final class EntityGraphComparator {
             }
             final Map<Object, Object> expectedByKey = new HashMap<>();
             for (final Map.Entry<?, ?> entry : expectedMap.entrySet()) {
+                if (readsBackAsNull(slot, embeddable, entry.getValue())) {
+                    // Hibernate does not read a map entry whose value is null (Oracle stores ''
+                    // as NULL, see VendorDifferences)
+                    continue;
+                }
                 expectedByKey.put(
                         keyOf(expectedKey(slotPath, attribute, field, entry.getKey())),
                         entry.getValue());
@@ -348,6 +353,9 @@ final class EntityGraphComparator {
             actualIds.add(persistenceUnitUtil.getIdentifier(Proxies.unproxy(element)));
         }
         final boolean ordered = isOrdered(field);
+        if (!ordered) {
+            checkOrderBy(path, field, actualList);
+        }
         if (ordered
                 ? !expectedIds.equals(actualIds)
                 : !new java.util.HashSet<>(expectedIds).equals(new java.util.HashSet<>(actualIds))
@@ -383,9 +391,88 @@ final class EntityGraphComparator {
         }
     }
 
-    /** See {@link GoldenRenderer#isOrdered} */
+    /**
+     * Whether the elements of a collection attribute come back in the order they were stored: a
+     * list with an index column. An {@code @OrderBy} list is ordered by its key only, and elements
+     * with equal keys come back in any order (Oracle returns them differently from HSQLDB), so it
+     * is compared as a multiset and checked by {@link #checkOrderBy}.
+     */
     static boolean isOrdered(Field field) {
-        return GoldenRenderer.isOrdered(field);
+        return GoldenRenderer.isOrdered(field)
+                && field.getAnnotation(javax.persistence.OrderBy.class) == null;
+    }
+
+    /** Checks that a reloaded {@code @OrderBy} list is sorted by the columns it names */
+    private void checkOrderBy(String path, Field field, List<Object> actualList) {
+        final javax.persistence.OrderBy orderBy =
+                field.getAnnotation(javax.persistence.OrderBy.class);
+        if (orderBy == null || actualList.size() < 2) {
+            return;
+        }
+        // Later items only order the ties of the first one, so the first is checked
+        final String[] first = orderBy.value().split(",")[0].trim().split("\\s+");
+        final boolean descending = first.length > 1 && "DESC".equalsIgnoreCase(first[1]);
+        Comparable<Object> previous = null;
+        for (final Object element : actualList) {
+            final Object unproxied = Proxies.unproxy(element);
+            final Field keyField = orderByField(unproxied.getClass(), first[0]);
+            if (keyField == null) {
+                differences.add(path + ": @OrderBy(\"" + orderBy.value() + "\") names no field");
+                return;
+            }
+            @SuppressWarnings("unchecked")
+            final Comparable<Object> key =
+                    (Comparable<Object>) EntityGraphBuilder.get(keyField, unproxied);
+            if (previous != null && key != null) {
+                final int order = previous.compareTo(key);
+                if (descending ? order < 0 : order > 0) {
+                    differences.add(path + ": not in @OrderBy(\"" + orderBy.value() + "\") order");
+                    return;
+                }
+            }
+            previous = key;
+        }
+    }
+
+    /** The field an {@code @OrderBy} item names, by property name or column name */
+    private static Field orderByField(Class<?> type, String name) {
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            for (final Field candidate : c.getDeclaredFields()) {
+                final javax.persistence.Column column =
+                        candidate.getAnnotation(javax.persistence.Column.class);
+                if (candidate.getName().equals(name)
+                        || (column != null && column.name().equalsIgnoreCase(name))) {
+                    candidate.setAccessible(true);
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Whether a collection value reads back as null, so Hibernate leaves its entry out: a basic
+     * value the database stores as NULL, or an embeddable whose attributes all are.
+     */
+    private boolean readsBackAsNull(Slot slot, boolean embeddable, Object value) {
+        if (value == null) {
+            return true;
+        }
+        if (!embeddable) {
+            return VendorDifferences.expectedAfterRoundTrip(vendor, slot, value) == null;
+        }
+        for (final Attribute<?, ?> attribute :
+                metamodel.embeddable(value.getClass()).getAttributes()) {
+            Object attributeValue =
+                    EntityGraphBuilder.get(EntityGraphBuilder.field(attribute), value);
+            if (attributeValue instanceof String) {
+                attributeValue = vendor.storedString((String) attributeValue);
+            }
+            if (attributeValue != null) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static boolean basicEquals(Object expected, Object actual) {
