@@ -11,6 +11,7 @@ LOG numbers: MOD-I250 to MOD-I259.
 | --- | --- |
 | 1. Tomcat error pages without the version | done locally, pushed; Integration run pending |
 | 2. Existing axe violations in the Respondr skin | not started: waits for the coordinator's go-ahead after the cluster branch is merged |
+| 3. Respondr right to left (MOD-I234, MOD-D51) | not started: comes after part 2 |
 
 ## Part 1: Tomcat error pages
 
@@ -62,6 +63,15 @@ A message key added for these fixes (labels, alt text, landmark names) gets Span
 text in `Messages_es.properties` and `Messages_fr.properties` in the same commit as the English
 (MOD-D50). Each apostrophe is written twice, because the portal formats messages with
 MessageFormat. Accents are `\u` escapes until the i18n branch is merged.
+
+## Part 3: right to left
+
+Added by the project owner (MOD-I234, MOD-D51), after part 2. For a right-to-left locale (ar,
+he, fa, ur) the page gets `dir` and `lang` from the user's locale, and the skin's stylesheets
+mirror, with logical properties where the CSS is touched or with an RTL build of the skin. A
+Playwright run in a right-to-left test locale shows that the navigation, the portlet chrome and a
+web component mirror and that axe still passes. The i18n branch adds pseudo-locales; the test
+reuses them once that branch is merged.
 
 ## Proposed LOG rows
 
