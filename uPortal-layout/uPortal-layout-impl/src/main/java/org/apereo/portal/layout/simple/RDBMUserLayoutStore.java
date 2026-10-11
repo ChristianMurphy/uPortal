@@ -144,6 +144,23 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
         this.portletDefinitionRegistry = portletDefinitionRegistry;
     }
 
+    /**
+     * The part of the layout query after the UP_LAYOUT_STRUCT columns: the parameter columns and
+     * the join when the database supports outer joins, then the user, the layout and the order.
+     */
+    static String layoutRowsQueryTail(IDatabaseMetadata databaseMetadata, int userId, int layoutId)
+            throws SQLException {
+        final String where = " ULS.USER_ID=" + userId + " AND ULS.LAYOUT_ID=" + layoutId;
+        if (databaseMetadata.supportsOuterJoins()) {
+            return ",USP.STRUCT_PARM_NM,USP.STRUCT_PARM_VAL FROM "
+                    + databaseMetadata.getJoinQuery().getQuery("layout")
+                    + where
+                    + " ORDER BY ULS.STRUCT_ID, USP.STRUCT_PARM_NM";
+        }
+        // Without the join there is no USP: STRUCT_ID alone is unique here (MOD-I191)
+        return " FROM UP_LAYOUT_STRUCT ULS WHERE " + where + " ORDER BY ULS.STRUCT_ID";
+    }
+
     @Override
     public void afterPropertiesSet() {
         if (databaseMetadata.supportsOuterJoins()) {
@@ -628,21 +645,7 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
                                                 "SELECT ULS.STRUCT_ID,ULS.NEXT_STRUCT_ID,ULS.CHLD_STRUCT_ID,ULS.CHAN_ID,ULS.NAME,ULS.TYPE,ULS.HIDDEN,"
                                                         + "ULS.UNREMOVABLE,ULS.IMMUTABLE";
                                     }
-                                    if (databaseMetadata.supportsOuterJoins()) {
-                                        sql +=
-                                                ",USP.STRUCT_PARM_NM,USP.STRUCT_PARM_VAL FROM "
-                                                        + databaseMetadata
-                                                                .getJoinQuery()
-                                                                .getQuery("layout");
-                                    } else {
-                                        sql += " FROM UP_LAYOUT_STRUCT ULS WHERE ";
-                                    }
-                                    sql +=
-                                            " ULS.USER_ID="
-                                                    + userId
-                                                    + " AND ULS.LAYOUT_ID="
-                                                    + layoutId
-                                                    + " ORDER BY ULS.STRUCT_ID, USP.STRUCT_PARM_NM";
+                                    sql += layoutRowsQueryTail(databaseMetadata, userId, layoutId);
                                     logger.debug("getUserLayout(): {}", sql);
                                     rs = stmt.executeQuery(sql);
 

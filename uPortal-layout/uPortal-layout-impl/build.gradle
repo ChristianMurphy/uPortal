@@ -8,6 +8,7 @@ dependencies {
     implementation project(':uPortal-spring')
 
     testImplementation "${servletApiDependency}"
+    testImplementation "org.hsqldb:hsqldb:${hsqldbVersion}"
 
     compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
     compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
