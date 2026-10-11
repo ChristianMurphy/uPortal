@@ -52,3 +52,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | Number | Title | Status | Date |
 | --- | --- | --- | --- |
 | [0001](0001-record-architecture-decisions-with-madr.md) | Record architecture decisions with MADR | proposed | 2026-10-11 |
+| [0002](0002-target-java-25-and-jakarta-ee-11-in-steps.md) | Target Java 25 and Jakarta EE 11 in 6.0, reached in tested steps | proposed | 2026-10-10 |
