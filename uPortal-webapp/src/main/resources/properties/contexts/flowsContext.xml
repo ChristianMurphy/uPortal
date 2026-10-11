@@ -59,6 +59,9 @@
     </bean>
 
     <bean id="personValidator" class="org.apereo.portal.portlets.account.PersonFormValidator"/>
+    <!-- Web Flow looks for a validator named after the view-state's model ("<model>Validator").
+         The self-edit-account and edit-account flows call their model accountForm. -->
+    <alias name="personValidator" alias="accountFormValidator"/>
 
     <bean id="groupValidator" class="org.apereo.portal.portlets.groupadmin.GroupFormValidator"/>
 
