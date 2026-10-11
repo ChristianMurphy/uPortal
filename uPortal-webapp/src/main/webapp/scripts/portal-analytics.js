@@ -67,6 +67,10 @@
             credentials: 'same-origin',
             headers: {
                 'Content-Type': 'text/plain',
+                // up.csrfHeaders (modern-util.js) loads after this script
+                ...(window.up && window.up.csrfHeaders
+                    ? window.up.csrfHeaders()
+                    : {}),
             },
         })
             .then(function (response) {

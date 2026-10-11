@@ -99,6 +99,7 @@ up.jQuery(function() {
             $.ajax({
                 url: "<c:url value="/api/deletePermission"/>",
                 type: 'POST',
+                headers: up.csrfHeaders(),
                 data: {
                     principal: '${principalKey}',
                     owner: '${ owner.fname }',

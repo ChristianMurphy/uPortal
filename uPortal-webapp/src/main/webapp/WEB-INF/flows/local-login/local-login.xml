@@ -31,6 +31,8 @@
             value="servletRequest.getSession().getAttribute('up_attemptedUserName')"/>
         <set name="flowScope.profile"
             value="loginPortletHelper.getSelectedProfile(externalContext.getNativeRequest())"/>
+        <!-- The page to open after signing in (/p/login?refUrl=...), posted on to /Login -->
+        <set name="flowScope.refUrl" value="requestParameters.refUrl"/>
     </on-start>
 
     <!-- if the token exists, go through the reset password flow, otherwise, just login normally -->
