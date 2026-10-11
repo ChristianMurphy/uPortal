@@ -149,6 +149,9 @@ public class TransientPortletEntityDao implements IPortletEntityDao {
         if (layoutNodeId.startsWith(TransientUserLayoutManagerWrapper.SUBSCRIBE_PREFIX)) {
             final String databaseChannelSubscribeId =
                     this.determineDatabaseChannelSubscribeId(layoutNodeId);
+            if (databaseChannelSubscribeId == null) {
+                return null;
+            }
 
             final IPortletEntity portletEntity =
                     this.delegatePortletEntityDao.getPortletEntity(
@@ -228,16 +231,26 @@ public class TransientPortletEntityDao implements IPortletEntityDao {
         return wrappedPortletEntities;
     }
 
+    /**
+     * The persistent layout node id of a transient one, or null when the user's layout no longer
+     * has the node (a page rendered before a guest session expired) or its portlet is gone
+     */
     protected String determineDatabaseChannelSubscribeId(String layoutNodeId) {
         // Find the referenced Node in the user's layout
         final IUserLayoutManager userLayoutManager = this.getUserLayoutManager();
         final IUserLayoutChannelDescription channelNode =
                 (IUserLayoutChannelDescription) userLayoutManager.getNode(layoutNodeId);
+        if (channelNode == null) {
+            return null;
+        }
 
         // Lookup the IportletDefinition for the node
         final String portletPublishId = channelNode.getChannelPublishId();
         final IPortletDefinition portletDefinition =
                 this.portletDefinitionRegistry.getPortletDefinition(portletPublishId);
+        if (portletDefinition == null) {
+            return null;
+        }
 
         // Generate the subscribe ID used for the database
         return this.getPersistentLayoutNodeId(portletDefinition.getPortletDefinitionId());
