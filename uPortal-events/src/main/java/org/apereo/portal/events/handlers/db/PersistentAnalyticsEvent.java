@@ -19,28 +19,30 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Lob;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import org.apereo.portal.events.PortalEvent;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 
 /** Persistent wrapper for storing portal events */
 @Entity
-@Table(name = "UP_ANALYTICS_EVENTS")
+@Table(
+        name = "UP_ANALYTICS_EVENTS",
+        indexes = {
+            @Index(name = "IDX_UP_ANALYTICS_EVENTS_TIMESTAMP", columnList = "TIMESTAMP"),
+            @Index(name = "IDX_UP_ANALYTICS_EVENTS_SERVER_ID", columnList = "SERVER_ID"),
+            @Index(name = "IDX_UP_ANALYTICS_EVENTS_SESSION_ID", columnList = "SESSION_ID"),
+            @Index(name = "IDX_UP_ANALYTICS_EVENTS_USER_NAME", columnList = "USER_NAME")
+        })
 @Inheritance(strategy = InheritanceType.JOINED)
 @SequenceGenerator(
         name = "UP_ANALYTICS_EVENTS_GEN",
         sequenceName = "UP_ANALYTICS_EVENTS_SEQ",
-        allocationSize = 1000)
-@TableGenerator(
-        name = "UP_ANALYTICS_EVENTS_GEN",
-        pkColumnValue = "UP_ANNALYTICS_EVENTS_PROP",
         allocationSize = 1000)
 public class PersistentAnalyticsEvent implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -51,23 +53,19 @@ public class PersistentAnalyticsEvent implements Serializable {
     @SuppressWarnings("unused")
     private final long id;
 
-    @Index(name = "IDX_UP_ANALYTICS_EVENTS_TIMESTAMP")
     @Column(name = "TIMESTAMP", nullable = false, updatable = false)
     @Type(type = "dateTime")
     @SuppressWarnings("unused")
     private final DateTime timestamp;
 
-    @Index(name = "IDX_UP_ANALYTICS_EVENTS_SERVER_ID")
     @Column(name = "SERVER_ID", length = 200, nullable = false, updatable = false)
     @SuppressWarnings("unused")
     private final String serverId;
 
-    @Index(name = "IDX_UP_ANALYTICS_EVENTS_SESSION_ID")
     @Column(name = "SESSION_ID", length = 500, nullable = false, updatable = false)
     @SuppressWarnings("unused")
     private final String eventSessionId;
 
-    @Index(name = "IDX_UP_ANALYTICS_EVENTS_USER_NAME")
     @Column(name = "USER_NAME", length = 100, nullable = false, updatable = false)
     @SuppressWarnings("unused")
     private final String userName;

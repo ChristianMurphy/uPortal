@@ -20,11 +20,11 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.AggregationInterval;
@@ -34,37 +34,25 @@ import org.apereo.portal.events.aggr.TimeDimension;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
 
 @Entity
-@Table(name = "UP_SEARCH_REQ_AGGR")
+@Table(
+        name = "UP_SEARCH_REQ_AGGR",
+        indexes = {
+            @Index(
+                    name = "IDX_UP_SEARCH_REQ_AGGR_DTI",
+                    columnList = "DATE_DIMENSION_ID, TIME_DIMENSION_ID, AGGR_INTERVAL"),
+            @Index(name = "IDX_UP_SEARCH_REQ_INTRVL", columnList = "AGGR_INTERVAL"),
+            @Index(name = "IDX_UP_SEARCH_REQ_GRP", columnList = "AGGR_GROUP_ID"),
+            @Index(name = "IDX_UP_SEARCH_REQ_TRM", columnList = "SEARCH_TERM")
+        })
 @Inheritance(strategy = InheritanceType.JOINED)
 @SequenceGenerator(
         name = "UP_SEARCH_REQ_AGGR_GEN",
         sequenceName = "UP_SEARCH_REQ_AGGR_SEQ",
         allocationSize = 1000)
-@TableGenerator(
-        name = "UP_SEARCH_REQ_AGGR_GEN",
-        pkColumnValue = "UP_SEARCH_REQ_AGGR_PROP",
-        allocationSize = 1000)
-@org.hibernate.annotations.Table(
-        appliesTo = "UP_SEARCH_REQ_AGGR",
-        indexes = {
-            @Index(
-                    name = "IDX_UP_SEARCH_REQ_AGGR_DTI",
-                    columnNames = {"DATE_DIMENSION_ID", "TIME_DIMENSION_ID", "AGGR_INTERVAL"}),
-            @Index(
-                    name = "IDX_UP_SEARCH_REQ_INTRVL",
-                    columnNames = {"AGGR_INTERVAL"}),
-            @Index(
-                    name = "IDX_UP_SEARCH_REQ_GRP",
-                    columnNames = {"AGGR_GROUP_ID"}),
-            @Index(
-                    name = "IDX_UP_SEARCH_REQ_TRM",
-                    columnNames = {"SEARCH_TERM"})
-        })
 @NaturalIdCache(
         region = "org.apereo.portal.events.aggr.action.SearchRequestAggregationImpl-NaturalId")
 @Cacheable

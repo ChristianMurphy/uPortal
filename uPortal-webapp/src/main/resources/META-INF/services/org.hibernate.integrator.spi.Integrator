@@ -1,1 +1,2 @@
 org.apereo.portal.hibernate.DelegatingHibernateIntegrator
+org.apereo.portal.hibernate.ElementCollectionDeleteIntegrator

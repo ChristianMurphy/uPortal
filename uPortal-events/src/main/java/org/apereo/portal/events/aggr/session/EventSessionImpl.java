@@ -23,6 +23,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
@@ -30,7 +31,6 @@ import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
@@ -39,7 +39,6 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
 import org.hibernate.annotations.Type;
@@ -47,22 +46,14 @@ import org.joda.time.DateTime;
 
 /** */
 @Entity
-@Table(name = "UP_EVENT_SESSION")
+@Table(
+        name = "UP_EVENT_SESSION",
+        indexes = {@Index(name = "IDX_UP_EVENT_SESSION_DATE", columnList = "LAST_ACCESSED")})
 @Inheritance(strategy = InheritanceType.JOINED)
 @SequenceGenerator(
         name = "UP_EVENT_SESSION_GEN",
         sequenceName = "UP_EVENT_SESSION_SEQ",
         allocationSize = 100)
-@TableGenerator(
-        name = "UP_EVENT_SESSION_GEN",
-        pkColumnValue = "UP_EVENT_SESSION_PROP",
-        allocationSize = 100)
-@org.hibernate.annotations.Table(
-        appliesTo = "UP_EVENT_SESSION",
-        indexes =
-                @Index(
-                        name = "IDX_UP_EVENT_SESSION_DATE",
-                        columnNames = {"LAST_ACCESSED"}))
 @NaturalIdCache(region = "org.apereo.portal.events.aggr.session.EventSessionImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
