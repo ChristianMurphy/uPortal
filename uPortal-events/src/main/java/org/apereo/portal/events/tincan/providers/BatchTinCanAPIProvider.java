@@ -76,7 +76,8 @@ public class BatchTinCanAPIProvider extends DefaultTinCanAPIProvider {
                         "LRS provider successfully sent to {}, statement list: {}",
                         getLRSUrl(),
                         list);
-                logger.trace("Sent batch statement.  RESULTS: " + response.getBody().toString());
+                // An LRS may answer 204 No Content, without a body
+                logger.trace("Sent batch statement.  RESULTS: {}", response.getBody());
             } else {
                 logger.error(
                         "LRS provider failed to send to {}, statement list: {}", getLRSUrl(), list);

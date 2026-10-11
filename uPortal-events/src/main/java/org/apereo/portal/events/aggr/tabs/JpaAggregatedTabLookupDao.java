@@ -155,6 +155,13 @@ public class JpaAggregatedTabLookupDao extends BaseAggrEventsJpaDao
     }
 
     protected final Tuple<String, String> resolveTabName(final String targetedLayoutNodeId) {
+        if (targetedLayoutNodeId == null) {
+            // No layout node id, return null placeholder. A cache key can't be null (MOD-I225).
+            return new Tuple<String, String>(
+                    AggregatedTabMapping.MISSING_TAB_FRAGMENT_NAME,
+                    AggregatedTabMapping.MISSING_TAB_NAME);
+        }
+
         // Check the cache first
         final Cache.ValueWrapper cached = layoutNodeIdNameResolutionCache.get(targetedLayoutNodeId);
         if (cached != null) {
@@ -163,49 +170,41 @@ public class JpaAggregatedTabLookupDao extends BaseAggrEventsJpaDao
 
         final String fragmentName;
         final String tabName;
-        if (targetedLayoutNodeId == null) {
-            // No layout node id, return null placeholder
-            fragmentName = AggregatedTabMapping.MISSING_TAB_FRAGMENT_NAME;
-            tabName = AggregatedTabMapping.MISSING_TAB_NAME;
-        } else {
-            final Matcher nodeIdMatcher = DLM_NODE.matcher(targetedLayoutNodeId);
-            if (nodeIdMatcher.matches()) {
-                final int userId = Integer.parseInt(nodeIdMatcher.group(1));
-                final int layoutId = Integer.parseInt(nodeIdMatcher.group(2));
-                final int nodeId = Integer.parseInt(nodeIdMatcher.group(3));
+        final Matcher nodeIdMatcher = DLM_NODE.matcher(targetedLayoutNodeId);
+        if (nodeIdMatcher.matches()) {
+            final int userId = Integer.parseInt(nodeIdMatcher.group(1));
+            final int layoutId = Integer.parseInt(nodeIdMatcher.group(2));
+            final int nodeId = Integer.parseInt(nodeIdMatcher.group(3));
 
-                final List<String> tabNameResult =
-                        this.portalJdbcOperations.queryForList(
-                                "SELECT NAME FROM UP_LAYOUT_STRUCT where USER_ID = ? AND LAYOUT_ID = ? AND STRUCT_ID = ?",
-                                String.class,
-                                userId,
-                                layoutId,
-                                nodeId);
-                if (tabNameResult.isEmpty()) {
-                    // No tab name found, fall back to using the bare layout node id
-                    tabName = targetedLayoutNodeId;
-                } else {
-                    // Use the found tab name
-                    tabName = tabNameResult.iterator().next();
-                }
-
-                final List<String> userNameResult =
-                        this.portalJdbcOperations.queryForList(
-                                "SELECT USER_NAME FROM UP_USER WHERE USER_ID=?",
-                                String.class,
-                                userId);
-                if (userNameResult.isEmpty()) {
-                    // No user name found, use the missing user placeholder
-                    fragmentName = AggregatedTabMapping.MISSING_USER_FRAGMENT_NAME;
-                } else {
-                    // Use the found user name
-                    fragmentName = userNameResult.iterator().next();
-                }
+            final List<String> tabNameResult =
+                    this.portalJdbcOperations.queryForList(
+                            "SELECT NAME FROM UP_LAYOUT_STRUCT where USER_ID = ? AND LAYOUT_ID = ? AND STRUCT_ID = ?",
+                            String.class,
+                            userId,
+                            layoutId,
+                            nodeId);
+            if (tabNameResult.isEmpty()) {
+                // No tab name found, fall back to using the bare layout node id
+                tabName = targetedLayoutNodeId;
             } else {
-                // Node isn't from DLM return personal placeholder
-                fragmentName = AggregatedTabMapping.PERSONAL_TAB_FRAGMENT_NAME;
-                tabName = AggregatedTabMapping.PERSONAL_TAB_NAME;
+                // Use the found tab name
+                tabName = tabNameResult.iterator().next();
             }
+
+            final List<String> userNameResult =
+                    this.portalJdbcOperations.queryForList(
+                            "SELECT USER_NAME FROM UP_USER WHERE USER_ID=?", String.class, userId);
+            if (userNameResult.isEmpty()) {
+                // No user name found, use the missing user placeholder
+                fragmentName = AggregatedTabMapping.MISSING_USER_FRAGMENT_NAME;
+            } else {
+                // Use the found user name
+                fragmentName = userNameResult.iterator().next();
+            }
+        } else {
+            // Node isn't from DLM return personal placeholder
+            fragmentName = AggregatedTabMapping.PERSONAL_TAB_FRAGMENT_NAME;
+            tabName = AggregatedTabMapping.PERSONAL_TAB_NAME;
         }
 
         // cache the resolution
