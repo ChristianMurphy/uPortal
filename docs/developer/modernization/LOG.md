@@ -775,9 +775,14 @@ This supersedes MOD-D24's runtime matrix.
 | Oracle | Free 23.26 |
 | HSQLDB | 2.7.4 (dev only) |
 
-  The versions in this table are also the documented minimum versions for
-  6.0. The project owner can relax them. Nightly canaries, allowed to fail,
-  run PostgreSQL 19, MySQL 26.x Innovation and MariaDB 13.x.
+  The versions in this table are also the minimum versions for 6.0. The
+  project owner ruled on 2026-10-11 that they are hard minimums: 6.0
+  supports these versions and newer, and its code and configuration carry
+  no workarounds for older servers. uPortal does not check the server
+  version or refuse to start on an older server; it only needs a newer
+  server where it uses a feature the older one lacks. Nightly canaries,
+  allowed to fail, run PostgreSQL 19, MySQL 26.x Innovation and MariaDB
+  13.x.
 * **Migration-source matrix** (G-migrate and the 5.17 harness baselines;
   5.17 code on old servers):
 

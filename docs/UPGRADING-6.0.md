@@ -17,6 +17,10 @@ uPortal 6.0 runs on, and is tuned for, current database servers:
 | Oracle | 23.26 |
 | HSQLDB | 2.7.4, for development only |
 
+These are hard minimums. uPortal 6.0 is not tested on older servers and has no workarounds for
+them. It does not check the server version, so it may start on an older server, but it fails
+wherever it uses a feature that server lacks.
+
 If your 5.17 database runs on an older server, use it as a migration source. The copy tool
 (`uPortal-db-migrate`, run with `./gradlew dbMigrate` in uPortal-start) copies 5.17 data from it
 into a new server of any supported vendor and checks every table after the copy.
