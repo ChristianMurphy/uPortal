@@ -94,8 +94,6 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
   request-level entity cache never hits.
 * The old portlet's output is cached for five minutes (`expiration-cache` 300), so a choice made
   elsewhere showed only at the next sign-in. The component has no such cache.
-* The migration-equivalence reference has Popular Portlets as a Portlet, though the integration
-  branch converted it. This branch edits the reference for Background Preference only.
 
 ## Proposed LOG rows
 
@@ -106,8 +104,6 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
 * Issue: concurrent saves of one user's portlet-entity preferences from two sessions can leave a
   stale second-level cache entry that breaks the user's sign-in until restart (first finding).
 * Issue: the request-level portlet entity cache never hits (second finding).
-* Issue: the equivalence reference for `popular-portlets` still shows the portlet (fourth
-  finding).
 
 ## Running locally
 

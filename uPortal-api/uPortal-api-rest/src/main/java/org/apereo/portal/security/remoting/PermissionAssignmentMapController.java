@@ -90,7 +90,11 @@ public class PermissionAssignmentMapController extends AbstractPermissionsContro
         this.authorizationService = authorizationService;
     }
 
-    @RequestMapping(value = "/updatePermission", method = RequestMethod.GET)
+    /**
+     * Changes a permission assignment. POST only (it was GET before 6.0), so the CSRF filter checks
+     * it.
+     */
+    @RequestMapping(value = "/updatePermission", method = RequestMethod.POST)
     public ModelAndView updatePermission(
             @RequestParam("principal") String principal,
             @RequestParam("assignment") String assignment,

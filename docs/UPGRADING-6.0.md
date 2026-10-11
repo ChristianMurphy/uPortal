@@ -152,7 +152,35 @@ for definitions with another fname or customized preferences. The Favorites port
 be removed in a later release.
 
 Unsafe requests to the new `/api/v6-0/` REST APIs need Spring Security's CSRF token (or an OIDC
-bearer token), unlike the older APIs under `/api`.
+bearer token), like every unsafe request under `/api` (see
+[Unsafe requests to `/api` need the CSRF token](#unsafe-requests-to-api-need-the-csrf-token)).
+
+## Popular Portlets is a web component
+
+The Popular Portlets channel (`popular-portlets`, titled "Most Popular Apps") was the
+PopularPortlets portlet, a DataTables table. It is now a **Web Component** channel that renders
+`<up-popular-portlets>`, with its data from the new REST API `/api/v6-0/popular-portlets`. Users
+see the same table: the choice of previous days, a link and count for each portlet, sorting,
+the Title and # Times filters, and paging. The differences:
+
+* A filter keeps the rows it names. The portlet's filters kept the right number of rows but
+  showed other portlets once the table was sorted.
+* A portlet without a description has no tooltip. The portlet showed
+  `[no description available]`.
+* Choosing other days keeps the sort, the filters and the rows per page, and shows the first
+  page.
+
+The texts the portlet's script had in English are new `popular.portlets.*` keys in
+`Messages.properties`. Translations that lack them show the English text.
+
+Existing portals keep their PopularPortlets definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/popular-portlets.portlet-definition.xml` (or your copy of it). A
+definition with another fname needs the type `Web Component`, the framework descriptor
+`WebComponent` and the parameters `webComponent.tagName` and `webComponent.moduleUrl`, both
+`up-popular-portlets`. See
+[Converting existing Popular Portlets channels](developer/web-components/README.md#converting-existing-popular-portlets-channels).
+The PopularPortlets portlet itself will be removed in a later release.
 
 ## Background Preference is a web component
 
@@ -348,7 +376,8 @@ uPortal's own login form (`SimpleSecurityContextFactory`) against the accounts i
 database:
 
 * `org.apereo.portal.security.provider.cas.CasAssertionSecurityContextFactory.enabled=false`
-* `org.apereo.portal.channels.CLogin.CasLoginUrl=${portal.context}/p/login?refUrl=`
+* `org.apereo.portal.channels.CLogin.CasLoginUrl=${portal.context}/p/login`
+* `login.refUrlEncoder=local` (see the next section)
 * `logout.redirect=` (empty: back to the guest page)
 
 To keep signing in through CAS, build with `authMode=cas` and `casServerUrl` pointing at your CAS
@@ -361,3 +390,58 @@ if you set it for CAS 3.6.
 uPortal's defaults in `security.properties` are unchanged: they still point the login and logout
 URLs at `${cas.protocol.server.context}`, so a portal not built from uPortal-start keeps its CAS
 settings.
+
+## Deep links and failed logins with local login
+
+The new setting `login.refUrlEncoder` (in `security.properties`) says how uPortal sends a guest
+who opens a page that needs a login, such as `/uPortal/p/user-administration`, to the Sign In URL
+(`org.apereo.portal.channels.CLogin.CasLoginUrl`):
+
+* `cas`, the default, works as in 5.x: the page is encoded into the CAS `service` URL.
+* `local`: the Sign In URL is the portal's own login form, such as `${portal.context}/p/login`.
+  The page goes in a `refUrl` parameter and the form posts it to `/Login`, which opens the page
+  after signing in. A wrong user name or password returns to the form, which shows "Invalid
+  username or password" at once. In 5.x it went to the guest page without a message.
+
+A portal that signs users in with uPortal's login form sets `login.refUrlEncoder=local`. In 5.x
+such a portal sent guests' deep links to the form in the CAS encoding, which failed with HTTP 400
+unless the Sign In URL ended in a query parameter such as `?refUrl=`. Remove that suffix. An
+unknown value stops the portal at startup.
+
+`LocalLoginRefUrlEncoder` now appends the page to its `loginUrl` (the Sign In URL) instead of
+always sending guests to `/Login`. If you wired it in your own Spring files, set `loginUrl`, or
+use `login.refUrlEncoder=local` instead.
+
+## Unsafe requests to `/api` need the CSRF token
+
+Every POST, PUT, PATCH and DELETE under `/api` now needs Spring Security's CSRF token, as
+`/api/v6-0/` already did. 5.x exempted all of `/api`, although browsers call these endpoints with
+the session cookie, so another web site could make a signed-in user's browser change their
+layout, permissions or portal data. The endpoints concerned are `/api/layout`,
+`/api/marketplace/{fname}/rating/{rating}`, `/api/preferences/{fname}`,
+`/api/preferences/definition/{fname}`, `/api/portlet-list`, `/api/v4-3/pags/{group}.json`,
+`/api/import`, `/api/entity/{type}/{id}`, `/api/deletePermission`, `/api/updatePermission`,
+`/api/v5-4/caches` and `/api/analytics`. Without a valid token they answer HTTP 403.
+
+A client sends the token in the `X-CSRF-TOKEN` header, or as a `_csrf` request parameter. Every
+Respondr page has the session's token in `<meta name="_csrf">` and the header name in
+`<meta name="_csrf_header">`. Scripts on the page get both with `up.csrfHeaders()` from
+`modern-util.js`. A client outside the page reads the meta tags of a portal page that it loaded
+with the same session; the token changes when the session does, at login and logout.
+
+These requests don't need the CSRF token:
+
+* requests with an `Authorization: Bearer` header, such as the ID token from
+  `/api/v5-1/userinfo`;
+* `/api/v5-5/oauth/token` and `/api/v5-1/userinfo`;
+* `/Login` and `/Logout`.
+
+`/api/updatePermission` changed permissions on a GET, which no CSRF check covers. It now accepts
+POST only.
+
+Customizations that call these endpoints with the session cookie must send the header. The
+archived projects uPortal-home and uportal-app-framework don't send a CSRF token, so their layout
+calls (uPortal-home's `addPortlet`, `removeByFName` and `movePortletAjax` with `useOldLayout`
+on), Marketplace rating (`saveRating`), skin (`chooseSkin`) and add-to-home calls fail against
+6.0. Adopters still running them must change their own copies to send the token or a Bearer
+token, or stop using those calls.
