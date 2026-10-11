@@ -63,3 +63,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0010](0010-compare-each-step-with-5-17-on-each-database.md) | Compare each step with 5.17's output, on each supported database | proposed | 2026-10-10 |
 | [0011](0011-keep-portlet-mvc-and-pluto-in-uportal-and-transform-portlet-wars.md) | Keep Spring Portlet MVC and Pluto in uPortal's source, and transform portlet WARs for Jakarta | proposed | 2026-10-10 |
 | [0012](0012-replace-built-in-portlets-before-the-jakarta-switch.md) | Replace uPortal's built-in portlets with web components or Thymeleaf pages before the Jakarta switch | proposed | 2026-10-10 |
+| [0013](0013-build-web-components-with-lit-vite-plus-vitest-and-xstate.md) | Build web components with Lit, Vite+ and Vitest, and model their state with XState | proposed | 2026-10-10 |
