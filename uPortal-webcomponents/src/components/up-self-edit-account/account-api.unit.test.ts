@@ -98,6 +98,7 @@ describe('saveAccount', () => {
             attributes: { department: 'Physics' },
             password: 'secret',
             confirmPassword: 'secret',
+            currentPassword: 'old-secret',
         };
 
         await expect(saveAccount(api, changes)).resolves.toBeUndefined();
@@ -111,7 +112,12 @@ describe('saveAccount', () => {
     it('fails with the kind of the refusal', async () => {
         const { api } = respond(new Response('{}', { status: 403 }));
 
-        const failure = saveAccount(api, { attributes: {}, password: '', confirmPassword: '' });
+        const failure = saveAccount(api, {
+            attributes: {},
+            password: '',
+            confirmPassword: '',
+            currentPassword: '',
+        });
         await expect(failure).rejects.toBeInstanceOf(ApiError);
         await expect(failure).rejects.toMatchObject({ kind: 'forbidden' });
     });

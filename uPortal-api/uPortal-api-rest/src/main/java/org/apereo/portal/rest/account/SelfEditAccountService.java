@@ -27,12 +27,15 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.StringUtils;
 import org.apereo.portal.i18n.ILocaleStore;
 import org.apereo.portal.i18n.LocaleManagerFactory;
+import org.apereo.portal.persondir.ILocalAccountDao;
+import org.apereo.portal.persondir.ILocalAccountPerson;
 import org.apereo.portal.portletpublishing.xml.Preference;
 import org.apereo.portal.portlets.StringListAttribute;
 import org.apereo.portal.portlets.account.PersonForm;
 import org.apereo.portal.portlets.account.UserAccountHelper;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
+import org.apereo.portal.security.IPortalPasswordService;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -53,12 +56,16 @@ import org.springframework.stereotype.Service;
 public class SelfEditAccountService {
 
     static final String PASSWORDS_MUST_MATCH = "passwords.must.match";
+    static final String ENTER_CURRENT_PASSWORD = "please.enter.current.password";
+    static final String CURRENT_PASSWORD_DOESNT_MATCH = "current.password.doesnt.match";
 
     private final IPersonManager personManager;
     private final UserAccountHelper userAccountHelper;
     private final MessageSource messageSource;
     private final ILocaleStore localeStore;
     private final LocaleManagerFactory localeManagerFactory;
+    private final ILocalAccountDao localAccountDao;
+    private final IPortalPasswordService passwordService;
     private Map<String, String> directoryDisplayAttributes = Collections.emptyMap();
 
     @Autowired
@@ -67,12 +74,16 @@ public class SelfEditAccountService {
             UserAccountHelper userAccountHelper,
             MessageSource messageSource,
             ILocaleStore localeStore,
-            LocaleManagerFactory localeManagerFactory) {
+            LocaleManagerFactory localeManagerFactory,
+            ILocalAccountDao localAccountDao,
+            IPortalPasswordService passwordService) {
         this.personManager = personManager;
         this.userAccountHelper = userAccountHelper;
         this.messageSource = messageSource;
         this.localeStore = localeStore;
         this.localeManagerFactory = localeManagerFactory;
+        this.localAccountDao = localAccountDao;
+        this.passwordService = passwordService;
     }
 
     /** The attributes the account details show, in order (userContext.xml). */
@@ -86,14 +97,17 @@ public class SelfEditAccountService {
         private final Map<String, String> attributes;
         private final @Nullable String password;
         private final @Nullable String confirmPassword;
+        private final @Nullable String currentPassword;
 
         public Update(
                 Map<String, String> attributes,
                 @Nullable String password,
-                @Nullable String confirmPassword) {
+                @Nullable String confirmPassword,
+                @Nullable String currentPassword) {
             this.attributes = attributes;
             this.password = password;
             this.confirmPassword = confirmPassword;
+            this.currentPassword = currentPassword;
         }
 
         public Map<String, String> getAttributes() {
@@ -106,6 +120,10 @@ public class SelfEditAccountService {
 
         public @Nullable String getConfirmPassword() {
             return confirmPassword;
+        }
+
+        public @Nullable String getCurrentPassword() {
+            return currentPassword;
         }
     }
 
@@ -145,7 +163,9 @@ public class SelfEditAccountService {
      *
      * @throws AccountException 401 for guests; 403 when the user may not edit their account or
      *     names an attribute they may not edit; 400 with the code {@value #PASSWORDS_MUST_MATCH}
-     *     when the password and its confirmation differ
+     *     when the password and its confirmation differ, {@value #ENTER_CURRENT_PASSWORD} when a
+     *     new password comes without the current one, and {@value #CURRENT_PASSWORD_DOESNT_MATCH}
+     *     when the current password is wrong
      */
     public void updateAccount(HttpServletRequest request, Update update) {
         final IPerson person = requireUser(request);
@@ -175,6 +195,10 @@ public class SelfEditAccountService {
             }
         }
 
+        if (StringUtils.isNotBlank(update.password)) {
+            requireCurrentPassword(username, update.currentPassword);
+        }
+
         final PersonForm form = userAccountHelper.getForm(username);
         for (Map.Entry<String, String> attribute : update.attributes.entrySet()) {
             final String value = attribute.getValue();
@@ -189,6 +213,25 @@ public class SelfEditAccountService {
         form.setPassword(update.password);
         form.setConfirmPassword(update.confirmPassword);
         userAccountHelper.updateAccount(person, form);
+    }
+
+    /** A new password needs the current one, as the update-password flow asks for it. */
+    private void requireCurrentPassword(String username, @Nullable String currentPassword) {
+        if (StringUtils.isBlank(currentPassword)) {
+            throw new AccountException(
+                    HttpStatus.BAD_REQUEST,
+                    "A new password needs the current password",
+                    ENTER_CURRENT_PASSWORD);
+        }
+        final ILocalAccountPerson account = localAccountDao.getPerson(username);
+        if (account == null
+                || account.getPassword() == null
+                || !passwordService.validatePassword(currentPassword, account.getPassword())) {
+            throw new AccountException(
+                    HttpStatus.BAD_REQUEST,
+                    "The current password is not correct",
+                    CURRENT_PASSWORD_DOESNT_MATCH);
+        }
     }
 
     private IPerson requireUser(HttpServletRequest request) {

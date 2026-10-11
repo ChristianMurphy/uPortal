@@ -47,7 +47,11 @@ const VIEWER: AccountData = { ...EDITOR, canEdit: false, editable: [] };
 const LOAD_FAILED = 'Your account could not be loaded.';
 const SESSION_EXPIRED = 'Your session has expired. Sign in again to see your account.';
 const SAVE_FAILED = 'Your account could not be updated. Try again later.';
-const PASSWORDS_DIFFER = 'Passwords must match';
+const NOTICE_TEXT = {
+    'passwords-differ': 'Passwords must match',
+    'current-password-missing': 'Please enter your current password',
+    'current-password-wrong': 'Provided password does not match the current account password',
+} as const;
 
 /**
  * The events the traversal tries: user events, and the outcomes of the invoked REST calls
@@ -61,12 +65,14 @@ const EVENTS = [
     { type: 'xstate.error.actor.loadAccount', error: new ApiError('unauthorized', 401, 'gone') },
     { type: 'edit' },
     { type: 'change', name: 'title', value: 'Dr' },
+    { type: 'password.change', field: 'currentPassword', value: '0ld-Secret!' },
     { type: 'password.change', field: 'password', value: 'n3w-Secret!' },
     { type: 'password.change', field: 'confirmPassword', value: 'n3w-Secret!' },
     { type: 'cancel' },
     { type: 'submit' },
     { type: 'xstate.done.actor.saveAccount' },
     { type: 'xstate.error.actor.saveAccount', error: new ApiError('server', 500, 'boom') },
+    { type: 'xstate.error.actor.saveAccount', error: new ApiError('http', 400, 'wrong') },
     { type: 'xstate.error.actor.saveAccount', error: new ApiError('unauthorized', 401, 'gone') },
 ] as unknown as SelfEditAccountEvent[];
 
@@ -77,13 +83,15 @@ function events(snapshot: Snapshot): SelfEditAccountEvent[] {
 
 /** States differ by their value and by the context the element renders. */
 function serialize(snapshot: Snapshot): string {
-    const { account, loadError, draft, password, confirmPassword, notice } = snapshot.context;
+    const { account, loadError, draft, currentPassword, password, confirmPassword, notice } =
+        snapshot.context;
     return JSON.stringify([
         snapshot.value,
         loadError ?? null,
         account.canEdit,
         account.details.length,
         draft,
+        currentPassword !== '',
         password !== '',
         confirmPassword !== '',
         notice ?? null,
@@ -182,7 +190,8 @@ function expectRendered(element: UpSelfEditAccount, snapshot: Snapshot): void {
     const root = shadow(element);
     const heading = root.querySelector('h2')?.textContent?.trim();
     const form = root.querySelector('form');
-    const { account, loadError, draft, password, confirmPassword, notice } = snapshot.context;
+    const { account, loadError, draft, currentPassword, password, confirmPassword, notice } =
+        snapshot.context;
 
     if (snapshot.matches('loading')) {
         expect(root.querySelector('.loading')?.getAttribute('role')).toBe('status');
@@ -217,6 +226,7 @@ function expectRendered(element: UpSelfEditAccount, snapshot: Snapshot): void {
     for (const attribute of account.editable) {
         expect(inputValue(root, `attribute-${attribute.name}`)).toBe(draft[attribute.name]);
     }
+    expect(inputValue(root, 'currentPassword')).toBe(currentPassword);
     expect(inputValue(root, 'password')).toBe(password);
     expect(inputValue(root, 'confirmPassword')).toBe(confirmPassword);
     const shown = root.querySelector('.notice');
@@ -225,11 +235,11 @@ function expectRendered(element: UpSelfEditAccount, snapshot: Snapshot): void {
     } else {
         expect(shown?.getAttribute('role')).toBe('alert');
         const expected =
-            notice.kind === 'passwords-differ'
-                ? PASSWORDS_DIFFER
-                : notice.reason === 'unauthorized'
-                  ? SESSION_EXPIRED
-                  : SAVE_FAILED;
+            notice.kind === 'save-failed'
+                ? notice.reason === 'unauthorized'
+                    ? SESSION_EXPIRED
+                    : SAVE_FAILED
+                : NOTICE_TEXT[notice.kind];
         expect(shown?.textContent).toContain(expected);
     }
 }
@@ -300,14 +310,16 @@ describe('up-self-edit-account model: shortest paths', () => {
 
 /**
  * The editor's paths through the form, without what the shortest paths already cover: the
- * password fields (copies of each path), the viewer's account and the expired session.
+ * password fields (copies of each path), the viewer's account, the expired session and the refused
+ * current password.
  */
 const SIMPLE_EVENTS = EVENTS.filter((event) => {
     const outcome = event as unknown as { output?: unknown; error?: ApiError };
     return (
         event.type !== 'password.change' &&
         outcome.output !== VIEWER &&
-        outcome.error?.kind !== 'unauthorized'
+        outcome.error?.kind !== 'unauthorized' &&
+        outcome.error?.kind !== 'http'
     );
 });
 

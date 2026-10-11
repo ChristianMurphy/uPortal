@@ -33,10 +33,15 @@ function inputValue(event: Event): string {
 
 /** The message key for a notice. */
 function noticeMessage(notice: Notice): SelfEditAccountMessageKey {
-    if (notice.kind === 'passwords-differ') {
-        return 'passwords.must.match';
+    if (notice.kind === 'save-failed') {
+        return notice.reason === 'unauthorized' ? 'account.session.expired' : 'account.save.fail';
     }
-    return notice.reason === 'unauthorized' ? 'account.session.expired' : 'account.save.fail';
+    const keys = {
+        'passwords-differ': 'passwords.must.match',
+        'current-password-missing': 'please.enter.current.password',
+        'current-password-wrong': 'current.password.doesnt.match',
+    } as const;
+    return keys[notice.kind];
 }
 
 /** Which view is showing, to move focus when it changes. */
@@ -221,7 +226,8 @@ export class UpSelfEditAccount extends UpElement {
 
     #renderForm(): TemplateResult {
         const snapshot = this.#account.snapshot;
-        const { account, draft, password, confirmPassword, notice } = snapshot.context;
+        const { account, draft, currentPassword, password, confirmPassword, notice } =
+            snapshot.context;
         const busy = snapshot.hasTag('busy');
         return html`<div class="header"><h2>${this.msg('edit.my.account')}</h2></div>
             <form aria-busy=${busy ? 'true' : nothing} @submit=${this.#submitted}>
@@ -245,6 +251,12 @@ export class UpSelfEditAccount extends UpElement {
                 <h3>${this.msg('password')}</h3>
                 <table class="table">
                     <tbody>
+                        ${this.#renderPasswordInput(
+                            'currentPassword',
+                            'current.password',
+                            currentPassword,
+                            busy,
+                        )}
                         ${this.#renderPasswordInput('password', 'password', password, busy)}
                         ${this.#renderPasswordInput(
                             'confirmPassword',
@@ -302,7 +314,7 @@ export class UpSelfEditAccount extends UpElement {
 
     #renderPasswordInput(
         field: PasswordField,
-        labelKey: 'password' | 'confirm.password',
+        labelKey: 'current.password' | 'password' | 'confirm.password',
         value: string,
         busy: boolean,
     ): TemplateResult {
@@ -315,7 +327,7 @@ export class UpSelfEditAccount extends UpElement {
                     type="password"
                     class="form-control"
                     id=${field}
-                    autocomplete="new-password"
+                    autocomplete=${field === 'currentPassword' ? 'current-password' : 'new-password'}
                     .value=${value}
                     ?disabled=${busy}
                     @input=${(event: InputEvent) => {

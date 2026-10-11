@@ -160,13 +160,14 @@ public class SelfEditAccountRESTControllerTest {
                                         + SECRET
                                         + "\",\"confirmPassword\":\""
                                         + SECRET
-                                        + "\"}"))
+                                        + "\",\"currentPassword\":\"0ld-Secret!\"}"))
                 .andExpect(status().isNoContent());
 
         final SelfEditAccountService.Update saved = savedUpdate();
         assertEquals(Collections.singletonMap("department", "Physics"), saved.getAttributes());
         assertEquals(SECRET, saved.getPassword());
         assertEquals(SECRET, saved.getConfirmPassword());
+        assertEquals("0ld-Secret!", saved.getCurrentPassword());
     }
 
     @Test

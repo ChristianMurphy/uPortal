@@ -31,6 +31,8 @@ export interface AccountChanges {
     /** A new password; empty to keep the current one. */
     password: string;
     confirmPassword: string;
+    /** The current password, which a new password needs. */
+    currentPassword: string;
 }
 
 type Json = Record<string, unknown>;

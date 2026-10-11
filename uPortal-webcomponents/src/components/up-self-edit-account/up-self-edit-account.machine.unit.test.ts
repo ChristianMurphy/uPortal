@@ -167,6 +167,7 @@ describe('selfEditAccountMachine', () => {
     it('saves every editable attribute and the passwords, then confirms', async () => {
         const { actor, calls, emitted } = await editing();
         actor.send({ type: 'change', name: 'title', value: 'Dr' });
+        actor.send({ type: 'password.change', field: 'currentPassword', value: 'old' });
         actor.send({ type: 'password.change', field: 'password', value: 'secret' });
         actor.send({ type: 'password.change', field: 'confirmPassword', value: 'secret' });
         actor.send({ type: 'submit' });
@@ -177,6 +178,7 @@ describe('selfEditAccountMachine', () => {
             attributes: { department: 'Biology', title: 'Dr' },
             password: 'secret',
             confirmPassword: 'secret',
+            currentPassword: 'old',
         });
 
         calls.save[0]?.answer.resolve(undefined);
@@ -201,6 +203,33 @@ describe('selfEditAccountMachine', () => {
         expect(actor.getSnapshot().context.password).toBe('');
         expect(actor.getSnapshot().context.confirmPassword).toBe('');
         expect(calls.save).toEqual([]);
+    });
+
+    it('refuses a new password without the current one, keeping what was typed', async () => {
+        const { actor, calls } = await editing();
+        actor.send({ type: 'password.change', field: 'password', value: 'secret' });
+        actor.send({ type: 'password.change', field: 'confirmPassword', value: 'secret' });
+        actor.send({ type: 'submit' });
+
+        expect(actor.getSnapshot().matches({ editing: 'idle' })).toBe(true);
+        expect(actor.getSnapshot().context.notice).toEqual({ kind: 'current-password-missing' });
+        expect(actor.getSnapshot().context.password).toBe('secret');
+        expect(calls.save).toEqual([]);
+    });
+
+    it('reports a refused current password and empties the passwords', async () => {
+        const { actor, calls } = await editing();
+        actor.send({ type: 'password.change', field: 'currentPassword', value: 'wrong' });
+        actor.send({ type: 'password.change', field: 'password', value: 'secret' });
+        actor.send({ type: 'password.change', field: 'confirmPassword', value: 'secret' });
+        actor.send({ type: 'submit' });
+        calls.save[0]?.answer.reject(new ApiError('http', 400, 'refused'));
+        await waitFor(actor, (snapshot) => snapshot.matches({ editing: 'idle' }));
+
+        const { context } = actor.getSnapshot();
+        expect(context.notice).toEqual({ kind: 'current-password-wrong' });
+        expect(context.currentPassword).toBe('');
+        expect(context.password).toBe('');
     });
 
     it('reports a save without a password as such', async () => {
@@ -230,6 +259,7 @@ describe('selfEditAccountMachine', () => {
         async (reason, error) => {
             const { actor, calls, emitted } = await editing();
             actor.send({ type: 'change', name: 'title', value: 'Dr' });
+            actor.send({ type: 'password.change', field: 'currentPassword', value: 'old' });
             actor.send({ type: 'password.change', field: 'password', value: 'secret' });
             actor.send({ type: 'password.change', field: 'confirmPassword', value: 'secret' });
             actor.send({ type: 'submit' });
