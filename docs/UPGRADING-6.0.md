@@ -629,6 +629,20 @@ its own scheduler. The new setting
 (default `PT0S`) sets when the first flush runs. Keep it well under
 `org.apereo.portal.events.aggr.PortalRawEventsAggregatorImpl.aggregationDelay` (default `PT30S`).
 
+**A starting node keeps trying to join the cluster.** In uPortal 5 a node that started next to a
+running one sent its JGroups JOIN 4 times and waited 1 s for each answer. The running node can
+answer only once it has the new node's address, which took a little over 4 s in a two-node test.
+In 6 of 20 starts the new node gave up and formed a cluster of its own. Until JGroups merged the
+two, 48 s or more later, it dropped the other node's cache invalidations, and what it cached in
+that time kept its old value until it expired (6 hours for portlet definitions). `jgroups.xml`
+now tries 8 times (`<pbcast.GMS join_timeout="1000" max_join_attempts="8">`), and the new node
+joined in all of 20 starts. A portal with its own `jgroups.xml` should make the same change.
+
+The cost falls on a portal with one server that restarts after a crash. Its old row in
+`JGROUPSPING` still names it the coordinator, so it sends JOINs to that dead address before it
+starts on its own: about 8.6 s with the new setting, 4.3 s before. A clean shutdown removes the
+row, and the restarted server then starts at once.
+
 ## Deep links and failed logins with local login
 
 The new setting `login.refUrlEncoder` (in `security.properties`) says how uPortal sends a guest
