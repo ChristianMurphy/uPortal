@@ -41,36 +41,23 @@ Issue IDs: MOD-I140 to MOD-I149 (I140 to I143 are used).
   mariadb-12.3 passed, and the three canaries passed. CI run 38103161766
   (unit tests, SpotBugs, commit messages) passed.
 
-## Half done
+## Merged
 
-- Run 38107283955 (old base): sqlserver-2025, postgres-18, mysql-9.7
-  and mariadb-12.3 passed. On oracle-23 the query and aggregation
-  goldens passed, and the round trip failed: @OrderBy ties came back in
-  another order, and '' values in element collections became NULL rows
-  that Hibernate 4.3 doesn't read or delete (MOD-I144), which blocked
-  the clean-up. Both are handled in "expect oracle's dropped values and
-  order-by ties".
-- The topic branch now merges ccr a7e40a329 (186 commits, including
-  java.time outside JPA, the Spring cache API and the Pluto copy). All
-  goldens pass unchanged on HSQLDB on that base. The aggregation context
-  got a Spring CacheManager, and the freeze store was re-recorded: it
-  dropped 76 Joda-Time and 92 Ehcache uses and records 12 uses that came
-  with those batches.
-- Run 38109271584 (tip 44ded6c29) was cancelled before it started, to
-  include the MOD-I144 assertion: on Oracle the round trip now asserts
-  which entity types `EntityManager#remove` can't delete, before its
-  SQL clean-up.
+- Run 38109522840 (tip bc71dbaa6) passed on postgres-18, mariadb-12.3,
+  mysql-9.7, sqlserver-2025, oracle-23 and the three canaries. CI
+  38109515481 passed. The commits are on `ccr-43ba0785-hzlrj5` as
+  linear history, without the merge commit of the topic branch.
 
-## Next steps
+## Next steps for other workstreams
 
-1. Wait for the newest manual run. Read the logs of failed jobs with the
-   GitHub MCP `get_job_logs` tool; the CI log prints the full golden
-   diff.
-2. Fix what they show, on the topic branch. Push first, wait until the
-   push runs are listed, then dispatch the manual run. A push run in the
-   same concurrency group cancels a queued dispatched run.
-3. When all five databases pass, replay the non-merge commits onto
-   `ccr-43ba0785-hzlrj5` (MOD-D32), run
-   `.github/scripts/check-commit-messages.sh` and
-   `.github/scripts/vale.sh commits` on the range, push as a
-   fast-forward, and add the run IDs to the MOD-D29 status in LOG.md.
+1. P2 (Hibernate 5.2) rebases onto the goldens and must pass them
+   unchanged, or record each difference in LOG.md and re-record on
+   HSQLDB with `-Duportal.golden.record=true`.
+2. MOD-I144: the round trip asserts on Oracle which entity types
+   `EntityManager#remove` can't delete. If 5.2 deletes those rows, that
+   assertion fails and `VendorDifferences.leftByRemove` changes with the
+   fix.
+3. When a phase removes a frozen Joda-Time, Ehcache 2, Criteria or
+   Session use, run `MigrationFreezeRulesTest` with
+   `-Darchunit.freeze.store.default.allowStoreUpdate=true` and commit the
+   smaller store.

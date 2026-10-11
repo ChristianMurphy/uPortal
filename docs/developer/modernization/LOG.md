@@ -1167,6 +1167,15 @@ This supersedes MOD-D24's runtime matrix.
     listener `InsufficientSizeCacheEventListener`, which goes with JCache
     (P4-3).
   * Findings: MOD-I140 to MOD-I144.
+  * Runs: the manual DB integration run 38109522840 on the topic branch
+    `ccr-43ba0785-hzlrj5-goldens` passed on all five databases and the
+    three canaries, and CI 38109515481 passed. The earlier topic runs
+    38097192745, 38103140369 and 38107283955 found the MySQL bag order,
+    the SQL Server best-fit characters in values, keys and ids, and the
+    Oracle findings above. The commits handle each of them.
+  * All goldens passed unchanged after the java.time and Spring cache
+    batches; only the aggregation test context needed a Spring
+    CacheManager.
 
 * **Status (2026-10-11, copy-tool strength tests):** in
   `uPortal-db-migrate`, described in
