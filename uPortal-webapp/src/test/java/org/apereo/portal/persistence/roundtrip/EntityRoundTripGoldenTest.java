@@ -237,7 +237,7 @@ public class EntityRoundTripGoldenTest {
                 try {
                     reader.getTransaction().begin();
                     final Object reloaded =
-                            reader.find(rootType, detachedId(reader, metamodel, emf, id));
+                            reader.find(rootType, detachedId(reader, metamodel, emf, vendor, id));
                     comparator.compare(label, root, reloaded);
                     reader.getTransaction().commit();
                 } catch (RuntimeException e) {
@@ -292,14 +292,19 @@ public class EntityRoundTripGoldenTest {
     }
 
     /**
-     * A copy of a composite id whose entity references are read in {@code reader}: the id object of
-     * the stored entity still points at the instances that were built, and finding by it would put
-     * those (not the database's values) into the reloaded entity.
+     * The id to find the stored entity by. A composite id is copied with its entity references read
+     * in {@code reader}: the id object of the stored entity still points at the instances that were
+     * built, and finding by it would put those (not the database's values) into the reloaded
+     * entity. String ids and id fields are stored as {@link VendorDifferences#storedId} says.
      */
     private static Object detachedId(
-            EntityManager reader, Metamodel metamodel, EntityManagerFactory emf, Object id) {
+            EntityManager reader,
+            Metamodel metamodel,
+            EntityManagerFactory emf,
+            DatabaseVendor vendor,
+            Object id) {
         if (metamodel.getEmbeddables().stream().noneMatch(e -> e.getJavaType() == id.getClass())) {
-            return id;
+            return VendorDifferences.storedId(vendor, id);
         }
         final Object copy = EntityGraphBuilder.instantiate(id.getClass());
         for (final Attribute<?, ?> attribute :
@@ -311,6 +316,8 @@ public class EntityRoundTripGoldenTest {
                         reader.find(
                                 value.getClass(),
                                 emf.getPersistenceUnitUtil().getIdentifier(value));
+            } else {
+                value = VendorDifferences.storedId(vendor, value);
             }
             EntityGraphBuilder.set(field, copy, value);
         }
