@@ -2,9 +2,11 @@
   "name": "uportal-webapp",
   "private": true,
   "scripts": {
-    "compile-scss": "sass --load-path=build/generated-sources/skin/main/webapp/webjars/bootstrap/scss build/generated-sources/skin/main/webapp/media/skins/respondr/defaultSkin.scss:build/generated-sources/skin/main/webapp/media/skins/respondr/defaultSkin.css"
+    "compile-scss": "sass --load-path=build/generated-sources/skin/main/webapp/webjars/bootstrap/scss build/generated-sources/skin/main/webapp/media/skins/respondr/defaultSkin.scss:build/generated-sources/skin/main/webapp/media/skins/respondr/defaultSkin.css",
+    "compile-rtl-css": "rtlcss build/generated-sources/skin/main/webapp/media/skins/respondr/defaultSkin.css build/generated-sources/skin/main/webapp/media/skins/respondr/defaultSkin-rtl.css"
   },
   "devDependencies": {
+    "rtlcss": "~4.3.0",
     "sass": "^1.77.0"
   }
 }

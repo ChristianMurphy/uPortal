@@ -15,12 +15,15 @@
 package org.apereo.portal.portlets.dynamicskin;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.text.MessageFormat;
+import javax.portlet.PortletContext;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
 import javax.servlet.http.HttpServletRequest;
+import org.apereo.portal.i18n.LocaleDirection;
 import org.apereo.portal.portlet.om.IPortletEntity;
 import org.apereo.portal.portlet.om.IPortletWindow;
 import org.apereo.portal.portlet.om.IPortletWindowId;
@@ -32,6 +35,7 @@ import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
+import org.apereo.portal.spring.web.portlet.context.PortletContextAware;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,10 +53,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
  */
 @Controller
 @RequestMapping("VIEW")
-public class DynamicRespondrSkinViewController {
+public class DynamicRespondrSkinViewController implements PortletContextAware {
     private static final MessageFormat DEFAULT_SKIN_CSS_PATH_FORMAT =
             new MessageFormat(
                     DynamicRespondrSkinConstants.DEFAULT_RELATIVE_ROOT_FOLDER + "/{0}.css");
+
+    /** The mirrored copy of a pre-built skin, for right-to-left locales (MOD-I234) */
+    private static final MessageFormat RTL_SKIN_CSS_PATH_FORMAT =
+            new MessageFormat(
+                    DynamicRespondrSkinConstants.DEFAULT_RELATIVE_ROOT_FOLDER + "/{0}-rtl.css");
+
+    private PortletContext portletContext;
 
     protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -63,6 +74,11 @@ public class DynamicRespondrSkinViewController {
     @Autowired private IPersonManager personManager;
 
     @Autowired private IPortletWindowRegistry portletWindowRegistry;
+
+    @Override
+    public void setPortletContext(PortletContext portletContext) {
+        this.portletContext = portletContext;
+    }
 
     /**
      * Display Skin CSS include based on skin's configuration values from portlet preferences.<br>
@@ -99,7 +115,8 @@ public class DynamicRespondrSkinViewController {
             String cssUrl =
                     enabled
                             ? calculateDynamicSkinUrlPathToUse(request, skinName)
-                            : calculateDefaultSkinCssLocationInWebapp(skinName);
+                            : calculateDefaultSkinCssLocationInWebapp(
+                                    skinName, LocaleDirection.isRightToLeft(request.getLocale()));
             model.addAttribute(
                     DynamicRespondrSkinConstants.SKIN_CSS_URL_MODEL_ATTRIBUTE_NAME, cssUrl);
             return new ModelAndView("jsp/DynamicRespondrSkin/skinHeader");
@@ -145,12 +162,33 @@ public class DynamicRespondrSkinViewController {
     }
 
     /**
-     * Calculates the relative URL of the default skin CSS file.
+     * Calculates the relative URL of the default skin CSS file. For a right-to-left locale it is
+     * the skin's mirrored copy ({skinName}-rtl.css) when the webapp has one, as it has for
+     * defaultSkin; otherwise the skin itself.
      *
      * @param skinName skin filename
+     * @param rightToLeft whether the user's locale is written right to left
      * @return Relative URL of the default skin CSS file for the user.
      */
-    private String calculateDefaultSkinCssLocationInWebapp(String skinName) {
+    String calculateDefaultSkinCssLocationInWebapp(String skinName, boolean rightToLeft) {
+        if (rightToLeft) {
+            final String rtlPath = RTL_SKIN_CSS_PATH_FORMAT.format(new Object[] {skinName});
+            if (isInWebapp(rtlPath)) {
+                return rtlPath;
+            }
+            logger.debug("No right-to-left copy {} of the skin; using the skin itself", rtlPath);
+        }
         return DEFAULT_SKIN_CSS_PATH_FORMAT.format(new Object[] {skinName});
+    }
+
+    private boolean isInWebapp(String path) {
+        if (portletContext == null) {
+            return false;
+        }
+        try {
+            return portletContext.getResource(path) != null;
+        } catch (MalformedURLException e) {
+            return false;
+        }
     }
 }

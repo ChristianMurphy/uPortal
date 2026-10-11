@@ -131,3 +131,25 @@ p a:not(.btn),
 footer a:not(.btn) {
   text-decoration: underline;
 }
+
+/* In a right-to-left page, icons that point along the line face the other way (MOD-I234) */
+[dir="rtl"] {
+  .fa-angle-double-left,
+  .fa-angle-double-right,
+  .fa-angle-left,
+  .fa-angle-right,
+  .fa-arrow-circle-left,
+  .fa-arrow-circle-right,
+  .fa-arrow-left,
+  .fa-arrow-right,
+  .fa-caret-left,
+  .fa-caret-right,
+  .fa-chevron-left,
+  .fa-chevron-right,
+  .fa-long-arrow-left,
+  .fa-long-arrow-right,
+  .fa-sign-in,
+  .fa-sign-out {
+    transform: scaleX(-1);
+  }
+}

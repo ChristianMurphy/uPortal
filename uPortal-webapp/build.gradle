@@ -281,7 +281,10 @@ task aggregateRespondrSkins {
 
 // Generate CSS for Respondr skins
 project.tasks.getByName('npm_run_compile-scss').dependsOn(prepareSkinResources)
-aggregateRespondrSkins.dependsOn('npm_run_compile-scss')
+// A mirrored copy of the skin for right-to-left locales (defaultSkin-rtl.css, MOD-I234), which
+// RTLCSS makes from the compiled CSS the same way Bootstrap makes bootstrap.rtl.css
+project.tasks.getByName('npm_run_compile-rtl-css').dependsOn('npm_run_compile-scss')
+aggregateRespondrSkins.dependsOn('npm_run_compile-scss', 'npm_run_compile-rtl-css')
 processResources.dependsOn(aggregateRespondrSkins)
 
 war {
