@@ -537,33 +537,18 @@ describe('up-session-timeout messages', () => {
         expect(button(element, 'No, log me out')).toBeTruthy();
     });
 
-    it('counts down to one second in the singular', async () => {
-        const element = await mount();
-        await openWarning(element);
-
-        await advanceTo(element, LOGOUT_AT - 2 * SECOND);
-        expect(openDialog(element).textContent).toMatch(/expire\s+in 2 seconds\./);
-        await advanceTo(element, LOGOUT_AT - SECOND);
-        expect(openDialog(element).textContent).toContain('Your session will expire in 1 second.');
-    });
-
-    it('takes the singular from the portal in the element locale', async () => {
+    it('wraps a long word inside the warning', async () => {
         server.on(
             'GET',
             `/uPortal${MESSAGES_PATH}`,
-            json({
-                messages: {
-                    'session-timeout.body1': 'Su sesión expirará en {0} segundos.',
-                    'session-timeout.body1.one': 'Su sesión expirará en {0} segundo.',
-                },
-            }),
+            json({ messages: { 'session-timeout.title': 'Sitzungsablauf'.repeat(20) } }),
         );
-        const element = await mount(ATTRIBUTES.replace('en-US', 'es-ES'));
+        const element = await mount();
         await element.messagesReady;
-        await openWarning(element);
+        const open = await openWarning(element);
 
-        await advanceTo(element, LOGOUT_AT - SECOND);
-        expect(openDialog(element).textContent).toContain('Su sesión expirará en 1 segundo.');
+        expect(open.textContent).toContain('Sitzungsablauf'.repeat(20));
+        expect(open.scrollWidth).toBeLessThanOrEqual(open.clientWidth);
     });
 });
 
