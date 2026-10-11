@@ -38,6 +38,10 @@ jobs:
       matrix: ${{ fromJSON(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && github.event_name != 'workflow_dispatch' && '{"include":[{"platform":"ubuntu-latest","java-distribution":"temurin","java-version":21}]}' || '{"platform":["ubuntu-latest"],"java-distribution":["temurin","zulu","corretto"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}') }}
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 45
+    env:
+      # The cell that does the work no other cell repeats (MOD-I301): the web component tests, which
+      # need Chromium, and the JavaScript lint. Every cell runs the Java build.
+      MAIN_CELL: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +58,7 @@ jobs:
           cache-provider: basic
           cache-read-only: ${{ env.GRADLE_CACHE_READ_ONLY == 'true' || (env.GRADLE_CACHE_READ_ONLY_SHARED == 'true' && matrix.platform == 'ubuntu-latest' && !(matrix.java-distribution == 'temurin' && matrix.java-version == 21)) }}
       - name: Install Chromium for the web component tests
+        if: ${{ env.MAIN_CELL == 'true' }}
         run: ./gradlew -S --no-daemon :uPortal-webcomponents:installChromium
       - name: Build and Test
         env:
@@ -61,6 +66,8 @@ jobs:
           # listing the Error Prone and javac warnings. Gradle reads this as -PquietCompile, in
           # any shell.
           ORG_GRADLE_PROJECT_quietCompile: ${{ !(matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21) }}
+          # The other cells leave out the web component tests, which need Chromium
+          ORG_GRADLE_PROJECT_skipWebComponentTests: ${{ env.MAIN_CELL != 'true' }}
         run: ./gradlew -S --stacktrace --no-daemon --no-parallel build jacocoAggregateReport
       - name: Upload coverage to Coveralls
         if: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
@@ -76,6 +83,7 @@ jobs:
           name: test-reports-${{ matrix.platform }}-${{ matrix.java-distribution }}-${{ matrix.java-version }}
           path: '**/build/reports/tests/'
       - name: Lint JavaScript
+        if: ${{ env.MAIN_CELL == 'true' }}
         run: ./gradlew -S --no-daemon --no-parallel :npm_run_lint-js
 
   static-analysis:
