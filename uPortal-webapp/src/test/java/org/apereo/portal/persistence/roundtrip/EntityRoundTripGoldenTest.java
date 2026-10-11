@@ -159,9 +159,16 @@ public class EntityRoundTripGoldenTest {
             PersistenceUnits.deleteAll(emf);
             try {
                 roundTrip(emf, dataSource, vendor, goldenName, storedTags);
-            } finally {
-                PersistenceUnits.deleteAll(emf);
+            } catch (AssertionError | RuntimeException e) {
+                // A failed clean-up must not hide why the round trip failed
+                try {
+                    PersistenceUnits.deleteAll(emf);
+                } catch (RuntimeException cleanup) {
+                    e.addSuppressed(cleanup);
+                }
+                throw e;
             }
+            PersistenceUnits.deleteAll(emf);
         }
     }
 

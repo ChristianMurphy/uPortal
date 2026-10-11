@@ -16,7 +16,6 @@ package org.apereo.portal.test;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Method;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,6 +33,7 @@ import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -61,16 +61,22 @@ public abstract class BaseJpaDaoTest {
 
     protected abstract EntityManager getEntityManager();
 
-    /** Deletes ALL entities from the database */
+    /**
+     * Deletes ALL entities from the database. A type that is still referenced by another fails with
+     * a constraint error and is retried in the next pass. When a whole pass deletes no type, no
+     * later pass can, so the test fails with the types left, their row counts and the last
+     * constraint error, instead of retrying forever and hanging every later test class.
+     */
     @After
     public final void deleteAllEntities() {
         final EntityManager entityManager = getEntityManager();
         final EntityManagerFactory entityManagerFactory = entityManager.getEntityManagerFactory();
         final Metamodel metamodel = entityManagerFactory.getMetamodel();
         Set<EntityType<?>> entityTypes = new LinkedHashSet<>(metamodel.getEntities());
+        DataIntegrityViolationException lastFailure = null;
 
         do {
-            final Set<EntityType<?>> failedEntitieTypes = new HashSet<>();
+            final Set<EntityType<?>> failedEntitieTypes = new LinkedHashSet<>();
 
             for (final EntityType<?> entityType : entityTypes) {
                 final String entityClassName = entityType.getBindableJavaType().getName();
@@ -103,9 +109,18 @@ public abstract class BaseJpaDaoTest {
                                     + entityClassName
                                     + ". Must be a dependency of another entity");
                     failedEntitieTypes.add(entityType);
+                    lastFailure = e;
                 }
             }
 
+            if (!failedEntitieTypes.isEmpty() && failedEntitieTypes.size() == entityTypes.size()) {
+                throw new IllegalStateException(
+                        "Cannot delete the remaining entities "
+                                + describe(entityManager, failedEntitieTypes)
+                                + ": "
+                                + NestedExceptionUtils.getMostSpecificCause(lastFailure),
+                        lastFailure);
+            }
             entityTypes = failedEntitieTypes;
         } while (!entityTypes.isEmpty());
 
@@ -127,6 +142,31 @@ public abstract class BaseJpaDaoTest {
             }
             throw new RuntimeException(e);
         }
+    }
+
+    /** Each type's class name and how many of its rows are left */
+    private String describe(EntityManager entityManager, Set<EntityType<?>> entityTypes) {
+        final List<String> types = new LinkedList<>();
+        for (final EntityType<?> entityType : entityTypes) {
+            final String entityClassName = entityType.getBindableJavaType().getName();
+            String count;
+            try {
+                count =
+                        String.valueOf(
+                                this.executeInTransaction(
+                                        () ->
+                                                entityManager
+                                                        .createQuery(
+                                                                "SELECT COUNT(e) FROM "
+                                                                        + entityClassName
+                                                                        + " e")
+                                                        .getSingleResult()));
+            } catch (RuntimeException e) {
+                count = "?";
+            }
+            types.add(entityClassName + " (" + count + " rows)");
+        }
+        return types.toString();
     }
 
     /** Executes the callback inside of an interceptor inside of a {@link TransactionCallback} */

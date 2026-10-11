@@ -15,10 +15,11 @@
 package org.apereo.portal.test.golden;
 
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
@@ -44,7 +45,8 @@ public final class PersistenceUnits {
 
     /**
      * Deletes the entities of the matching types with {@code EntityManager#remove} (so cascades and
-     * collection tables are handled), retrying the types that are still referenced.
+     * collection tables are handled), retrying the types that are still referenced. When a pass
+     * deletes no type, fails with each type left and the root cause of its last failure.
      */
     public static void deleteAll(EntityManagerFactory emf, Predicate<Class<?>> types) {
         Set<EntityType<?>> remaining = new LinkedHashSet<>();
@@ -53,11 +55,9 @@ public final class PersistenceUnits {
                 remaining.add(entityType);
             }
         }
-        for (int pass = 0; !remaining.isEmpty(); pass++) {
-            if (pass > remaining.size() + 2) {
-                throw new IllegalStateException("Cannot delete " + remaining);
-            }
-            final Set<EntityType<?>> failed = new HashSet<>();
+        final Map<String, String> causes = new TreeMap<>();
+        while (!remaining.isEmpty()) {
+            final Set<EntityType<?>> failed = new LinkedHashSet<>();
             for (final EntityType<?> entityType : remaining) {
                 final EntityManager em = emf.createEntityManager();
                 try {
@@ -70,6 +70,7 @@ public final class PersistenceUnits {
                     em.getTransaction().commit();
                 } catch (RuntimeException e) {
                     failed.add(entityType);
+                    causes.put(entityType.getJavaType().getName(), rootCause(e));
                     if (em.getTransaction().isActive()) {
                         em.getTransaction().rollback();
                     }
@@ -77,7 +78,23 @@ public final class PersistenceUnits {
                     em.close();
                 }
             }
+            if (failed.size() == remaining.size()) {
+                final StringBuilder message = new StringBuilder("Cannot delete:");
+                for (final EntityType<?> entityType : failed) {
+                    final String name = entityType.getJavaType().getName();
+                    message.append("\n  ").append(name).append(": ").append(causes.get(name));
+                }
+                throw new IllegalStateException(message.toString());
+            }
             remaining = failed;
         }
+    }
+
+    private static String rootCause(Throwable e) {
+        Throwable cause = e;
+        while (cause.getCause() != null && cause.getCause() != cause) {
+            cause = cause.getCause();
+        }
+        return cause.getClass().getSimpleName() + ": " + cause.getMessage();
     }
 }
