@@ -102,6 +102,15 @@ source:
 | A missing target table (MOD-I92), an unexpected source column, a target NOT NULL column nothing fills | exit 2, nothing written |
 | A target NOT NULL, length, unique key or foreign key the source rows violate | exit 2, nothing written |
 
+The four faults that hit a running copy hold the copy first. A second
+session inserts one of the source's keys (`COUNTER_15000`) into the target
+and leaves it uncommitted, so the copy waits on that key's unique index
+with thousands of rows already committed. The test injects the fault once
+the server reports the copy waiting for that lock, then rolls the row
+back. So the fault always reaches a running copy, however fast the copy
+or slow the machine. `-PdbMigrateRepeat=N` runs each fault test N times
+per server.
+
 #### After a failed copy
 
 The tool is not restartable yet. A copy that stops part-way (exit 1, or a
@@ -119,14 +128,51 @@ again.
 
 [PIT](https://pitest.org) changes the compiled code one small mutation at a
 time (a flipped condition, a removed call, a changed constant) and runs the
-tests against each mutant; a mutant no test notices is a gap in the tests.
+tests against each mutant. A mutant that survives with every test passing
+shows code whose behaviour the tests don't pin down.
 
 ```sh
-./gradlew :uPortal-db-migrate:pitest   # planning, load order, conversions, LOBs, verification, generators
+./gradlew :uPortal-db-migrate:pitest   # planning, load order, conversions, verification, generators
 ./gradlew :uPortal-webapp:pitest       # JpaClusterLockDao (MOD-I82, MOD-I99)
 ```
 
-Neither runs in `build` or `check`; the `DB copy tool` workflow runs both
-nightly. The reports are in each module's `build/reports/pitest/`. A run
-fails below its threshold (`mutationThreshold` in the module's
-`build.gradle`; `-PpitestThreshold=N` overrides it).
+Neither runs in `build` or `check`. The `DB copy tool` workflow runs both
+nightly, and the reports are in each module's `build/reports/pitest/`.
+
+### Copy tool
+
+PIT mutates the planner and load order, the type classification and value
+conversions, the table hash and the generator formula, and runs the unit
+tests and properties against them. The HSQLDB copy tests are left out: each
+takes seconds and would run again for every surviving mutant, which took a
+full run past 40 minutes. The target constraint checks and the PostgreSQL
+large-object helpers only build SQL, which the HSQLDB and integration tests
+run, so they are not mutated.
+
+| | Mutants | Killed | No coverage | Score | Test strength |
+| --- | --- | --- | --- | --- | --- |
+| The tests as first pushed (6a014728c) | 622 | 344 | 211 | 55 % | 84 % |
+| With the tests added for the survivors | 622 | 405 | 189 | 65 % | 94 % |
+
+Test strength counts only the mutants some test reaches. Most mutants
+without coverage are in code that talks to a database (reading and binding
+values, the verification queries, positioning generators), which the
+excluded tests cover.
+
+The tests added for the survivors pin what the properties take as given:
+the flags and notes of each column pair (`ColumnPairTest`), the table
+hash's row count, width and long value lengths, and planning branches no
+test reached (a cycle of NOT NULL foreign keys, identity columns,
+generators on one side only, a lob-oid rule on a renamed column). The
+survivors left are equivalent mutants (a `round` counter the loop never
+reaches, `digits >= 9` against `> 9`, a sum taken by subtraction) or
+change only the wording of messages and `toString`.
+
+The run fails below 60 % mutation score or 90 % test strength, a few points
+under the measured values: a mutant that times out on a loaded machine
+counts differently from run to run. `-PpitestThreshold=N` and
+`-PpitestStrengthThreshold=N` override them.
+
+### JpaClusterLockDao
+
+Not measured yet.
