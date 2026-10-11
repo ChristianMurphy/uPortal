@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
+import org.apereo.portal.events.IPortalSearchEventFactory;
 import org.apereo.portal.security.csrf.PortalCsrfSecurityRequestMatcher;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,18 +56,20 @@ public class SearchResultsRESTControllerTest {
     private static final String URI = "/api/v6-0/search";
 
     private SearchService service;
+    private IPortalSearchEventFactory events;
     private MockMvc mockMvc;
     private final MockHttpSession session = new MockHttpSession();
 
     @Before
     public void setUp() {
         service = mock(SearchService.class);
+        events = mock(IPortalSearchEventFactory.class);
         final PortalCsrfSecurityRequestMatcher csrfMatcher = new PortalCsrfSecurityRequestMatcher();
         csrfMatcher.init();
         final CsrfFilter csrfFilter = new CsrfFilter(new HttpSessionCsrfTokenRepository());
         csrfFilter.setRequireCsrfProtectionMatcher(csrfMatcher);
         mockMvc =
-                MockMvcBuilders.standaloneSetup(new SearchResultsRESTController(service))
+                MockMvcBuilders.standaloneSetup(new SearchResultsRESTController(service, events))
                         .addFilters(csrfFilter)
                         .build();
     }
@@ -133,6 +137,31 @@ public class SearchResultsRESTControllerTest {
                         eq("x"),
                         eq(new HashSet<>(Arrays.asList("people", "portlets"))),
                         any(HttpServletRequest.class));
+    }
+
+    @Test
+    public void publishesOnlySubmittedSearchesForTheStatistics() throws Exception {
+        when(service.search(any(), any(), any(HttpServletRequest.class)))
+                .thenReturn(new SearchResults("cal", Collections.emptyList()));
+
+        mockMvc.perform(api(get("/uPortal" + URI).param("q", " cal ")))
+                .andExpect(status().isOk());
+        verify(events, never()).publishSearchRequestEvent(any(), any(), any());
+
+        mockMvc.perform(api(get("/uPortal" + URI).param("q", " cal ").param("submitted", "true")))
+                .andExpect(status().isOk());
+        verify(events).publishSearchRequestEvent(any(HttpServletRequest.class), any(), eq("cal"));
+    }
+
+    @Test
+    public void publishesNothingForARefusedSearch() throws Exception {
+        when(service.search(any(), any(), any(HttpServletRequest.class)))
+                .thenThrow(new SearchException(HttpStatus.BAD_REQUEST, "Enter something"));
+
+        mockMvc.perform(api(get("/uPortal" + URI).param("q", " ").param("submitted", "true")))
+                .andExpect(status().isBadRequest());
+
+        verify(events, never()).publishSearchRequestEvent(any(), any(), any());
     }
 
     @Test

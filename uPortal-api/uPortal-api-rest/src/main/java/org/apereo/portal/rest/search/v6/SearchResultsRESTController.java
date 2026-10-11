@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
+import org.apereo.portal.events.IPortalSearchEventFactory;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,8 @@ import org.springframework.web.bind.annotation.RestController;
  *       people) and its other {@code attributes} as lists of strings.
  *   <li>{@code type} (repeated, or comma-separated) limits the strategies; an unknown type gives no
  *       group.
+ *   <li>{@code submitted=true} marks a search the user submitted (the search components send it):
+ *       it is published as a {@code SearchRequestEvent} for the search statistics.
  * </ul>
  *
  * <p>The user is the one of the portal session, so a strategy finds what that user may see:
@@ -50,17 +53,25 @@ public class SearchResultsRESTController {
     public static final String SEARCH_URI = "/v6-0/search";
 
     private final SearchService searchService;
+    private final IPortalSearchEventFactory searchEventFactory;
 
-    public SearchResultsRESTController(SearchService searchService) {
+    public SearchResultsRESTController(
+            SearchService searchService, IPortalSearchEventFactory searchEventFactory) {
         this.searchService = searchService;
+        this.searchEventFactory = searchEventFactory;
     }
 
     @GetMapping(value = SEARCH_URI, produces = MediaType.APPLICATION_JSON_VALUE)
     public SearchResults search(
             @RequestParam(value = "q", required = false) @Nullable String query,
             @RequestParam(value = "type", required = false) @Nullable Set<String> types,
+            @RequestParam(value = "submitted", defaultValue = "false") boolean submitted,
             HttpServletRequest request) {
-        return searchService.search(query, types, request);
+        final SearchResults results = searchService.search(query, types, request);
+        if (submitted) {
+            searchEventFactory.publishSearchRequestEvent(request, this, results.getQuery());
+        }
+        return results;
     }
 
     @ExceptionHandler(SearchException.class)

@@ -23,7 +23,8 @@ public interface IPortalEventFactory
                 IPortalLayoutEventFactory,
                 IPortletExecutionEventFactory,
                 IPortalTenantEventFactory,
-                IPortalAnalyticsEventFactory {
+                IPortalAnalyticsEventFactory,
+                IPortalSearchEventFactory {
 
     public String getPortalEventSessionId(HttpServletRequest request, IPerson person);
 }
