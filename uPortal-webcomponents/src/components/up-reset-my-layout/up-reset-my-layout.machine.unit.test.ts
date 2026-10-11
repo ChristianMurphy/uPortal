@@ -91,7 +91,6 @@ describe('reset my layout machine: loading', () => {
 
     it.each([
         ['server', new ApiError('server', 500, 'boom')],
-        ['forbidden', new ApiError('forbidden', 403, 'no')],
         ['network', new ApiError('network', undefined, 'offline')],
         ['malformed', new ApiError('malformed', 200, 'odd')],
         ['an error that is not an ApiError', new Error('bug')],
@@ -107,9 +106,12 @@ describe('reset my layout machine: loading', () => {
         await settled(running, (s) => s.matches({ ready: 'start' }));
     });
 
-    it('is signed out when the portal answers 401', async () => {
+    it.each([
+        ['401', new ApiError('unauthorized', 401, 'guest')],
+        ['403', new ApiError('forbidden', 403, 'no')],
+    ])('is signed out when the portal answers %s', async (_name, error) => {
         const running = start();
-        running.calls.load[0]?.answer.reject(new ApiError('unauthorized', 401, 'guest'));
+        running.calls.load[0]?.answer.reject(error);
 
         await settled(running, (s) => s.matches('signedOut'));
         running.actor.send({ type: 'reload' });
@@ -207,7 +209,6 @@ describe('reset my layout machine: resetting', () => {
 
     it.each([
         ['server', new ApiError('server', 500, 'boom')],
-        ['forbidden', new ApiError('forbidden', 403, 'csrf')],
         ['network', new ApiError('network', undefined, 'offline')],
         ['malformed', new Error('bug')],
     ])(
@@ -238,11 +239,14 @@ describe('reset my layout machine: resetting', () => {
         expect(running.actor.getSnapshot().context.notice).toBeUndefined();
     });
 
-    it('is signed out when the reset answers 401', async () => {
+    it.each([
+        ['401', new ApiError('unauthorized', 401, 'expired')],
+        ['403, a refused CSRF token', new ApiError('forbidden', 403, 'csrf')],
+    ])('is signed out when the reset answers %s', async (_name, error) => {
         const running = await confirming();
         running.actor.send({ type: 'confirm' });
 
-        running.calls.reset[0]?.answer.reject(new ApiError('unauthorized', 401, 'expired'));
+        running.calls.reset[0]?.answer.reject(error);
 
         await settled(running, (s) => s.matches('signedOut'));
         expect(running.emitted).toEqual([]);

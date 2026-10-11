@@ -114,7 +114,6 @@ describe('up-reset-my-layout states', () => {
 
     it.each([
         ['a server error', () => text('boom', 500)],
-        ['a refusal', () => json({ message: 'no' }, 403)],
         ['a body that is not JSON', () => text('<html>')],
         ['an unexpected body', () => json({ user: 'student' })],
         [
@@ -137,8 +136,11 @@ describe('up-reset-my-layout states', () => {
         expect(server.requestsTo(API)).toHaveLength(2);
     });
 
-    it('asks a signed-out user to sign in again', async () => {
-        server.on('GET', API, json({ status: 401, message: 'Sign in' }, 401));
+    it.each([
+        ['401', () => json({ status: 401, message: 'Sign in' }, 401)],
+        ['403', () => json({ message: 'no' }, 403)],
+    ])('asks a signed-out user to sign in again after %s', async (_name, respond) => {
+        server.on('GET', API, respond);
         const element = await render();
 
         expect(shadow(element).querySelector('[role="alert"]')?.textContent?.trim()).toBe(
@@ -253,7 +255,6 @@ describe('up-reset-my-layout resetting', () => {
 
     it.each([
         ['a server error', () => text('boom', 500)],
-        ['a refused CSRF token', () => json({ message: 'csrf' }, 403)],
         ['an unexpected body', () => json({})],
         [
             'a network failure',
@@ -282,8 +283,11 @@ describe('up-reset-my-layout resetting', () => {
         expect(shadow(element).querySelector('.notice')).toBeNull();
     });
 
-    it('asks the user to sign in again when the session ended', async () => {
-        server.on('POST', API, json({ status: 401, message: 'Sign in' }, 401));
+    it.each([
+        ['401', () => json({ status: 401, message: 'Sign in' }, 401)],
+        ['403, a refused CSRF token', () => json({ message: 'csrf' }, 403)],
+    ])('asks the user to sign in again when the reset answers %s', async (_name, respond) => {
+        server.on('POST', API, respond);
         const element = await confirmation();
 
         await button(element, 'Reset Layout').click();

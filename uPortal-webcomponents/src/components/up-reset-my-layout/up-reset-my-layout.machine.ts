@@ -8,7 +8,7 @@
  * ```
  * loading            GET whose layout a reset acts on (busy)
  * failed             the load failed; "reload" tries again
- * signedOut          the portal answered 401: the session ended
+ * signedOut          the portal answered 401 or 403: the session ended
  * ready
  *   start            what a reset does; "reset" asks for confirmation
  *   confirming       "confirm" resets, "cancel" goes back to start
@@ -17,7 +17,9 @@
  * ```
  *
  * The reset is pessimistic: `done` only once the portal confirms. A failed reset goes back to
- * `confirming` with a notice, so the user can try again or cancel.
+ * `confirming` with a notice, so the user can try again or cancel. The API never refuses a
+ * signed-in user, so a 403 is Spring Security refusing the CSRF token, which happens when the
+ * session ended (a new session has a new token): like a 401, it means signing in again.
  */
 import { assign, enqueueActions, fromPromise, setup } from 'xstate';
 import { ApiError, type ApiClient, type ApiErrorKind } from '../../lib/api-client';
@@ -75,7 +77,8 @@ export const resetMyLayoutMachine = setup({
         ),
     },
     guards: {
-        isUnauthorized: (_, { error }: { error: unknown }) => errorKind(error) === 'unauthorized',
+        isSessionLost: (_, { error }: { error: unknown }) =>
+            errorKind(error) === 'unauthorized' || errorKind(error) === 'forbidden',
     },
     actions: {
         loaded: assign((_, { reset }: { reset: LayoutReset }) => ({ userName: reset.userName })),
@@ -109,7 +112,7 @@ export const resetMyLayoutMachine = setup({
                 onError: [
                     {
                         guard: {
-                            type: 'isUnauthorized',
+                            type: 'isSessionLost',
                             params: ({ event }) => ({ error: event.error }),
                         },
                         target: 'signedOut',
@@ -150,7 +153,7 @@ export const resetMyLayoutMachine = setup({
                         onError: [
                             {
                                 guard: {
-                                    type: 'isUnauthorized',
+                                    type: 'isSessionLost',
                                     params: ({ event }) => ({ error: event.error }),
                                 },
                                 target: '#resetMyLayout.signedOut',
