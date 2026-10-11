@@ -167,6 +167,24 @@ Spring XML, check it against the Spring Framework 5 and Spring Security 5 migrat
 removed, among others, Spring Portlet MVC (uPortal's own copy is described above), the
 `orm.hibernate3` package, `DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter`.
 
+### URL suffixes under `/api`
+
+Spring 5.3 no longer adds a file extension to the paths it maps. A request for `/api/groups.json`
+or `/api/groups.xml` used to reach the controller mapped to `/api/groups`, and now answers 404 Not
+Found. Use the paths the controllers declare:
+
+| 5.17 also answered | Use |
+| --- | --- |
+| `/api/groups.json`, `/api/groups.xml` | `/api/groups` |
+| `/api/v5-0/people/me.json` | `/api/v5-0/people/me` |
+| `/api/v5-0/people/{username}.json` | `/api/v5-0/people/{username}` |
+
+Paths that uPortal declares with their extension, such as `/api/people.json`, `/api/portlets.json`
+and `/api/v4-3/dlm/layout.json`, are unchanged.
+
+A dot in the last part of the path is now part of the value. `/api/v5-0/people/john.smith`
+looks up the user `john.smith`. uPortal 5.17 cut the name at the dot and looked up `john`.
+
 ### Sessions stored in Redis
 
 * Sessions that Spring Session stored in Redis are lost at the upgrade, so everyone is signed out
