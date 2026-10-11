@@ -41,15 +41,28 @@ which 104 are new in 4 files (14 API, 15 machine, 23 browser, 52 model-based). E
 
 ## Running
 
-uPortal CI on `02a76c7`, which adds `UserLocaleApiTest`.
+Push runs on the merged heads: uPortal `6de7e05` and uPortal-start `632a140`.
 
 ## Next steps
 
-1. When uPortal CI on `02a76c7` is green, dispatch the full-matrix CI on the uPortal branch and
-   `integration.yml` on the uPortal-start branch, and send the coordinator the run IDs and both
-   head SHAs (uPortal `02a76c7` or later, uPortal-start `b51fdde`).
-2. When the login and CSRF fix is merged into `ccr-43ba0785-hzlrj5`, merge it into both topic
-   branches and run them again: it tightens CSRF on `/api`.
+1. When the push runs on both heads are green, dispatch the full-matrix CI on the uPortal branch
+   and `integration.yml` on the uPortal-start branch, and send the coordinator the run IDs and
+   both head SHAs. If `ccr-43ba0785-hzlrj5` moves first, merge it again.
+
+## Merges from the integration branch
+
+| Head | Integration commit | What it brought | Conflicts |
+| --- | --- | --- | --- |
+| uPortal `155c0d6` | `f392658` | Login and CSRF fixes (unsafe `/api` requests need the token), Popular Portlets | `vite.config.ts` and the guide: kept both components |
+| uPortal-start `8b02e70` | `c381eab` | The same, and specs that send the token | `intended-changes.txt`: `UP_PORTLET_DEF_PARAM rows +6` (two each for favorites, popular-portlets and user-locales-selector) |
+| uPortal-start `0a5b612` | `942ff3c` | The G-index fix for the R4 gap that failed G-index 38119557847 on `b51fdde` | None |
+| uPortal `6de7e05` | `c8000b9` | Hibernate 5.2 (P2) | None |
+| uPortal-start `632a140` | `020eeb0` | Hibernate 5.2 harness changes | `intended-changes.txt`: kept +6 and the `generators declared -table(hibernate_sequences)` line |
+
+The specs didn't change for the CSRF rule: every PUT in `user-locale-component.spec.ts` already
+sends the token, except the one that expects 403. On the merged uPortal tree, `vp check`, `vp build`
+and `vp test` pass locally (656 tests in 19 files, three components). On `6de7e05` the coordinator
+ran `compileTestJava` and the uPortal-api-rest tests (209, none failed) on JDK 21.
 
 ## Seeded faults
 
