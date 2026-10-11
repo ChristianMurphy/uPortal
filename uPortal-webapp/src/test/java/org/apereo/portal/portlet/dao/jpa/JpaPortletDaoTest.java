@@ -285,8 +285,9 @@ public class JpaPortletDaoTest extends BasePortalJpaDaoTest {
             {SearchMethod.CONTAINS, "g!p", "bang"},
             {SearchMethod.CONTAINS, "!!", ""},
             {SearchMethod.STARTS_WITH, "!", ""},
+            // DISCRETE compares as the database compares strings (SearchMatch.EXACT), so "calendar"
+            // finds "Calendar" on MySQL, MariaDB and SQL Server but not on HSQLDB: no case here.
             {SearchMethod.DISCRETE, "Calendar", "calendar"},
-            {SearchMethod.DISCRETE, "calendar", ""},
         };
         for (final Object[] c : cases) {
             final List<String> found =
