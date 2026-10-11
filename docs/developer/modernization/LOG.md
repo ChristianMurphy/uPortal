@@ -1807,10 +1807,72 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   the code, clipped text and layouts that don't mirror. Unit tests check the Polish and Arabic
   plural forms, and a Playwright test runs a component with test bundles for `pl`, `ar` and
   `zh-TW`.
-* **Not covered:** the Respondr theme around the components has no right-to-left layout
-  (MOD-I234).
+* **Languages in the release (project owner, 2026-10-11):** the 6.0 release has English,
+  Spanish and French text for the components. A site can add other languages. The tests use
+  test bundles for them. The release doesn't contain translations that nobody has reviewed.
+* **Theme:** the Respondr theme around the components has no right-to-left layout (MOD-I234).
+  The owner chose to make it right to left after the accessibility fixes (MOD-D47), which
+  change the same skin files.
 * **Work:** `ccr-43ba0785-hzlrj5-i18n` builds the shared code in `lib/i18n.ts` and updates the
   landed components. Each later conversion uses that code.
+
+### MOD-D52: pages and components fit standard screen sizes
+
+* **Request (project owner, 2026-10-11):** check that the layout fits on standard screen sizes:
+  nothing spills out of its box or gets cut off, nothing collapses, and nothing wraps where it
+  shouldn't.
+* **Sizes:** widths of 320 (the WCAG reflow minimum, a 1280-pixel screen at 400% zoom), 390
+  (phone), 768 (tablet), 1024, 1366 (the most common laptop) and 1920 pixels.
+* **Checks,** measured from element boxes in the browser rather than compared screenshots:
+  1. The page never scrolls sideways.
+  2. No text or control is cut off. A box that hides overflow shows all of its content, unless
+     it scrolls on purpose, or it ends in an ellipsis and the full text is available to screen
+     readers and on hover.
+  3. An element doesn't spill over its neighbors, and controls don't overlap.
+  4. Buttons, tabs, menu items, table headers, labels and badges stay on one line from 768 pixels
+     up. The tab bar fits on one row from 1024 pixels up, unless it turns into a menu by design.
+  5. A region, portlet or component with content keeps a usable size instead of collapsing, and
+     columns stack instead of getting narrower than 240 pixels. Images keep their proportions.
+  6. With the WCAG text spacing applied (line height 1.5, letter spacing 0.12em, word spacing
+     0.16em), nothing is cut off.
+* **Where:** each page of the quickstart users (guest, student, staff, faculty, admin), the
+  login page, each web component maximized, and the main admin pages, in Chromium at all six
+  widths. WebKit and Firefox run at 390 and 1366 pixels. Each web component also runs at
+  container widths of 280, 400, 800 and 1200 pixels in its own browser tests, since a portlet
+  column can be narrow. Once the -i18n pseudo-locales land, the checks also run with the
+  longer text and right to left.
+* **Existing problems:** recorded in a baseline that only shrinks, like the axe baseline
+  (MOD-D47). A new problem fails the build.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`, before the accessibility fixes, so those fixes and
+  the right-to-left theme (MOD-I234) are measured against it. The checks run inside the
+  existing Playwright jobs, not new ones.
+
+### MOD-D53: faster landing with the same checks
+
+* **Measured (2026-10-11, 11:55 UTC):** of 24 pending workflow runs, 22 were waiting for a runner
+  or running, one for close to two hours. A branch needs about 40 jobs before it is merged, and
+  about 20 runner slots serve both repositories. Pushes cancelled running checks: one branch
+  started 32 runs. Cloud sessions couldn't run Gradle, so each compile check went through the
+  queue or the coordinator.
+* **Decision (project owner, 2026-10-11):** the runner pool stays as it is, and:
+  1. Cloud sessions may run Gradle. `.claude/settings.json` in both repositories allows
+     `./gradlew`. The init script that points Gradle at a Maven mirror is kept outside the
+     repositories. A session
+     compiles and tests its change before it pushes.
+  2. A session pushes when a step has passed locally, not after every commit, since each push
+     cancels its branch's running checks.
+  3. Before it is merged, a branch runs the checks for what it changes: the light profile on push,
+     plus the six-vendor database workflows when it changes persistence, SQL, the schema or
+     the copy tool. Branches are then merged in batches of up to four, and the full matrix runs once
+     on the result. If that run fails, the coordinator finds the branch that broke it and
+     reverts its commits with revert commits. The other branches stay.
+  4. A rule the owner adds for every component goes into one follow-up branch that applies it
+     to every component, which also keeps the wording consistent. Branches that pass are
+     merged without it. A security or data-loss rule still goes into each branch before it is
+     merged.
+* **Unchanged:** seeded faults, characterisation specs, zero schema drift until the 6.0 schema
+  step, no re-runs for flakes, and a full matrix on the integration branch after each batch.
+  This refines MOD-D32's landing steps.
 
 ## Issues
 
@@ -2003,7 +2065,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Open.** Translate them on `ccr-43ba0785-hzlrj5-i18n`. The MOD-D50 check stops it from happening again. |
 | MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Open.** Read message bundles as UTF-8 after checking that each one is valid UTF-8, and test the French line. Existing `\u` escapes keep working. |
 | MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
-| MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, owner decision.** Make Respondr right to left (`dir` from the locale and mirrored stylesheets), or wait. |
+| MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, decided (project owner, 2026-10-11).** Make Respondr right to left (`dir` from the locale and mirrored stylesheets) after the accessibility fixes (MOD-D47), on `ccr-43ba0785-hzlrj5-hardening`. |
 | MOD-I235 | Web components | `formatMessage` in `lib/i18n.ts` turns numbers into text with `String()`, so counts and positions ignore the locale's digits and separators. Messages have no plural forms. | **Open.** Fix on `ccr-43ba0785-hzlrj5-i18n` (MOD-D51). |
 
 ## Open questions
