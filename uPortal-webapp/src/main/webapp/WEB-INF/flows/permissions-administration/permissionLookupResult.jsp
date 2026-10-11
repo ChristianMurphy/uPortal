@@ -107,10 +107,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div id="${n}permissionBrowser" class="card portlet prm-mgr" role="section">
+<div id="${n}permissionBrowser" class="card portlet prm-mgr">
 
   <!-- Portlet Titlebar -->
-  <div class="card-header portlet-titlebar" role="sectionhead">
+  <div class="card-header portlet-titlebar">
     <h2 class="title" role="heading">
         <spring:message code="activityName.permissions.assigned.to.principalName" arguments="${ fn:escapeXml(activityDisplayName) }, ${ principalDisplayName }"/>
     </h2>

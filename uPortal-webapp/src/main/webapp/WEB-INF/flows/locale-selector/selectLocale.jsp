@@ -24,10 +24,10 @@
 </portlet:actionURL>
 
 <!-- Portlet -->
-<div class="card portlet loc-sel view-select" role="section">
+<div class="card portlet loc-sel view-select">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
     	 <h2 class="title" role="heading"><spring:message code="set.language.preference"/></h2>
     </div>
 

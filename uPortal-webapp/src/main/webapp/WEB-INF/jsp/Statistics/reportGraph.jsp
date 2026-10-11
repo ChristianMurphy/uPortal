@@ -36,7 +36,7 @@
 <script type="text/javascript" src="${canvas2imageScriptPath}"></script>
 
 <!-- Portlet -->
-<div class="card portlet" role="section">
+<div class="card portlet">
   
   <!-- Portlet Body -->
   <div class="card-body portlet-body">
