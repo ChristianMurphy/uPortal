@@ -1329,6 +1329,31 @@ This supersedes MOD-D24's runtime matrix.
 * **Until then:** keep each commit self-contained, keep prototype-only files out of commits that
   change upstream content, and don't create merge commits.
 
+### MOD-D38: P4-1 shrinks on Spring 4.3, with a context-load test and Spring 5.3 probes in CI
+
+* **What landed** (21 commits, workstream `spring53-prep`, 2026-10-11): every Spring XML context
+  loads in a test (`SpringXmlContextsTest`), with seeded faults caught. All four MOD-D26 changes to
+  the copied Portlet MVC classes are made on Spring 4.3. The authentication, rendering, JSON-rendering
+  and redirection servlet contexts moved from the
+  `DefaultAnnotationHandlerMapping` that Spring 5 removed to `RequestMappingHandlerMapping`.
+  Contexts refer to the unversioned Spring schemas.
+* **Measured:** compiling against Spring 5.3 went from 60 errors to 6, and the context probe on
+  5.3 from 1 failure to 0. The workstream's last code commit passed CI and uPortal-start
+  Integration (HSQLDB Playwright, PostgreSQL 18 harness and Playwright, G-migrate). The combined
+  branch built here with 86 tests passing in the changed modules.
+* **Decision:** the `spring53Probe` CI job (a compile ratchet plus the context probe) stays until
+  P4-1 merges, then goes with its `probe*` properties. The handoff note,
+  `notes/spring53-prep.md`, lists the remaining P4-1 scope.
+
+### MOD-D39: jqwik stays for property tests
+
+* **Context:** jqwik 1.10.1, which the copy-tool tests use for property tests (8 classes in
+  `uPortal-db-migrate`), prints a notice from its maintainer saying AI agents must not use the
+  library. Its EPL-2.0 licence doesn't restrict use. The copy-tool agent flagged it.
+* **Decision (owner, 2026-10-11):** keep jqwik. Its test results count like any other test
+  results. The alternatives were porting the properties to JUnit 5 parameterized tests with
+  seeded random inputs, or keeping jqwik for human contributors only.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1347,7 +1372,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I12 | Spring | uPortal-spring defines classes inside `org.springframework.*` packages, such as `ForwardingDispatcherPortlet` and `PortalPropertySourcesPlaceholderConfigurer`. | Split packages are fragile across Spring upgrades. Move them into `org.apereo.portal.*`. |
 | MOD-I13 | Build | `uPortal-hibernate3-dialects` has no dependents in uPortal. Some portlets (Announcements, Bookmarks, Calendar, NewsReader) still declare it. | Keep publishing it until those portlets move, or tell adopters it is being dropped. |
 | MOD-I14 | Persistence | 49 entities declare both `@SequenceGenerator` and `@TableGenerator` under the same name, with allocationSize from 1 to 10000. | Hibernate 6/7 resolve generators differently and validate increment sizes. Verify against real databases before changing anything. |
-| MOD-I15 | Spring | 110 of 113 Spring XML contexts reference versioned XSDs (`beans-3.1` etc.), and 3 use `spring-security-4.2.xsd`, which Spring Security 5+ rejects. | Mechanical change to unversioned XSDs. Can be merged early. |
+| MOD-I15 | Spring | 110 of 113 Spring XML contexts reference versioned XSDs (`beans-3.1` etc.), and 3 use `spring-security-4.2.xsd`, which Spring Security 5+ rejects. | **Fixed** on Spring 4.3: every context refers to the unversioned schemas ("refactor(spring): reference the unversioned spring xml schemas", MOD-D38). Mechanical change to unversioned XSDs. Can be merged early. |
 | MOD-I16 | Portlets | Apache Pluto is retired. Apache Portals went to the Attic in Nov 2025, `apache/portals-pluto` was archived Oct 2025, and the last release, 3.1.2, is javax. The Jakarta Portlet 4.0 spec is unreleased, with no `jakarta.portlet` artifacts on Central. The only Jakarta port is Liferay "Plutonium" 4.0.0-M1, which has one maintainer and is not on Central. | Don't depend on upstream Pluto. Sakai is a precedent (PR #15141, merged 2026-10-09): it copied Pluto into its own tree and runs the `javax.portlet` API on `jakarta.servlet`. |
 | MOD-I17 | Portlets | PortletMVC4Spring 6.0.0-M1 targets Spring 6.2 and Portlet 4.0 (which needs a Portlet 3+ container). There is no Spring 7 release, and it is not on Central past 5.3.4. | Not a drop-in replacement for the internal portlets on Pluto 2.1. Forking Spring Portlet MVC 4.3 (Apache-2.0) into uPortal is the likely path. |
 | MOD-I18 | Portlets | Neither the Tomcat jakartaee-migration tool nor Eclipse Transformer renames `javax.portlet`. So a converted portlet WAR only links against a hybrid portlet API: `javax.portlet` compiled against `jakarta.servlet` (only `Cookie` is affected in Portlet 2.0). | The prototype spike tests deploy-time or build-time conversion of the bundled portlet WARs against a hybrid API + in-tree Pluto. |
@@ -1361,7 +1386,7 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I26 | Persistence | Hibernate 6.x/7.x change several defaults: native timezone storage (6.2), native booleans on Oracle 23, sequence naming (6.0), and the increment-size check (5.4). Each has a legacy setting. | Add a settings block in `hibernate.cfg.xml` that freezes 5.x behaviour, then remove settings one at a time behind tests. |
 | MOD-I27 | uPortal-start | HSQLDB 2.5.1 (uPortal-start) is too old for Hibernate 6.2+, which needs 2.6.1+. uPortal itself uses 2.7.4. | Upgrade the uPortal-start HSQLDB with the toolchain work (WS2). |
 | MOD-I28 | Tooling | The OpenRewrite Spring and Hibernate recipes are under the Moderne Source Available License, not Apache. They cover only mechanical renames, with nothing for 4.x→5.x or 7.2+. The `web.xml` recipe regex-replaces every `javax.`, including `javax.portlet`. | Use them as local tools only, and review every diff. Use Eclipse Transformer with custom rules for the namespace switch. |
-| MOD-I29 | Spring | Spring Security 7's namespace handler rejects versioned XSDs older than 7.0. 3 files use `spring-security-4.2.xsd`. XML `request-matcher` only accepts `path` / `regex` / `ciRegex`. | Switch to the unversioned XSD early. This is safe on 4.2. |
+| MOD-I29 | Spring | Spring Security 7's namespace handler rejects versioned XSDs older than 7.0. 3 files use `spring-security-4.2.xsd`. XML `request-matcher` only accepts `path` / `regex` / `ciRegex`. | **Fixed** on Spring 4.3: every context refers to the unversioned schemas ("refactor(spring): reference the unversioned spring xml schemas", MOD-D38). Switch to the unversioned XSD early. This is safe on 4.2. |
 | MOD-I30 | Spring | From Spring 6.1, `-parameters` is required, or name-based XML `<constructor-arg name=...>` and implicit `@RequestParam` / `@PathVariable` names fail at runtime. | Add `-parameters` to the compiler options in phase 1. It is harmless on Spring 4.3. |
 | MOD-I31 | Spring | Spring 7 makes Jackson 3 (`tools.jackson`) the default. Jackson 2 support is deprecated in 7.0 and slated for removal in 7.2. uPortal uses Jackson 2 in UserTypes, REST and JSON views. | Move to Jackson 3 in the Spring 7 step. Keep the persisted JSON format byte-compatible (`JacksonType` columns). |
 | MOD-I32 | Spring | Spring Session 1.3 → 2.0 changes the JDBC schema and the module layout. uPortal uses the data-redis store. | Sessions are transient. Document that they are dropped at upgrade. |
@@ -1448,6 +1473,13 @@ This supersedes MOD-D24's runtime matrix.
 | MOD-I127 | Runtime | `TransientPortletEntityDao` throws an NPE on `layout.json` requests with user=null. It appeared in 3 runs after P2 was rebased onto `22bdf2b23` and in none of 6 before. The tests still pass. | Compare with a 4.3 portal on the same ccr commit to find whether P2 or a ccr change causes it (candidates: MOD-I82, MOD-I97). The HTTP replay workstream should also show it. |
 | MOD-I170 | Environment | **Prototype machine only.** The session worker restarted at about 23:06 UTC on 2026-10-10. It stopped the five local agents, the Docker daemon and the local landing run. Their worktrees kept all files. | Docker was started again by hand (`dockerd`, since `service docker start` fails on `ulimit` here). The owner approved new agents, which resumed from each worktree and its notes. Agents now commit in small local steps so a restart loses little. |
 | MOD-I171 | CI | The commit messages of uPortal `d66bdc5a5` and `cd841c8c3` fail `vale.sh commits`. The coordinator wrote the first, with a figurative phrase. A prose agent wrote the second, which quotes a jargon word. In both cases the check ran piped into `tail` or `grep` inside an `&&` chain, so its failure didn't stop the push. The commit-message job flags the first push. The integration branch isn't rewritten. | The coordinator pushes through a script that runs both checks with `pipefail` and pushes only if they pass. The agent rules forbid piping a check inside an `&&` chain. |
+| MOD-I172 | Spring | The authentication, rendering, JSON-rendering and redirection servlet contexts used `DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter`, which Spring 5 removed. `PortletRedirectionController` depended on the old `PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE` value and threw `UnsupportedOperationException` with two or more path parameters. | **Fixed** on Spring 4.3 by "refactor(mvc): map servlet controllers with requestmappinghandlermapping" (MOD-D38). Upstream candidate. |
+| MOD-I173 | Spring | Web Flow's `ResourceServlet` is gone in Web Flow 2.5. uPortal mapped it to `/resources/*`, which served nothing uPortal uses. | **Removed** (MOD-D38). |
+| MOD-I174 | Spring | `registrationBehaviorName` was removed in Spring 5.0. The context probe found it. | **Fixed:** `registrationPolicy` (MOD-D38). |
+| MOD-I175 | Persistence | `PortletEntityRegistryImpl` recovers from Hibernate 3's `HibernateOptimisticLockingFailureException`, which JPA on Hibernate 4.3 never produces, so that recovery code never runs. | Fix it with a test during the Hibernate steps or before P4-1. Upstream candidate. |
+| MOD-I176 | Spring | spring-ws-core 2.1.2 comes in through portlet-ws-util. | Part of the P4-1 change set (Spring-WS 3.1). |
+| MOD-I177 | Spring | Web Flow's `PortletMvcView` kept Spring's original attribute names after the copied `ViewRendererServlet` moved package. The Spring 5.3 probe caught it before any portal ran. | **Fixed** with a regression test (MOD-D38). When renaming a copied class's package, search the copied sources for callers too. |
+| MOD-I178 | Environment | In cloud sessions, the permission check refuses the local Maven Central mirror script (MOD-I52), so heavy dependency resolution there needs retries or CI. | Validate in CI from cloud sessions. The owner allowed the mirror (MOD-D30), but the permission check needs an allow rule to run it, and the owner chose not to add one. |
 
 ## Open questions
 
