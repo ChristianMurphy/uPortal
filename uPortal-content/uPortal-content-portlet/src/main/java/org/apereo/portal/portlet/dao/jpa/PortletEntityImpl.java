@@ -28,6 +28,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Index;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyJoinColumn;
@@ -38,7 +39,6 @@ import javax.persistence.PostRemove;
 import javax.persistence.PostUpdate;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 import javax.portlet.WindowState;
@@ -54,17 +54,17 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.Index;
 import org.hibernate.annotations.NaturalId;
 
 /** */
 @Entity
-@Table(name = "UP_PORTLET_ENT")
+@Table(
+        name = "UP_PORTLET_ENT",
+        indexes = {@Index(name = "IDX_UP_PORTLET_ENT__UP_USER", columnList = "USER_ID")})
 @SequenceGenerator(
         name = "UP_PORTLET_ENT_GEN",
         sequenceName = "UP_PORTLET_ENT_SEQ",
         allocationSize = 10)
-@TableGenerator(name = "UP_PORTLET_ENT_GEN", pkColumnValue = "UP_PORTLET_ENT", allocationSize = 10)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 class PortletEntityImpl implements IPortletEntity {
@@ -85,7 +85,6 @@ class PortletEntityImpl implements IPortletEntity {
     private final String layoutNodeId;
 
     @NaturalId
-    @Index(name = "IDX_UP_PORTLET_ENT__UP_USER")
     @Column(name = "USER_ID", nullable = false)
     private final int userId;
 

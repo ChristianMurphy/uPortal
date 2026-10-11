@@ -323,6 +323,69 @@ the wrong type throws `IllegalArgumentException` instead. The view bean names,
 The CSV and HTML downloads format numbers and dates as before. In locales whose default calendar
 isn't Gregorian or Buddhist, such as `ar-SA` and `fa-IR`, dates are now Gregorian.
 
+## Hibernate 5.2
+
+uPortal now runs on Hibernate ORM 5.2.18 instead of 4.3.11. An existing database upgrades in
+place: no SQL needs to be run, and new rows keep the identifiers the old ones were given.
+
+uPortal keeps every database on the schema and identifier generation it had under Hibernate
+4.3. The settings that do this are in `hibernate.properties` (a "freeze block"), together with
+the dialect choice in `PortalDialectResolver`. Do not override them in your own
+`hibernate.properties` or `hibernate*.cfg.xml`:
+
+| Setting | Why it is there |
+| --- | --- |
+| `hibernate.dialect_resolvers=org.apereo.portal.utils.PortalDialectResolver` | Keeps each database on the dialect Hibernate 4.3 chose. MySQL 8, and MariaDB reporting MySQL metadata, get `MySQL55Dialect`, where Hibernate 5.2 would pick `MySQL57Dialect` with `datetime(6)` columns, or a MariaDB dialect with sequences. PostgreSQL 10 and later get `PostgreSQL81Dialect` (as `PostgreSQL81TextClobDialect`, see below). SQL Server gets `SQLServer2005Dialect`, which doesn't use sequences. |
+| `hibernate.implicit_naming_strategy=org.apereo.portal.hibernate.PortalImplicitNamingStrategy` | Join column names and the `FK_…`/`UK_…` constraint names of Hibernate 4.3 |
+| `hibernate.physical_naming_strategy=…PhysicalNamingStrategyStandardImpl` | Names are used as they are mapped |
+| `hibernate.id.optimizer.pooled.preferred=pooled` | Identifiers are allocated as before from the `UP_*_SEQ` sequences or one-row tables |
+| `hibernate.id.sequence.increment_size_mismatch_strategy=EXCEPTION` | Takes effect from Hibernate 5.4: startup stops if a sequence's increment no longer matches its mapping |
+
+If you customized any of the following, adapt it before you upgrade:
+
+* **Code that uses Hibernate APIs directly**, in overlays or custom portlets deployed inside the
+  portal web application: `org.hibernate.Query` is deprecated in favour of
+  `org.hibernate.query.Query`, `Session.setFlushMode(FlushMode)` in favour of
+  `setHibernateFlushMode`, and `Integrator` implementations receive a
+  `org.hibernate.boot.Metadata` instead of a `Configuration`. `HibernateConfigurationAware`
+  beans get the dialect and a `SchemaTool` from `HibernateConfiguration`; `getConfiguration()` is
+  gone.
+* **Custom dialects or `UserType`s.** User types now receive a
+  `SharedSessionContractImplementor`. uPortal uses Jadira Usertype 6.0.1.GA; its Joda-Time types
+  store values exactly as Jadira 3.2.0.GA did.
+* **`@Type` on a `Map` element collection.** Hibernate 4.3 applied it to the map keys as well as
+  the values. Hibernate 5 applies it to the values only. uPortal's own maps declare `@MapKeyType`
+  so that existing rows are read and written as before. An entity of your own that relies on
+  the old behaviour needs `@MapKeyType(@Type(type = "…"))` too.
+* **`hibernate.dialect.storage_engine`.** Hibernate 5.2's `MySQL5Dialect` creates MyISAM tables
+  unless this is set. uPortal does not use that dialect, but a dialect you configured yourself
+  might.
+* **dom4j.** Hibernate 5.2.18 depends on `org.dom4j:dom4j` 2.1. The portal keeps
+  `dom4j:dom4j` 1.6.1, which the uPortal code is written against, and excludes 2.1.
+
+On Oracle, some deletes that failed in 5.17 now work. Oracle stores an empty string as NULL, and
+Hibernate does not load a NULL value of an element collection, so it did not delete that row with
+its owner, and the owner's delete failed with ORA-02292. This hit a portlet entity with an empty
+window state, a layout attribute with an empty target element name, and a portlet definition with
+an empty localization. uPortal now deletes those rows with their owner.
+
+## PostgreSQL: do not run `vacuumlo`
+
+On PostgreSQL, uPortal stores the raw event data (`UP_RAW_EVENTS.EVENT_DATA` and
+`UP_ANALYTICS_EVENTS.EVENT_DATA`) as large objects and keeps each large object's OID in a `text`
+column. uPortal 5.17 does this, and 6.0 keeps it: `PortalDialectResolver` picks
+`PostgreSQL81TextClobDialect` for PostgreSQL 10 and later, which still declares these columns
+`text` where Hibernate 5.6.2 and later would declare them `oid`.
+
+`vacuumlo` only counts references from `oid` and `lo` columns, so it treats the data of
+every stored raw event as orphaned and deletes it: on a 5.17 test portal, `vacuumlo -n` reported
+that it would remove all 720 large objects written during one portal session. Do not run
+`vacuumlo` (or any other clean-up of "orphaned" large objects) against a uPortal database, and
+exclude it from scheduled maintenance.
+
+A later release will migrate these columns to a large-object type. After that, `vacuumlo` is safe
+to use again.
+
 ## uPortal-start signs users in locally; CAS is opt-in
 
 uPortal-start no longer deploys a CAS 3.6 server (`overlays/cas`) into the portal's Tomcat.

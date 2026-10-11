@@ -28,9 +28,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import javax.persistence.Version;
 import org.apache.commons.lang.builder.EqualsBuilder;
@@ -41,7 +41,6 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.IndexColumn;
 
 /**
  * Internal class to the portlet entity/definition needed to have a sane DB schema and still share
@@ -52,10 +51,6 @@ import org.hibernate.annotations.IndexColumn;
 @SequenceGenerator(
         name = "UP_PORTLET_PREFS_GEN",
         sequenceName = "UP_PORTLET_PREFS_SEQ",
-        allocationSize = 10)
-@TableGenerator(
-        name = "UP_PORTLET_PREFS_GEN",
-        pkColumnValue = "UP_PORTLET_PREFS",
         allocationSize = 10)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
@@ -75,7 +70,7 @@ class PortletPreferencesImpl {
             fetch = FetchType.EAGER,
             orphanRemoval = true)
     @JoinColumn(name = "PORTLET_PREFS_ID")
-    @IndexColumn(name = "PREF_ORDER")
+    @OrderColumn(name = "PREF_ORDER")
     @Fetch(FetchMode.JOIN)
     @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
     private List<IPortletPreference> portletPreferences = new ArrayList<IPortletPreference>(0);
