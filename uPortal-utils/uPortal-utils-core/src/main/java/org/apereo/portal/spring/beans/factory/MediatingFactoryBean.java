@@ -15,7 +15,9 @@
 package org.apereo.portal.spring.beans.factory;
 
 import java.util.List;
+import java.util.Objects;
 import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.AbstractFactoryBean;
 import org.springframework.util.Assert;
@@ -72,13 +74,17 @@ public class MediatingFactoryBean<T> extends AbstractFactoryBean<T> implements B
      */
     @Override
     protected T createInstance() throws Exception {
+        // Spring sets the bean factory before it asks for the instance (MOD-I225)
+        final BeanFactory beanFactory =
+                Objects.requireNonNull(
+                        this.getBeanFactory(), "MediatingFactoryBean has no BeanFactory");
         for (final String beanName : this.delegateBeanNames) {
             try {
                 final T bean;
                 if (this.type == null) {
-                    bean = (T) this.getBeanFactory().getBean(beanName);
+                    bean = (T) beanFactory.getBean(beanName);
                 } else {
-                    bean = this.getBeanFactory().getBean(beanName, this.type);
+                    bean = beanFactory.getBean(beanName, this.type);
                 }
 
                 if (this.logger.isInfoEnabled()) {
