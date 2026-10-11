@@ -435,10 +435,6 @@ ${entries.collect { '    ' + it }.join('\n')}
     }
 }
 
-/*======== Spring 5.3 compile probe ========*/
-// `./gradlew spring53Probe` measures what plan step P4-1 still has to change (WS6).
-apply from: 'gradle/spring53-probe.gradle'
-
 /*======== Child Projects ========*/
 subprojects {
 
