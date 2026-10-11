@@ -295,8 +295,12 @@ The rules that agents hit most often:
   database canaries may fail.
 * In CI, `failOnFlakyTests` makes a job red when a test passes only on a retry. Playwright keeps
   `retries: 2` so that the retry records a trace and a video.
-* Don't re-run a job to get green. A re-run is right only when the run built the wrong code
-  (section 3).
+* Don't re-run a job to get green. A re-run is right in two cases:
+  * The run built the wrong code (section 3). Use "Re-run all jobs". "Re-run failed jobs" keeps
+    the `Build uPortal` artifact from the first attempt. The re-run then tests the same wrong
+    code.
+  * The job stopped before any test ran: checkout, a dependency download, the database container
+    or the runner failed. Re-run it once. If it fails again, treat it as a real failure.
 * Known intermittent failures have LOG rows, such as MOD-I192 (a bundled portlet application
   missing in Playwright on PostgreSQL 18). If yours matches one, add the run and job IDs to your
   report. Fix it on your branch only if your brief says so.
