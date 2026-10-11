@@ -652,7 +652,7 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
         // The bean is a proxy of the interface; the age is set on the DAO behind it
         final JpaClusterLockDao target =
                 (JpaClusterLockDao) ((Advised) dao).getTargetSource().getTarget();
-        target.setAbandonedLockAge(org.joda.time.Duration.millis(millis));
+        target.setAbandonedLockAge(java.time.Duration.ofMillis(millis));
         return dao;
     }
 
