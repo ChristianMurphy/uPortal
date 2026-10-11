@@ -17,6 +17,7 @@ package org.apereo.portal.layout.dlm.remoting;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.apache.commons.lang.builder.CompareToBuilder;
 import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.groups.IGroupMember;
@@ -175,8 +176,28 @@ public class JsonEntityBean implements Serializable, Comparable<JsonEntityBean> 
     public String getTypeAndIdHash() {
         assert (entityType != null);
         assert (id != null);
-        String idStr = id.replaceAll("\\W", "__");
-        return entityType.toString().toLowerCase() + "_" + idStr;
+        return entityType.toString().toLowerCase(Locale.ROOT) + "_" + encodeId(id);
+    }
+
+    /**
+     * Keeps A-Z, a-z and 0-9, and writes every other character, {@code _} included, as {@code _<hex
+     * code point>_}. The result is safe in HTML names, and two ids never give the same result
+     * (MOD-I274).
+     */
+    private static String encodeId(String id) {
+        final StringBuilder result = new StringBuilder(id.length());
+        id.codePoints()
+                .forEach(
+                        cp -> {
+                            if ((cp >= 'A' && cp <= 'Z')
+                                    || (cp >= 'a' && cp <= 'z')
+                                    || (cp >= '0' && cp <= '9')) {
+                                result.appendCodePoint(cp);
+                            } else {
+                                result.append('_').append(Integer.toHexString(cp)).append('_');
+                            }
+                        });
+        return result.toString();
     }
 
     public List<JsonEntityBean> getChildren() {
