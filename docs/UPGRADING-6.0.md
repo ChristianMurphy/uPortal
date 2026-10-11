@@ -154,6 +154,39 @@ be removed in a later release.
 Unsafe requests to the new `/api/v6-0/` REST APIs need Spring Security's CSRF token (or an OIDC
 bearer token), unlike the older APIs under `/api`.
 
+## Reset My Layout is a web component
+
+The Reset My Layout channel (`reset-my-layout`) was the ResetMyLayout portlet, a Spring Web Flow.
+It is now a **Web Component** channel that renders `<up-reset-my-layout>`. The element reads the
+signed-in user's name from `GET /api/v6-0/layout/reset` and resets that user's layout with
+`POST /api/v6-0/layout/reset`. The request contains no user name or ID. The API resets only the
+layout of the session's user, and guests get 401. Users see the same steps and text. The first
+step explains the reset and offers Reset Now. The confirmation shows the user's name, with Reset
+Layout and Cancel. After the reset, the channel says Success and offers Continue. As before, the
+default layout shows from the user's next sign-in.
+
+Some things look different:
+
+* The confirmation has one "Reset User Layout" heading. The portlet's second heading, a link with
+  the user's name that cancelled, is gone.
+* Failures show a message in the channel: the user's name could not be loaded (with Try again),
+  the reset failed, or the session has expired.
+
+The ResetMyLayout portlet is removed: its entry in `WEB-INF/portlet.xml`, its context
+`properties/contexts/portlet/ResetMyLayout-portlet.xml` and its flow `WEB-INF/flows/reset-my-layout`.
+A channel whose definition still names the `ResetMyLayout` framework portlet doesn't render until
+it is converted. `/p/reset-my-layout` then shows the user's first tab, and the portal log warns
+"No portlet descriptor could be found for the portlet definition". Convert it by importing uPortal-start's
+`data/base/portlet-type/Web_Component.portlet-type.xml` (if the Favorites conversion has not
+imported it already), then its `data/base/portlet-definition/reset-my-layout.portlet-definition.xml`.
+The import updates the channel by fname and keeps its ID, permissions and layout placements. A
+definition with another fname is converted by the same changes: the type becomes `Web Component`
+with the `WebComponent` framework portlet, and two parameters are added, `webComponent.tagName`
+and `webComponent.moduleUrl`, both `up-reset-my-layout`.
+
+Administrators still reset other users' layouts in User Administration. That flow,
+`reset-user-layout`, is unchanged.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
