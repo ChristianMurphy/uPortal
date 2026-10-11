@@ -2,10 +2,10 @@
 
 # Stale entities from nonstrict second-level caches (MOD-I310 to MOD-I312)
 
-Branches `ccr-43ba0785-hzlrj5-cache-races` (MOD-I310, lands alone, it is a security fix) and
-`ccr-43ba0785-hzlrj5-cache-races-2` (MOD-I311, MOD-I312) in uPortal, both from the integration
-branch. The uPortal-start branches of the same name have no commit of their own. Their
-Integration runs build the uPortal branch of the same name.
+Branches `ccr-43ba0785-hzlrj5-cache-races` (MOD-I310) and `ccr-43ba0785-hzlrj5-cache-races-2`
+(MOD-I311, MOD-I312) in uPortal, both from the integration branch. All three are cache bugs, merged
+in a normal batch together. The uPortal-start branches of the same name have no commit of their
+own. Their Integration runs build the uPortal branch of the same name.
 
 This follows MOD-I204, found by `import-export.spec.ts` on Firefox: a request that reads an entity
 before a change commits can put the old state back into the second-level cache after the change
@@ -32,7 +32,7 @@ put back to `NONSTRICT_READ_WRITE` on its own then fails the test, which the com
 
 | ID | Area | Finding | Resolution |
 | --- | --- | --- | --- |
-| MOD-I310 | Persistence | **Security.** `LocalAccountPersonImpl`, its attributes and the attribute values used `NONSTRICT_READ_WRITE` (the MOD-I204 race). A login (by user name, then the password check) that read the account before a password change, an attribute change or a delete committed put the old account back into the cache. Until the entry expired, the old password logged in whenever the login's name query came from the query cache, the new password failed, the account screens and password self-service (which load by id) saw the old hash and attributes, and a deleted account still loaded by id. `LocalAccountCacheRaceTest` fails on the integration branch with `[login with old password=true, login with new password=false, ...]`, the old-password login after a removal, and the deleted account still loading by id. | **Fixed** (`cache-races` e71d3e7f4): `READ_WRITE` for `LocalAccountPersonImpl`, its `attributes` collection and `LocalAccountPersonAttributeImpl.values`. The attribute entity keeps `NONSTRICT_READ_WRITE` (the test passes with it seeded back). |
+| MOD-I310 | Persistence | **Cache bug.** A password, attribute or account change can be hidden by a stale cache entry for up to 30 minutes on one server, and only for local-login accounts. `LocalAccountPersonImpl`, its attributes and the attribute values used `NONSTRICT_READ_WRITE` (the MOD-I204 race). A login (by user name, then the password check) that read the account before a password change, an attribute change or a delete committed put the old account back into the cache. Until the entry expired, the old password logged in whenever the login's name query came from the query cache, the new password failed, the account screens and password self-service (which load by id) saw the old hash and attributes, and a deleted account still loaded by id. `LocalAccountCacheRaceTest` fails on the integration branch with `[login with old password=true, login with new password=false, ...]`, the old-password login after a removal, and the deleted account still loading by id. | **Fixed** (`cache-races` e71d3e7f4): `READ_WRITE` for `LocalAccountPersonImpl`, its `attributes` collection and `LocalAccountPersonAttributeImpl.values`. The attribute entity keeps `NONSTRICT_READ_WRITE` (the test passes with it seeded back). |
 | MOD-I311 | Persistence | A PAGS group definition's `members` and its test group's `tests` used `NONSTRICT_READ_WRITE`. PAGS group membership, and so the permissions a group grants, is evaluated from these on each login. A load of a definition racing an import or a PAGS admin change could keep the old membership or tests cached. `PagsDefinitionCacheRaceTest` fails on the integration branch for a changed test value, an added test and an added member group. | **Fixed** (`cache-races-2` 7e4d2e5f0): `READ_WRITE` for `PersonAttributesGroupDefinitionImpl.members` and `PersonAttributesGroupTestGroupDefinitionImpl.tests`. The `testGroups` collection and the three entities keep `NONSTRICT_READ_WRITE`. |
 | MOD-I312 | Persistence | A user's `StylesheetUserPreferencesImpl`, its `parameters` and its per-node `layoutAttributes` used `NONSTRICT_READ_WRITE`. One request of a user loading the preferences while another saved a layout change could undo the change until the entry expired and fail the next save with an optimistic-lock error. `StylesheetUserPreferencesCacheRaceTest` fails on the integration branch with every value stale. | **Fixed** (`cache-races-2` 1e632deb1): `READ_WRITE` for `StylesheetUserPreferencesImpl`, its `parameters` and `layoutAttributes` collections, and `LayoutNodeAttributesImpl.attributes`. The `LayoutNodeAttributesImpl` entity and the `outputProperties` collection keep `NONSTRICT_READ_WRITE` (the test doesn't change output properties, and the entity seeded back passes). |
 
@@ -47,7 +47,7 @@ place. A load that read the old evaluators caches entities whose ids are then de
 load reads the fragment's new evaluator ids, so nothing stale is served. These regions keep
 `NONSTRICT_READ_WRITE`, and the test is not committed.
 
-## How long a stale entry lasts (MOD-I310, for UPGRADING and the security report)
+## How long a stale entry lasts (MOD-I310, for UPGRADING)
 
 `ehcache.xml` gives the `LocalAccountPersonImpl` region, its attributes, the attribute values and
 the per-name query region `timeToLiveSeconds=1800` and `timeToIdleSeconds=900`.
