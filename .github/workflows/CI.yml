@@ -80,7 +80,10 @@ jobs:
           ORG_GRADLE_PROJECT_quietCompile: ${{ !(matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21) }}
           # The other cells leave out the web component tests, which need Chromium
           ORG_GRADLE_PROJECT_skipWebComponentTests: ${{ env.MAIN_CELL != 'true' }}
-        run: ./gradlew -S --stacktrace --no-daemon --no-parallel build jacocoAggregateReport
+        # Gradle's parallel mode (org.gradle.parallel in gradle.properties) runs the modules' tests
+        # side by side (MOD-I347). With --no-parallel they took 327 s in a row, uPortal-webapp
+        # 149 s of it.
+        run: ./gradlew -S --stacktrace --no-daemon build jacocoAggregateReport
       - name: Upload coverage to Coveralls
         if: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
         uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
