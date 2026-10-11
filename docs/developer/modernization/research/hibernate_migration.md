@@ -145,7 +145,7 @@ The latest stable line is **Hibernate ORM 7.4** (latest patch **7.4.12.Final**).
 - **5.4:**
   - **`hibernate.id.sequence.increment_size_mismatch_strategy`** was introduced ("@since 5.4"). Values are `EXCEPTION` (default), `LOG`, `FIX` and `NONE`, applied when the DB sequence increment ≠ the mapping's allocationSize. ([AvailableSettings 5.6](https://github.com/hibernate/hibernate-orm/blob/5.6/hibernate-core/src/main/java/org/hibernate/cfg/AvailableSettings.java))
   - The SQL Server JDBC driver must be ≥ 6.1.2.
-  - `hibernate.id.disable_delayed_identity_inserts` is available as a temporary escape hatch. ([5.4 MG](https://github.com/hibernate/hibernate-orm/blob/5.4/migration-guide.adoc))
+  - `hibernate.id.disable_delayed_identity_inserts` is available as a temporary setting that turns delayed identity inserts off. ([5.4 MG](https://github.com/hibernate/hibernate-orm/blob/5.4/migration-guide.adoc))
 - **5.5** adds Jakarta Persistence (via `*-jakarta` artifacts), reimplements hbm.xml parsing on JAXB, and makes enhanced proxies always on. ([5.5 MG](https://github.com/hibernate/hibernate-orm/blob/5.5/migration-guide.adoc))
 - **5.6:**
   - **Javassist removed.** `hibernate.bytecode.provider=javassist` is now invalid. ByteBuddy is the only option. ([5.6 MG](https://github.com/hibernate/hibernate-orm/blob/5.6/migration-guide.adoc))
