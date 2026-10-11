@@ -117,7 +117,9 @@ public class GoogleCustomSearchService implements IPortalSearchService {
         searchResults.setQueryId(query.getQueryId());
         final List<SearchResult> searchResultList = searchResults.getSearchResult();
 
-        final JsonNode items = googleResponse.get("items"); // .get("items");
+        // A response without a body (204 No Content) has no items (MOD-I225)
+        final JsonNode items =
+                googleResponse == null ? null : googleResponse.get("items"); // .get("items");
         logger.debug("response items: {}", items);
         if (items != null) {
             for (final Iterator<JsonNode> resultItr = items.elements(); resultItr.hasNext(); ) {
