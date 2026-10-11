@@ -199,9 +199,12 @@ public final class PropValues {
             case TS517:
                 return timestamps(minTimestamp(c), maxTimestamp(c));
             case TSTZ:
+                // From the Gregorian calendar on: HSQLDB 2.7, always a source here, keeps an
+                // earlier OffsetDateTime shifted by the Julian calendar's days, and has no setter
+                // that avoids it (5.17 has no zoned columns)
                 return Combinators.combine(
                                 timestamps(
-                                        LocalDateTime.of(1000, 1, 2, 0, 0),
+                                        LocalDateTime.of(1583, 1, 2, 0, 0),
                                         LocalDateTime.of(9999, 12, 30, 0, 0)),
                                 Arbitraries.integers()
                                         .between(-14 * 60, 14 * 60)
