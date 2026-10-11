@@ -17,7 +17,9 @@ package org.apereo.portal.persondir.dao.jpa;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -25,9 +27,11 @@ import org.apereo.portal.persondir.ILocalAccountDao;
 import org.apereo.portal.persondir.ILocalAccountPerson;
 import org.apereo.portal.persondir.LocalAccountQuery;
 import org.apereo.portal.test.BasePortalJpaDaoTest;
+import org.apereo.portal.test.golden.JvmTimeZone;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -36,6 +40,34 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 @ContextConfiguration(locations = "classpath:jpaPortalTestApplicationContext.xml")
 public class JpaLocalAccountDaoImplTest extends BasePortalJpaDaoTest {
     @Autowired private ILocalAccountDao localAccountDao;
+    @Autowired private JdbcOperations jdbcOperations;
+
+    /**
+     * A password change at 01:30 EDT, in the hour that repeats when New York leaves daylight time,
+     * is stored as UTC clock time and reads back as the same instant (MOD-I141). 5.17 stored the
+     * JVM's local clock time and read it back an hour late.
+     */
+    @Test
+    public void aPasswordChangeIsStoredInUtc() throws Exception {
+        final Instant changed = Instant.parse("2026-11-01T05:30:00Z");
+        try (JvmTimeZone zone = JvmTimeZone.set("America/New_York")) {
+            this.execute(
+                    () -> {
+                        final ILocalAccountPerson person = localAccountDao.createPerson("zoned");
+                        person.setLastPasswordChange(Date.from(changed));
+                        return localAccountDao.updateAccount(person);
+                    });
+            getEntityManager().getEntityManagerFactory().getCache().evictAll();
+            final String stored =
+                    jdbcOperations.queryForObject(
+                            "SELECT LST_PSWD_CGH_DT FROM UP_PERSON_DIR WHERE USER_NAME = 'zoned'",
+                            (rs, row) -> rs.getString(1));
+            assertEquals("2026-11-01 05:30:00", stored.substring(0, 19));
+            final Date read =
+                    this.execute(() -> localAccountDao.getPerson("zoned").getLastPasswordChange());
+            assertEquals(changed, read.toInstant());
+        }
+    }
 
     @Test
     public void testAccountSearch() throws Exception {

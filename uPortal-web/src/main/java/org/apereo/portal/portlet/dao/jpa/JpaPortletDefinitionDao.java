@@ -25,6 +25,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 import org.apache.commons.lang.Validate;
+import org.apereo.portal.hibernate.DelegatingHibernateIntegrator.HibernateConfiguration;
+import org.apereo.portal.hibernate.HibernateConfigurationAware;
 import org.apereo.portal.jpa.BasePortalJpaDao;
 import org.apereo.portal.jpa.OpenEntityManager;
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao;
@@ -32,6 +34,7 @@ import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletDefinitionId;
 import org.apereo.portal.spring.tx.DialectAwareTransactional;
 import org.hibernate.dialect.PostgreSQL81Dialect;
+import org.hibernate.dialect.SQLServerDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.support.DataAccessUtils;
@@ -39,7 +42,8 @@ import org.springframework.stereotype.Repository;
 
 /** JPA implementation of the portlet definition DAO */
 @Repository
-public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortletDefinitionDao {
+public class JpaPortletDefinitionDao extends BasePortalJpaDao
+        implements IPortletDefinitionDao, HibernateConfigurationAware {
 
     private CriteriaQuery<PortletDefinitionImpl> findAllPortletDefinitions;
     private CriteriaQuery<PortletDefinitionImpl> findDefinitionByNameQuery;
@@ -48,7 +52,55 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
     private ParameterExpression<String> nameParameter;
     private ParameterExpression<String> titleParameter;
 
+    /**
+     * The escape character of the partial searches. HSQLDB and Oracle reject an escape character
+     * followed by anything but {@code %}, {@code _} or itself, so only those are escaped, and
+     * {@code [} on SQL Server.
+     */
+    static final char LIKE_ESCAPE = '!';
+
+    /** SQL Server reads {@code [} in a LIKE pattern as the start of a character class (MOD-I223) */
+    private volatile boolean escapeBracket;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Override
+    public boolean supports(String persistenceUnit) {
+        return PERSISTENCE_UNIT_NAME.equals(persistenceUnit);
+    }
+
+    @Override
+    public void setConfiguration(
+            String persistenceUnit, HibernateConfiguration hibernateConfiguration) {
+        this.escapeBracket = hibernateConfiguration.getDialect() instanceof SQLServerDialect;
+    }
+
+    /** The LIKE pattern for {@code term} on this persistence unit's database */
+    String likePattern(String term, SearchMatch match) {
+        return likePattern(term, match, escapeBracket);
+    }
+
+    /**
+     * The LIKE pattern, escaped with {@link #LIKE_ESCAPE}, that finds {@code term} literally. On
+     * SQL Server ({@code escapeBracket}) {@code [} is escaped too.
+     */
+    static String likePattern(String term, SearchMatch match, boolean escapeBracket) {
+        final StringBuilder pattern = new StringBuilder(term.length() + 2);
+        if (match == SearchMatch.ENDS_WITH || match == SearchMatch.CONTAINS) {
+            pattern.append('%');
+        }
+        for (int i = 0; i < term.length(); i++) {
+            final char c = term.charAt(i);
+            if (c == '%' || c == '_' || c == LIKE_ESCAPE || (escapeBracket && c == '[')) {
+                pattern.append(LIKE_ESCAPE);
+            }
+            pattern.append(c);
+        }
+        if (match == SearchMatch.STARTS_WITH || match == SearchMatch.CONTAINS) {
+            pattern.append('%');
+        }
+        return pattern.toString();
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -99,16 +151,22 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
                                 final Root<PortletDefinitionImpl> definitionRoot =
                                         criteriaQuery.from(PortletDefinitionImpl.class);
                                 criteriaQuery.select(definitionRoot);
+                                // Ignores case on every database; exactMatches then keeps
+                                // the rows equal to the term
                                 criteriaQuery.where(
                                         cb.or(
                                                 cb.equal(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.name),
-                                                        nameParameter),
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .name)),
+                                                        cb.upper(nameParameter)),
                                                 cb.equal(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.title),
-                                                        titleParameter)));
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .title)),
+                                                        cb.upper(titleParameter))));
 
                                 return criteriaQuery;
                             }
@@ -127,13 +185,19 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
                                 criteriaQuery.where(
                                         cb.or(
                                                 cb.like(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.name),
-                                                        nameParameter),
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .name)),
+                                                        cb.upper(nameParameter),
+                                                        LIKE_ESCAPE),
                                                 cb.like(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.title),
-                                                        titleParameter)));
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .title)),
+                                                        cb.upper(titleParameter),
+                                                        LIKE_ESCAPE)));
 
                                 return criteriaQuery;
                             }
@@ -201,13 +265,13 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
     @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
     @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
-    public List<IPortletDefinition> searchForPortlets(String term, boolean allowPartial) {
+    public List<IPortletDefinition> searchForPortlets(String term, SearchMatch match) {
         final CriteriaQuery<PortletDefinitionImpl> criteriaQuery;
-        if (allowPartial) {
-            criteriaQuery = this.searchDefinitionByNameOrTitleQuery;
-            term = "%" + term.toUpperCase() + "%";
-        } else {
+        if (match == SearchMatch.EXACT) {
             criteriaQuery = this.findDefinitionByNameOrTitleQuery;
+        } else {
+            criteriaQuery = this.searchDefinitionByNameOrTitleQuery;
+            term = likePattern(term, match);
         }
 
         final TypedQuery<PortletDefinitionImpl> query = this.createCachedQuery(criteriaQuery);
@@ -215,7 +279,27 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
         query.setParameter("title", term);
 
         final List<PortletDefinitionImpl> portletDefinitions = query.getResultList();
+        if (match == SearchMatch.EXACT) {
+            return exactMatches(portletDefinitions, term);
+        }
         return new ArrayList<>(portletDefinitions);
+    }
+
+    /**
+     * The rows whose name or title equals {@code term}, case and trailing spaces included. MySQL,
+     * MariaDB and SQL Server compare strings ignoring case (and MariaDB and SQL Server ignoring
+     * trailing spaces) through their collations, so the database can't decide this the same way
+     * everywhere (MOD-I142).
+     */
+    static List<IPortletDefinition> exactMatches(
+            List<? extends IPortletDefinition> rows, String term) {
+        final List<IPortletDefinition> result = new ArrayList<>();
+        for (IPortletDefinition row : rows) {
+            if (term.equals(row.getName()) || term.equals(row.getTitle())) {
+                result.add(row);
+            }
+        }
+        return result;
     }
 
     @Override
