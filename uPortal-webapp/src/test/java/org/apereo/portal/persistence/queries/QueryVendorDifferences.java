@@ -76,23 +76,11 @@ final class QueryVendorDifferences {
                     golden,
                     "portletDefinitionDao.getPortletDefinitionByName(\"weather\")",
                     "portletDefinitionDao.getPortletDefinitionByName(\"Weather\")");
-            // The partial search upper-cases the term only (MOD-I142), so here it matches
-            for (final String term : Arrays.asList("cal", "CAL", "Calendar")) {
-                sameAs(
-                        differences,
-                        golden,
-                        "portletDefinitionDao.searchForPortlets(\"" + term + "\", true)",
-                        "portletDefinitionDao.searchForPortlets(\"Calendar\", false)");
-            }
             sameAs(
                     differences,
                     golden,
                     "portletDefinitionDao.searchForPortlets(\"calendar\", false)",
                     "portletDefinitionDao.searchForPortlets(\"Calendar\", false)");
-            // "%\u00dcBER%" matches the title "\u00dcbersicht"
-            differences.put(
-                    "portletDefinitionDao.searchForPortlets(\"\\u00fcber\", true)",
-                    listOf(golden, "portletDefinitionDao.getPortletDefinitionByName(unicode)"));
             // The unique key (CODE, LOCALE) rejects "Greeting" next to "greeting"
             differences.put(
                     "messageDao.createMessage(\"Greeting\", en, ...) next to \"greeting\"",
@@ -215,16 +203,6 @@ final class QueryVendorDifferences {
             String label,
             String sameAsLabel) {
         differences.put(label, resultOf(golden, sameAsLabel));
-    }
-
-    /** An ArrayList holding the single results of {@code labels} */
-    private static List<String> listOf(List<String> golden, String... labels) {
-        final List<String> result = new ArrayList<>();
-        result.add("ArrayList of " + labels.length);
-        for (final String label : labels) {
-            result.add("- " + resultOf(golden, label).get(0));
-        }
-        return result;
     }
 
     /** The quoted strings after the label, as {@code vendor} stores them */

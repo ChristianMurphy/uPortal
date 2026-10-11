@@ -48,7 +48,32 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
     private ParameterExpression<String> nameParameter;
     private ParameterExpression<String> titleParameter;
 
+    /**
+     * The escape character of the partial searches. HSQLDB and Oracle reject an escape character
+     * followed by anything but {@code %}, {@code _} or itself, so only those are escaped.
+     */
+    static final char LIKE_ESCAPE = '!';
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    /** The LIKE pattern, escaped with {@link #LIKE_ESCAPE}, that finds {@code term} literally */
+    static String likePattern(String term, SearchMatch match) {
+        final StringBuilder pattern = new StringBuilder(term.length() + 2);
+        if (match == SearchMatch.ENDS_WITH || match == SearchMatch.CONTAINS) {
+            pattern.append('%');
+        }
+        for (int i = 0; i < term.length(); i++) {
+            final char c = term.charAt(i);
+            if (c == '%' || c == '_' || c == LIKE_ESCAPE) {
+                pattern.append(LIKE_ESCAPE);
+            }
+            pattern.append(c);
+        }
+        if (match == SearchMatch.STARTS_WITH || match == SearchMatch.CONTAINS) {
+            pattern.append('%');
+        }
+        return pattern.toString();
+    }
 
     @Override
     public void afterPropertiesSet() {
@@ -127,13 +152,19 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
                                 criteriaQuery.where(
                                         cb.or(
                                                 cb.like(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.name),
-                                                        nameParameter),
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .name)),
+                                                        cb.upper(nameParameter),
+                                                        LIKE_ESCAPE),
                                                 cb.like(
-                                                        definitionRoot.get(
-                                                                PortletDefinitionImpl_.title),
-                                                        titleParameter)));
+                                                        cb.upper(
+                                                                definitionRoot.get(
+                                                                        PortletDefinitionImpl_
+                                                                                .title)),
+                                                        cb.upper(titleParameter),
+                                                        LIKE_ESCAPE)));
 
                                 return criteriaQuery;
                             }
@@ -201,13 +232,13 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao implements IPortle
     @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
     @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
-    public List<IPortletDefinition> searchForPortlets(String term, boolean allowPartial) {
+    public List<IPortletDefinition> searchForPortlets(String term, SearchMatch match) {
         final CriteriaQuery<PortletDefinitionImpl> criteriaQuery;
-        if (allowPartial) {
-            criteriaQuery = this.searchDefinitionByNameOrTitleQuery;
-            term = "%" + term.toUpperCase() + "%";
-        } else {
+        if (match == SearchMatch.EXACT) {
             criteriaQuery = this.findDefinitionByNameOrTitleQuery;
+        } else {
+            criteriaQuery = this.searchDefinitionByNameOrTitleQuery;
+            term = likePattern(term, match);
         }
 
         final TypedQuery<PortletDefinitionImpl> query = this.createCachedQuery(criteriaQuery);

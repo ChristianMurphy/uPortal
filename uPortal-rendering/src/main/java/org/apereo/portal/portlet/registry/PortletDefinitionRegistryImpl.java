@@ -26,6 +26,7 @@ import org.apache.pluto.container.om.portlet.PortletApplicationDefinition;
 import org.apache.pluto.container.om.portlet.PortletDefinition;
 import org.apereo.portal.concurrency.caching.RequestCache;
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao;
+import org.apereo.portal.portlet.dao.IPortletDefinitionDao.SearchMatch;
 import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletDefinitionId;
 import org.apereo.portal.utils.Tuple;
@@ -118,8 +119,8 @@ public class PortletDefinitionRegistryImpl
     }
 
     @Override
-    public List<IPortletDefinition> searchForPortlets(String term, boolean allowPartial) {
-        return this.portletDefinitionDao.searchForPortlets(term, allowPartial);
+    public List<IPortletDefinition> searchForPortlets(String term, SearchMatch match) {
+        return this.portletDefinitionDao.searchForPortlets(term, match);
     }
 
     @Override

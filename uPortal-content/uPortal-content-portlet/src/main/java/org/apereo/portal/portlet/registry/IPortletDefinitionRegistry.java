@@ -17,6 +17,7 @@ package org.apereo.portal.portlet.registry;
 import java.util.List;
 import org.apache.pluto.container.om.portlet.PortletApplicationDefinition;
 import org.apache.pluto.container.om.portlet.PortletDefinition;
+import org.apereo.portal.portlet.dao.IPortletDefinitionDao.SearchMatch;
 import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletDefinitionId;
 import org.apereo.portal.utils.Tuple;
@@ -54,7 +55,16 @@ public interface IPortletDefinitionRegistry {
      */
     IPortletDefinition savePortletDefinition(IPortletDefinition portletDefinition);
 
-    List<IPortletDefinition> searchForPortlets(String term, boolean allowPartial);
+    /**
+     * Same as {@link #searchForPortlets(String, SearchMatch)} with {@link SearchMatch#CONTAINS} if
+     * {@code allowPartial} is true, and {@link SearchMatch#EXACT} if it is false.
+     */
+    default List<IPortletDefinition> searchForPortlets(String term, boolean allowPartial) {
+        return searchForPortlets(term, allowPartial ? SearchMatch.CONTAINS : SearchMatch.EXACT);
+    }
+
+    /** See {@link org.apereo.portal.portlet.dao.IPortletDefinitionDao#searchForPortlets} */
+    List<IPortletDefinition> searchForPortlets(String term, SearchMatch match);
 
     /**
      * Gets the parent portlet descriptor for the entity specified by the definition id.
