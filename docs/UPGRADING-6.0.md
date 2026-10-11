@@ -448,7 +448,7 @@ pointed it at its own URL should check that `POST /api/v6-0/session/keep-alive` 
 SessionTimeout portlet, `SessionTimeoutViewController` and `scripts/session-timeout.js` stay in this
 release for definitions that are not converted yet, and will be removed later.
 
-## Search is a web component
+## Search is a web component, and the Search portlet is gone
 
 uPortal-start's `search` channel was the Search portlet in its REST mode (`RESTSearch=true`), and
 its `search-launcher` channel was the same portlet showing the search box in the page header.
@@ -462,8 +462,16 @@ Both are now **Web Component** channels from one module, `up-search`:
 
 Users see the same box, results, details and "No Results Found" message. Both boxes keep the
 type-ahead over the portlet list (`/api/portletList`). It suggests after one character and a 200 ms
-pause, and opens the chosen portlet maximized. The new API runs the same search strategies (`ISearchStrategy`
-beans) as `/api/v5-0/portal/search`, which stays, and the Lucene index is unchanged.
+pause, and opens the chosen portlet maximized. `/api/v5-0/portal/search` stays, and the Lucene
+index is unchanged.
+
+Convert existing channels by importing uPortal-start's
+`data/base/portlet-type/Web_Component.portlet-type.xml` (once), then its
+`data/base/portlet-definition/search.portlet-definition.xml` and
+`data/base/portlet-definition/searchlauncher.portlet-definition.xml` (or your copies of them).
+The import updates each channel in place by fname, so layouts that place them keep working. A
+definition whose descriptor is still the `Search` framework portlet fails to render, because that
+portlet no longer exists.
 
 The channels no longer read the Search portlet's preferences:
 
@@ -474,19 +482,78 @@ The channels no longer read the Search portlet's preferences:
 * `RESTSearch`, `prepopulateAutoSuggestUrl`, `prepopulateUrlPattern`, `autoSuggestResultsProcessor`
   and `autocompleteMaxTextSize` have no effect. Type-ahead always uses the portlet list.
 
-Convert existing channels by importing uPortal-start's
-`data/base/portlet-type/Web_Component.portlet-type.xml` (once), then its
-`data/base/portlet-definition/search.portlet-definition.xml` and
-`data/base/portlet-definition/searchlauncher.portlet-definition.xml` (or your copies of them).
-The import updates each channel in place by fname, so layouts that place them keep working.
+### What is removed
 
-**Event-mode search stays a portlet.** A Search portlet definition with `RESTSearch=false`
-collects results from other portlets through portlet events: the `searchServices` beans (GSA,
-Google Custom Search, the marketplace and portlet registry services), the `searchTabs` mapping,
-the 18 searches a minute limit, and portlets that answer `SearchRequest` events. A REST API can't
-call those, because they need the portlet container. The Search portlet, its JSPs and its event
-handling stay in uPortal unchanged, so a portal that relies on them keeps its Search portlet
-definition. Converting it to the web component would drop those results.
+* The Search portlet (`SearchPortletController`, its JSPs and `Search-portlet.xml`) and its
+  event mode (`RESTSearch=false`).
+* Portlet-event search. uPortal no longer defines the `SearchRequest` and `SearchResults` portlet
+  events, and the `uPortal-api-search` module with their JAXB types is gone. **Portlets can no
+  longer contribute search results through events.** A portlet WAR that answers `SearchRequest`
+  events keeps working, but nothing sends it the event any more. uPortal's Directory portlet no
+  longer answers it, because the people search already covers the directory.
+* `IPortalSearchService` and its implementations. They are the services for the Google Search
+  Appliance (Google ended that product in 2019) and Google Custom Search, and the portlet registry
+  and marketplace searches.
+* The `searchServices`, `searchTabs`, `searchAutocompletePriorityMap` and
+  `searchAutocompleteIgnoreResultTypes` beans in `servicesContext.xml`, the
+  `org.apereo.portal.portlets.searchSearchPortletController.*` and `*.search.result.type`
+  properties, `autosuggestHandler.js`, and `PortletUtils.getStringFromPortletUrl` with
+  `portletUrl.tld`.
+
+### Remote search providers instead
+
+`/api/v6-0/search` gets all results from server-side search strategies (`ISearchStrategy` beans).
+Besides the portlet index and the people search, these can be **remote JSON search providers**,
+configured in `portal.properties` (or `uPortal.properties`). Each provider gets its own results
+tab. The portal calls the provider's URL itself, with only the configured headers. The user's
+cookies and session stay in the portal. Redirects are refused, and the portal waits at most the
+timeout. A provider that fails shows an error in its own tab, and the other tabs keep their
+results.
+
+| Property under `org.apereo.portal.search.remote.` | Meaning |
+| --- | --- |
+| `providers` | The providers' names, comma-separated |
+| `<name>.url` | The search URL, with `{query}` where the URL-encoded query goes (required) |
+| `<name>.headers` | Request headers, `Name: value` pairs separated by `;` |
+| `<name>.label` | The name of the results tab (default: the provider's name) |
+| `<name>.results` | JSON Pointer to the array of results (default `/items`) |
+| `<name>.title`, `<name>.link`, `<name>.description` | JSON Pointers into each result (default `/title`, `/link`, `/snippet`) |
+| `<name>.timeout` | Milliseconds to wait for an answer (default 5000) |
+
+The portal checks the settings at startup and stops with an error that cites the property when
+one is unusable, such as a `url` without `{query}` or a pointer without its leading `/`.
+
+**From Google Custom Search or the Google Search Appliance.** Google's Programmable Search JSON
+API answers in the format the defaults expect. Move the search engine ID (`customSearchId`) and
+API key (`key`) of the old `GoogleCustomSearchService` bean into the URL:
+
+```properties
+org.apereo.portal.search.remote.providers=web
+org.apereo.portal.search.remote.web.label=Campus web
+org.apereo.portal.search.remote.web.url=https://www.googleapis.com/customsearch/v1?key=YOUR_KEY&cx=YOUR_ENGINE_ID&q={query}
+```
+
+A Search Appliance site has no direct successor. Point the provider at the search service that
+replaced it, if that service answers JSON, and map its fields.
+
+**From a portlet that answered `SearchRequest` events.** Search its data through the service
+behind the portlet instead. If that service has a JSON search API (a campus directory, a CMS, a
+calendar), add a provider for it:
+
+```properties
+org.apereo.portal.search.remote.providers=web,directory
+org.apereo.portal.search.remote.directory.label=Directory
+org.apereo.portal.search.remote.directory.url=https://directory.example.edu/api/people?q={query}
+org.apereo.portal.search.remote.directory.headers=X-Api-Key: YOUR_KEY
+org.apereo.portal.search.remote.directory.results=/data/people
+org.apereo.portal.search.remote.directory.title=/displayName
+org.apereo.portal.search.remote.directory.link=/profileUrl
+org.apereo.portal.search.remote.directory.description=/department
+org.apereo.portal.search.remote.directory.timeout=3000
+```
+
+A search that needs more than a URL and a field mapping, such as results that depend on the
+user, becomes an `ISearchStrategy` bean of its own, like the people and portlet searches.
 
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 

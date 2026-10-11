@@ -7,9 +7,13 @@ component" describe the result.
 
 ## Decisions (coordinator, 2026-10-11)
 
-* Convert the Search portlet's REST mode only, the one uPortal-start uses (`RESTSearch=true`).
-  The event mode (`RESTSearch=false`: `searchServices` beans, `searchTabs`, portlet events) stays
-  a portlet, unchanged; `IPortalSearchService` is not changed.
+* First decision: convert the REST mode only and keep the event mode as a portlet. **Replaced by
+  the owner's scope change (2026-10-11, relayed by the coordinator):** in 6.0 the Search portlet
+  and event-mode search are removed. All results come through `/api/v6-0/search` from
+  `ISearchStrategy` beans, plus remote JSON search providers configured in portal properties
+  (URL template with `{query}`, headers or API key, JSON Pointer field mapping, own tab, timeout,
+  an error in its own tab). The user's cookies stay in the portal. GSA, the Google CSE service,
+  portlet-event search, `searchTabs` and the event-mode JSPs are dropped.
 * The header launcher is in scope: `<up-search-launcher>` in the same module, sending a GET to
   `/p/search/max?query=...`, which `<up-search>` reads.
 * Keep type-ahead over `/api/portletList` (one character, 200 ms pause, a choice opens
@@ -27,6 +31,10 @@ uPortal, oldest first:
 | `feat(search): add up-search and up-search-launcher web components` | `<up-search>`, `<up-search-launcher>`, the shared `<up-search-box>` with type-ahead; two XState machines; 373 Vitest tests (machine, browser, model-based), every file at 90% or more; form, input group and nav partials in the shared sheet; a `shared` chunk for Lit and the base library; nine new messages |
 | `style(search): apply google-java-format to the search api` | the Spotless output CI asked for |
 | `docs: record the search conversion` | guide, UPGRADING-6.0, this note |
+| `feat(search): add configurable remote json search providers` | `RemoteJsonSearchStrategy`, `RemoteJsonSearchSettings`, `RemoteJsonSearchProviders`; per-group `failed` and `label`; tests on a loopback HTTP server (mapping, encoding, headers, no cookies, error status, bad JSON, redirects, timeout, refused connection) |
+| `feat(search): show provider tabs and failed groups in up-search` | the component reads `label` and `failed`; 377 Vitest tests |
+| `refactor(search)!: remove the search portlet and portlet-event search` | the portlet, JSPs, Spring context, `portlet.xml` entries and event definitions, `IPortalSearchService` and its services, `uPortal-api-search`, the Directory portlet's event handler, `PortletUtils.getStringFromPortletUrl`, the search beans and properties |
+| `docs: describe remote search providers and the removed portlet` | UPGRADING-6.0 (removed parts, provider settings, examples), guide, this note |
 
 uPortal-start, oldest first:
 
@@ -42,13 +50,19 @@ G-index in uPortal-start). Integration builds the uPortal branch of the same nam
 
 ## Next steps
 
-1. Characterisation spec green against the portlet (Integration on uPortal-start `7bacc1dee`).
-2. Push the channel switch; the same spec must pass against the components, with the new specs.
-3. The harness: the intended changes are `UP_PORTLET_DEF_PARAM +7`, `UP_PORTLET_PREF -8` and
+1. Characterisation spec green against the portlet (Integration on uPortal-start `7bacc1dee`,
+   run 38115662860).
+2. Waiting on the coordinator: search analytics. `SearchRequestAggregator` counts portlet action
+   events for fname `search` with a `query` parameter, which only the portlet produced, so the
+   Activity portlet's popular searches stop counting new searches. Proposed: a new portal event
+   that `/api/v6-0/search` publishes for searches the user submits, counted by the same
+   aggregator.
+3. Push the channel switch; the same spec must pass against the components, with the new specs.
+4. The harness: the intended changes are `UP_PORTLET_DEF_PARAM +7`, `UP_PORTLET_PREF -8` and
    `UP_PORTLET_PREF_VALUES -8` (the last two estimated: eight preferences with one value each).
    If the harness reports other counts, correct `intended-changes.txt` from its report.
-4. Seeded faults, as throwaway commits reverted by a new commit: one per new check.
-5. Message the coordinator with the CI run numbers and the proposed LOG rows below.
+5. Seeded faults, as throwaway commits reverted by a new commit: one per new check.
+6. Message the coordinator with the CI run numbers and the proposed LOG rows below.
 
 ## Seeded faults
 
@@ -62,10 +76,15 @@ To be filled in from the CI runs.
   keystroke, because a `reenter: true` transition on a parallel region's state re-entered the
   whole machine. Found by the model-based test, fixed by handling typing in each popup state, with
   a regression test. The guide's state machine rules could say so.
-* Open question: the future of event-mode search. A portal with `RESTSearch=false` keeps the
-  Search portlet, which needs the portlet container, Spring Portlet MVC and portlet events, so it
-  cannot reach 6.0's Jakarta switch as it is. Options: drop it in 6.0 (results from other
-  portlets go away), or give `IPortalSearchService` a servlet-request variant and run the
-  services from `/api/v6-0/search`, leaving portlet-event results behind.
+* Decision (MOD-D, owner, 2026-10-11): search in 6.0 is `/api/v6-0/search` over server-side
+  strategies only. The Search portlet, portlet-event search (`SearchRequest`/`SearchResults`,
+  `uPortal-api-search`), `IPortalSearchService` with the GSA, Google CSE, portlet registry and
+  marketplace services, and `searchTabs` are removed. Remote JSON search providers in portal
+  properties replace GSA, CSE and portlets that answered search events. Alternatives considered:
+  keep the event mode as a portlet (it needs the portlet container, which 6.0 keeps only for
+  bundled and adopters' portlets), or give `IPortalSearchService` a servlet-request variant (keeps
+  the GSA and CSE code, still loses portlet-event results).
+* Issue: removing the portlet stops search analytics (`SearchRequestAggregator` counts the
+  portlet's action events). Fix proposed to the coordinator, see "Next steps".
 * Open question: the import upgrader and copy-tool rule for converting Search definitions belong
   with MOD-I133 (the same gap as Favorites).
