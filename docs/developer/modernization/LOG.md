@@ -955,8 +955,23 @@ This supersedes MOD-D24's runtime matrix.
   UUID types, zone-aware timestamps and renamed sequences, and loading a
   partitioned PostgreSQL table through its parent works.
 * **Still to build:** a 6.0 generator profile; table split/merge;
-  restartable runs; SQL Server and Oracle runs in CI (G-migrate matrix,
-  MOD-D25).
+  restartable runs.
+* **SQL Server and Oracle in CI (G-migrate matrix, MOD-D25): done in
+  uPortal-start.**
+  * uPortal-start's `integration.yml` runs G-migrate from
+    `tests/db/migrate/matrix.json` (`8d4c48acb`). Each integration-branch
+    push runs six pairs, SQL Server 2022 → 2025 and Oracle XE 21 → Free
+    23.26 among them. The nightly set has 36 pairs.
+  * Run 38087260340 (uPortal-start `5cce78e2d`, the nightly set run once
+    on push) passed all 36 pairs, including every pair with SQL Server or
+    Oracle as source or target.
+  * uPortal's `db-migrate.yml` (`6a014728c`) runs the copy tool's
+    integration tests on PostgreSQL, MariaDB and MySQL on every push. Its
+    SQL Server and Oracle legs run nightly or by hand and haven't run yet
+    (run 38097849648 ran the push job only).
+  * Neither fork's `master` has these workflows. GitHub fires a schedule
+    only on the default branch, and none has run. The nightly sets run on
+    the fork only when started by hand.
 * **CI after the merges:** uPortal CI and DB integration are green from
   7ded7362d (runs 38072747439, 38072747374), and uPortal-start CI and
   Integration from 3695a5927 (38072765561, 38072765632). The merge commit
