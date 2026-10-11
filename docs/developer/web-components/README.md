@@ -503,11 +503,20 @@ for locked fragments apply.
 | `GET /api/v6-0/search?q=...&type=people` | Only the named strategies (repeat `type`, or separate types with commas); an unknown type gives no group. |
 | A blank `q`, or one over 200 characters | 400 with a `message`. |
 
-A result carries a `title` (its `displayName`, `title` or `name` attribute), a `url` (null for
+A group carries its `type`, a `label` (the tab name of a remote provider, else null), its
+`results` and `failed`, which is true when that strategy threw: the other groups still answer. A
+result carries a `title` (its `displayName`, `title` or `name` attribute), a `url` (null for
 people) and its other `attributes`, each a list of strings in the order the strategy returned
 them. `SearchService` runs the `ISearchStrategy` beans that `/api/v5-0/portal/search` runs (the
-Lucene portlet index and the directory lookup) and turns maps and beans alike into that shape.
-Guests may search; each strategy finds what the user may see.
+Lucene portlet index and the directory lookup), plus the remote JSON search providers, and turns
+maps and beans alike into that form. Guests may search; each strategy finds what the user may
+see.
+
+Remote JSON search providers (`RemoteJsonSearchStrategy`) are configured in portal properties
+under `org.apereo.portal.search.remote.` (see `portal.properties` and UPGRADING-6.0). Each one
+GETs a URL with the query encoded into it, sends only its configured headers (never the user's
+cookies), follows no redirects, waits at most its timeout, and maps the JSON answer with JSON
+Pointers. Their tests run against a loopback HTTP server.
 
 ### Popular Portlets
 
@@ -711,8 +720,9 @@ stands for.
 ## The Search conversion
 
 The Search portlet had two modes, chosen by its `RESTSearch` preference. uPortal-start used the
-REST mode, which is what the components replace; the event mode stays a portlet (see
-UPGRADING-6.0, "Search is a web component").
+REST mode, which the components replace. The event mode, where portlets answered `SearchRequest`
+portlet events, is removed with the portlet; remote JSON search providers take its place (see
+UPGRADING-6.0).
 
 | Portlet | Web component |
 | --- | --- |
@@ -722,7 +732,8 @@ UPGRADING-6.0, "Search is a web component").
 | Portlet action, then a render with the `query` parameter | A link to `/p/search/max?query=...`; `<up-search>` reads `?query=` |
 | jQuery UI autocomplete over `/api/portletList` (`autosuggestHandler.js`) | `<up-search-box>`, shared by both elements: a search field with a listbox of suggestions |
 | Bootstrap 5 pills from `<template>`s | ARIA tabs (`tablist`, `tab`, `tabpanel`) with the arrow, Home and End keys |
-| Hardcoded "No Results Found" and tab names from the JSON keys | `search.no.results.found`, `search.results.people`, `search.results.portlets`; other types are named after the type |
+| Hardcoded "No Results Found" and tab names from the JSON keys | `search.no.results.found`, `search.results.people`, `search.results.portlets`; a provider's `label`; other types are named after the type |
+| Event mode: `searchServices` beans (GSA, Google Custom Search) and portlets answering `SearchRequest` | Remote JSON search providers in portal properties, one tab each; a failed provider shows `search.group.fail` in its tab |
 
 One module, `up-search`, defines all three elements, so both channels name it in
 `webComponent.moduleUrl` and the page loads it once.
