@@ -394,7 +394,9 @@ describe('up-search states', () => {
         document.removeEventListener('up-search-completed', completed);
         const locator = page.elementLocator(element);
 
-        expect(server.requestsTo(SEARCH_API)[0]?.url).toBe(`${SEARCH_API}?q=cartoon`);
+        expect(server.requestsTo(SEARCH_API)[0]?.url).toBe(
+            `${SEARCH_API}?q=cartoon&submitted=true`,
+        );
         const tabs = locator.getByRole('tab');
         await expect.element(tabs.nth(0)).toHaveTextContent('People');
         await expect.element(tabs.nth(1)).toHaveTextContent('Portlets');
@@ -576,7 +578,7 @@ describe('up-search behaviour', () => {
         pageQuery = 'steven';
         const element = await renderSearch(ATTRIBUTES);
 
-        expect(server.requestsTo(SEARCH_API)[0]?.url).toBe(`${SEARCH_API}?q=steven`);
+        expect(server.requestsTo(SEARCH_API)[0]?.url).toBe(`${SEARCH_API}?q=steven&submitted=true`);
         expect(input(boxOf(element)).value).toBe('steven');
     });
 
@@ -584,7 +586,7 @@ describe('up-search behaviour', () => {
         await renderSearch(`${ATTRIBUTES} query="x" result-types='["people","portlets"]'`);
 
         expect(server.requestsTo(SEARCH_API)[0]?.url).toBe(
-            `${SEARCH_API}?q=x&type=people&type=portlets`,
+            `${SEARCH_API}?q=x&type=people&type=portlets&submitted=true`,
         );
     });
 
@@ -597,7 +599,9 @@ describe('up-search behaviour', () => {
         await userEvent.type(input(box), 'calendar{Enter}');
 
         await expect.poll(() => server.requestsTo(SEARCH_API).length).toBe(2);
-        expect(server.requestsTo(SEARCH_API)[1]?.url).toBe(`${SEARCH_API}?q=calendar`);
+        expect(server.requestsTo(SEARCH_API)[1]?.url).toBe(
+            `${SEARCH_API}?q=calendar&submitted=true`,
+        );
         expect(replaceQuery).toHaveBeenCalledWith('calendar');
         expect(element.query).toBe('calendar');
         expect(assign).not.toHaveBeenCalled();

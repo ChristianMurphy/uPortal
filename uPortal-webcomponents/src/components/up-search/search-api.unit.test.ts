@@ -118,7 +118,7 @@ describe('fetchSearchResults', () => {
         );
 
         expect(fetch).toHaveBeenCalledWith(
-            `/uPortal${SEARCH_PATH}?q=a%26b&type=people&type=portlets`,
+            `/uPortal${SEARCH_PATH}?q=a%26b&type=people&type=portlets&submitted=true`,
             expect.objectContaining({ method: 'GET' }),
         );
     });

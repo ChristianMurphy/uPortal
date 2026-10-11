@@ -45,8 +45,9 @@
             </list>
         </property>
         <!-- Can configure a list of events to ignore based on event type using an instanceof check. For example
-             if you are using Google Analytics, you can ignore most PortletExecutionEvents (retain
-             PortletActionExecutionEvent for logging Search Events for the search terms) and some other Events.
+             if you are using Google Analytics, you can ignore most PortletExecutionEvents and some other
+             Events. Search terms come from SearchRequestEvent; PortletActionExecutionEvent only holds the
+             search terms that uPortal 5 stored.
              You may want to retain login, logout, layout changes, Portlet hung, and tenant events.
              Note that the PortletExecutionEvents include information about time to execute the portlet event
              (action, render, event, and resource events) which could be helpful to report on times that
@@ -57,7 +58,7 @@
         <property name="ignoredEvents">
             <list>
                 <value>org.apereo.portal.events.PortletEventExecutionEvent</value>
-                <!- - <value>org.apereo.portal.events.PortletActionExecutionEvent</value> retain for Search terms - ->
+                <value>org.apereo.portal.events.PortletActionExecutionEvent</value>
                 <value>org.apereo.portal.events.PortletRenderExecutionEvent</value>
                 <value>org.apereo.portal.events.PortletRenderHeaderExecutionEvent</value>
                 <value>org.apereo.portal.events.PortletResourceExecutionEvent</value>
