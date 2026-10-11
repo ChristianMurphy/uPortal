@@ -6,7 +6,8 @@ uPortal runs two static analysers besides the compiler:
   compile, with [NullAway](#null-safety) for null-marked code.
 * [SpotBugs](https://spotbugs.github.io/) with the
   [FindSecBugs](https://find-sec-bugs.github.io/) plugin analyses the
-  compiled classes. CI runs it in the `Static analysis` job.
+  compiled classes. CI runs it as the `Run SpotBugs` step of the Linux, Temurin 21 build cell, after
+  the build.
 
 ## SpotBugs ratchet
 

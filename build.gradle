@@ -220,7 +220,7 @@ allprojects {
     // SpotBugs + FindSecBugs as a ratchet (MOD-D27): `./gradlew spotbugsMain` fails on any
     // finding that is not in the module's committed baseline,
     // config/spotbugs/baseline/<module>.xml. `build` and `check` leave SpotBugs out (it is
-    // slow at effort max); CI runs it in its own job. `./gradlew spotbugsBaseline` rewrites the
+    // slow at effort max); CI runs it in the Linux, Temurin 21 cell after the build. `./gradlew spotbugsBaseline` rewrites the
     // baselines; see docs/developer/other/STATIC_ANALYSIS.md.
     spotbugs {
         toolVersion = spotbugsVersion
