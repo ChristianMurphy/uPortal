@@ -283,6 +283,10 @@ public enum PropColumn {
             case AT_TIME:
                 if (k == ORACLE) {
                     ps.setObject(i, LocalDateTime.of(LocalDate.of(1970, 1, 1), (LocalTime) v));
+                } else if (k == SQLSERVER) {
+                    // mssql-jdbc sends a time as a datetime by default (sendTimeAsDatetime), which
+                    // rounds it to 1/300 s; as text, TIME(7) keeps every digit
+                    ps.setString(i, v.toString());
                 } else {
                     ps.setObject(i, v);
                 }
