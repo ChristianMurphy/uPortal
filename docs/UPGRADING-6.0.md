@@ -125,8 +125,13 @@ The servlet contexts for login and logout (`authenticationServletContext.xml`), 
 (`renderingServletContext.xml`, `jsonRenderingServletContext.xml`) and the `/s/*` redirection
 service (`redirectionServletContext.xml`) now map their controllers with Spring MVC's
 `RequestMappingHandlerMapping` and `RequestMappingHandlerAdapter`. Spring Framework 5 removed the
-`DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter` they used before. URLs and
-behaviour are unchanged.
+`DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter` they used before. URLs are
+unchanged.
+
+One answer changes. A GET for a path under `/api/` that no controller maps now answers 404 Not
+Found. uPortal 5.17 answered 405 Method Not Allowed with `Allow: POST`, because the `/api`
+dispatcher also loaded the page-rendering mapping, whose catch-all accepted POST. A client that
+took a 405 as a sign that an API exists should expect a 404 for paths that never existed.
 
 If your overlay replaces one of these files, make the same change. The old mapping's
 `useDefaultSuffixPattern` property is called `useSuffixPatternMatch` on the new one. If you added
@@ -140,6 +145,23 @@ whole path within the servlet, not just the part the pattern's wildcards matched
 on `/resources/*`. It served static files packaged in jars such as `spring-js`, nothing in uPortal
 requested them, and Web Flow 2.5 removed the class. If your overlay links to files under
 `/uPortal/resources/`, serve them from the web application instead.
+
+## uPortal-start runs Tomcat 9
+
+uPortal-start installs Tomcat 9.0 instead of 8.5, and these answers look different:
+
+* Tomcat's own error pages, such as the 404 page for a missing file, show the Tomcat version,
+  now 9.0. They showed 8.5 before. To hide the version, set
+  `showServerInfo="false"` on the `ErrorReportValve` in `server.xml`.
+* JSON error responses from the `/api` controllers (401, 403 and 404) say
+  `Content-Type: application/json;charset=UTF-8`. On Tomcat 8.5 the same responses said
+  `charset=ISO-8859-1`, although their bodies were UTF-8. A client that decodes by the declared
+  charset now reads non-ASCII characters correctly.
+
+## Fixes made after uPortal 5.17.9
+
+* The portal's analytics script (`scripts/portal-analytics.js`) no longer stops Bootstrap drop-down
+  menus from opening (uPortal f301239691).
 
 ## Favorites is a web component
 
