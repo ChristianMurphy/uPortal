@@ -9,11 +9,12 @@ LOG numbers: MOD-I250 to MOD-I259.
 
 | Part | State |
 | --- | --- |
-| 1. Tomcat error pages without the version | done locally, pushed. Integration 38135446281 was cancelled by the next push. The coordinator may merge part 1 on its own once a push run is green (MOD-D53) |
-| 1a. Tomcat's docs, examples and ROOT page removed (MOD-I251) | done locally (uPortal-start `e7b70d3`, UPGRADING-6.0 section "Tomcat's documentation, examples and ROOT page are gone") |
-| 1b. HTTP replay registry entry for the new error pages | waits for the http-replay branch to land; then merge ccr and add it here (coordinator, 2026-10-11) |
-| Layout checks at standard sizes (MOD-D52) | done locally, pushed (uPortal-start `2412f7d`, uPortal `bc6eb94`); Integration 38139468035 queued |
-| 2. Existing axe violations in the Respondr skin | not started: after the layout checks, and the coordinator's go-ahead once the cluster branch is merged |
+| 1. Tomcat error pages without the version | pushed. Integration 38141361903 (uPortal-start `c2f0b0a`) was red for layout and harness reasons, fixed in `b01ddf1`; waiting for its push run, then the coordinator may merge part 1 on its own (MOD-D53) |
+| 1a. Tomcat's docs, examples and ROOT page removed (MOD-I251) | pushed (uPortal-start `e7b70d3`, UPGRADING-6.0 section "Tomcat's documentation, examples and ROOT page are gone"); green in 38141361903 |
+| 1b. HTTP replay registry entry for the new error pages | pushed (uPortal-start `c2f0b0a`): `tomcat-error-page-no-version` replaces `tomcat-9-error-page-version`. Replay 38141361986 explains every error page; it fails on 10 `Vary` differences that come from ccr, reported to the coordinator |
+| Layout checks at standard sizes (MOD-D52) | pushed (uPortal-start `2412f7d`, uPortal `bc6eb94`). CI's fonts showed 13 more problems; `b01ddf1` adds them and logs the entries a run no longer sees |
+| 2a. Respondr layout fixes (MOD-I284, MOD-I285) | pushed (uPortal `886c73b`, `db1556b`; uPortal-start `94edb5d`): baseline 615 to 230 entries, 243 with CI's |
+| 2b. Existing axe violations in the Respondr skin | not started: waits for the cluster branch, which adds the axe baseline (`tests/a11y/baseline.ts`) |
 | 3. Respondr right to left (MOD-I234, MOD-D51) | not started: comes after part 2 |
 
 ## Part 1: Tomcat error pages
@@ -114,6 +115,29 @@ The baseline lists these problems, the to-do list for part 2, in short:
   the sign-in links at 320 and 390, the Portlet Manager's table and paging, and the card titles of
   the admin's content grid.
 
+## Part 2a: Respondr layout fixes
+
+The coordinator's go-ahead (2026-10-11) split part 2: the layout problems first, the axe fixes
+once the cluster branch is merged. uPortal `886c73b` makes `prepareSkinResources` take the skin's
+sources as inputs; before, an incremental build kept the old CSS after an SCSS edit. uPortal
+`db1556b` fixes what Bootstrap 5's `width: 100%` on `.row > *` and `.container-fluid` broke:
+the menu toggle (now `width: auto`), the phone menu's sidebar (270px, no padding, tabs in a
+column), the first tab's -4px margin, and floats in the pre-content region. UPGRADING-6.0 has
+"Respondr's tab bar, header and phone menu fit their boxes again". uPortal-start `94edb5d` removes
+385 baseline entries. Screenshots before and after differ only in the header strip at 390px and
+the tab bar strip at 1366px.
+
+Left for later: the tab links overlapping their drag and delete handles from 768px, the
+calendar's event list, the file uploader button, the Portlet Manager's table and paging, the
+content grid's card titles, and the guest search form.
+
+## CI fonts and the report artifact
+
+CI's fonts show problems this container's don't. The report artifact contains the full observed
+lists, but its host (`productionresultssa5.blob.core.windows.net`) is refused by the proxy, so
+only the failing pages' lists, from the job log, could be read. `b01ddf1` makes the spec print
+every recorded entry a run no longer sees. Remove those entries after the next CI run.
+
 ## Part 2: existing axe violations
 
 Plan for when the go-ahead comes. Read `tests/a11y/baseline.ts` in uPortal-start, from the
@@ -157,7 +181,6 @@ fix is small.
 
 ## Next step
 
-Push both repos once the full local Playwright suite passes, and wait for the push runs. When
-uPortal-start's Integration run is green, send the coordinator the head SHAs and run IDs, so part
-1 can land. After the http-replay branch is merged, merge ccr and add the registry entry (1b). Then
-part 2, after the coordinator's go-ahead.
+Wait for uPortal-start's push run on `b01ddf1`. If Integration is green, send the coordinator the
+run IDs so part 1 can be merged, and remove the baseline entries its log lists as no longer seen.
+Then part 2b once the cluster branch is merged.
