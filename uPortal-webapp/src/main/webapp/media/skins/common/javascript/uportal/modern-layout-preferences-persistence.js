@@ -48,6 +48,7 @@ class ModernLayoutPreferencesPersistence {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
+                    ...window.up.csrfHeaders(),
                 },
                 body: formData,
             });

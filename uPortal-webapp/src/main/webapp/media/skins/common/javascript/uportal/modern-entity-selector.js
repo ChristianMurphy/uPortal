@@ -654,6 +654,9 @@ class ModernEntitySelector {
 
         // Submit to PAGS API endpoint like original
         xmlhttp.open('POST', `/uPortal/api/v4-3/pags/${parentName}.json`, true);
+        for (const [name, value] of Object.entries(window.up.csrfHeaders())) {
+            xmlhttp.setRequestHeader(name, value);
+        }
         xmlhttp.send(json);
     }
 

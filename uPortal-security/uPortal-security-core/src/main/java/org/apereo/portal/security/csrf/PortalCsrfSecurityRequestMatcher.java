@@ -29,14 +29,22 @@ import org.springframework.stereotype.Component;
 
 /**
  * Concrete implementation of Spring's <code>RequestMatcher</code> that tells Spring Security which
- * requests (URLs) to protect with CSRF tokens. Nearly all URLs are protected. The exceptions are
- * uPortal's REST APIs (which are secured by other means and should be available to non-portal
- * clients) and a few odds-and-ends like /Login.
+ * requests (URLs) to protect with CSRF tokens. Every request with an unsafe method (anything but
+ * GET and HEAD) is protected, the REST APIs under {@code /api} included: their browser clients
+ * authenticate with the session cookie, which the browser would also send with a forged request.
  *
- * <p>The REST APIs under {@code /api/v6-0/}, written for uPortal's web components, are protected
- * like portal pages: their browser clients authenticate with the session cookie, which the browser
- * would also send with a forged request. A request that carries a bearer token in the {@code
- * Authorization} header is exempt, because a browser never adds that header by itself.
+ * <p>The exceptions:
+ *
+ * <ul>
+ *   <li>{@code /Login} and {@code /Logout};
+ *   <li>an {@code /api} request that carries a bearer token in the {@code Authorization} header,
+ *       because a browser never adds that header by itself;
+ *   <li>the OIDC endpoints {@code /api/v5-5/oauth/token} (a client authenticates with its secret,
+ *       not the session) and {@code /api/v5-1/userinfo} (it only reads), and the Swagger UI.
+ * </ul>
+ *
+ * <p>A client sends the token in the {@code X-CSRF-TOKEN} header or the {@code _csrf} parameter.
+ * Portal pages carry it in their {@code _csrf} and {@code _csrf_header} meta tags.
  */
 @Component("portalCsrfSecurityRequestMatcher")
 public class PortalCsrfSecurityRequestMatcher implements RequestMatcher {
@@ -48,22 +56,29 @@ public class PortalCsrfSecurityRequestMatcher implements RequestMatcher {
 
     private static final String LOGOUT_PATTERN = "/Logout.*";
 
-    private static final String API_PATTERN = "/api.*";
-
     private static final String API_DOCS_PATTERN = "/api/swagger-ui.html";
 
-    private static final String[] IGNORED_PATTERNS =
-            new String[] {LOGIN_PATTERN, LOGOUT_PATTERN, API_PATTERN, API_DOCS_PATTERN};
+    private static final String OAUTH_TOKEN_PATTERN = "/api/v5-5/oauth/token(\\?.*)?";
 
-    /** The web components' REST APIs, protected although they live under /api. */
-    private static final String PROTECTED_API_PATTERN = "/api/v6-0/.*";
+    private static final String USERINFO_PATTERN = "/api/v5-1/userinfo(\\?.*)?";
+
+    private static final String[] IGNORED_PATTERNS =
+            new String[] {
+                LOGIN_PATTERN,
+                LOGOUT_PATTERN,
+                API_DOCS_PATTERN,
+                OAUTH_TOKEN_PATTERN,
+                USERINFO_PATTERN
+            };
+
+    /** The REST APIs, where a bearer token stands in for the CSRF token. */
+    private static final String API_PATTERN = "/api(/.*|\\?.*)?";
 
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final Set<RequestMatcher> ignoredMatchers = new HashSet<>();
 
-    private final RequestMatcher protectedApiMatcher =
-            new RegexRequestMatcher(PROTECTED_API_PATTERN, null);
+    private final RequestMatcher apiMatcher = new RegexRequestMatcher(API_PATTERN, null);
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -89,10 +104,10 @@ public class PortalCsrfSecurityRequestMatcher implements RequestMatcher {
 
         // Check URI
         if (result) {
-            if (protectedApiMatcher.matches(request)) {
+            if (ignoredMatchers.stream().anyMatch(matcher -> matcher.matches(request))) {
+                result = false;
+            } else if (apiMatcher.matches(request)) {
                 result = !hasBearerToken(request);
-            } else {
-                result = ignoredMatchers.stream().noneMatch(matcher -> matcher.matches(request));
             }
         }
 
