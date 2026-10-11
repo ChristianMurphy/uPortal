@@ -76,3 +76,62 @@ Hourly check-in routine: trig_01CXTm9dZGeia9okTQddSNLe (cron :51).
 - Owner chose Flyway (prefers Apache 2.0): MOD-Q4 closed on the integration branch.
 - Batch 3 = batch 2 + gviz (9 commits) = land-batch3 b1753d43b on ccr-43ba0785-hzlrj5-landing2. Batch 1 = 0b695896d on -landing (push CI running).
 - Next after reset: copy-tool SpotBugs fix lands -> rebase both landings -> dispatch CI.yml + db-integration.yml (uPortal) and integration.yml (start) on -landing2 -> land via ccr-push.sh. jqwik: read tasks/b0it0rw5t.output (control count must be > 0).
+
+## 02:35 after the reset
+- Landed: 9f564f893 SpotBugs fix (copy tool), 7e77dacb9 jqwik filter (MOD-I179; verified: notice 1 without filter, 0 with), WS14 foundation (agent, 48ad07ccf), Flyway decision 7c0fd896f + 90c92b7ef.
+- Batch 3 (pluto + uPortal-rendering test dep fix + probe fix + javatime + cache + gviz) = 4b3a91b77 on uPortal -landing2; overlays c29999696 on start -landing2. Dispatched uPortal CI + DB integration, start CI + Integration at ~02:33.
+- Resumed all 4 local agents after the limit. Deleted backups: jqwik, ws14-foundation, ws14-verify (landed).
+
+## 03:10 batch landed
+- uPortal 7efd1c6d1: 58 commits (Pluto + probe fix + rendering test dep fix, javatime, cache, gviz), tree == merge(tip d7e6f88cf, tested 5e15b123c). uPortal-start c29999696: overlays (15). Landing CI green: uPortal CI 38105448139, DB 38105277559 (5 vendors), start CI 38105279144, Integration 38105280624.
+- Dispatched integration-branch CI + DB integration (uPortal) and CI + Integration (start) for the [skip ci] tips.
+- Told pluto/overlays/javatime/cache/gviz sessions they're done; told local agents about portletApiDependency removal.
+- Topic and backup branch deletes are 403 at the git proxy: leave them; owner can delete on GitHub.
+- Still to land: local-login (start; apply its uPortal UPGRADING text), cluster, http-replay, gindex, goldens (+ Hibernate 5.2 after), e2e.
+
+## 03:15 WS14 foundation done; portlet conversions started
+- WS14 agent a6d1213feb127f2e1 finished (report: scratchpad/ws14-foundation.md). Worktrees cleaned.
+- New cloud sessions (prompt: scratchpad/wc-prompt.md), web-component conversions only; Thymeleaf pages wait for Spring 5.3 (P4-1), which waits on Hibernate 5.2, which waits on the goldens:
+| session_01QytzZZ4r6LrVQfxXm7ZArf | Popular Portlets -> web component | both repos | ccr-43ba0785-hzlrj5-wc-popular-portlets | 03:15 |
+| session_01E2HJKpeJKrMNR1oGJ21PUv | Session Timeout -> web component | both repos | ccr-43ba0785-hzlrj5-wc-session-timeout | 03:15 |
+- Next candidates when these land: User Locale, background preference, Search, Directory, Portlet Marketplace.
+
+## 03:30 landing lesson
+- 7efd1c6d1 broke uPortal-webapp compileTestJava: d7e6f88cf (copy tool, landed after the batch's CI) used setAbandonedLockAge(joda Duration); the java.time batch changed the setter. Text merge was clean. Fixed efba9bc17 (compile verified; lock test run in background bbxqtal59).
+- New landing rule: when the integration tip moved after the batch's CI, run `./gradlew compileTestJava` (or at least on the modules both sides touch) on the rebased tree before ccr-push.sh.
+
+## 04:20 local-login landing in progress
+- uPortal-start: land-login worktree (branch land-login, 12 commits, tree == merge(ccr, local-login tip)), reworded 3 messages (msgfix-login.py). Pushed to start -landing a1d41bf20; dispatched CI + Integration ~04:20.
+- uPortal: MOD-D40 + MOD-I180..I183 + UPGRADING section + REPORT tag fix committed locally in uPortal-coord (wip-coord), NOT pushed yet: push with ccr-push.sh after start CI is green, then land-login via ccr-push.sh from /home/user/wt/land-login, then dispatch start CI + Integration on ccr (tip is [skip ci]).
+- uPortal -landing reset to the ccr tip so start's landing CI builds current uPortal.
+- 04:35 gindex (19 commits, 3 reworded: msgfix-gindex.py) stacked on land-login as land-start2 in /home/user/wt/land-login; pushed start -landing dd3f7e8af; dispatched CI, Integration, g-index on it (cancelled the login-only runs). uPortal docs: 2c4718301 (D40, I180-I183) + ceeea6539 (D41, I184-I190) in uPortal-coord, backed up on uPortal -landing2. Land order after green: uPortal docs via ccr-push.sh, then start land-start2 via ccr-push.sh, then dispatch start CI + Integration + g-index on ccr.
+- wc-popular-portlets: reword uPortal-start 07f4545 ('the 403 answer to' -> plain wording) at landing.
+- 04:40 goldens agent done (report scratchpad/tests-persistence.md). It may have killed another agent's read-only du (pkill -f); agent-rules now forbid pattern kills.
+
+## 05:00 landed
+- uPortal 0f25d5387: MOD-D40 (local login) + MOD-D41 (G-index), MOD-I180..I190, UPGRADING section, REPORT tag fix. Also 4782e0227/4326e9fac (cache test Windows paths; full CI matrix on manual workstream runs).
+- uPortal-start dd3f7e8af: local login (12) + G-index (19), fast-forward of the tested landing commit. Dispatched start CI, Integration, g-index on ccr.
+- Goldens done (a75820d7a; agent finished). P2 cloud session session_01HMe4gQBfaXjQDQFVTvZJgL (branch ccr-43ba0785-hzlrj5-hibernate52-r2 in both repos).
+- Branches for owner to delete add: uPortal -goldens, start -local-login, -gindex.
+- Disk 7.2 GB: asked copy-tool (oracle/mssql images) and e2e (start-tst 4.7 GB) to clean.
+- 05:10 copy-tool agent a3f910cda1ef31f61 finished (report scratchpad/dbmig-tests.md); landed through d864e63b6; DB copy tool run 38111315873 all green incl. SQL Server + Oracle nightly legs. Branches for owner: uPortal -dbmig-tests, backup/ccr-43ba0785-hzlrj5-dbmig-tests, backup/ccr-43ba0785-hzlrj5-tests-persistence. Disk 13 GB.
+
+## 05:22 more parallel work (owner asked)
+| session_01EELW3HUB1Xwprs4mAubg4u | User Locale -> web component | both | ccr-43ba0785-hzlrj5-wc-user-locale | 05:22 |
+| session_01Mq8kzpodmqTJS3TMfCQzxm | Search -> web component | both | ccr-43ba0785-hzlrj5-wc-search | 05:22 |
+- Local agent ad9710bd7c066b122: login and CSRF fixes MOD-I180, I181, I130 (worktrees uPortal-sec, start-sec; topic ccr-43ba0785-hzlrj5-login-fixes).
+- Queued until Hibernate 5.2 lands (they touch persistence): G-index R1-R15, golden bugs MOD-I140..I143, P3-5 converters, MOD-I144 is with P2. After P2: P4-1 Spring 5.3 bloc, then Thymeleaf admin pages and P4-2 JDK 21 runtime.
+- Could start now if wanted: Directory and Marketplace web components; json-lib -> Jackson (P5-2 part); jasypt -> in-tree verifier (P5-4); MOD-I133 Favorites import upgrader; cluster bugs (start-up event loss, per-session permission cache).
+- 05:25 wc-search session blocked: its permission check denied add_repo uPortal-start and a read-only grep. Told it to do uPortal-only steps 2-3; owner asked to approve in that session.
+- 05:35 Owner decision (MOD-I130): protect all legacy unsafe /api endpoints with CSRF incl. /api/layout, marketplace rating, /api/preferences; accept breaking uPortal-home (useOldLayout layout calls, saveRating) and uportal-app-framework (chooseSkin, addToHome) until they send a token or Bearer. No XSRF cookie. Sent to login-fixes agent.
+- 05:45 owner asked for unconfirmed assumptions; asked all active agents/sessions to list theirs.
+
+## 2026-10-11 06:21 UTC
+- Landed uPortal 2b8e80e5f (LOG: MOD-D40 demo default, MOD-D42 search, MOD-D43 freeze, I140/I141/I142 notes, I191).
+- Landed uPortal 885c8f9c6 + 206a8da55: check-freeze-store.py in the Commit messages job; net count per rule fails, added entries are warnings. Cache listener can't move to Spring Cache (no eviction events); stays until P4-3.
+- Landed uPortal-start 5ef0dfced: authentication.md says local login is the demo default; production uses SSO.
+- Answered: Search -> analytics option (a) SearchRequestEvent; UPGRADING lists removed public pieces; never log provider headers.
+- Answered: Session Timeout list accepted except #4 -> fall back to 30 min on 5xx/network/malformed; 401 means no warning.
+- Answered: P2 a19ebddc6 lock-test wait accepted (MySQL DATETIME rounding exists on 4.3 too).
+- New sessions: wc-self-edit-account session_01WCgEpUoVfzwp1CAcqSUhgp; wc-reset-my-layout session_01Enrc6m1hU6m7twAjCR9CpX.
+- Owner question pending: Self Edit Account changes the password without the current password today (to confirm); session builds "require current password" as its own revertible commit.

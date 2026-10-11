@@ -18,7 +18,7 @@
   2s, 4s, 8s, 16s.
 - Other agents work concurrently in /home/user/wt/* (Hibernate 5.2 = uPortal-p2/start-p2, static analysis =
   uPortal-sa, web components = uPortal-wc/start-wc, DB version matrix = uPortal-dbm/start-dbm, plus test
-  agents). Never touch their worktrees, files, containers or processes. Never kill a process you didn't start;
+  agents). Never touch their worktrees, files, containers or processes. Never kill a process you didn't start. Stop your own processes only by exact PID, after checking /proc/<pid>/cwd or its command line; never use pkill -f or killall with a pattern, which can match other agents' processes;
   use `pgrep -f '[g]radle'`-style patterns so you don't match your own shell.
 - The DB-matrix agent is editing uPortal `db-integration.yml`, uPortal-start `integration.yml`,
   `db-harness.yml` and `tests/db/vendors/*`. Put new CI jobs in a NEW workflow file rather than editing those,
