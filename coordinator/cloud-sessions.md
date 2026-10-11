@@ -71,3 +71,8 @@ Hourly check-in routine: trig_01CXTm9dZGeia9okTQddSNLe (cron :51).
 - Batch 1 = land-pluto 0b695896d (on ae9c14ac7) pushed to -landing (push CI starts). Batch 2 = 6e57f78d2 on -landing2 ([skip ci] tip). Re-dispatch both after the SpotBugs fix lands (rebase first).
 - jqwik: first check counted nothing because Gradle hides test stdout; rerun with show-streams.init.gradle (jqwik-filter-check2.sh).
 - Agent rules updated: topic branches and backup/ branches allowed.
+
+## 02:20 (usage limit near)
+- Owner chose Flyway (prefers Apache 2.0): MOD-Q4 closed on the integration branch.
+- Batch 3 = batch 2 + gviz (9 commits) = land-batch3 b1753d43b on ccr-43ba0785-hzlrj5-landing2. Batch 1 = 0b695896d on -landing (push CI running).
+- Next after reset: copy-tool SpotBugs fix lands -> rebase both landings -> dispatch CI.yml + db-integration.yml (uPortal) and integration.yml (start) on -landing2 -> land via ccr-push.sh. jqwik: read tasks/b0it0rw5t.output (control count must be > 0).
