@@ -458,6 +458,16 @@ portlet entity for the channel, the one the portlet used.
 Guests may call it: their choice goes into the session. A signed-in user's choice also goes into
 their stored locales. The service reuses `UserLocaleHelper`, which the portlet's flow called.
 
+### Session
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/session` | `{"maxInactiveIntervalSeconds": 1800}`, the session's timeout; zero or less means it never expires. |
+| `POST /api/v6-0/session/keep-alive` | 200 and the same body. The request itself extends the session, as any request does. |
+
+Guests and requests without a session get 401. Answers carry `Cache-Control: no-store`.
+`SessionTimeoutRESTController` reads the session with `getSession(false)`.
+
 ## Reference conversion: Favorites
 
 The Favorites portlet (Spring Portlet MVC, four JSPs, an EDIT mode) is the first portlet
