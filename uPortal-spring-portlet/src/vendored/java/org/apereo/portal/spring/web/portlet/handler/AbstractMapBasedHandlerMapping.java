@@ -22,10 +22,12 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.portlet.PortletException;
 import javax.portlet.PortletRequest;
 
 import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
 import org.springframework.util.Assert;
 
 /**
@@ -147,8 +149,11 @@ public abstract class AbstractMapBasedHandlerMapping<K> extends AbstractHandlerM
 		// Eagerly resolve handler if referencing singleton via name.
 		if (!this.lazyInitHandlers && handler instanceof String) {
 			String handlerName = (String) handler;
-			if (getApplicationContext().isSingleton(handlerName)) {
-				resolvedHandler = getApplicationContext().getBean(handlerName);
+			// Spring sets the context before handlers are registered (MOD-I225)
+			ApplicationContext context = Objects.requireNonNull(getApplicationContext(),
+					"Handler mapping has no ApplicationContext");
+			if (context.isSingleton(handlerName)) {
+				resolvedHandler = context.getBean(handlerName);
 			}
 		}
 
