@@ -1816,6 +1816,37 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 * **Work:** `ccr-43ba0785-hzlrj5-i18n` builds the shared code in `lib/i18n.ts` and updates the
   landed components. Each later conversion uses that code.
 
+### MOD-D52: pages and components fit standard screen sizes
+
+* **Request (project owner, 2026-10-11):** check that the layout fits on standard screen sizes:
+  nothing spills out of its box or gets cut off, nothing collapses, and nothing wraps where it
+  shouldn't.
+* **Sizes:** widths of 320 (the WCAG reflow minimum, a 1280-pixel screen at 400% zoom), 390
+  (phone), 768 (tablet), 1024, 1366 (the most common laptop) and 1920 pixels.
+* **Checks,** measured from element boxes in the browser rather than compared screenshots:
+  1. The page never scrolls sideways.
+  2. No text or control is cut off. A box that hides overflow shows all of its content, unless
+     it scrolls on purpose, or it ends in an ellipsis and the full text is available to screen
+     readers and on hover.
+  3. An element doesn't spill over its neighbors, and controls don't overlap.
+  4. Buttons, tabs, menu items, table headers, labels and badges stay on one line from 768 pixels
+     up. The tab bar fits on one row from 1024 pixels up, unless it turns into a menu by design.
+  5. A region, portlet or component with content keeps a usable size instead of collapsing, and
+     columns stack instead of getting narrower than 240 pixels. Images keep their proportions.
+  6. With the WCAG text spacing applied (line height 1.5, letter spacing 0.12em, word spacing
+     0.16em), nothing is cut off.
+* **Where:** each page of the quickstart users (guest, student, staff, faculty, admin), the
+  login page, each web component maximized, and the main admin pages, in Chromium at all six
+  widths. WebKit and Firefox run at 390 and 1366 pixels. Each web component also runs at
+  container widths of 280, 400, 800 and 1200 pixels in its own browser tests, since a portlet
+  column can be narrow. Once the -i18n pseudo-locales land, the checks also run with the
+  longer text and right to left.
+* **Existing problems:** recorded in a baseline that only shrinks, like the axe baseline
+  (MOD-D47). A new problem fails the build.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`, before the accessibility fixes, so those fixes and
+  the right-to-left theme (MOD-I234) are measured against it. The checks run inside the
+  existing Playwright jobs, not new ones.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
