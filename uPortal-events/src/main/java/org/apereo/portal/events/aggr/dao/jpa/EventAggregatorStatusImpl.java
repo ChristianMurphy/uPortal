@@ -22,7 +22,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.events.aggr.IEventAggregatorStatus;
 import org.hibernate.annotations.NaturalId;
@@ -36,10 +35,6 @@ import org.joda.time.DateTime;
 @SequenceGenerator(
         name = "UP_EVENT_AGGR_STATUS_GEN",
         sequenceName = "UP_EVENT_AGGR_STATUS_SEQ",
-        allocationSize = 10)
-@TableGenerator(
-        name = "UP_EVENT_AGGR_STATUS_GEN",
-        pkColumnValue = "UP_EVENT_AGGR_STATUS",
         allocationSize = 10)
 @NaturalIdCache(
         region = "org.apereo.portal.events.aggr.dao.jpa.EventAggregatorStatusImpl-NaturalId")

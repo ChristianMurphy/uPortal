@@ -32,7 +32,6 @@ import javax.persistence.PostLoad;
 import javax.persistence.PreUpdate;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -50,10 +49,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @SequenceGenerator(
         name = "UP_UNIQUE_STR_SEGMENT_GEN",
         sequenceName = "UP_UNIQUE_STR_SEGMENT_SEQ",
-        allocationSize = 1000)
-@TableGenerator(
-        name = "UP_UNIQUE_STR_SEGMENT_GEN",
-        pkColumnValue = "UP_UNIQUE_STR_SEGMENT_PROP",
         allocationSize = 1000)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)

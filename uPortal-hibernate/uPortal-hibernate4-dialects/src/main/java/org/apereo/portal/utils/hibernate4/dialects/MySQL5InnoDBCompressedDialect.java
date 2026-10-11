@@ -14,10 +14,15 @@
  */
 package org.apereo.portal.utils.hibernate4.dialects;
 
+import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
+import org.hibernate.boot.Metadata;
 import org.hibernate.dialect.MySQL5InnoDBDialect;
+import org.hibernate.mapping.Table;
+import org.hibernate.tool.schema.internal.StandardTableExporter;
+import org.hibernate.tool.schema.spi.Exporter;
 import org.hibernate.type.descriptor.ValueBinder;
 import org.hibernate.type.descriptor.WrapperOptions;
 import org.hibernate.type.descriptor.java.JavaTypeDescriptor;
@@ -30,6 +35,24 @@ import org.slf4j.LoggerFactory;
 /** Uses the COMPRESSED row format in an InnoDB engine, needed for long index support with UTF-8 */
 public class MySQL5InnoDBCompressedDialect extends MySQL5InnoDBDialect {
 
+    private final StandardTableExporter tableExporter =
+            new StandardTableExporter(this) {
+                /**
+                 * Hibernate 4.3 created the one-row tables that stand in for sequences without the
+                 * table type, so they use the server's default row format. Hibernate 5 exports them
+                 * like any other table; strip the table type again so new databases match.
+                 */
+                @Override
+                public String[] getSqlCreateStrings(Table table, Metadata metadata) {
+                    final String[] sql = super.getSqlCreateStrings(table, metadata);
+                    final String tableType = getTableTypeString();
+                    if (!table.getInitCommands().isEmpty() && sql[0].endsWith(tableType)) {
+                        sql[0] = sql[0].substring(0, sql[0].length() - tableType.length());
+                    }
+                    return sql;
+                }
+            };
+
     public MySQL5InnoDBCompressedDialect() {
         super();
     }
@@ -37,6 +60,11 @@ public class MySQL5InnoDBCompressedDialect extends MySQL5InnoDBDialect {
     @Override
     public String getTableTypeString() {
         return super.getTableTypeString() + " ROW_FORMAT=COMPRESSED";
+    }
+
+    @Override
+    public Exporter<Table> getTableExporter() {
+        return tableExporter;
     }
 
     @Override
@@ -67,6 +95,17 @@ public class MySQL5InnoDBCompressedDialect extends MySQL5InnoDBDialect {
                 protected void doBind(
                         PreparedStatement st, X value, int index, WrapperOptions options)
                         throws SQLException {
+                    st.setDouble(index, toMySqlDouble(value, options));
+                }
+
+                @Override
+                protected void doBind(
+                        CallableStatement st, X value, String name, WrapperOptions options)
+                        throws SQLException {
+                    st.setDouble(name, toMySqlDouble(value, options));
+                }
+
+                private double toMySqlDouble(X value, WrapperOptions options) {
                     Double unwrappedValue = javaTypeDescriptor.unwrap(value, Double.class, options);
                     if (unwrappedValue == Double.NEGATIVE_INFINITY) {
                         LOGGER.debug("Converting double from NEGATIVE_INFINITY to MIN_VALUE");
@@ -78,7 +117,7 @@ public class MySQL5InnoDBCompressedDialect extends MySQL5InnoDBDialect {
                         LOGGER.debug("Converting double from NaN to 0");
                         unwrappedValue = 0d;
                     }
-                    st.setDouble(index, unwrappedValue);
+                    return unwrappedValue;
                 }
             };
         }

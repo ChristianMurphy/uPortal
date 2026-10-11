@@ -30,7 +30,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Transient;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -51,10 +50,6 @@ import org.slf4j.LoggerFactory;
 @SequenceGenerator(
         name = "UP_UNIQUE_STR_GEN",
         sequenceName = "UP_UNIQUE_STR_SEQ",
-        allocationSize = 1000)
-@TableGenerator(
-        name = "UP_UNIQUE_STR_GEN",
-        pkColumnValue = "UP_UNIQUE_STR_PROP",
         allocationSize = 1000)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
