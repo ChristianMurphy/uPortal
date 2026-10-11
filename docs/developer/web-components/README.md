@@ -184,8 +184,9 @@ checks it alone. Its jar is a webjar (the modules under `META-INF/resources/webc
 whatever the servlet container's jar scanning settings.
 
 Libraries that several components use go into shared chunks (`output.codeSplitting.groups` in
-`vite.config.ts`): XState is one, `assets/xstate-<hash>.js`, which each component's entry imports,
-so a page loads it once however many components it shows.
+`vite.config.ts`): XState in `assets/xstate-<hash>.js`, and Lit with the base library and the
+shared stylesheet in `assets/shared-<hash>.js`. Each component's entry imports them, so a page
+loads them once however many components it shows.
 
 ### Toolchain and Gradle tasks
 
@@ -269,10 +270,10 @@ Components render into a shadow root, so neither the portal's skin (still Bootst
 legacy CSS leaks into them, and Bootstrap's CSS does not reach in either. Each component
 therefore adopts **one shared constructable stylesheet**: `src/lib/styles/bootstrap.scss`
 compiles the parts of Bootstrap 6 that the components use (root and color tokens, reboot,
-buttons, close button, list group, alert, spinner, placeholder, theme colors, focus ring and
-visually-hidden helpers) from Bootstrap's Sass sources, and Lit adopts the resulting sheet, a
-single `CSSStyleSheet` object, into every shadow root. It is about 60 kB minified (10 kB
-gzipped), loaded once per page with the first component.
+buttons, close button, form controls, input groups, navs, list group, alert, spinner,
+placeholder, theme colors, focus ring and visually-hidden helpers) from Bootstrap's Sass sources,
+and Lit adopts the resulting sheet, a single `CSSStyleSheet` object, into every shadow root. It is
+about 76 kB minified (12 kB gzipped), loaded once per page with the first component.
 
 Light DOM was the alternative. It would let the page's own CSS style the markup, but the page's
 CSS is Bootstrap 5, so Bootstrap 6 markup would render wrongly until the skin moves (MOD-D21),
@@ -494,6 +495,20 @@ A favorite collection or portlet carries its layout `nodeId`, `name`, `url`, `mo
 reuses `FavoritesUtils` and the user's layout manager, so the distributed layout manager's rules
 for locked fragments apply.
 
+### Search
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/search?q=cartoon` | `{"query": "cartoon", "groups": [{"type": "people", "results": [...]}, {"type": "portlets", "results": [...]}]}`: one group per search strategy, ordered by type, also when it found nothing. |
+| `GET /api/v6-0/search?q=...&type=people` | Only the named strategies (repeat `type`, or separate types with commas); an unknown type gives no group. |
+| A blank `q`, or one over 200 characters | 400 with a `message`. |
+
+A result carries a `title` (its `displayName`, `title` or `name` attribute), a `url` (null for
+people) and its other `attributes`, each a list of strings in the order the strategy returned
+them. `SearchService` runs the `ISearchStrategy` beans that `/api/v5-0/portal/search` runs (the
+Lucene portlet index and the directory lookup) and turns maps and beans alike into that shape.
+Guests may search; each strategy finds what the user may see.
+
 ### Popular Portlets
 
 | Request | Answer |
@@ -692,6 +707,43 @@ stands for.
    add one that renders the component for a user whose locale is Spanish and one whose locale is
    French (see `tests/ux/i18n/web-components-locale.spec.ts`), and document how existing
    definitions are converted.
+
+## The Search conversion
+
+The Search portlet had two modes, chosen by its `RESTSearch` preference. uPortal-start used the
+REST mode, which is what the components replace; the event mode stays a portlet (see
+UPGRADING-6.0, "Search is a web component").
+
+| Portlet | Web component |
+| --- | --- |
+| `SearchPortletController` in REST mode, `jsp/Search/searchRest.jsp` | `<up-search>` (`src/components/up-search/up-search.ts`) |
+| The launcher view, `jsp/Search/searchLauncher.jsp` (`searchLaunchFname` preference) | `<up-search-launcher>`, `search-fname` attribute |
+| `/api/v5-0/portal/search` | `GET /api/v6-0/search` |
+| Portlet action, then a render with the `query` parameter | A link to `/p/search/max?query=...`; `<up-search>` reads `?query=` |
+| jQuery UI autocomplete over `/api/portletList` (`autosuggestHandler.js`) | `<up-search-box>`, shared by both elements: a search field with a listbox of suggestions |
+| Bootstrap 5 pills from `<template>`s | ARIA tabs (`tablist`, `tab`, `tabpanel`) with the arrow, Home and End keys |
+| Hardcoded "No Results Found" and tab names from the JSON keys | `search.no.results.found`, `search.results.people`, `search.results.portlets`; other types are named after the type |
+
+One module, `up-search`, defines all three elements, so both channels name it in
+`webComponent.moduleUrl` and the page loads it once.
+
+Two machines hold the states:
+
+* `up-search.machine.ts`: `start` (to `searching` with a query, else `idle`), `searching`,
+  `results` (with the selected tab in the context), `failed.retryable` and
+  `failed.sessionExpired`. A new search starts from any state and aborts the one in flight.
+* `up-search-box.machine.ts`, the type-ahead, two parallel regions: `source` (`loading`, `ready`,
+  or `unavailable` when the portlet list fails, which leaves a plain search box) and `popup`
+  (`closed`, `waiting` for the 200 ms pause, `open`). The pause is the named delay `typeAhead`;
+  the model-based test replays it with fake timers.
+
+The field stays a search box for assistive technology, as the portlet's did, with
+`aria-autocomplete`, `aria-controls` and `aria-activedescendant` pointing at the suggestions,
+and a live region that says how many there are. Escape closes the suggestions or cancels the
+pause before the browser clears the field.
+
+Page navigation (opening a URL, reading and updating `?query=`) goes through `navigation.ts`, so
+the browser tests replace it instead of leaving the test page.
 
 ## Conversion: Popular Portlets
 
