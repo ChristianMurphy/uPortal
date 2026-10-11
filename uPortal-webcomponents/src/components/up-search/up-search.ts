@@ -107,7 +107,9 @@ export class UpSearch extends UpElement {
             }
 
             .result-title {
-                margin: 0 0 var(--spacer-2);
+                margin: 0;
+                margin-block-end: var(--spacer-2);
+                overflow-wrap: anywhere;
                 font-size: var(--font-size-lg);
                 font-weight: bold;
             }
@@ -123,7 +125,8 @@ export class UpSearch extends UpElement {
 
             dd {
                 display: inline;
-                margin: 0 0 0 var(--spacer-1);
+                margin: 0;
+                margin-inline-start: var(--spacer-1);
                 overflow-wrap: anywhere;
             }
 
@@ -133,7 +136,8 @@ export class UpSearch extends UpElement {
             }
 
             .no-results {
-                margin: var(--spacer-3) 0;
+                margin-block: var(--spacer-3);
+                margin-inline: 0;
                 font-size: var(--font-size-lg);
                 text-align: center;
             }
@@ -336,6 +340,10 @@ export class UpSearch extends UpElement {
 
     /** Arrow Left and Right, Home and End move between the tabs, as the ARIA tabs pattern says. */
     #onTabKeydown = (event: KeyboardEvent): void => {
+        // Keys that pick characters in an input method (Chinese, Japanese) are not commands
+        if (event.isComposing) {
+            return;
+        }
         const { results, selected } = this.#search.snapshot.context;
         const types = results?.groups.map((group) => group.type) ?? [];
         const index = types.indexOf(selected ?? '');
