@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.persistence.roundtrip;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.lang.reflect.Field;
@@ -28,7 +29,10 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
@@ -98,6 +102,8 @@ public class EntityRoundTripGoldenTest {
                     // PROCESSING_TYPE is a unique (natural id) enum with only 3 values
                     "EventAggregatorStatusImpl", EnumSet.of(Variant.NULLS));
 
+    private static final Pattern ORACLE_ERROR = Pattern.compile("ORA-\\d+");
+
     private static GenericXmlApplicationContext context;
     private static String contextZone;
 
@@ -159,6 +165,7 @@ public class EntityRoundTripGoldenTest {
             PersistenceUnits.deleteAll(emf);
             try {
                 roundTrip(emf, dataSource, vendor, goldenName, storedTags);
+                checkRemoval(emf, vendor);
             } catch (AssertionError | RuntimeException e) {
                 // A failed clean-up must not hide why the round trip failed
                 try {
@@ -287,6 +294,29 @@ public class EntityRoundTripGoldenTest {
                 vendor,
                 "JVM zone " + zone,
                 VendorDifferences.goldenLines(vendor));
+    }
+
+    /**
+     * What {@code EntityManager#remove} alone, as the portal's code deletes, leaves of the entities
+     * the round trip stored: on Oracle the owners of '' elements (MOD-I144), elsewhere nothing. The
+     * test then deletes the rest with SQL.
+     */
+    private void checkRemoval(EntityManagerFactory emf, DatabaseVendor vendor) {
+        final Map<String, String> left = new TreeMap<>();
+        for (final Map.Entry<String, String> type : PersistenceUnits.removeAll(emf).entrySet()) {
+            final Matcher error = ORACLE_ERROR.matcher(type.getValue());
+            left.put(type.getKey(), error.find() ? error.group() : type.getValue());
+        }
+        assertEquals(
+                "Entity types EntityManager#remove could not delete after the round trip on "
+                        + vendor.id()
+                        + " ("
+                        + persistenceUnit
+                        + ", JVM zone "
+                        + zone
+                        + "; MOD-I144)",
+                VendorDifferences.leftByRemove(vendor, persistenceUnit),
+                left);
     }
 
     private static StoredRows readRows(
