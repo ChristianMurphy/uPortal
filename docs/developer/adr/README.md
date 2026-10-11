@@ -56,3 +56,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0003](0003-build-with-gradle-9-before-raising-the-bytecode-level.md) | Build with Gradle 9 before raising the bytecode level | proposed | 2026-10-10 |
 | [0004](0004-deploy-uportal-as-a-war-on-an-external-tomcat-11.md) | Deploy uPortal as a WAR on an external Tomcat 11 | proposed | 2026-10-10 |
 | [0005](0005-prefer-spring-approaches-and-spring-cache-api.md) | Prefer the Spring approach for every migration, and cache through Spring's Cache API | proposed | 2026-10-10 |
+| [0006](0006-upgrade-hibernate-in-steps-with-the-schema-frozen.md) | Upgrade Hibernate in steps with the 5.17 schema frozen | proposed | 2026-10-10 |
