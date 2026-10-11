@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import org.apereo.portal.events.GoldenEventStream;
@@ -72,7 +73,9 @@ import org.apereo.portal.version.dao.VersionDao;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -95,6 +98,17 @@ import org.springframework.context.support.GenericXmlApplicationContext;
  */
 @RunWith(Parameterized.class)
 public class AggregationGoldenTest {
+    /**
+     * Fails a stuck or very slow case with the stack of the test thread, before the time limit of
+     * the CI job cancels the whole run without a report.
+     */
+    @Rule
+    public final Timeout timeout =
+            Timeout.builder()
+                    .withTimeout(10, TimeUnit.MINUTES)
+                    .withLookingForStuckThread(true)
+                    .build();
+
     private static GenericXmlApplicationContext context;
     private static String contextZone;
 

@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import javax.persistence.EntityManagerFactory;
 import javax.servlet.http.Cookie;
 import org.apereo.portal.dao.portletlist.IPortletListDao;
@@ -67,7 +68,9 @@ import org.apereo.portal.test.golden.GoldenRenderer;
 import org.apereo.portal.test.golden.JvmTimeZone;
 import org.apereo.portal.test.golden.PersistenceUnits;
 import org.apereo.portal.version.dao.VersionDao;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.springframework.context.support.GenericXmlApplicationContext;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -84,6 +87,17 @@ import org.springframework.transaction.support.TransactionTemplate;
  * rows the aggregation writes. {@code JpaClusterLockDao} has its own database tests (MOD-I82).
  */
 public class DaoQueryGoldenTest {
+    /**
+     * Fails a stuck or very slow case with the stack of the test thread, before the time limit of
+     * the CI job cancels the whole run without a report.
+     */
+    @Rule
+    public final Timeout timeout =
+            Timeout.builder()
+                    .withTimeout(5, TimeUnit.MINUTES)
+                    .withLookingForStuckThread(true)
+                    .build();
+
     /** Values set to "now" or to random tokens by the code under test */
     private static final Set<String> MASKED =
             new HashSet<>(

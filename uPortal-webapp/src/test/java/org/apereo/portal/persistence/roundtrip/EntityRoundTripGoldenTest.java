@@ -28,6 +28,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
@@ -43,7 +44,9 @@ import org.apereo.portal.test.golden.GoldenFiles;
 import org.apereo.portal.test.golden.JvmTimeZone;
 import org.apereo.portal.test.golden.PersistenceUnits;
 import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -73,6 +76,17 @@ import org.springframework.context.support.GenericXmlApplicationContext;
  */
 @RunWith(Parameterized.class)
 public class EntityRoundTripGoldenTest {
+    /**
+     * Fails a stuck or very slow case with the stack of the test thread, before the time limit of
+     * the CI job cancels the whole run without a report.
+     */
+    @Rule
+    public final Timeout timeout =
+            Timeout.builder()
+                    .withTimeout(5, TimeUnit.MINUTES)
+                    .withLookingForStuckThread(true)
+                    .build();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(EntityRoundTripGoldenTest.class);
 
     /**
