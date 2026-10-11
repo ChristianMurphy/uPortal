@@ -147,8 +147,7 @@ public class SearchServiceTest {
                 new SearchService(
                         Collections.singletonList(
                                 new FixedStrategy(
-                                        "places",
-                                        Arrays.asList(new Building(), "Gym", null))));
+                                        "places", Arrays.asList(new Building(), "Gym", null))));
 
         final List<SearchResult> results =
                 beans.search("x", null, request).getGroups().get(0).getResults();
