@@ -658,7 +658,9 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
 
     /**
      * A lock its server stopped updating is taken over once it is older than the abandoned-lock
-     * age. Deterministic, unlike testAbandoned: the age is 1 ms and the lock is 50 ms old.
+     * age. Deterministic, unlike testAbandoned: the age is 1 ms and the lock is 1.1 s old. MySQL
+     * rounds the lock's times to whole seconds, so a lock taken at .5 s or later is stored up to
+     * half a second in the future.
      */
     @Test
     public void anAbandonedLockIsTakenOver() throws Exception {
@@ -668,7 +670,7 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
         final IClusterLockDao dao = daoWithAbandonedLockAge(1);
         final String mutexName = "anAbandonedLockIsTakenOver";
         assertNotNull(execute(() -> dao.getLock(mutexName)));
-        TimeUnit.MILLISECONDS.sleep(50);
+        TimeUnit.MILLISECONDS.sleep(1100);
 
         server.set("ServerB");
         final ClusterMutex taken = execute(() -> dao.getLock(mutexName));
