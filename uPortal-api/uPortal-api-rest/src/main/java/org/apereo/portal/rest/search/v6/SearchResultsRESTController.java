@@ -34,15 +34,15 @@ import org.springframework.web.bind.annotation.RestController;
  *       "people", "results": [...]}, {"type": "portlets", "results": [...]}]}}, one group per
  *       search strategy, ordered by type. A result has a {@code title}, a {@code url} (null for
  *       people) and its other {@code attributes} as lists of strings.
- *   <li>{@code type} (repeated, or comma-separated) limits the strategies; an unknown type gives
- *       no group.
+ *   <li>{@code type} (repeated, or comma-separated) limits the strategies; an unknown type gives no
+ *       group.
  * </ul>
  *
  * <p>The user is the one of the portal session, so a strategy finds what that user may see:
  * portlets the user may browse, people the user may look up. Guests may search. A blank query or
  * one longer than {@value SearchService#MAX_QUERY_LENGTH} characters answers 400 with {@code
- * {"message": "..."}}. The API has only safe methods; anything else under {@code /api/v6-0/}
- * needs Spring Security's CSRF token (see {@code PortalCsrfSecurityRequestMatcher}).
+ * {"message": "..."}}. The API has only safe methods; anything else under {@code /api/v6-0/} needs
+ * Spring Security's CSRF token (see {@code PortalCsrfSecurityRequestMatcher}).
  */
 @RestController
 public class SearchResultsRESTController {
