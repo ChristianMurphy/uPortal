@@ -34,7 +34,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
         sequenceName = "UP_PORTLET_DEF_PARAM_SEQ",
         allocationSize = 5)
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class PortletDefinitionParameterImpl implements IPortletDefinitionParameter, Serializable {
     private static final long serialVersionUID = 1L;
 

@@ -86,7 +86,7 @@ public class PortletPreferenceImpl implements IPortletPreference, Cloneable {
     @OrderColumn(name = "VALUE_ORDER")
     @Column(name = "PREF_VALUE", length = 100000)
     @Type(type = "org.hibernate.type.StringType")
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private List<String> values = new ArrayList<>(0);
 
