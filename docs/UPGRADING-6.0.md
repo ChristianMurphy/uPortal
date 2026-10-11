@@ -253,6 +253,32 @@ with the `WebComponent` framework portlet, and two parameters are added,
 backgroundPreference portlet, `ViewBackgroundPreferenceController` and its JSP stay in this
 release for definitions that are not converted yet, and will be removed later.
 
+## The user locale selector is a web component
+
+The User Locales Selector channel (`user-locales-selector`) was the `UserLocale` portlet, a Web
+Flow. It is now a **Web Component** channel that renders `<up-user-locale>`, with its data from
+the new REST API `/api/v6-0/locale`. Users see the same list of the portal's languages, named in
+their current language, and Update still reloads the page in the chosen language. A signed-in
+user's choice is stored, and a guest's lasts the session, as before. What changed:
+
+* The flag icons next to the languages are gone. A flag stands for a country, and several
+  countries share a language.
+* The API accepts only the locales in `org.apereo.portal.i18n.LocaleManager.portal_locales`, and
+  answers 400 to any other code. The portlet stored whatever code the form sent.
+
+Existing portals keep their User Locales Selector definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/user-locales-selector.portlet-definition.xml`, which updates the
+channel in place. For a definition with another fname, make these changes and keep everything
+else:
+
+* the type to `Web Component`, and the descriptor to the framework portlet `WebComponent`;
+* add the parameters `webComponent.tagName=up-user-locale` and
+  `webComponent.moduleUrl=up-user-locale`.
+
+The `UserLocale` portlet and its `locale-selector` flow will be removed in a later release.
+`UserLocaleHelper` stays, because the REST API and the Translator portlet use it.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
