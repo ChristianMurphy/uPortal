@@ -2132,7 +2132,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I322 | Web components | The user locale selector marks no language for a user who never saved one, and the theme then renders in the portal's default locale. | **Open.** The component keeps the portlet's behaviour. A later change could mark the language the page is rendered in. |
 | MOD-I323 | Web components | A keydown listener on the portal page cancels Escape, so a modal dialog inside a web component can't be closed with it. | **Open.** Find the listener before a component relies on Escape (`notes/wc-session-timeout.md`). |
 | MOD-I324 | Web components | Content-hashed web component modules are served with `max-age=0`, and the page caching filter keeps stale copies until Tomcat restarts. It affects every component. | **Open.** Serve hashed modules as immutable and leave them out of the page cache. |
-| MOD-I325 | i18n | `session-timeout.keep-alive.failed` exists only in `Messages.properties`. The Spanish and French files have the other Session Timeout keys. | **Open.** The `-i18n` bundle check reports it once merged. Add the two texts then. |
+| MOD-I325 | i18n | A draft of the Session Timeout note listed `session-timeout.keep-alive.failed` as English only. | **Not an issue.** The Spanish and French texts came with the conversion (`c2c49a35b`) and are on the integration branch. The row is kept so the number isn't reused. |
 
 ## Open questions
 

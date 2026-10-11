@@ -127,8 +127,8 @@ with Tomcat restarted so the page cache served them.
   (first finding above). Locate it before a component relies on Escape.
 * Issue: content-hashed web component modules are served with `max-age=0`, and the page caching
   filter keeps stale copies until Tomcat restarts (second finding). It affects every component.
-* Issue: `session-timeout.keep-alive.failed` exists only in English (`Messages.properties`);
-  the French and Spanish files have the other session-timeout keys.
+* (Withdrawn: `session-timeout.keep-alive.failed` has Spanish and French text since
+  `c2c49a35b`. LOG keeps MOD-I325 as not an issue.)
 * Sandbox notes for other workers. Maven Central answers 429 to most requests, and Google's
   mirror works. Playwright 1.64 needs Chromium 1248, linked from 1194.
 
