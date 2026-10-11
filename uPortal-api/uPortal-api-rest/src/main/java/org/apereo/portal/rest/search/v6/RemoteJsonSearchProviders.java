@@ -17,7 +17,8 @@ package org.apereo.portal.rest.search.v6;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apereo.portal.spring.context.support.PortalPropertySourcesPlaceholderConfigurer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.env.PropertyResolver;
 import org.springframework.stereotype.Component;
 
@@ -35,11 +36,13 @@ public class RemoteJsonSearchProviders {
 
     private final List<RemoteJsonSearchStrategy> strategies;
 
-    public RemoteJsonSearchProviders(PortalPropertySourcesPlaceholderConfigurer properties) {
-        this(properties.getPropertyResolver());
-    }
-
-    RemoteJsonSearchProviders(PropertyResolver properties) {
+    /**
+     * Reads the providers from the portal properties: the root context's {@code propertyResolver}
+     * bean, asked for by name, since each servlet context also holds a placeholder configurer and
+     * its context's {@code Environment} is a {@link PropertyResolver} too.
+     */
+    @Autowired
+    public RemoteJsonSearchProviders(@Qualifier("propertyResolver") PropertyResolver properties) {
         final List<RemoteJsonSearchStrategy> list = new ArrayList<>();
         for (String name : properties.getProperty(PROVIDERS_PROPERTY, "").split(",")) {
             if (!name.trim().isEmpty()) {
