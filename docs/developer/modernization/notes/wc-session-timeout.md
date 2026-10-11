@@ -28,12 +28,63 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-session-timeout` in uPortal and uPortal-sta
 
 | Step | State |
 | --- | --- |
-| 1. Characterisation spec (uPortal-start `tests/ux/smoke/session-timeout.spec.ts`) | Done: 9 tests pass against the portlet (uPortal-start `714f196`) |
-| 2. REST API under `/api/v6-0/` | Drafted: `SessionTimeoutRESTController`, `GET /api/v6-0/session`, `POST /api/v6-0/session/keep-alive` |
-| 3. `<up-session-timeout>` component | Written, not committed: machine tests (24), browser tests (38) and model-based tests (63) pass |
-| 4. Channel definition as Web Component, intended changes | Not started |
-| 5. Spec against the component, seeded faults | Not started |
-| 6. UPGRADING-6.0 section | Not started |
+| 1. Characterisation spec | Done: uPortal-start `714f196`, `tests/ux/smoke/session-timeout.spec.ts`, 9 tests pass against the portlet |
+| 2. REST API under `/api/v6-0/` | Done: uPortal `d2736e6` (`SessionTimeoutRESTController`, 6 MockMvc tests), uPortal-start `1b1875b` (`tests/api/session-timeout.spec.ts`) |
+| 3. `<up-session-timeout>` | Done: uPortal `62870ab` and `747c04c`. 161 component tests (machine, browser, model-based); every new file has 100% lines and functions |
+| 4. Channel definition | Done: uPortal-start `97e95e9`, Web Component definition, `UP_PORTLET_DEF_PARAM` delta +2 to +5 |
+| 5. Spec against the component, seeded faults | Done: uPortal-start `7764e92`. The 9 characterisation tests pass unchanged against the component, and 4 component tests and a guest-with-session API test were added |
+| 6. UPGRADING-6.0 | Done: "Session Timeout is a web component" |
+
+Local runs on the last commits: the session API and session timeout specs, `favorites.spec.ts`
+and `web-component-channel.spec.ts`, 29 of 29; `:uPortal-webcomponents:check` with 385 tests;
+the HSQLDB harness passed all four drift checks and found both intended changes (`UP_PORTLET_DEF_PARAM`
+403 to 408).
+
+## Seeded faults
+
+Each fault was seeded alone and reverted. The e2e faults were edits of the deployed bundle,
+with Tomcat restarted so the page cache served them.
+
+| Fault | Caught by |
+| --- | --- |
+| Buffer 60 s instead of 30 | e2e "opens 90 seconds", e2e storage key test; 18 Vitest tests |
+| Escape closes the warning (`closedby="any"`, an empty cancel handler, the dialog shown once) | Vitest Escape test and cancel test. The e2e Escape test misses it, see findings |
+| Keep-alive on a wrong path | e2e keep-alive tests (2); 51 Vitest tests after `747c04c` (none before it) |
+| Another tab's later time ignored | e2e "a tab opened later"; 19 Vitest tests |
+| Logout time under another storage key | e2e storage key test |
+| Dialog not named by its title | e2e "names the warning dialog" |
+| `logout-url` not checked | 3 Vitest tests |
+| Countdown ends one second early | 1 Vitest test |
+| Controller answers 200 to guests | MockMvc `refusesGuests`; API spec "a guest who has a session" (the cookieless guest test passed, so the second test was added) |
+
+## Findings
+
+* In the portal page a keydown listener calls `preventDefault()` on Escape after a modal
+  `<dialog>` sees it. Chromium then keeps the dialog open whatever the component does. The e2e
+  Escape test records the user-visible behaviour, but it cannot catch a component that lets
+  Escape close the warning. The listener was not identified. The Vitest test on a bare page
+  covers the component.
+* `/webcomponents/assets/*` is answered with `Cache-Control: max-age=0` and `Expires` equal to
+  `Last-Modified`, not the year that `cacheContext.xml` sets for the path. The page caching
+  filter also keeps a copy in memory until Tomcat restarts.
+* `dataImport` from the root fails on the integration branch (`prepareSkinResources` not
+  found, MOD-I91, fixed on the tests-e2e branch), so the converted definition was loaded with
+  `portalInit`.
+* A cookieless GET to `/api/v6-0/session` reaches the controller without a session, so the
+  CSRF filter does not create one for it.
+
+## Proposed LOG rows
+
+* MOD-D18 status line, Session Timeout converted. `/api/v6-0/session` and
+  `<up-session-timeout>` (uPortal), Web Component definition in uPortal-start. The
+  characterisation spec passes on the portlet and on the component.
+* Issue: a portal-page keydown listener cancels Escape for modal dialogs in web components
+  (first finding above). Locate it before a component relies on Escape.
+* Issue: content-hashed web component modules are served with `max-age=0` (second finding).
+* Issue: `session-timeout.keep-alive.failed` exists only in English (`Messages.properties`);
+  the French and Spanish files have the other session-timeout keys.
+* Sandbox notes for other workers. Maven Central answers 429 to most requests, and Google's
+  mirror works. Playwright 1.64 needs Chromium 1248, linked from 1194.
 
 ## Running locally
 
@@ -62,7 +113,11 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-session-timeout` in uPortal and uPortal-sta
   upgrade. The warning is a native `<dialog>` shown with `showModal()` (Bootstrap 6 Dialog).
 * A failed keep-alive shows "Error resetting your session!" in the dialog instead of
   `window.alert`. The characterisation spec accepts either.
+* The timers take a `clock` property (`now`, `after`, `every`), and tests set a
+  `ManualClock`. Vitest's fake timers would also stop the browser runner's timers.
 
 ## Next step
 
-Commit the REST API with its tests, then the component.
+Wait for CI on both topic branches, fix what it finds, then report to the coordinator. The
+portlet's Java, JSP and script stay until the 6.0 data migration converts the definition
+(MOD-I133), like Favorites.
