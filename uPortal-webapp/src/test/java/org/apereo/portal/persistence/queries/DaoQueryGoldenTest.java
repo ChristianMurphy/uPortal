@@ -310,10 +310,14 @@ public class DaoQueryGoldenTest {
         check(
                 "messageDao.getMessage(\"GREETING\", en)",
                 () -> dao.getMessage("GREETING", Locale.ENGLISH));
-        check(
+        // These two queries have an ORDER BY, and the DAO keeps it in a LinkedHashSet
+        ordered(
                 "messageDao.getMessagesByCode(\"greeting\")",
                 () -> dao.getMessagesByCode("greeting"));
-        check("messageDao.getMessagesByLocale(en)", () -> dao.getMessagesByLocale(Locale.ENGLISH));
+        ordered(
+                "messageDao.getMessagesByLocale(en)",
+                () -> dao.getMessagesByLocale(Locale.ENGLISH));
+        // GROUP BY without ORDER BY: PostgreSQL returns the codes in another order
         check("messageDao.getCodes()", dao::getCodes);
     }
 
