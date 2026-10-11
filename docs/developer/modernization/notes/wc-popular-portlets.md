@@ -40,7 +40,7 @@ spec), `07f4545` (API spec), `89627e4` (data), `6a97e02` (component tests).
 * uPortal-api-rest: `./gradlew :uPortal-api:uPortal-api-rest:test spotlessCheck spotbugsMain`
   green.
 * uPortal-webcomponents: `./gradlew :uPortal-webcomponents:check` green, 551 tests. The new
-  component has 30 browser tests, 236 model-based tests (144 shortest and 90 simple paths, every
+  component has 31 browser tests, 236 model-based tests (144 shortest and 90 simple paths, every
   state value reached, axe in each final state), and unit tests for the API client, `table.ts`, the
   messages and the machine.
 * uPortal-start on HSQLDB, uPortal built from the topic branch: the popular portlets spec and the
@@ -66,6 +66,7 @@ Each fault was put in, the check run, and the code restored.
 | Next is never disabled | `up-popular-portlets.model.browser.test.ts` | 206 of 236 failed |
 | No `aria-sort` (deployed module) | characterisation spec | the sorting test failed |
 | The Title filter compares titles (deployed module) | component test "a filter keeps the rows it names" | failed |
+| The Title filter compares titles | browser test "keeps the rows it names after a sort" | failed |
 | The API counts 7 days by default (deployed jar) | API spec | "30 days by default" failed |
 
 The deployed module and jar were patched in `.gradle/tomcat/webapps/uPortal` and Tomcat
@@ -89,9 +90,14 @@ text in code-unit order. The info line, the paging buttons and the note have the
 
 For the coordinator to number:
 
-* Issue: the Popular Portlets portlet's column filters show the wrong rows once the table is
+* Issue: the 5.17 Popular Portlets portlet's column filters show the wrong rows once the table is
   sorted (the DataTables search function indexes `col.data()`, which is in display order, with
-  the row's load index). Fixed by `<up-popular-portlets>`. The portlet itself keeps the bug.
+  the row's load index). The conversion fixes this bug rather than matching it. The
+  characterisation spec checks only the row counts there, which is true of 5.17. The right rows
+  after a sort are checked by "a filter keeps the rows it names, also
+  after sorting" in uPortal-start's `popular-portlets.spec.ts`, and "keeps the rows it names after
+  a sort" in `up-popular-portlets.browser.test.ts`; the
+  first fails on the old portlet. The portlet itself keeps the bug.
 * Issue: `PopularPortletsController.getEventCounts` throws a `NullPointerException` when `days` is
   missing. `/api/v6-0/popular-portlets` answers 400 or uses 30.
 * Issue: in uPortal-start on the integration branch, `./gradlew dataImport -Dfile=...` fails with
