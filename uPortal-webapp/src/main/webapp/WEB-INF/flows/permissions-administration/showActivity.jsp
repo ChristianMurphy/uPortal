@@ -126,10 +126,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div id="${n}activityBrowser" class="card portlet prm-mgr" role="section">
+<div id="${n}activityBrowser" class="card portlet prm-mgr">
 
   <!-- Portlet Titlebar -->
-    <div role="sectionhead" class="card-header titlebar portlet-titlebar">
+    <div class="card-header titlebar portlet-titlebar">
         <div class="breadcrumb">
             <span class="breadcrumb-item breadcrumb-1"><a href="${ ownersUrl }"><spring:message code="categories"/></a></span>
             <span class="separator">&gt; </span>

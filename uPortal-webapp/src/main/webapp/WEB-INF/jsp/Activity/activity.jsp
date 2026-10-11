@@ -33,7 +33,7 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div class="card portlet portal-activity" role="section">
+<div class="card portlet portal-activity">
     <form id="${n}form">
 
         <!-- Portlet Body -->

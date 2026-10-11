@@ -26,10 +26,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div id="${n}" class="card portlet user-mgr view-reviewuser" role="section">
+<div id="${n}" class="card portlet user-mgr view-reviewuser">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading"><spring:message code="update.my.password"/></h2>
     </div> <!-- end: portlet-titlebar -->
 

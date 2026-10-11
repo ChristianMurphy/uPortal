@@ -27,10 +27,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div class="card portlet" role="section">
+<div class="card portlet">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead" data-role="header">
+    <div class="card-header titlebar portlet-titlebar" data-role="header">
         <h2 class="title" role="heading"><spring:message code="reset.email.sent"/></h2>
     </div>
 

@@ -23,7 +23,7 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div class="card portlet" role="section">
+<div class="card portlet">
     <!-- Portlet Body -->
     <div class="card-body portlet-body">
 

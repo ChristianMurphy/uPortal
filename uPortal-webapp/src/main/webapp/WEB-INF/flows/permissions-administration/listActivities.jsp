@@ -38,11 +38,11 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div class="card portlet prm-mgr view-listperms" role="section">
+<div class="card portlet prm-mgr view-listperms">
 
 
   <!-- Portlet Titlebar -->
-	<div role="sectionhead" class="card-header titlebar portlet-titlebar">
+	<div class="card-header titlebar portlet-titlebar">
 	  	<div class="breadcrumb">
 	    	<span class="breadcrumb-item breadcrumb-1"><a href="${ backUrl }"><spring:message code="categories"/></a></span>
 	        <span class="separator">&gt; </span>

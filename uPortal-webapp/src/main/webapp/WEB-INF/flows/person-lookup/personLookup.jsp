@@ -159,10 +159,10 @@
 </style>
 
 <!-- Portlet -->
-<div id="${n}personBrowser" class="card portlet prs-lkp view-lookup" role="section">
+<div id="${n}personBrowser" class="card portlet prs-lkp view-lookup">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading">
             <spring:message code="search.for.users" />
         </h2>

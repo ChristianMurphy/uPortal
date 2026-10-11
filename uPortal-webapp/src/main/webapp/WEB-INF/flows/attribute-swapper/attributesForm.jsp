@@ -29,7 +29,7 @@
 </portlet:actionURL>
 
 <!-- Portlet -->
-<div class="card portlet atr-swp view-attributesform" role="section">
+<div class="card portlet atr-swp view-attributesform">
 
 	<!-- Portlet Titlebar -->
     <div class="card-header titlebar portlet-titlebar">

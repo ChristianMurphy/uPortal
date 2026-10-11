@@ -71,10 +71,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 
 <form:form modelAttribute="portlet" action="${queryUrl}" method="POST" role="form" class="portlet-config">
     <!-- Portlet -->
-    <div class="view-basicinfo" role="section">
+    <div class="view-basicinfo">
 
         <!-- Portlet Titlebar -->
-        <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+        <div class="card-header titlebar portlet-titlebar">
             <h2 class="title" role="heading">
                 <spring:message code="${ completed ? 'edit.portlet' : 'register.new.portlet' }"/>
             </h2>
@@ -196,7 +196,7 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
     </div> <!-- end: portlet -->
 
     <!-- Portlet -->
-    <div class="card portlet ptl-mgr view-setparameters" role="section">
+    <div class="card portlet ptl-mgr view-setparameters">
         <!-- Portlet Content -->
         <div class="card-body content portlet-content">
 
@@ -453,7 +453,7 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
     </div> <!-- end: portlet -->
 
     <!-- Portlet config Permissions and categories -->
-    <div id="${n}PortletPrincipalsCategories" class="card portlet ptl-mgr view-principals-cats" role="section">
+    <div id="${n}PortletPrincipalsCategories" class="card portlet ptl-mgr view-principals-cats">
         <!-- Portlet Content -->
         <div class="card-body content portlet-content">
             <!-- Portlet Section -->
@@ -558,7 +558,7 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
     </div>
 
     <!-- Portlet Lifecycle -->
-    <div id="${n}PortletLifecycle" class="card portlet ptl-mgr view-lifecycle" role="section">
+    <div id="${n}PortletLifecycle" class="card portlet ptl-mgr view-lifecycle">
         <!-- Portlet Content -->
         <div class="card-body content portlet-content">
             <!-- Portlet Section -->

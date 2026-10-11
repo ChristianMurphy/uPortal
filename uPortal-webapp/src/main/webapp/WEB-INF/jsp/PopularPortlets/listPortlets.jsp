@@ -117,11 +117,11 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div id="${n}portletBrowser" class="card portlet" role="section">
+<div id="${n}portletBrowser" class="card portlet">
 <form id="${n}form">
 
   <!-- Portlet Title -->
-  <div class="card-header portlet-title" role="sectionhead">
+  <div class="card-header portlet-title">
     <h2 role="heading"><spring:message code="most.frequently.added"/></h2>
   </div> <!-- end: portlet-title -->
 

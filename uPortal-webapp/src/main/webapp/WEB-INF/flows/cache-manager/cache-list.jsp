@@ -26,10 +26,10 @@
 </portlet:renderURL>
 
 <!-- Portlet -->
-<div class="card portlet cache-mgr view-list" role="section">
+<div class="card portlet cache-mgr view-list">
 
   <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading"><spring:message code="uportal.cache.manager"/></h2>
         <div class="toolbar" role="toolbar">
             <a class="button btn btn-primary" href="${flushAllUrl}"><span><spring:message code="empty.all.caches" />&nbsp;&nbsp;<i class="fa fa-refresh"></i></span></a>

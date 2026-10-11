@@ -88,7 +88,7 @@
     <chunk-point/> <!-- Performance Optimization, see ChunkPointPlaceholderEventSource -->
       <nav class="portal-nav">
         <div id="sidebar" class="sidebar-offcanvas container-fluid">
-            <div id="portalNavigation" class="fl-widget" aria-selected="false">
+            <div id="portalNavigation" class="fl-widget">
                 <!-- Optional Tab Groups -->
                 <xsl:if test="$USE_TAB_GROUPS='true'">
                     <div id="portalNavigationTabGroup" class="fl-widget-inner header">

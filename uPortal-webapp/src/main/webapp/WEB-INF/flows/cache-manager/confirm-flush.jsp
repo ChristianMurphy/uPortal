@@ -24,7 +24,7 @@
 </portlet:actionURL>
         
 <!-- Portlet -->
-<div class="card portlet cache-mgr view-flush" role="section">
+<div class="card portlet cache-mgr view-flush">
 	<!-- Portlet Titlebar -->
 	<div class="card-header titlebar portlet-titlebar">
     	<h2 class="title"><spring:message code="flush.cache"/></h2>

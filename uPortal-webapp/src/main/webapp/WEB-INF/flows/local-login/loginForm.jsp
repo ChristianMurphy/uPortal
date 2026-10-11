@@ -30,7 +30,7 @@
 </portlet:renderURL>
 
 <!-- Portlet -->
-<div class="card portlet portlet-content" role="section" data-role="content">
+<div class="card portlet portlet-content" data-role="content">
 
   <!-- Portlet Body -->
   <div class="card-body portlet-body">

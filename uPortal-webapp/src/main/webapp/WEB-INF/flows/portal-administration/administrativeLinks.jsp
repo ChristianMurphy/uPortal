@@ -22,10 +22,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div id="${n}adminLinks" class="card portlet portal-adm view-links" role="section">
+<div id="${n}adminLinks" class="card portlet portal-adm view-links">
 
   <!-- Portlet Titlebar -->
-  <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+  <div class="card-header titlebar portlet-titlebar">
     <h2 class="title" role="heading">Portal Administration Tools</h2>
   </div>
 

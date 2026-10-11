@@ -42,10 +42,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div class="card portlet ptl-mgr view-confirmremove" role="section">
+<div class="card portlet ptl-mgr view-confirmremove">
 
 	<!-- Portlet Title -->
-  <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+  <div class="card-header titlebar portlet-titlebar">
   	<h2 class="title" role="heading">
       <a href="${ userUrl }">${ fn:escapeXml(person.name)}</a> >
       <spring:message code="remove.user"/>

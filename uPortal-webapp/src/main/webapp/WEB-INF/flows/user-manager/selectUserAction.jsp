@@ -30,10 +30,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div class="card portlet user-mgr view-selectuseraction" role="section">
+<div class="card portlet user-mgr view-selectuseraction">
     
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading">
             <spring:message code="manage.users" />
         </h2>

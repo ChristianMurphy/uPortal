@@ -27,10 +27,10 @@
 </portlet:actionURL>
 
 <!-- Portlet -->
-<div class="card portlet" role="section">
+<div class="card portlet">
 
     <!-- Portlet Title -->
-  <div class="card-header portlet-title" role="sectionhead">
+  <div class="card-header portlet-title">
     <h2 role="heading">SQL Query Portlet Configuration</h2>
   </div> <!-- end: portlet-title -->
   

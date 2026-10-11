@@ -24,10 +24,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div class="card portlet" role="section">
+<div class="card portlet">
 
   <!-- Portlet Titlebar -->
-  <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+  <div class="card-header titlebar portlet-titlebar">
     <h2 class="title" role="heading"><spring:message code="search.directory"/></h2>
   </div>
   

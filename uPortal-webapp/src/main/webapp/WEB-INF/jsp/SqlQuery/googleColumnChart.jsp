@@ -24,7 +24,7 @@
 <script type="text/javascript" src="http://www.google.com/jsapi?key=ABQIAAAA6IxXqpYkVvIBECmLUV99fRT2yXp_ZAY8_ufC3CFXhHIE1NvwkxRKtN-K3WJJ0qPp2xOcWG-RdEe73Q"></script>
     
 <!-- Portlet -->
-<div class="card portlet" role="section">
+<div class="card portlet">
   
   <!-- Portlet Body -->
   <div class="card-body portlet-body">

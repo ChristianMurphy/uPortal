@@ -47,10 +47,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 </style>
     
 <!-- Portlet -->
-<div class="card portlet ptl-mgr view-chooseportlet bootstrap-styles container-fluid" role="section">
+<div class="card portlet ptl-mgr view-chooseportlet bootstrap-styles container-fluid">
     <div class="row">
         <!-- Portlet Titlebar -->
-        <div class="card-header titlebar portlet-titlebar col-md-12" role="sectionhead">
+        <div class="card-header titlebar portlet-titlebar col-md-12">
             <h2 class="title" role="heading">
                 <spring:message code="register.new.portlet"/>
             </h2>

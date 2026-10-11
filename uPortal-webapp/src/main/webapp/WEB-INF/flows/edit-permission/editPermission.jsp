@@ -39,10 +39,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
 
 <!-- Portlet -->
-<div class="card portlet prm-mgr view-editperm" role="section">
+<div class="card portlet prm-mgr view-editperm">
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
     	<div class="breadcrumb">
             <c:forEach items="${ breadcrumbs }" var="breadcrumb" varStatus="status">
                 <portlet:actionURL var="breadcrumbUrl">

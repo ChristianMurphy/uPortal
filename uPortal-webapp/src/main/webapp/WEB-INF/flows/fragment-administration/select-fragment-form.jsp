@@ -21,11 +21,11 @@
 <%@ include file="/WEB-INF/jsp/include.jsp" %>
 
 <!-- Portlet -->
-<div id="portalFragAdminList" class="card portlet snooper view-main" role="section">
+<div id="portalFragAdminList" class="card portlet snooper view-main">
 
 
     <!-- Portlet Titlebar -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
     	<h2 class="title" role="heading"><spring:message code="fragment.administration"/></h2>
     </div>
 

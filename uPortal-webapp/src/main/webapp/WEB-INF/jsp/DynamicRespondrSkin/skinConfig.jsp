@@ -34,7 +34,7 @@
 <portlet:actionURL var="cancelUrl"><portlet:param name="action" value="cancel"/></portlet:actionURL>
 
 <!-- Portlet -->
-<div class="skin-config-portlet" role="section">
+<div class="skin-config-portlet">
 
     <!-- Portlet Body -->
   <div class="portlet-body">
