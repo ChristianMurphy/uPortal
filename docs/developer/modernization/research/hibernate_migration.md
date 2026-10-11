@@ -34,7 +34,7 @@ The latest stable line is **Hibernate ORM 7.4** (latest patch **7.4.12.Final**).
 
 ### Inferences
 - **Target 7.4.x**, the current stable line. Upgrading within 7.x later should be routine: the 7.1→7.4 guides are small. Consider 8.0 only after it goes GA and Spring 7.1 is released (see Q5).
-- 6.6 is still being patched (6.6.58 is newer than the 6.6.53 seen in June 2026). Even so, plan for 6.6 only as a **transit stop** (the last javax-free 6.x before 7.0), not a resting place.
+- 6.6 is still being patched (6.6.58 is newer than the 6.6.53 seen in June 2026). Even so, plan for 6.6 only as a **transit stop** (the last 6.x release line before 7.0), not a resting place.
 - 4.3 → 5.x → 6.x is the documented path, but the intermediate hops are only needed to the extent the Spring version forces them (Q5). Database-wise, the schema changes accumulate (Q3).
 
 ### Gaps
