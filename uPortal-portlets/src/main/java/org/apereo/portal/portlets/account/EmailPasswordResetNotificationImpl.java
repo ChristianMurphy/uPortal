@@ -105,7 +105,9 @@ public class EmailPasswordResetNotificationImpl implements IPasswordResetNotific
             this.mailSender.send(helper.getMimeMessage());
 
         } catch (Exception e) {
-            log.error("Unable to send password reset email", e);
+            // Forgot Password shows the same page either way, so this is how administrators learn
+            log.error(
+                    "Unable to send the password reset email for account " + account.getName(), e);
         }
     }
 

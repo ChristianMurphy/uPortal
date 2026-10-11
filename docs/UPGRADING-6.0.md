@@ -514,6 +514,25 @@ new email to get a new one." and the link to send one. A link sent by 5.x has no
 new email.
 
 `UserAccountHelper.issueLoginToken(account)` sets both attributes; the `forgot-password` flow
-calls it. A site with its own flow that sets `loginToken` directly should call it instead, or its
+calls it through `requestPasswordReset`. A site with its own flow that sets `loginToken` directly should call it instead, or its
 links expire at once. A site with its own message bundles can translate the new key
 `password.reset.url.expired`.
+
+## Forgot Password gives every user name the same answer
+
+In 5.x Forgot Password told anyone which local accounts exist: a known user name got "Reset email
+sent" and an unknown one the channel error. It also said the email was sent when sending failed.
+Known and unknown user names now get the same page, "Check your email": "If that user name has
+a local account with an email address, reset instructions were sent. Contact the help desk if
+nothing arrives."
+
+The portal doesn't send an email for an unknown user name or an account without an email
+address. A send that fails is logged at ERROR by `EmailPasswordResetNotificationImpl`, with the
+account name and without the link. Administrators who watch the log for those lines can help
+users who report that nothing arrived. An account without an email address is logged at WARN.
+
+The flow now calls `UserAccountHelper.requestPasswordReset(request, userName)`. A site that
+overrides `forgot-password.xml` or `sendTokenSuccess.jsp` should take the new versions. The keys
+`reset.email.sent` and `password.reset.instructions.have.been.sent.to.your.email.address` are
+gone from every bundle, so no language still says the email was sent. Their replacements are
+`password.reset.requested` and `password.reset.requested.instructions`, in English only for now.
