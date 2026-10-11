@@ -10,9 +10,11 @@ function results(query: string): SearchResults {
     return {
         query,
         groups: [
-            { type: 'people', results: [] },
+            { type: 'people', label: null, results: [], failed: false },
             {
                 type: 'portlets',
+                label: null,
+                failed: false,
                 results: [{ title: 'Calendar', url: '/p/calendar/max', attributes: {} }],
             },
         ],

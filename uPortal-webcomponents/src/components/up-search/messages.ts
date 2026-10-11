@@ -20,6 +20,7 @@ export const SEARCH_MESSAGES = {
     'search.results.people': 'People',
     'search.results.portlets': 'Portlets',
     'search.no.results.found': 'No Results Found',
+    'search.group.fail': 'These results could not be loaded. The other results are complete.',
     'search.load.fail': 'The search failed.',
     'search.try.again': 'Try again',
     'search.session.expired': 'Your session has expired. Sign in again to search.',

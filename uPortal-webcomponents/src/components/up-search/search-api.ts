@@ -20,7 +20,11 @@ export interface SearchResult {
 export interface SearchResultGroup {
     /** The search strategy's type, such as `people` or `portlets`. */
     type: string;
+    /** The tab's name for a remote provider, as the portal configures it; null for the others. */
+    label: string | null;
     results: readonly SearchResult[];
+    /** True when this group's search failed; the other groups are unaffected. */
+    failed: boolean;
 }
 
 export interface SearchResults {
@@ -102,7 +106,16 @@ function toResult(value: unknown): SearchResult {
 
 function toGroup(value: unknown): SearchResultGroup {
     const item = object(value, 'a group');
-    return { type: string(item, 'type'), results: array(item, 'results').map(toResult) };
+    const failed = item['failed'] ?? false;
+    if (typeof failed !== 'boolean') {
+        throw new TypeError('failed is not a boolean');
+    }
+    return {
+        type: string(item, 'type'),
+        label: optionalString(item, 'label'),
+        results: array(item, 'results').map(toResult),
+        failed,
+    };
 }
 
 /** Checks a `GET /api/v6-0/search` body; throws a TypeError naming the first problem. */
