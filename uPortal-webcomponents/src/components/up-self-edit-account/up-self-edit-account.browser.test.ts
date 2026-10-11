@@ -222,6 +222,7 @@ describe('up-self-edit-account editing', () => {
 
         await userEvent.fill(input(element, 'attribute-title'), 'Dr');
         await userEvent.fill(input(element, 'attribute-department'), '');
+        await userEvent.fill(input(element, 'currentPassword'), '0ld-Secret!');
         await userEvent.fill(input(element, 'password'), 'n3w-Secret!');
         await userEvent.fill(input(element, 'confirmPassword'), 'n3w-Secret!');
         await userEvent.click(find(element, '.save'));
@@ -233,6 +234,7 @@ describe('up-self-edit-account editing', () => {
             attributes: { title: 'Dr', department: '' },
             password: 'n3w-Secret!',
             confirmPassword: 'n3w-Secret!',
+            currentPassword: '0ld-Secret!',
         });
         expect(shadow(element).textContent).toContain(
             'Your account has been successfully updated.  Your changes will be visible upon your next login.',
@@ -297,6 +299,7 @@ describe('up-self-edit-account editing', () => {
         server.on('PUT', API, response);
         const element = await openForm();
         await userEvent.fill(input(element, 'attribute-title'), 'Dr');
+        await userEvent.fill(input(element, 'currentPassword'), '0ld-Secret!');
         await userEvent.fill(input(element, 'password'), 'n3w-Secret!');
         await userEvent.fill(input(element, 'confirmPassword'), 'n3w-Secret!');
         await userEvent.click(find(element, '.save'));
@@ -308,7 +311,36 @@ describe('up-self-edit-account editing', () => {
         expect(heading(element)).toBe('Edit My Account');
         expect(input(element, 'attribute-title').value).toBe('Dr');
         expect(input(element, 'password').value).toBe('');
+        expect(input(element, 'currentPassword').value).toBe('');
         expect(await axeViolations(element)).toEqual([]);
+    });
+
+    it('asks for the current password before sending a new one', async () => {
+        const element = await openForm();
+        await userEvent.fill(input(element, 'password'), 'n3w-Secret!');
+        await userEvent.fill(input(element, 'confirmPassword'), 'n3w-Secret!');
+        await userEvent.click(find(element, '.save'));
+
+        await expect
+            .poll(() => shadow(element).querySelector('.notice')?.textContent)
+            .toContain('Please enter your current password');
+        expect(server.requests.some((request) => request.method === 'PUT')).toBe(false);
+        expect(await axeViolations(element)).toEqual([]);
+    });
+
+    it('says so when the portal refuses the current password', async () => {
+        server.on('PUT', API, json({ status: 400, code: 'current.password.doesnt.match' }, 400));
+        const element = await openForm();
+        await userEvent.fill(input(element, 'currentPassword'), 'wrong');
+        await userEvent.fill(input(element, 'password'), 'n3w-Secret!');
+        await userEvent.fill(input(element, 'confirmPassword'), 'n3w-Secret!');
+        await userEvent.click(find(element, '.save'));
+
+        await expect
+            .poll(() => shadow(element).querySelector('.notice')?.textContent)
+            .toContain('Provided password does not match the current account password');
+        expect(input(element, 'currentPassword').value).toBe('');
+        expect(input(element, 'currentPassword').autocomplete).toBe('current-password');
     });
 });
 

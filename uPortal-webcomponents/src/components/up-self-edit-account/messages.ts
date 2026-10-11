@@ -8,9 +8,13 @@ export const SELF_EDIT_ACCOUNT_MESSAGES = {
     edit: 'Edit',
     'edit.my.account': 'Edit My Account',
     'my.account.details': 'My Account Details',
+    'current.password': 'Current Password',
     password: 'Password',
     'confirm.password': 'Confirm Password',
     'passwords.must.match': 'Passwords must match',
+    'please.enter.current.password': 'Please enter your current password',
+    'current.password.doesnt.match':
+        'Provided password does not match the current account password',
     save: 'Save',
     cancel: 'Cancel',
     'account.updated': 'Account Updated',
