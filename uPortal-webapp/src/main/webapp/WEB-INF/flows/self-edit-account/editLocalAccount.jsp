@@ -39,7 +39,7 @@
         <form:form id="${n}accountForm" modelAttribute="accountForm" action="${formUrl}" method="POST">
 
             <!-- Portlet Messages -->
-            <spring:hasBindErrors name="person">
+            <spring:hasBindErrors name="accountForm">
                 <div class="portlet-msg-error portlet-msg error" role="alert">
                     <form:errors path="*" element="div"/>
                 </div> <!-- end: portlet-msg -->
@@ -179,7 +179,7 @@
                 }
             );
             $("#${n}accountForm").on('submit', function(e) {
-                if ($("#${n}password").get(0).textLength > 0
+                if ($("#${n}password").get(0).value.length > 0
                        && $("#${n}password").get(0).value != $("#${n}confirmPassword").get(0).value) {
                     alert ("<spring:message code="passwords.must.match" htmlEscape="false" javaScriptEscape="true"/>");
                     return false;
