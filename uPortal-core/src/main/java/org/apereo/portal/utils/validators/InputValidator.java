@@ -20,8 +20,9 @@ import java.net.URL;
 import java.util.regex.Pattern;
 
 public class InputValidator {
-    private static final String ALPHANUMERIC_AND_DASH_VALIDATOR_REGEX =
-            "^[\\w\\-]{1,500}$"; // 1-500 characters
+    /** 1 to 200 characters, the size of the EVENT_TYPE column it is used for (MOD-I272) */
+    private static final String ALPHANUMERIC_AND_DASH_VALIDATOR_REGEX = "^[\\w\\-]{1,200}$";
+
     private static final Pattern ALPHANUMERIC_AND_DASH_VALIDATOR_PATTERN =
             Pattern.compile(ALPHANUMERIC_AND_DASH_VALIDATOR_REGEX);
 
@@ -35,7 +36,7 @@ public class InputValidator {
             throw new IllegalArgumentException(
                     "Specified "
                             + inputType
-                            + " is not the correct length or has invalid characters.");
+                            + " must have 1 to 200 of the characters A-Z, a-z, 0-9, _ and -.");
         }
         return s;
     }
