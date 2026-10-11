@@ -6,7 +6,7 @@ import { playwright } from 'vite-plus/test/browser-playwright';
  * src/components/<name>/<name>.ts, that the portal loads by its name through the build manifest
  * (build/dist/manifest.json; see WebComponentModuleResolver in uPortal-rendering).
  */
-const components = ['up-favorites'];
+const components = ['up-favorites', 'up-search'];
 
 export default defineConfig({
     // Built files import each other relatively, so the bundle works under any context path
@@ -28,7 +28,15 @@ export default defineConfig({
                 // XState in one shared chunk that every component imports, so a page with
                 // several components loads it once (MOD-D31)
                 codeSplitting: {
-                    groups: [{ name: 'xstate', test: /[\\/]node_modules[\\/]xstate[\\/]/ }],
+                    groups: [
+                        { name: 'xstate', test: /[\\/]node_modules[\\/]xstate[\\/]/ },
+                        // Lit, the base library and the shared stylesheet, which every component
+                        // uses: one chunk for all of them
+                        {
+                            name: 'shared',
+                            test: /[\\/](src[\\/](lib|state)|node_modules[\\/](lit|lit-html|lit-element|@lit[\\/][^\\/]+))[\\/]/,
+                        },
+                    ],
                 },
             },
         },
