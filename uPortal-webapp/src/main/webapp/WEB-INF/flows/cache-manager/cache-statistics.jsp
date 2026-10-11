@@ -29,9 +29,9 @@
 </portlet:renderURL>
 
 <!-- Portlet -->
-<div class="card portlet cache-mgr view-statistics" role="section">
+<div class="card portlet cache-mgr view-statistics">
   <!-- Portlet Titlebar -->
-  <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+  <div class="card-header titlebar portlet-titlebar">
     <h2 class="title" role="heading"><spring:message code="cache.statistics"/></h2>
     <h3 class="subtitle">${fn:escapeXml(cacheName)}</h3>
   </div> <!-- end: portlet-titlebar -->
