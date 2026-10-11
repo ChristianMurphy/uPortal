@@ -82,7 +82,7 @@ public class UserLocaleService {
                 return true;
             }
         }
-        return true;
+        return false;
     }
 
     /** The session's locale, else the user's stored one, else null (as the portlet did). */
