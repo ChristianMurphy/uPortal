@@ -1697,6 +1697,31 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   Spring's Cache API has no eviction events, and JCache does not report evictions either, so the
   listener becomes an Ehcache 3 event listener or a Caffeine removal listener (cause `SIZE`) then.
 
+### MOD-D44: 6.0 stores text on SQL Server as nvarchar
+
+* **Decision (project owner, 2026-10-11):** SQL Server text columns become `nvarchar`, through
+  Hibernate's nationalized strings, in the 6.0 schema step (MOD-D11). Lengths count characters,
+  and every supported SQL Server version accepts it.
+* **Why:** 5.17's and 6.0's `varchar` columns on the default collation keep only windows-1252
+  (MOD-I196, MOD-I201). Text such as emoji or CJK in group names, portlet titles or user
+  attributes can't be stored, and a copy from another vendor is refused (MOD-I202).
+* **Considered:** `varchar` with a UTF-8 collation. Its lengths count bytes, and every text column
+  would need up to four times its length for the same number of characters. It also depends on
+  each site's database setup.
+* **Cost:** text that fits windows-1252 takes twice the space, and the copy tool converts the
+  columns as part of the 6.0 copy.
+
+### MOD-D45: the password flows get four fixes in 6.0
+
+* **Decision (project owner, 2026-10-11):** all four, each in its own commit with tests:
+  1. Self-Edit Account and User Administration refuse a password confirmation that differs.
+     This also stops "Create a User" from overwriting an existing account (MOD-I195).
+  2. Self-Edit Account asks for the current password before a change.
+  3. Forgot Password gives the same answer for known and unknown user names.
+  4. Password reset links expire (default one hour, as a property), and the page says when the
+     email couldn't be sent.
+* **Found by:** the Self-Edit Account characterisation specs.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
