@@ -24,3 +24,8 @@ dependencies {
     compileOnly "${portletApiDependency}"
     compileOnly "${servletApiDependency}"
 }
+
+// EventProviderImplTest mocks Pluto's PortletContextService
+dependencies {
+    testImplementation "org.apache.portals.pluto:pluto-container-driver-api:${plutoVersion}"
+}
