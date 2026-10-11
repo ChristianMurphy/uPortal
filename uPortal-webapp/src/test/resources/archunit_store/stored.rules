@@ -1,0 +1,6 @@
+#
+#Sat Oct 10 19:54:22 UTC 2026
+no\ new\ Ehcache\ 2\ (net.sf.ehcache)\ usage,\ because\ Ehcache\ 2\ is\ being\ replaced\ by\ JCache;\ Spring\ 6\ and\ Hibernate\ 6\ dropped\ their\ Ehcache\ 2\ integrations\ (MOD-D29)=bc2ac94a-06ac-4952-8cd6-10aa6d913102
+no\ new\ legacy\ Hibernate\ Criteria\ usage,\ because\ org.hibernate.Criteria\ and\ Session\#createCriteria\ were\ removed\ in\ Hibernate\ 6;\ use\ JPA\ criteria\ queries\ (MOD-D29)=500a02c1-215b-42b6-9570-361231668ddd
+no\ new\ org.hibernate.Session\ use\ outside\ persistence/DAO\ packages,\ because\ the\ Session\ API\ changes\ in\ every\ Hibernate\ major\ (5.2,\ 6,\ 7);\ keep\ it\ behind\ JPA\ in\ DAO\ packages\ (MOD-D29)=b40bb80f-a321-4a75-8cad-4bbab99943ed
+no\ new\ org.joda.time\ usage,\ because\ Joda-Time\ is\ being\ replaced\ by\ java.time\ (MOD-D29)=abbab200-f6e9-4a08-8e18-fdf420c1e922
