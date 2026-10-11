@@ -314,6 +314,72 @@ with the `WebComponent` framework portlet, and two parameters are added,
 backgroundPreference portlet, `ViewBackgroundPreferenceController` and its JSP stay in this
 release for definitions that are not converted yet, and will be removed later.
 
+## The user locale selector is a web component
+
+The User Locales Selector channel (`user-locales-selector`) was the `UserLocale` portlet, a Web
+Flow. It is now a **Web Component** channel that renders `<up-user-locale>`, with its data from
+the new REST API `/api/v6-0/locale`. Users see the same list of the portal's languages, and
+Update still reloads the page in the chosen language. A signed-in user's choice is stored, and a
+guest's lasts the session, as before. What changed:
+
+* Each language is named in its own language, then in the user's current language when that reads
+  differently: "Français (French)" for an English user, "English (anglais)" for a French one. A
+  user who can't read the current language can still find their own. The browser supplies each
+  own name, so a language added to `portal_locales` doesn't need a new message.
+
+* The flag icons next to the languages are gone. A flag stands for a country, and several
+  countries share a language.
+* The API accepts only the locales in `org.apereo.portal.i18n.LocaleManager.portal_locales`, and
+  answers 400 to any other code. The portlet stored whatever code the form sent.
+
+Existing portals keep their User Locales Selector definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/user-locales-selector.portlet-definition.xml`, which updates the
+channel in place. For a definition with another fname, make these changes and keep everything
+else:
+
+* the type to `Web Component`, and the descriptor to the framework portlet `WebComponent`;
+* add the parameters `webComponent.tagName=up-user-locale` and
+  `webComponent.moduleUrl=up-user-locale`.
+
+The `UserLocale` portlet and its `locale-selector` flow will be removed in a later release.
+`UserLocaleHelper` stays, because the REST API and the Translator portlet use it.
+
+## Session Timeout is a web component
+
+The Session Timeout channel (`session-timeout`) was the SessionTimeout portlet. It is now a **Web
+Component** channel that renders `<up-session-timeout>`. The element reads the session's timeout
+from `GET /api/v6-0/session` and keeps the session with `POST /api/v6-0/session/keep-alive`. Users
+see the same warning with the same text and buttons, 30 seconds plus `dialogDisplaySeconds`
+before the session expires. One thing looks different:
+when the keep-alive fails, "Error resetting your session!" appears inside the warning instead of
+in a browser alert. Tabs that still run the portlet and tabs that run the component share the
+logout time, so they postpone each other's warning while a portal is being upgraded.
+
+To convert an existing portal, import uPortal-start's Web Component portlet type (if the
+Favorites conversion has not imported it already), then its
+`data/base/portlet-definition/session-timeout.portlet-definition.xml`. The import updates the
+channel by fname and keeps its ID and layout placements. A definition with another fname is
+converted by the same changes: the type becomes `Web Component` with the `WebComponent`
+framework portlet, and three parameters are added:
+
+* `webComponent.tagName` and `webComponent.moduleUrl`, both `up-session-timeout`;
+* `webComponent.preferenceAttributes`, one mapping per line: `enabled=enabled`,
+  `dialog-display-seconds=dialogDisplaySeconds` and `logout-url=logoutURLFragment`.
+
+The `enabled`, `dialogDisplaySeconds` and `logoutURLFragment` preferences keep their meaning and
+defaults (`true`, 60 and `/Logout`). As with the portlet's script, a portal that can't report the
+session timeout (a server error, a network failure or an unreadable body) gets a 30-minute default
+and the warning still shows. A guest's 401 turns it off. `logoutURLFragment` must be a path in the
+portal: a value that starts with `//` or names another host falls back to `/Logout`. A portal that
+pointed it at another site, such as a CAS or single sign-on logout page, should leave it at
+`/Logout` and set `logout.redirect` in `security.properties` to that page instead. `/Logout` ends
+the portal session and then sends the browser there.
+`resetSessionURLFragment` is no longer read, because the keep-alive is the REST API. A portal that
+pointed it at its own URL should check that `POST /api/v6-0/session/keep-alive` reaches uPortal. The
+SessionTimeout portlet, `SessionTimeoutViewController` and `scripts/session-timeout.js` stay in this
+release for definitions that are not converted yet, and will be removed later.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the

@@ -99,30 +99,27 @@ public class CachingPersonAttributeDao extends AbstractDefaultAttributePersonAtt
                 "No 'cachedPersonAttributesDao' has been specified.");
         Validate.validState(this.userInfoCache != null, "No 'userInfoCache' has been specified.");
 
+        // A KeyGenerator never returns null (MOD-I225)
         final Object cacheKey = this.generateKey(seed);
-        if (cacheKey != null) {
-            final Cache.ValueWrapper cached = this.userInfoCache.get(cacheKey);
-            if (cached != null && cached.get() != null) {
-                Set<IPersonAttributes> cacheResults = (Set<IPersonAttributes>) cached.get();
-                if (NULL_RESULTS_OBJECT.equals(cacheResults)) {
-                    cacheResults = null;
-                }
-                logger.debug("Retrieved query from cache. key='{}'", cacheKey);
-                return cacheResults;
+        final Cache.ValueWrapper cached = this.userInfoCache.get(cacheKey);
+        if (cached != null && cached.get() != null) {
+            Set<IPersonAttributes> cacheResults = (Set<IPersonAttributes>) cached.get();
+            if (NULL_RESULTS_OBJECT.equals(cacheResults)) {
+                cacheResults = null;
             }
+            logger.debug("Retrieved query from cache. key='{}'", cacheKey);
+            return cacheResults;
         }
 
         final Set<IPersonAttributes> queryResults =
                 this.cachedPersonAttributesDao.getPeopleWithMultivaluedAttributes(seed, filter);
 
-        if (cacheKey != null) {
-            if (queryResults != null) {
-                this.userInfoCache.put(cacheKey, queryResults);
-            } else if (this.cacheNullResults) {
-                this.userInfoCache.put(cacheKey, NULL_RESULTS_OBJECT);
-            }
-            logger.debug("Stored query results in cache. key='{}'", cacheKey);
+        if (queryResults != null) {
+            this.userInfoCache.put(cacheKey, queryResults);
+        } else if (this.cacheNullResults) {
+            this.userInfoCache.put(cacheKey, NULL_RESULTS_OBJECT);
         }
+        logger.debug("Stored query results in cache. key='{}'", cacheKey);
 
         return queryResults;
     }

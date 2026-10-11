@@ -10,8 +10,23 @@ on:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: 'Run the nightly set: also Zulu and Corretto on Java 21 and 25 (Linux)'
+        type: boolean
+        default: false
 permissions:
   contents: read
+env:
+  # Prototype only (MOD-D53): a topic branch (ccr-*) saves its own Gradle cache. setup-gradle
+  # writes the cache only on the default branch by default, and none of our work branches is that
+  # one, so no job ever saved or restored a cache. Pull requests keep the action's default.
+  GRADLE_CACHE_READ_ONLY: ${{ github.event.repository.default_branch != github.ref_name && !startsWith(github.ref_name, 'ccr-') }}
+  # Prototype only (MOD-D53): the first job of a key to finish saves its Gradle cache, and an entry
+  # is never replaced. So one job per runner OS and set of build files saves it, the one whose
+  # Gradle work is the broadest, and the other jobs of the key only read (this variable). On the
+  # default branch and in pull requests every job keeps the action's default.
+  GRADLE_CACHE_READ_ONLY_SHARED: ${{ github.event.repository.default_branch != github.ref_name }}
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   # Prototype only (MOD-D30): a newer push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>)
@@ -21,13 +36,24 @@ jobs:
   test:
     name: '${{ matrix.platform }} with Java ${{ matrix.java-distribution }} version ${{ matrix.java-version }}'
     strategy:
-      # Prototype only (MOD-D30): a push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs
-      # one Linux leg to spare the account's runners. A manual run on a workstream branch (such as
-      # a landing check), master, pull requests and the integration branch run the full matrix:
-      # ubuntu x temurin/zulu/corretto x 21/25, plus windows and macos on temurin 25.
-      matrix: ${{ fromJSON(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && github.event_name != 'workflow_dispatch' && '{"include":[{"platform":"ubuntu-latest","java-distribution":"temurin","java-version":21}]}' || '{"platform":["ubuntu-latest"],"java-distribution":["temurin","zulu","corretto"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}') }}
+      # Which cells run (MOD-D55; the one-leg topic push is MOD-D30, prototype only):
+      #   push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>): Linux, Temurin 21;
+      #   master, pull requests, the integration branch and a manual run on any branch:
+      #     Linux with Temurin 21 and 25, plus Windows and macOS with Temurin 25;
+      #   a manual run with "nightly" ticked: those, plus Linux with Zulu and Corretto on 21
+      #     and 25.
+      # Linux, Temurin 21 is in every set; it does the work no other cell repeats (MAIN_CELL).
+      matrix: >-
+        ${{ fromJSON(
+        inputs.nightly == true && '{"platform":["ubuntu-latest"],"java-distribution":["temurin","zulu","corretto"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}'
+        || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && github.event_name != 'workflow_dispatch' && '{"include":[{"platform":"ubuntu-latest","java-distribution":"temurin","java-version":21}]}'
+        || '{"platform":["ubuntu-latest"],"java-distribution":["temurin"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}') }}
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 45
+    env:
+      # The cell that does the work no other cell repeats (MOD-I301): the web component tests, which
+      # need Chromium, and the JavaScript lint. Every cell runs the Java build.
+      MAIN_CELL: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,9 +68,18 @@ jobs:
         uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
         with:
           cache-provider: basic
+          cache-read-only: ${{ env.GRADLE_CACHE_READ_ONLY == 'true' || (env.GRADLE_CACHE_READ_ONLY_SHARED == 'true' && matrix.platform == 'ubuntu-latest' && !(matrix.java-distribution == 'temurin' && matrix.java-version == 21)) }}
       - name: Install Chromium for the web component tests
+        if: ${{ env.MAIN_CELL == 'true' }}
         run: ./gradlew -S --no-daemon :uPortal-webcomponents:installChromium
       - name: Build and Test
+        env:
+          # Every leg but one prints compile errors only (MOD-D53); Linux with Temurin 21 keeps
+          # listing the Error Prone and javac warnings. Gradle reads this as -PquietCompile, in
+          # any shell.
+          ORG_GRADLE_PROJECT_quietCompile: ${{ !(matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21) }}
+          # The other cells leave out the web component tests, which need Chromium
+          ORG_GRADLE_PROJECT_skipWebComponentTests: ${{ env.MAIN_CELL != 'true' }}
         run: ./gradlew -S --stacktrace --no-daemon --no-parallel build jacocoAggregateReport
       - name: Upload coverage to Coveralls
         if: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
@@ -60,40 +95,33 @@ jobs:
           name: test-reports-${{ matrix.platform }}-${{ matrix.java-distribution }}-${{ matrix.java-version }}
           path: '**/build/reports/tests/'
       - name: Lint JavaScript
+        if: ${{ env.MAIN_CELL == 'true' }}
         run: ./gradlew -S --no-daemon --no-parallel :npm_run_lint-js
-
-  static-analysis:
-    name: Static analysis (SpotBugs and FindSecBugs)
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Setup Java
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: 21
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-        with:
-          cache-provider: basic
-      # Fails on any finding that is not in the module's config/spotbugs/baseline file
-      # (MOD-D27). --continue analyses every module, so one run lists all new findings.
+      # Fails on any finding that is not in the module's config/spotbugs/baseline file (MOD-D27).
+      # --continue analyses every module, so one run lists all new findings. SpotBugs runs in this
+      # cell, on the classes Build and Test compiled (MOD-I302): without -PquietCompile, which would
+      # change the compiler options and compile every module again. It runs when Build and Test
+      # fails, as its own job did.
       - name: Run SpotBugs
+        id: spotbugs
+        if: ${{ !cancelled() && env.MAIN_CELL == 'true' }}
         run: ./gradlew -S --no-daemon --continue spotbugsMain
       - name: Show new findings
-        if: failure()
+        if: ${{ !cancelled() && steps.spotbugs.outcome == 'failure' }}
         run: |
           find . -path '*/build/reports/spotbugs/main.txt' -size +0c | sort | while read -r report; do
             echo "::group::${report}"
             cat "${report}"
             echo "::endgroup::"
+            # The first findings of each module as an annotation, for readers who can't open the
+            # log or download the artifact
+            text="${report}"$'\n'"$(head -n 20 "${report}")"
+            text=${text//'%'/'%25'}
+            text=${text//$'\n'/'%0A'}
+            echo "::error title=SpotBugs findings not in the baseline::${text}"
           done
       - name: Upload SpotBugs reports
-        if: failure()
+        if: ${{ !cancelled() && steps.spotbugs.outcome == 'failure' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: spotbugs-reports

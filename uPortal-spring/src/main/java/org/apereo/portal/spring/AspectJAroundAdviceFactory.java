@@ -15,6 +15,7 @@
 package org.apereo.portal.spring;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 import org.springframework.aop.aspectj.AspectJAroundAdvice;
 import org.springframework.aop.aspectj.AspectJExpressionPointcut;
 import org.springframework.aop.aspectj.SingletonAspectInstanceFactory;
@@ -57,7 +58,11 @@ public class AspectJAroundAdviceFactory extends AbstractFactoryBean<AspectJAroun
     @Override
     protected AspectJAroundAdvice createInstance() throws Exception {
         final Class<? extends Object> aspectType = this.aspect.getClass();
-        final Method method = ReflectionUtils.findMethod(aspectType, this.method, this.args);
+        // A configured advice method exists; a wrong name is a configuration error (MOD-I225)
+        final Method method =
+                Objects.requireNonNull(
+                        ReflectionUtils.findMethod(aspectType, this.method, this.args),
+                        "No method " + this.method + " on aspect " + aspectType.getName());
         final SingletonAspectInstanceFactory aif = new SingletonAspectInstanceFactory(this.aspect);
         return new AspectJAroundAdvice(method, pointcut, aif);
     }

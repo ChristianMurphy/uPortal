@@ -483,6 +483,15 @@ research report.
     channel. The characterisation spec passed on the portlet and then,
     unchanged, on the component. The conversion fixes MOD-I193 rather than
     matching it. Notes: `notes/wc-popular-portlets.md`.
+  * User Locale: `/api/v6-0/locale` (GET, PUT) and `<up-user-locale>`,
+    published by uPortal-start as the `user-locales-selector` Web Component
+    channel. The `UserLocale` portlet and its flow remain until the 6.0 data
+    migration converts existing definitions (MOD-I133). Notes:
+    `notes/wc-user-locale.md`.
+  * Session Timeout: `/api/v6-0/session` and `<up-session-timeout>`,
+    published by uPortal-start as a Web Component channel. The
+    characterisation spec passed on the portlet and on the component.
+    Notes: `notes/wc-session-timeout.md`.
 
 ### MOD-D19: per-portlet choice between REST + web components and server-rendered Spring pages
 
@@ -2119,6 +2128,11 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
 | MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, decided (project owner, 2026-10-11).** Make Respondr right to left (`dir` from the locale and mirrored stylesheets) after the accessibility fixes (MOD-D47), on `ccr-43ba0785-hzlrj5-hardening`. |
 | MOD-I235 | Web components | `formatMessage` in `lib/i18n.ts` turns numbers into text with `String()`, so counts and positions ignore the locale's digits and separators. Messages have no plural forms. | **Open.** Fix on `ccr-43ba0785-hzlrj5-i18n` (MOD-D51). |
+| MOD-I321 | Web components | The `UserLocale` portlet's flow passed any code the form sent to `UserLocaleHelper.updateUserLocale`, which parses any string into a locale and stores it. | **Fixed for the component:** `/api/v6-0/locale` accepts only the locales in `portal_locales` and answers 400 to others. UPGRADING-6.0 says so. The portlet keeps the old behaviour until it is converted. |
+| MOD-I322 | Web components | The user locale selector marks no language for a user who never saved one, and the theme then renders in the portal's default locale. | **Open.** The component keeps the portlet's behaviour. A later change could mark the language the page is rendered in. |
+| MOD-I323 | Web components | A keydown listener on the portal page cancels Escape, so a modal dialog inside a web component can't be closed with it. | **Open.** Find the listener before a component relies on Escape (`notes/wc-session-timeout.md`). |
+| MOD-I324 | Web components | Content-hashed web component modules are served with `max-age=0`, and the page caching filter keeps stale copies until Tomcat restarts. It affects every component. | **Open.** Serve hashed modules as immutable and leave them out of the page cache. |
+| MOD-I325 | i18n | A draft of the Session Timeout note listed `session-timeout.keep-alive.failed` as English only. | **Not an issue.** The Spanish and French texts came with the conversion (`c2c49a35b`) and are on the integration branch. The row is kept so the number isn't reused. |
 
 ## Open questions
 
