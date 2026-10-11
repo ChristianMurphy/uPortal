@@ -37,7 +37,14 @@
     <div class="card-body content portlet-content" data-role="content">
 
         <p>
-            <spring:message code="we.were.unable.to.validate.your.password.reset.url"/>
+            <c:choose>
+                <c:when test="${tokenExpired}">
+                    <spring:message code="password.reset.url.expired"/>
+                </c:when>
+                <c:otherwise>
+                    <spring:message code="we.were.unable.to.validate.your.password.reset.url"/>
+                </c:otherwise>
+            </c:choose>
         </p>
 
         <p>

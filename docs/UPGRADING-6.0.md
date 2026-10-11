@@ -835,6 +835,25 @@ view-state in `self-edit-account.xml` is now `editOwnAccount` (the view is still
 input from this version. A site with its own message bundles can translate the new key
 `please.enter.current.password`.
 
+## Password reset links expire
+
+In 5.x the link in a Forgot Password email worked until it was used or a new one replaced it,
+however old it was. Forgot Password now also stores when it issued the token, in the local
+account's `loginTokenIssued` attribute, and the link works for
+`org.apereo.portal.portlets.account.resetTokenLifetime` after that. The setting is an ISO-8601
+duration in `portal.properties` and defaults to `PT1H` (one hour). A value that is zero, negative
+or not a duration stops the portal at startup.
+
+An older link shows "Invalid password reset URL" with "This password reset URL has expired. Send a
+new email to get a new one." and the link to send one. A link sent by 5.x has no
+`loginTokenIssued`, so it has expired once the portal runs 6.0. Users who still need one ask for a
+new email.
+
+`UserAccountHelper.issueLoginToken(account)` sets both attributes; the `forgot-password` flow
+calls it. A site with its own flow that sets `loginToken` directly should call it instead, or its
+links expire at once. A site with its own message bundles can translate the new key
+`password.reset.url.expired`.
+
 ## Respondr fixes for the accessibility checks
 
 The accessibility check (axe-core, WCAG 2.1 A and AA) found these problems on the portal's key
