@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +52,11 @@ public final class DbMigrateCli {
                     "  --skip-raw-events       do not copy UP_RAW_EVENTS (raw portal event history)",
                     "  --rules FILE            extra mapping rules (repeatable; see RuleSet)",
                     "  --source-profile NAME   schema version of the source (default 5.17)",
-                    "  --target-profile NAME   schema version of the target (default 5.17)",
+                    "  --target-profile NAME   schema version of the target (default 5.17); an",
+                    "                          upgrade to uPortal 6.0 uses --target-profile 6.0",
+                    "  --source-zone ZONE      time zone of the 5.17 portal's JVM (an IANA id such as",
+                    "                          America/New_York); needed for --target-profile 6.0",
+                    "                          when the source has local-time timestamps to convert",
                     "  --missing-lob fail|skip-row  PostgreSQL rows whose large object is gone",
                     "                          (default fail)",
                     "",
@@ -186,6 +191,9 @@ public final class DbMigrateCli {
                     break;
                 case "--target-profile":
                     o.targetProfile(value);
+                    break;
+                case "--source-zone":
+                    o.sourceZone(ZoneId.of(value));
                     break;
                 case "--missing-lob":
                     o.missingLobPolicy(
