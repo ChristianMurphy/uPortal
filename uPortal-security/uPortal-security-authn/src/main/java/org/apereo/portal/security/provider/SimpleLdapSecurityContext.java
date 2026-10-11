@@ -14,6 +14,8 @@
  */
 package org.apereo.portal.security.provider;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import javax.naming.AuthenticationException;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
@@ -77,7 +79,7 @@ public class SimpleLdapSecurityContext extends ChainingSecurityContext {
 
         ldapConn = LdapServices.getDefaultLdapServer();
 
-        String creds = new String(this.myOpaqueCredentials.credentialstring);
+        String creds = new String(this.myOpaqueCredentials.credentialstring, UTF_8);
         if (this.myPrincipal.UID != null
                 && !this.myPrincipal.UID.trim().equals("")
                 && this.myOpaqueCredentials.credentialstring != null

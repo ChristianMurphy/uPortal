@@ -551,6 +551,21 @@ Code that reads these columns with SQL of its own gets UTC clock times from 6.0 
 (`IPortletLifecycleEntry.getDate()`, `ILocalAccountPerson.getLastPasswordChange()`, the portlet
 list REST API) returns the same instants as before.
 
+## Passwords with letters outside ASCII
+
+Local account passwords may contain any Unicode text. uPortal hashes a password as its UTF-8 bytes
+(Jasypt's digester), as 5.x did, so stored hashes are the same whatever the server's default
+charset was. You don't need to reset any password.
+
+The sign-in path changed. 5.x turned the typed password into bytes with the
+JVM's default charset before checking it. On a server whose default charset wasn't UTF-8 (Java 11
+to 17 on Windows, or a Linux container in the POSIX locale), a password with letters outside that
+charset didn't sign in, although its hash was right. 6.0 uses UTF-8 on every step, for local
+accounts, LDAP and JAAS.
+
+`CliPasswordUpdateTool` reads the new password from standard input as UTF-8. Run it in a terminal
+that uses UTF-8 when the password has letters outside ASCII.
+
 ## PostgreSQL: do not run `vacuumlo`
 
 On PostgreSQL, uPortal stores the raw event data (`UP_RAW_EVENTS.EVENT_DATA` and
