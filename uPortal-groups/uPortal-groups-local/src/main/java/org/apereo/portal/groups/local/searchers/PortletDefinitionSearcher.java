@@ -22,6 +22,7 @@ import org.apereo.portal.EntityIdentifier;
 import org.apereo.portal.IBasicEntity;
 import org.apereo.portal.groups.GroupsException;
 import org.apereo.portal.groups.local.ITypedEntitySearcher;
+import org.apereo.portal.portlet.dao.IPortletDefinitionDao.SearchMatch;
 import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.registry.IPortletDefinitionRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,20 +44,19 @@ public class PortletDefinitionSearcher implements ITypedEntitySearcher {
     @Override
     public EntityIdentifier[] searchForEntities(String query, SearchMethod method)
             throws GroupsException {
-        boolean allowPartial = true;
-
+        final SearchMatch match;
         switch (method) {
             case DISCRETE:
-                allowPartial = false;
+                match = SearchMatch.EXACT;
                 break;
             case STARTS_WITH:
-                query = query + "%";
+                match = SearchMatch.STARTS_WITH;
                 break;
             case ENDS_WITH:
-                query = "%" + query;
+                match = SearchMatch.ENDS_WITH;
                 break;
             case CONTAINS:
-                query = "%" + query + "%";
+                match = SearchMatch.CONTAINS;
                 break;
             default:
                 throw new GroupsException("Unknown search type");
@@ -64,7 +64,7 @@ public class PortletDefinitionSearcher implements ITypedEntitySearcher {
 
         // get the list of matching portlet definitions
         final List<IPortletDefinition> definitions =
-                this.portletDefinitionRegistry.searchForPortlets(query, allowPartial);
+                this.portletDefinitionRegistry.searchForPortlets(query, match);
         if (log.isDebugEnabled()) {
             log.debug("Found " + definitions.size() + " matching definitions for query " + query);
         }
