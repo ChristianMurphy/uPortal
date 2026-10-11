@@ -814,3 +814,28 @@ chose it for the other (MOD-I274).
 The key isn't stored. A script or skin that builds a key itself from a group or person id, or
 that compares keys it saved from 5.x, must use the new form. Code that only passes on the key the
 API returned keeps working.
+
+## uPortal-start sets a database connection budget
+
+In 5.x each of uPortal's three pools (`PortalDb`, `RawEventsDb`, `AggrEventsDb`) could open 100
+connections, and the bundled portlets opened their own pools on top. Together they could ask for
+about 370 connections, against PostgreSQL's default `max_connections` of 100. The web application
+that asked last then failed with "too many clients".
+
+uPortal-start now sets the pool sizes in `etc/portal/global.properties` so that the portal and its
+bundled portlets open at most 80 connections:
+
+| Property | 5.x default | uPortal-start 6.0 |
+| --- | ---: | ---: |
+| `tomcat.jdbc.pool.PortalDb.maxActive` / `maxIdle` | 100 / 50 | 30 / 10 |
+| `tomcat.jdbc.pool.rawEventsDataSource.maxActive` / `maxIdle` | 100 / 50 | 5 / 2 |
+| `tomcat.jdbc.pool.aggrEventsDataSource.maxActive` / `maxIdle` | 100 / 50 | 5 / 2 |
+| `tomcat.jdbc.pool.newsReaderDataSource.maxActive` / `maxIdle` | 50 / 15 | 8 / 4 |
+
+uPortal's own defaults in `datasourceContext.xml` are unchanged. If your `global.properties` comes
+from an older uPortal-start, copy the block or size the pools yourself. The database's connection
+limit has to cover the sum of every pool's `maxActive` on every portal node, plus room for
+administrators. uPortal-start `docs/connection-budget.md` lists every
+pool, what each property controls, and how to size a site. If `PortalDb` runs out under load
+(requests wait, then fail with a "Pool empty" timeout), raise its `maxActive` and the database's
+limit together.
