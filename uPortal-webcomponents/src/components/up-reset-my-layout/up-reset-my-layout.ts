@@ -29,6 +29,10 @@ export class UpResetMyLayout extends UpElement {
     static override styles = [
         ...UpElement.styles,
         css`
+            :host {
+                overflow-wrap: anywhere;
+            }
+
             .view {
                 display: flex;
                 flex-direction: column;
