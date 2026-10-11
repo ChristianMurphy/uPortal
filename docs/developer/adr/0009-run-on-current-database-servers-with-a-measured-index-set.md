@@ -56,6 +56,10 @@ These are the minimum versions for 6.0, and the versions CI tests on every push:
 | Oracle | 23.26 |
 | HSQLDB | 2.7.4, for development only |
 
+They are hard minimums. 6.0 has no code or configuration that works around an older server. It
+also has no version check: uPortal does not refuse to start on an older server. It fails where it
+uses a feature that server lacks.
+
 The next releases (PostgreSQL 19, MySQL 26 Innovation, MariaDB 13) run nightly as canaries, which
 may fail. The copy tool reads 5.17 databases from these older servers:
 
@@ -121,7 +125,8 @@ runtime versions and copies from the source versions in G-migrate (ADR 0008).
 
 * Good, because each vendor has one version to tune for.
 * Good, because old servers stay supported as a starting point for the upgrade.
-* Bad, because the minimums are high. The project can lower them if adopters need it.
+* Bad, because the minimums are high. An adopter on an older server must upgrade the server or
+  copy the data to a new one with the copy tool (ADR 0008).
 
 ### 6.0 runs on the oldest supported and the latest version of each vendor
 
