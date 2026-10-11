@@ -36,6 +36,7 @@ import org.apereo.portal.portlets.dynamicskin.DynamicRespondrSkinConstants;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinException;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinInstanceData;
 import org.apereo.portal.portlets.dynamicskin.DynamicSkinUniqueTokenGenerator;
+import org.lesscss.FileResource;
 import org.lesscss.LessCompiler;
 import org.lesscss.LessException;
 import org.lesscss.LessSource;
@@ -265,13 +266,14 @@ public abstract class AbstractDynamicSkinService implements DynamicSkinService {
     private void processLessFile(DynamicSkinInstanceData data) throws IOException, LessException {
 
         // Prepare the LESS sources for compilation
-        final LessSource lessSource = new LessSource(new File(getSkinLessPath(data)));
+        final LessSource lessSource =
+                new LessSource(new FileResource(new File(getSkinLessPath(data))), UTF_8);
 
         if (logger.isDebugEnabled()) {
             final String result = lessSource.getNormalizedContent();
             final File lessSourceOutput =
                     new File(getSkinCssTempFileAbsolutePath(data) + "lesssource");
-            IOUtils.write(result, new FileOutputStream(lessSourceOutput));
+            IOUtils.write(result, new FileOutputStream(lessSourceOutput), UTF_8);
             logger.debug(
                     "Full Less source from include file {} is at {}, output css will be written to {}",
                     getSkinLessPath(data),
@@ -281,6 +283,7 @@ public abstract class AbstractDynamicSkinService implements DynamicSkinService {
 
         final LessCompiler compiler = new LessCompiler();
         compiler.setCompress(true);
+        compiler.setEncoding(UTF_8.name());
         final File tempOutputFile = new File(getSkinCssTempFileAbsolutePath(data));
         compiler.compile(lessSource, tempOutputFile);
         moveCssFileToFinalLocation(data, tempOutputFile);

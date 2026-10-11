@@ -36,6 +36,17 @@ both this branch's. Oracle and PostgreSQL passed, so removing the pre-delete (fi
 Under MOD-D53 the evidence for landing is the push run on the head plus DB integration, because
 the branch changes persistence. The coordinator runs the full matrix on each batch it merges.
 
+Every push run on `930eb08` passed, the exact search for "calendar" on all six databases
+included.
+
+| Workflow | Run |
+| --- | --- |
+| CI | 38142180008 |
+| DB integration | 38142179844 |
+| DB copy tool | 38142179849 |
+
+The coordinator merged the branch into `ccr-43ba0785-hzlrj5` at `18bc61e`.
+
 ## Items for the 6.0 schema step (with Hibernate 7, after P7-1)
 
 Each one changes the schema and waits for that step. The sections below give the details.

@@ -163,7 +163,7 @@ public class AwsS3DynamicSkinService extends AbstractDynamicSkinService {
 
     private String readFileContentAsString(final File file) {
         try {
-            return IOUtils.toString(new FileReader(file));
+            return IOUtils.toString(new FileReader(file, StandardCharsets.UTF_8));
         } catch (IOException ioe) {
             throw new DynamicSkinException(ioe);
         }
