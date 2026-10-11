@@ -6,8 +6,6 @@
   Shrink it by fixing findings and rerunning that task (or deleting their entries).
 -->
 <FindBugsFilter>
-    <Match><Class name="org.apereo.portal.portlet.PortletUtils"/><Method name="setPortalUrlProvider"/><Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/></Match>
-    <Match><Class name="org.apereo.portal.portlet.PortletUtils"/><Method name="setPortletWindowRegistry"/><Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/></Match>
     <Match><Class name="org.apereo.portal.portlet.container.EventProviderImpl"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.portlet.container.FilterChainImpl"/><Field name="lifeCycle"/><Bug pattern="URF_UNREAD_FIELD"/></Match>
     <Match><Class name="org.apereo.portal.portlet.container.PortletRequestContextImpl$PropertyExposingHttpServletPortletRequestWrapper"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>

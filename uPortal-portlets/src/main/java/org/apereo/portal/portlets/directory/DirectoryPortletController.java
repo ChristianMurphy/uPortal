@@ -21,9 +21,6 @@ import java.util.Map;
 import javax.annotation.Resource;
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
-import javax.portlet.Event;
-import javax.portlet.EventRequest;
-import javax.portlet.EventResponse;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 import javax.portlet.RenderRequest;
@@ -35,23 +32,14 @@ import org.apache.commons.logging.LogFactory;
 import org.apereo.portal.portlet.rendering.IPortletRenderer;
 import org.apereo.portal.portlets.lookup.PersonLookupHelperImpl;
 import org.apereo.portal.portlets.search.DirectoryAttributeType;
-import org.apereo.portal.search.PortletUrl;
-import org.apereo.portal.search.PortletUrlParameter;
-import org.apereo.portal.search.PortletUrlType;
-import org.apereo.portal.search.SearchConstants;
-import org.apereo.portal.search.SearchRequest;
-import org.apereo.portal.search.SearchResult;
-import org.apereo.portal.search.SearchResults;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.IPersonManager;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ActionMapping;
-import org.apereo.portal.spring.web.portlet.bind.annotation.EventMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.apereo.services.persondir.IPersonAttributes;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -67,9 +55,6 @@ public class DirectoryPortletController {
     protected final Log log = LogFactory.getLog(getClass());
 
     private IPortalRequestUtils portalRequestUtils;
-
-    @Value("${org.apereo.portal.portlets.directory.search.result.type:Directory}")
-    private String directorySearchResultType = "Directory";
 
     @Autowired(required = true)
     public void setPortalRequestUtils(IPortalRequestUtils portalRequestUtils) {
@@ -102,49 +87,6 @@ public class DirectoryPortletController {
     @Resource(name = "directoryQueryAttributes")
     public void setDirectoryQueryAttributes(List<String> attributes) {
         this.directoryQueryAttributes = attributes;
-    }
-
-    @EventMapping(SearchConstants.SEARCH_REQUEST_QNAME_STRING)
-    public void search2(EventRequest request, EventResponse response) {
-
-        // get the search query object from the event
-        Event event = request.getEvent();
-        SearchRequest query = (SearchRequest) event.getValue();
-
-        // search the portal's directory service for people matching the request
-        final List<IPersonAttributes> people = searchDirectory(query.getSearchTerms(), request);
-
-        if (people.size() > 0) {
-            // transform the list of directory results into our generic search
-            // response object
-            final SearchResults results = new SearchResults();
-            results.setQueryId(query.getQueryId());
-            results.setWindowId(request.getWindowID());
-
-            for (IPersonAttributes person : people) {
-                final SearchResult result = new SearchResult();
-                result.setTitle((String) person.getAttributeValue("displayName"));
-                result.getType().add(directorySearchResultType);
-
-                PortletUrl url = new PortletUrl();
-                url.setType(PortletUrlType.RENDER);
-                url.setPortletMode("VIEW");
-                url.setWindowState("maximized");
-                PortletUrlParameter actionParam = new PortletUrlParameter();
-                actionParam.setName("action");
-                actionParam.getValue().add("findByUsername");
-                url.getParam().add(actionParam);
-                PortletUrlParameter usernameParam = new PortletUrlParameter();
-                usernameParam.setName("username");
-                usernameParam.getValue().add(person.getName());
-                url.getParam().add(usernameParam);
-                result.setPortletUrl(url);
-                results.getSearchResult().add(result);
-            }
-
-            // fire a search response event
-            response.setEvent(SearchConstants.SEARCH_RESULTS_QNAME, results);
-        }
     }
 
     @RenderMapping
