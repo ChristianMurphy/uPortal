@@ -97,13 +97,18 @@ public class CacheConfigurationCoverageTest {
         mainXml = read(".xml");
     }
 
+    /** The path with '/' separators, so the filters and messages match on Windows too. */
+    private static String slashed(Path path) {
+        return path.toString().replace('\\', '/');
+    }
+
     private static Map<Path, String> read(String suffix) throws IOException {
         try (Stream<Path> paths = Files.walk(root)) {
             final List<Path> files =
                     paths.filter(p -> p.toString().endsWith(suffix))
-                            .filter(p -> p.toString().contains("/src/main/"))
-                            .filter(p -> !p.toString().contains("/build/"))
-                            .filter(p -> !p.toString().contains("/node_modules/"))
+                            .filter(p -> slashed(p).contains("/src/main/"))
+                            .filter(p -> !slashed(p).contains("/build/"))
+                            .filter(p -> !slashed(p).contains("/node_modules/"))
                             .collect(Collectors.toList());
             final Map<Path, String> result = new HashMap<>();
             for (Path file : files) {
@@ -118,7 +123,7 @@ public class CacheConfigurationCoverageTest {
         final Map<String, Set<String>> used = new TreeMap<>();
         for (Map.Entry<Path, String> e : mainJava.entrySet()) {
             final String source = e.getValue();
-            final String file = root.relativize(e.getKey()).toString();
+            final String file = slashed(root.relativize(e.getKey()));
 
             Matcher m = REQUIRE_CACHE.matcher(source);
             while (m.find()) {
@@ -160,7 +165,7 @@ public class CacheConfigurationCoverageTest {
         for (Map.Entry<Path, String> e : mainXml.entrySet()) {
             final Matcher m = XML_CACHE_NAME.matcher(e.getValue());
             while (m.find()) {
-                add(used, m.group(1), root.relativize(e.getKey()).toString());
+                add(used, m.group(1), slashed(root.relativize(e.getKey())));
             }
         }
         return used;
