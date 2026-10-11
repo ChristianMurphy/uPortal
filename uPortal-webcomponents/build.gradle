@@ -36,7 +36,9 @@ def workspaceInputs = files(
         'package-lock.json',
         'tsconfig.json',
         'vite.config.ts',
-        rootProject.file('.editorconfig'))
+        rootProject.file('.editorconfig'),
+        // Tests check the components' English messages against the portal's
+        rootProject.file('uPortal-webapp/src/main/resources/properties/i18n/Messages.properties'))
 
 tasks.register('vpCheck', NpmTask) {
     group = 'verification'
