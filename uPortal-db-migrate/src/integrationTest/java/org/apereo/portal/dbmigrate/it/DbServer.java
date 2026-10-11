@@ -80,6 +80,12 @@ public final class DbServer {
         }
     }
 
+    /**
+     * InnoDB gives up a lock wait after 50 s by default; the fault tests hold a copy on a lock
+     * until they inject the fault, which a loaded test machine may take longer to do.
+     */
+    private static final String LOCK_WAIT = "--innodb-lock-wait-timeout=600";
+
     private static final Map<Kind, DbServer> SHARED = new EnumMap<>(Kind.class);
     private static final AtomicInteger NAMES = new AtomicInteger();
 
@@ -140,12 +146,13 @@ public final class DbServer {
                         new MariaDBContainer(image(kind, "mariadb"))
                                 .withCommand(
                                         "--character-set-server=utf8mb4",
-                                        "--lower-case-table-names=1");
+                                        "--lower-case-table-names=1",
+                                        LOCK_WAIT);
                 break;
             case MYSQL:
                 c =
                         new MySQLContainer(image(kind, "mysql"))
-                                .withCommand("--lower-case-table-names=1");
+                                .withCommand("--lower-case-table-names=1", LOCK_WAIT);
                 break;
             case SQLSERVER:
                 c =
@@ -295,6 +302,15 @@ public final class DbServer {
      * copy tool's connections. Returns how many were ended.
      */
     public int killSessions(TestDatabase db) throws SQLException {
+        return killSessions(db, null);
+    }
+
+    /**
+     * Ends every session connected to a database except one ({@link #sessionId}; null for none).
+     * Returns how many were ended.
+     */
+    public int killSessions(TestDatabase db, String except) throws SQLException {
+        String keep = except == null ? "-1" : except;
         List<String> kills = new ArrayList<>();
         try (Connection c = adminConnection()) {
             switch (kind) {
@@ -302,7 +318,9 @@ public final class DbServer {
                     return count(
                             c,
                             "SELECT pg_terminate_backend(pid) FROM pg_stat_activity"
-                                    + " WHERE datname = ? AND pid <> pg_backend_pid()",
+                                    + " WHERE datname = ? AND pid <> pg_backend_pid()"
+                                    + " AND pid <> "
+                                    + Long.parseLong(keep),
                             db.name());
                 case MARIADB:
                 case MYSQL:
@@ -312,7 +330,9 @@ public final class DbServer {
                                     "SELECT ID FROM information_schema.PROCESSLIST"
                                             + " WHERE DB = ? AND ID <> CONNECTION_ID()",
                                     db.name())) {
-                        kills.add("KILL " + id);
+                        if (!id.equals(keep)) {
+                            kills.add("KILL " + id);
+                        }
                     }
                     break;
                 case SQLSERVER:
@@ -323,7 +343,9 @@ public final class DbServer {
                                             + " sys.dm_exec_sessions WHERE database_id ="
                                             + " DB_ID(?) AND session_id <> @@SPID",
                                     db.name())) {
-                        kills.add("KILL " + id);
+                        if (!id.equals(keep)) {
+                            kills.add("KILL " + id);
+                        }
                     }
                     break;
                 case ORACLE:
@@ -333,7 +355,9 @@ public final class DbServer {
                                     "SELECT sid || ',' || serial# FROM v$session"
                                             + " WHERE username = ?",
                                     db.name().toUpperCase(Locale.ROOT))) {
-                        kills.add("ALTER SYSTEM KILL SESSION '" + id + "' IMMEDIATE");
+                        if (!id.startsWith(keep + ",")) {
+                            kills.add("ALTER SYSTEM KILL SESSION '" + id + "' IMMEDIATE");
+                        }
                     }
                     break;
                 default:
@@ -349,6 +373,92 @@ public final class DbServer {
                 }
             }
             return n;
+        }
+    }
+
+    /**
+     * The server's id of a connection's session, as {@link #killSessions(TestDatabase, String)}
+     * takes it.
+     */
+    public String sessionId(Connection c) throws SQLException {
+        String sql;
+        switch (kind) {
+            case POSTGRES:
+                sql = "SELECT pg_backend_pid()";
+                break;
+            case MARIADB:
+            case MYSQL:
+                sql = "SELECT CONNECTION_ID()";
+                break;
+            case SQLSERVER:
+                sql = "SELECT @@SPID";
+                break;
+            case ORACLE:
+                sql = "SELECT SYS_CONTEXT('USERENV', 'SID') FROM DUAL";
+                break;
+            default:
+                throw new UnsupportedOperationException("session id on " + kind);
+        }
+        try (Statement st = c.createStatement();
+                ResultSet rs = st.executeQuery(sql)) {
+            rs.next();
+            return rs.getString(1).trim();
+        }
+    }
+
+    /** How many sessions of a database are waiting for a lock that another session holds. */
+    public long lockWaits(TestDatabase db) throws SQLException {
+        String sql;
+        String arg = db.name();
+        switch (kind) {
+            case POSTGRES:
+                sql =
+                        "SELECT COUNT(*) FROM pg_stat_activity"
+                                + " WHERE datname = ? AND wait_event_type = 'Lock'";
+                break;
+            case MARIADB:
+            case MYSQL:
+                sql =
+                        "SELECT COUNT(*) FROM information_schema.INNODB_TRX t"
+                                + " JOIN information_schema.PROCESSLIST p"
+                                + " ON p.ID = t.trx_mysql_thread_id"
+                                + " WHERE t.trx_state = 'LOCK WAIT' AND p.DB = ?";
+                break;
+            case SQLSERVER:
+                sql =
+                        "SELECT COUNT(*) FROM sys.dm_exec_requests"
+                                + " WHERE database_id = DB_ID(?) AND blocking_session_id <> 0";
+                break;
+            case ORACLE:
+                sql =
+                        "SELECT COUNT(*) FROM v$session"
+                                + " WHERE username = ? AND blocking_session IS NOT NULL";
+                arg = db.name().toUpperCase(Locale.ROOT);
+                break;
+            default:
+                throw new UnsupportedOperationException("lock waits on " + kind);
+        }
+        try (Connection c = adminConnection();
+                PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, arg);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getLong(1);
+            }
+        }
+    }
+
+    /**
+     * On SQL Server, lets readers see the last committed rows instead of waiting for another
+     * session's uncommitted ones (READ_COMMITTED_SNAPSHOT), as the other servers do; elsewhere
+     * nothing.
+     */
+    public void readCommittedSnapshot(TestDatabase db) throws SQLException {
+        if (kind == Kind.SQLSERVER) {
+            admin(
+                    "ALTER DATABASE "
+                            + db.name()
+                            + " SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE");
         }
     }
 

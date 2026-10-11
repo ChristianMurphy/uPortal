@@ -161,6 +161,8 @@ tasks.register('integrationTest', Test) {
     classpath = sourceSets.integrationTest.runtimeClasspath
     shouldRunAfter tasks.named('test')
     systemProperty 'dbmigrate.it.vendors', providers.gradleProperty('dbMigrateVendors').getOrElse('postgres,mariadb')
+    // Runs each fault test that many times per server, to show it is stable
+    systemProperty 'dbmigrate.it.repeat', providers.gradleProperty('dbMigrateRepeat').getOrElse('1')
     // Every container start is a few seconds; the results depend on the servers, not the build
     outputs.upToDateWhen { false }
     // A copy that hangs must not hold CI for its full timeout
