@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test';
 import { page, userEvent } from 'vite-plus/test/browser';
-import { clearMessageCache, MESSAGES_PATH } from '../../lib/i18n';
+import { clearMessageCache, messageKeys, MESSAGES_PATH } from '../../lib/i18n';
 import { axeViolations } from '../../test-support/axe';
 import { FetchStub, json, text } from '../../test-support/fetch-stub';
 import { cleanupFixtures, fixture } from '../../test-support/fixture';
@@ -456,7 +456,7 @@ describe('up-popular-portlets messages and events', () => {
                 messages: {
                     'most.frequently.added': 'Les plus ajoutés',
                     'datatables.paginate.previous': '&lt; Précédent',
-                    'popular.portlets.page.info': 'Page {0} : {1} à {2} sur {3}.',
+                    'popular.portlets.page.info.other': 'Page {0} : {1} à {2} sur {3}.',
                 },
             }),
         );
@@ -469,9 +469,30 @@ describe('up-popular-portlets messages and events', () => {
         expect(info(element)).toBe('Page 1 : 1 à 3 sur 3.');
         const [request] = server.requestsTo(`/uPortal${MESSAGES_PATH}`);
         const keys = new URL(request?.url ?? '', location.href).searchParams.get('keys');
+        // With every plural category of popular.portlets.page.info, for the user's language
         expect(keys?.split(',').toSorted()).toEqual(
-            Object.keys(POPULAR_PORTLETS_MESSAGES).toSorted(),
+            messageKeys(Object.keys(POPULAR_PORTLETS_MESSAGES)).toSorted(),
         );
+    });
+
+    it('picks the plural form of the page info for the locale, also one English lacks', async () => {
+        // A language a site adds with only a bundle: Polish has one, few, many and other
+        server.on(
+            'GET',
+            `/uPortal${MESSAGES_PATH}`,
+            json({
+                messages: {
+                    'popular.portlets.page.info.one': 'Strona {0}: {1}–{2} z {3} pozycji (one)',
+                    'popular.portlets.page.info.few': 'Strona {0}: {1}–{2} z {3} pozycji (few)',
+                    'popular.portlets.page.info.many': 'Strona {0}: {1}–{2} z {3} pozycji (many)',
+                    'popular.portlets.page.info.other': 'Strona {0}: {1}–{2} z {3} pozycji (other)',
+                },
+            }),
+        );
+        const element = await render(ATTRIBUTES.replace('locale="en-US"', 'locale="pl"'));
+
+        // Three portlets: "few" in Polish
+        await expect.poll(() => info(element)).toBe('Strona 1: 1–3 z 3 pozycji (few)');
     });
 
     it('announces each load with up-popular-portlets-loaded', async () => {
