@@ -68,7 +68,22 @@ G-index in uPortal-start). Integration builds the uPortal branch of the same nam
 
 ## Seeded faults
 
-To be filled in from the CI runs.
+Each fault was seeded alone, its check run, and the source restored.
+
+Vitest, run in the session container on uPortal `79bbff8ef` (each fault failed its file):
+
+| Fault | Check | Result |
+| --- | --- | --- |
+| `search.try.again` default reads "Try once more" | `messages.unit.test.ts` | fails: the defaults differ from `Messages.properties` |
+| `fetchSearchResults` drops `submitted=true` | `search-api.unit.test.ts` | fails: "asks for the query and each type" |
+| type-ahead pause 0 ms instead of 200 ms | `up-search-box.machine.unit.test.ts` | fails: "waits 200 ms after typing" |
+| a 401 goes to `failed.retryable` | `up-search.machine.unit.test.ts` | fails: "asks the user to sign in again after a 401" |
+| the submit button's text is `aria-hidden`, so it has no name | `up-search.browser.test.ts` | fails: every test that finds the button named "Search" |
+| results tabs always `aria-selected="false"` | `up-search.model.browser.test.ts` | fails: every path that ends in results |
+| suggestions always `aria-selected="false"` | `up-search-box.model.browser.test.ts` | fails: 6 paths with an active suggestion |
+
+JUnit (`SearchRequestAggregatorTest`, the remote provider, settings, controller and service
+tests) and the Playwright specs: to be filled in.
 
 ## Proposed LOG rows (the coordinator numbers them)
 
