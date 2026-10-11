@@ -82,8 +82,17 @@ Vitest, run in the session container on uPortal `79bbff8ef` (each fault failed i
 | results tabs always `aria-selected="false"` | `up-search.model.browser.test.ts` | fails: every path that ends in results |
 | suggestions always `aria-selected="false"` | `up-search-box.model.browser.test.ts` | fails: 6 paths with an active suggestion |
 
-JUnit (`SearchRequestAggregatorTest`, the remote provider, settings, controller and service
-tests) and the Playwright specs: to be filled in.
+JUnit, run by the coordinator in its container (JDK 21), one fault at a time:
+
+| Fault | Check | Result |
+| --- | --- | --- |
+| J1: the aggregator drops its `SearchRequestEvent` branch | `SearchRequestAggregatorTest` | fails: `countsTheSearchesTheApiPublishes` |
+| J2: the remote client follows redirects (`Redirect.NORMAL`) | `RemoteJsonSearchStrategyTest` | fails: `doesNotFollowRedirects` |
+| J3: settings accept a URL without `{query}` | `RemoteJsonSearchSettingsTest` | fails: `refusesUnusableSettings` |
+| J4: the controller publishes every search, submitted or not | `SearchResultsRESTControllerTest` | fails: `publishesOnlySubmittedSearchesForTheStatistics` |
+| J5: `MAX_QUERY_LENGTH` raised to 2000 | `SearchServiceTest` | passed on `79bbff8ef`, a gap: the test built its queries from the constant. On `2e46e8936` the test uses a literal 200 and fails: `refusesBlankAndOverlongQueries` |
+
+The Playwright specs: to be filled in.
 
 ## Proposed LOG rows (the coordinator numbers them)
 
@@ -122,6 +131,10 @@ tests) and the Playwright specs: to be filled in.
 * Finding: axe in the model test sometimes measured a tab's color halfway through Bootstrap's
   color transition and reported a contrast failure. `axeViolations` now waits for running
   animations.
+* Finding: a seeded fault that raised the search query limit from 200 to 2000 passed
+  `SearchServiceTest`, which built its queries from `MAX_QUERY_LENGTH`. A test that takes its
+  input from the constant it checks follows any change to that constant. The test now uses a
+  literal 200. The testing rules could say so.
 * Leftover: the Respondr skin still styles `#webSearchContainer` and `#webSearchSubmit`
   (`header.scss`, `search.scss`), which nothing renders now. They go with the skin migration
   (MOD-D21).
