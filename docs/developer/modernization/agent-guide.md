@@ -8,8 +8,10 @@ until it answers.
 
 The repositories are `ChristianMurphy/uPortal` and `ChristianMurphy/uPortal-start`. The integration
 branch in both is `ccr-43ba0785-hzlrj5`. Cloud sessions report to the coordinator with
-`send_message` to `@parent`, and local agents with `SendMessage` to `main`. Keep your branch note (`docs/developer/modernization/notes/<topic>.md` in uPortal)
-current. Another session must be able to resume the work from the branch alone.
+`send_message` to `@parent`, and local agents with `SendMessage` to `main`. Keep your branch
+note (`docs/developer/modernization/notes/<topic>.md` in uPortal) current. Another session must
+be able to resume the work from the branch alone. Work only in uPortal-start keeps its note in
+uPortal-start under the same path, and a note your brief placed there stays there.
 
 ## 1. Pushing and merging (MOD-D53, MOD-D55)
 
@@ -48,6 +50,10 @@ current. Another session must be able to resume the work from the branch alone.
 
 Every new check must be shown to catch something. Seed a fault locally, show that the check fails
 with a useful message, revert the fault (never commit it), and record the result in your note.
+A check that must fail has to fail for the expected reason. Match its message, report line or
+exit status, and make a crash (a missing file, a wrong path) fail the check. A cluster self-check
+once passed in every CI run because its git-ignored fixture files were missing and the crash
+counted as the expected failure.
 
 | Change | Before you push | Runs to send with "ready to merge" |
 | --- | --- | --- |
@@ -250,9 +256,10 @@ The rules that agents hit most often:
   web-proxy and visual-resource-server tests that need them fail in local runs here (MOD-I55),
   and CI runs them. Don't count them as your failures, and don't skip them.
 * **Playwright browsers.** Don't run `playwright install` with downloads. Point
-  `PLAYWRIGHT_BROWSERS_PATH` at a symlink tree over the Chromium in `/opt/pw-browsers`. On JDK 21,
-  `portalInit` needs `JDK_JAVA_OPTIONS="--add-opens=java.base/java.lang=ALL-UNNAMED
-  --add-opens=java.base/java.util=ALL-UNNAMED"` for Announcements.
+  `PLAYWRIGHT_BROWSERS_PATH` at a symlink tree over the Chromium in `/opt/pw-browsers`.
+* **The portal's JDK.** Run `portalInit` and Tomcat on the JDK that uPortal-start's `.sdkmanrc`
+  names (11) until the JDK 21 runtime step (P4-2) is merged. On JDK 21, Announcements, Calendar,
+  NewsReader and uPortal's own `dataInit` fail with javassist and CGLIB module access errors.
 * **The shared machine** (local agents). Memory and disk are tight. Run each portal session and
   each multi-container database test through the coordinator's `portal-slot.sh` (your brief gives
   the path), which allows two at a time. Run `disk-guard.sh` before big steps. When two portals
