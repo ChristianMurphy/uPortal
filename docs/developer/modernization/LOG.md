@@ -653,7 +653,7 @@ chosen per portlet.
 | Scheduling | `task:scheduled` (2), `@Scheduled` (1), custom cluster lock | Spring `@Scheduled`/`TaskScheduler`; Spring Integration `JdbcLockRegistry` for cluster-wide locks, if replacing `JpaClusterLockDao` pays off |
 | Retry | none or ad hoc | Spring Framework 7 core retry (`@Retryable`) |
 | Bulk DB copy (MOD-D11) | plain JDBC (v0 in progress) | Spring JDBC; Spring Batch chunk steps (restartable, partitioned) in a standalone Spring Boot CLI module |
-| Schema migrations after 6.0 | hbm2ddl | Flyway (MOD-Q4), as Spring Boot integrates it |
+| Schema migrations after 6.0 | hbm2ddl | Open between Flyway and Liquibase (MOD-Q4). Spring Boot integrates both. |
 | Configuration | 113 XML contexts | New code uses `@Configuration` Java config; XML is converted opportunistically when a context is touched |
 | Observability | custom JMX/statistics (3 files) | Micrometer, via Spring's observation API (6.x) |
 | Packaging | external Tomcat WAR | Spring Boot's `SpringBootServletInitializer` WAR stays the 6.x candidate (MOD-Q1). Only `uPortal-db-migrate` imports Boot's BOM (MOD-D28). The portal's versions stay in `gradle.properties`. |
