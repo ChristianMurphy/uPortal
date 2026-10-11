@@ -32,9 +32,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /**
- * Runs the portal's {@link ISearchStrategy} beans and turns what each returns (a map of
- * attributes, or a bean) into {@link SearchResult}s, so that clients get one shape whatever the
- * strategy.
+ * Runs the portal's {@link ISearchStrategy} beans and turns what each returns (a map of attributes,
+ * or a bean) into {@link SearchResult}s, so that clients get one shape whatever the strategy.
  */
 @Service
 public class SearchService {
@@ -59,8 +58,8 @@ public class SearchService {
     }
 
     /**
-     * Searches with every strategy whose type is in {@code types}, or with all of them when
-     * {@code types} is null, empty or contains an empty string (as {@code /api/v5-0} does).
+     * Searches with every strategy whose type is in {@code types}, or with all of them when {@code
+     * types} is null, empty or contains an empty string (as {@code /api/v5-0} does).
      */
     public SearchResults search(
             @Nullable String query, @Nullable Set<String> types, HttpServletRequest request) {
