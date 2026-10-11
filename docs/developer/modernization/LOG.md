@@ -478,6 +478,11 @@ research report.
     `<up-favorites>`. uPortal-start publishes Favorites as a Web Component
     channel. The import upgrader and copy-tool rule are not built
     (MOD-I133). Guide: `docs/developer/web-components/README.md`.
+  * Popular Portlets: `/api/v6-0/popular-portlets` and
+    `<up-popular-portlets>`, published by uPortal-start as a Web Component
+    channel. The characterisation spec passed on the portlet and then,
+    unchanged, on the component. The conversion fixes MOD-I193 rather than
+    matching it. Notes: `notes/wc-popular-portlets.md`.
 
 ### MOD-D19: per-portlet choice between REST + web components and server-rendered Spring pages
 
@@ -663,6 +668,9 @@ chosen per portlet.
      and follow the page's light or dark mode. axe checks every state in
      the browser tests; it found the alpha's contrast failures
      (MOD-I132).
+* **Status (2026-10-11):** the shared Bootstrap 6 sheet now also has the
+  pagination, table, label and form-control parts, for Popular Portlets.
+  Bootstrap 6 has no `.form-select`, and `select.form-control` takes its place.
 * **Risks:**
   * Alpha API churn. Mitigation: pin it, and keep Bootstrap-specific
     markup in Thymeleaf fragments and a small set of Lit base classes.
@@ -1867,6 +1875,8 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I190 | Deployment | The portal and its portlets together use all 100 default PostgreSQL connections. | **Open**. Document a connection budget for 6.0. |
 | MOD-I191 | Persistence | Queries with `ORDER BY` or `@OrderBy` don't break ties, so rows with the same sort key can come back in any order. The goldens compare tied rows as unordered. | **Owner (2026-10-11):** 6.0 adds a final tie-breaker, usually the id, to each sort, so results come back in a guaranteed order. |
 | MOD-I192 | CI | Playwright on PostgreSQL 18 intermittently loses one bundled portlet application: every page lacks its output, and a different application is missing on each attempt. It failed 22 SimpleContent tests in job 114386349300 and 8 Announcements tests in job 114405187791 (run 38110595100 and its re-run). Run 38117263537 failed the same 8 Announcements tests. Those branches change only REST APIs, web components, tests and docs, not portlets or the database. The Tomcat logs are only in the job artifacts, and the proxy in front of the agents refuses the host that serves them. | **Open.** Probable cause: MOD-I190, the portal and its portlets competing for PostgreSQL's 100 default connections, so the application that starts last fails. uPortal-start fd53c9495 prints Tomcat's startup errors in a failed job's log. The next failure will show the cause. The fix is the connection budget MOD-I190 asks for, not a larger `max_connections` in CI. |
+| MOD-I193 | Portlets | In 5.17's Popular Portlets portlet, the column filters show the wrong rows once the table is sorted. The DataTables search function reads `col.data()`, which is in display order, with each row's load index. | **Fixed in the web component** (WS14). "a filter keeps the rows it names, also after sorting" in uPortal-start's `popular-portlets.spec.ts` and "keeps the rows it names after a sort" in `up-popular-portlets.browser.test.ts` check it; the first fails on the old portlet, which keeps the bug. |
+| MOD-I194 | Portlets | `PopularPortletsController.getEventCounts` throws a `NullPointerException` when the `days` parameter is missing. | **Fixed in the REST API**: `/api/v6-0/popular-portlets` uses 30 days when `days` is missing and answers 400 unless it is a whole number from 1 to 365. The portlet keeps the bug. |
 
 ## Open questions
 
