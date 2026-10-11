@@ -9,7 +9,7 @@
  * ```
  * disabled              the channel's `enabled` preference is not true
  * loading               GET the session's timeout
- * inactive              no warning: a guest, a session that never expires, or no answer
+ * inactive              no warning: a guest (401) or a session that never expires
  * waiting               until the warning is due; another tab can postpone it
  * warning               the dialog with its countdown (tag open)
  *   idle | extending | failed     "keep me signed in" and its outcome (extending is busy)
@@ -17,9 +17,10 @@
  * ```
  */
 import { assign, emit, fromCallback, fromPromise, setup } from 'xstate';
-import type { ApiClient } from '../../lib/api-client';
+import { ApiError, type ApiClient } from '../../lib/api-client';
 import { extendSession, fetchSession } from './session-api';
 import {
+    DEFAULT_SESSION_TIMEOUT_SECONDS,
     dialogDisplayMs,
     laterLogoutTime,
     logoutTimeFrom,
@@ -126,9 +127,18 @@ export const sessionTimeoutMachine = setup({
         tags: 'open' | 'busy';
     },
     actors: {
+        // Like the portlet's script, a portal that does not say (5xx, no answer, a malformed
+        // body) gets the default timeout and still a warning; only a 401 means no session
         loadSession: fromPromise<SessionPeriod | null, PeriodInput>(async ({ input, signal }) => {
-            const session = await fetchSession(input.api, { signal });
-            return startPeriod(input, session.maxInactiveIntervalSeconds);
+            let seconds = DEFAULT_SESSION_TIMEOUT_SECONDS;
+            try {
+                seconds = (await fetchSession(input.api, { signal })).maxInactiveIntervalSeconds;
+            } catch (error) {
+                if (error instanceof ApiError && error.kind === 'unauthorized') {
+                    throw error;
+                }
+            }
+            return startPeriod(input, seconds);
         }),
         keepAlive: fromPromise<SessionPeriod | null, PeriodInput>(async ({ input, signal }) => {
             const session = await extendSession(input.api, { signal });
@@ -227,7 +237,7 @@ export const sessionTimeoutMachine = setup({
                         },
                     },
                 ],
-                // A guest (401) or a portal that does not answer: no warning
+                // A guest (401): no session, no warning
                 onError: { target: 'inactive' },
             },
         },

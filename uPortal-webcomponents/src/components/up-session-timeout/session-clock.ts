@@ -16,6 +16,9 @@ export const BUFFER_MS = 30 * SECOND;
 /** The portlet's default `dialogDisplaySeconds`. */
 export const DEFAULT_DIALOG_DISPLAY_SECONDS = 60;
 
+/** The timeout used when the portal does not say (the portlet script's default too). */
+export const DEFAULT_SESSION_TIMEOUT_SECONDS = 30 * 60;
+
 /** Where the portlet saved the logout time; kept so portlet and component tabs agree. */
 export const LOGOUT_TIME_KEY = 'UportalSessionTimeoutLogoutTime';
 

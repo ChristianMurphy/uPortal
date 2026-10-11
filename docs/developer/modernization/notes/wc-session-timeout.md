@@ -44,8 +44,10 @@ the HSQLDB harness passed all four drift checks and found both intended changes 
 
 Sent to the coordinator on 2026-10-11. The ones not recorded elsewhere:
 
-* A failed `GET /api/v6-0/session` (5xx, network, malformed body) leaves the page without a
-  warning (`inactive`). The portlet's script fell back to 30 minutes.
+* Changed at the coordinator's request: a failed `GET /api/v6-0/session` (5xx, network,
+  malformed body) now falls back to the portlet script's 30-minute default and still warns. Only
+  a 401 leaves the page without a warning (`inactive`). Machine and browser tests cover each
+  failure kind, and a seeded fault without the fallback fails all six.
 * The storage-key e2e test allows 40 seconds between the page load and the check.
 * The model-based tests leave out `disabled` (their input is `enabled=true`). Browser tests
   cover it.

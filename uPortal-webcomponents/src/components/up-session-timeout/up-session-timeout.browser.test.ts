@@ -216,6 +216,25 @@ describe('up-session-timeout states', () => {
         expect(clock.pending).toBe(0);
     });
 
+    it.each([
+        ['a server error', () => text('', 500)],
+        ['a network failure', () => Promise.reject(new TypeError('Failed to fetch'))],
+        ['a malformed body', () => json({ maxInactiveIntervalSeconds: 'soon' })],
+    ])(
+        'warns after the default 30 minutes when the portal answers with %s',
+        async (_name, respond) => {
+            server.on('GET', SESSION, respond);
+            const element = await mount();
+            await loaded();
+
+            await advanceTo(element, WARNING_AT - 1);
+            expect(dialog(element)).toBeNull();
+            await advanceTo(element, WARNING_AT);
+
+            expect(openDialog(element).textContent).toMatch(/expire\s+in 60 seconds/);
+        },
+    );
+
     it('never warns when the session never expires', async () => {
         server.on('GET', SESSION, json({ maxInactiveIntervalSeconds: -1 }));
         const element = await mount();
