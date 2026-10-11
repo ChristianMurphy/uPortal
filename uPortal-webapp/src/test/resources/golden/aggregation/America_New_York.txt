@@ -148,6 +148,9 @@ autumn loginAggregationDao.getAggregations(DAY, Everyone+Students)#3 LoginAggreg
 autumn loginAggregationDao.getAggregations(DAY, Everyone+Students)#4 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Students", groupService="local"}, dateDimension=DateDimensionImpl{date=2025-10-31}, duration=1440, interval=DAY, loginCount=2, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=2, uniqueStrings=null}
 autumn loginAggregationDao.getAggregations(MONTH, Everyone+Students)#0 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Everyone", groupService="local"}, dateDimension=DateDimensionImpl{date=2025-11-01}, duration=2937, interval=MONTH, loginCount=10, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=6, uniqueStrings=UniqueStrings{uniqueStringSegments=size 1}}
 autumn loginAggregationDao.getAggregations(MONTH, Everyone+Students)#1 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Students", groupService="local"}, dateDimension=DateDimensionImpl{date=2025-11-01}, duration=1625, interval=MONTH, loginCount=5, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=3, uniqueStrings=UniqueStrings{uniqueStringSegments=size 1}}
+autumn logins of Everyone on 2025-10-31: HOUR rows sum to 4, DAY row counts 4
+autumn logins of Everyone on 2025-11-01: HOUR rows sum to 2, DAY row counts 2
+autumn logins of Everyone on 2025-11-02: HOUR rows sum to 6, DAY row counts 8
 autumn concurrentUserAggregationDao.getAggregations(FIVE_MINUTE, Everyone) 17 [11-03T05:00=2, 11-03T04:55=1, 11-02T07:10=2, 11-02T07:05=2, 11-02T05:55=2, 11-02T05:45=1, 11-02T05:40=1, 11-02T05:25=1, 11-02T05:10=1, 11-02T05:00=1, 11-02T04:55=1, 11-01T04:05=1, 11-01T04:00=3, 11-01T03:55=1, 11-01T00:05=1, 11-01T00:00=3, 10-31T23:55=2]
 autumn count ConcurrentUserAggregationImpl 26
 autumn count EventAggregatorStatusImpl 2
@@ -795,6 +798,8 @@ year_end loginAggregationDao.getAggregations(DAY, Everyone+Students)#2 LoginAggr
 year_end loginAggregationDao.getAggregations(DAY, Everyone+Students)#3 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Students", groupService="local"}, dateDimension=DateDimensionImpl{date=2025-12-31}, duration=1440, interval=DAY, loginCount=2, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=2, uniqueStrings=null}
 year_end loginAggregationDao.getAggregations(MONTH, Everyone+Students)#0 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Everyone", groupService="local"}, dateDimension=DateDimensionImpl{date=2026-01-01}, duration=4, interval=MONTH, loginCount=1, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=1, uniqueStrings=UniqueStrings{uniqueStringSegments=size 1}}
 year_end loginAggregationDao.getAggregations(MONTH, Everyone+Students)#1 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Students", groupService="local"}, dateDimension=DateDimensionImpl{date=2026-01-01}, duration=4, interval=MONTH, loginCount=1, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=1, uniqueStrings=UniqueStrings{uniqueStringSegments=size 1}}
+year_end logins of Everyone on 2025-12-31: HOUR rows sum to 3, DAY row counts 3
+year_end logins of Everyone on 2026-01-01: HOUR rows sum to 1, DAY row counts 1
 year_end concurrentUserAggregationDao.getAggregations(FIVE_MINUTE, Everyone) 6 [01-01T05:05=1, 01-01T05:00=1, 01-01T04:55=2, 01-01T00:05=1, 01-01T00:00=2, 12-31T23:55=1]
 year_end count ConcurrentUserAggregationImpl 11
 year_end count EventAggregatorStatusImpl 2
@@ -1185,6 +1190,7 @@ spring loginAggregationDao.getAggregations(HOUR, Everyone+Students)#3 LoginAggre
 spring loginAggregationDao.getAggregations(HOUR, Everyone+Students)#4 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Students", groupService="local"}, dateDimension=DateDimensionImpl{date=2026-03-08}, duration=60, interval=HOUR, loginCount=1, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=1, uniqueStrings=null}
 spring loginAggregationDao.getAggregations(DAY, Everyone+Students)#0 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Everyone", groupService="local"}, dateDimension=DateDimensionImpl{date=2026-03-08}, duration=160, interval=DAY, loginCount=5, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=4, uniqueStrings=UniqueStrings{uniqueStringSegments=size 1}}
 spring loginAggregationDao.getAggregations(DAY, Everyone+Students)#1 LoginAggregationImpl{aggregatedGroup=AggregatedGroupMappingImpl{groupName="Students", groupService="local"}, dateDimension=DateDimensionImpl{date=2026-03-08}, duration=125, interval=DAY, loginCount=2, timeDimension=TimeDimensionImpl{time=00:00:00.000}, uniqueLoginCount=2, uniqueStrings=UniqueStrings{uniqueStringSegments=size 1}}
+spring logins of Everyone on 2026-03-08: HOUR rows sum to 5, DAY row counts 5
 spring concurrentUserAggregationDao.getAggregations(FIVE_MINUTE, Everyone) 8 [03-08T07:45=1, 03-08T07:40=2, 03-08T07:05=1, 03-08T06:55=1, 03-08T06:50=1, 03-08T05:05=2, 03-08T05:00=2, 03-08T04:55=1]
 spring count ConcurrentUserAggregationImpl 11
 spring count EventAggregatorStatusImpl 2
