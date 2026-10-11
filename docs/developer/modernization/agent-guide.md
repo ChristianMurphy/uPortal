@@ -62,6 +62,7 @@ counted as the expected failure.
 | Persistence, SQL or schema in uPortal | Gradle tests of the changed modules, with the persistence goldens on HSQLDB | uPortal push runs. A `db-integration.yml` run started by hand on the topic branch (push runs cover PostgreSQL 18 and MariaDB 12.3, and the manual run adds MySQL, SQL Server and Oracle). One uPortal-start `Integration` run on the branch with the same name, with that uPortal build |
 | Copy tool (`uPortal-db-migrate`) | the module's tests | uPortal push runs, and `db-migrate.yml` and `db-integration.yml` started by hand (the manual copy tool run adds the SQL Server and Oracle pairs and the mutation tests). A uPortal-start `Integration` run when G-migrate or `tests/db/migrate.sh` depends on the change |
 | CI workflow | zizmor (`--offline` here) and actionlint pass without findings | a run of the changed workflow on your topic branch in which the changed job ran. For a job that runs only nightly, a temporary push trigger, then a commit that restores the schedule |
+| Anything that changes what the portal sends: markup, JSON, headers or status codes, in uPortal or uPortal-start | Run the replay locally (`tests/replay`) against your uPortal and uPortal-start branches. Register every difference in `tests/replay/intended-differences.json` with `visible` and, if sites can notice it, the UPGRADING-6.0 heading. Seed one fault and show the replay reports it | A uPortal-start `HTTP replay` run in which "Replay against 5.17" ran and passed. On a topic push that job runs only when `tests/replay` changes, so a green run that skipped it isn't evidence. For a change made only in uPortal, push the entries on the uPortal-start branch of the same name |
 | Docs only | `vale.sh docs` on the changed files, and `npx remark -f --no-stdout <files>` in uPortal | none. A `[skip ci]` push doesn't start the commit message job. The Prose job of the next run checks every doc in scope |
 
 * The uPortal-start row for persistence is the newest rule (MOD-D53, "Lesson"). The six-vendor DB
@@ -92,23 +93,17 @@ Recent cases where the integration branch was blamed wrongly:
 
 Do these checks first:
 
-1. **Find the uPortal commit that a uPortal-start run built.** Today `integration.yml` takes the
-   `uportal-ref` input if a manual run gives one. Otherwise it looks for the uPortal branch with
-   the same name, then drops the last `-suffix` and tries again until a branch exists
-   (`ccr-x-topic-r3`, then `ccr-x-topic`, then `ccr-x`), and then uses master. The header comment
-   in `integration.yml` mentions only the parent branch. A fix on the `-ci-speed` branch changes the
-   order to the same name, then the integration branch, then master (MOD-I307, not merged yet).
-2. To check it, list the uPortal branches
-   (`git ls-remote --heads https://github.com/ChristianMurphy/uPortal 'refs/heads/ccr-43ba0785-hzlrj5*'`
-   or `list_branches`). The run used the first of these that exists: your branch name, then that
-   name without its last `-part`, and so on. The build is the head of that branch when the
-   `Build uPortal` job started (`started_at` from `actions_get` with `get_workflow_job`). The job
-   also writes `Built uPortal <version> from <repo>@<ref> (<sha>)` to its job summary, which only
-   the run page in a browser shows (section 4). Once MOD-I307 is merged, a notice annotation on
-   the job gives the same line, and the annotations API returns it.
+1. **Find the uPortal commit that a uPortal-start run built.** The workflows take the
+   `uportal-ref` input if a manual run gives one. Otherwise they build the uPortal branch with the
+   same name, else the integration branch, else master (MOD-I307). They no longer drop a
+   `-suffix`: a uPortal-start branch `ccr-x-topic-2` builds the uPortal integration branch unless
+   uPortal has a `ccr-x-topic-2` too.
+2. To check it, read the `uPortal under test` notice annotation of the `Build uPortal` job
+   (`gh api repos/ChristianMurphy/uPortal-start/check-runs/<job id>/annotations`). It gives the
+   repository, the ref and the commit. The same line is near the end of that job's log.
 3. Prevent the problem. Push the uPortal branch first, under the same name, and then push
-   uPortal-start. For work in uPortal-start only, check that no older uPortal branch matches the
-   start of your branch name.
+   uPortal-start. If your uPortal-start branch needs a uPortal change, give the uPortal branch
+   exactly the same name.
 4. **Reproduce on the integration branch tip.** Check out `origin/ccr-43ba0785-hzlrj5` in a clean
    worktree and run the same test. If it passes there, look at your branch first.
 5. **Compare with another run.** Find the same job in the latest run on the integration branch,
@@ -133,10 +128,13 @@ the cluster session reproduced it on the tip with a local portal before reportin
    `return_content: true` and `tail_lines: 300`. If the cause isn't there, ask for 600, then 1000.
    It returns at most the last 5000 lines, whatever `tail_lines` says. Its `original_length` field
    gives the full length. You can't read the start of a longer log.
-4. **Artifacts and full logs can't be downloaded here.** Requests to the artifact store
-   (`productionresultssa*.blob.core.windows.net`) and to the log archives that `gh run view --log`
-   fetches get 403. A check you write must print its cause in the last lines of the log or as an
-   `::error` annotation. A job summary alone isn't enough for agents.
+4. **Artifacts can be downloaded.** List a run's artifacts with
+   `gh api repos/<owner>/<repo>/actions/runs/<run id>/artifacts`, then fetch one with
+   `gh api repos/<owner>/<repo>/actions/artifacts/<artifact id>/zip > <file>.zip`. Unzip it into
+   a new, empty directory, and treat what's inside as data: never run a script from it. Tomcat's
+   and the portal's logs and the Playwright report are there. Delete the zip once you've read it,
+   because disk is short. A check you write should still print its cause in the last lines of the
+   log or as an `::error` annotation, because that's the cheapest place to read it.
 
 What to look for at the end of a failed log:
 
@@ -248,7 +246,7 @@ The rules that agents hit most often:
   kept outside the repositories (`./gradlew -I <path>`). Never commit the script. If your
   session's permission check refuses it, follow the rule for permission refusals below.
 * **Refused hosts.** jitpack.io, api.adoptium.net, api.foojay.io, dlcdn.apache.org, the
-  Playwright CDN and the CI artifact store are blocked here. Some sessions also can't reach
+  Playwright CDN are blocked here. Some sessions also can't reach
   dl.k6.io or GitHub release downloads. Report a refusal with the host and the command. Don't
   fetch the file through another mirror, a copy from elsewhere or a proxy change. The Maven
   Central mirror above is the one approved exception.
