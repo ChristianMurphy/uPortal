@@ -239,6 +239,15 @@ an existing install of that revision.
   source: `Messages.properties`, its translations, and messages edited in the portal. One request
   per locale and set of keys serves every instance on the page; if it fails, the defaults stay.
   Keys follow `Messages.properties`, and placeholders are `{0}`, `{1}`, …
+* **Translations** (MOD-D50): each key in a component's `messages.ts` has English, Spanish and
+  French text in `Messages.properties`, `Messages_es.properties` and `Messages_fr.properties`
+  (uPortal-webapp, `properties/i18n`), added in the same commit as the key. The portal formats
+  every message with `MessageFormat`, so an apostrophe is written twice (`l''élément`) and the
+  placeholders stay as in English. The bundles are read as UTF-8 (MOD-I232), so accented
+  letters can be written as they are. `src/lib/translations.unit.test.ts` fails when a key is
+  missing from one of the three, when the Spanish or French text is the English text, or when
+  its placeholders differ or it has an apostrophe that is not doubled. A word that is the same
+  in both languages goes in that test's `SAME_AS_ENGLISH` list, with the reason.
 * **Events** (`events.ts`): components report what happened with `CustomEvent`s named
   `up-<subject>-<past-tense verb>`, such as `up-favorite-removed`. They bubble, are composed
   (they leave the shadow root) and are not cancelable; `detail` is plain data.
@@ -529,11 +538,14 @@ ships in the 6.0 data migration, and say so in UPGRADING-6.0.
 2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its machine
    (`<tag>.machine.ts`, see "State machines"), its API client and validators, its messages, and
    its tests (machine, model-based and browser); add the tag to `components` in
-   `vite.config.ts`.
+   `vite.config.ts`. Each new message key gets its Spanish and French text in the same commit,
+   with each apostrophe written twice (see "Translations").
 3. Turn portlet modes into in-place states, preferences into `webComponent.preferenceAttributes`,
    and portlet actions into REST calls.
 4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
-   and document how existing definitions are converted.
+   add one that renders the component for a user whose locale is Spanish and one whose locale is
+   French (see `tests/ux/i18n/web-components-locale.spec.ts`), and document how existing
+   definitions are converted.
 
 ## Conversion: Popular Portlets
 
