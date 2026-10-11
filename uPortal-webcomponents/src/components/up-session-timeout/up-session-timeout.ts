@@ -3,7 +3,7 @@ import type { PropertyDeclarations } from 'lit';
 import type { Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
-import { SESSION_TIMEOUT_MESSAGES } from './messages';
+import { countdownMessageKey, SESSION_TIMEOUT_MESSAGES } from './messages';
 import {
     browserLogoutTimeStore,
     systemClock,
@@ -157,7 +157,10 @@ export class UpSessionTimeout extends UpElement {
             </div>
             <div class="dialog-body">
                 <p id="remaining">
-                    ${this.msg('session-timeout.body1', snapshot.context.secondsLeft)}
+                    ${this.msg(
+                        countdownMessageKey(this.resolvedLocale, snapshot.context.secondsLeft),
+                        snapshot.context.secondsLeft,
+                    )}
                 </p>
                 <p>${this.msg('session-timeout.body2')}</p>
                 ${
