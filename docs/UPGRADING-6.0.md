@@ -405,6 +405,43 @@ pointed it at its own URL should check that `POST /api/v6-0/session/keep-alive` 
 SessionTimeout portlet, `SessionTimeoutViewController` and `scripts/session-timeout.js` stay in this
 release for definitions that are not converted yet, and will be removed later.
 
+## Password Management is a web component
+
+The Password Management channel (`passwordmgr`) was the `SelfEditAccount` portlet, the
+`self-edit-account` Web Flow. It is now a **Web Component** channel that renders
+`<up-self-edit-account>`, with its data from the new REST API `/api/v6-0/account`. Users see the
+same account details. Users allowed to edit their own local account (`UP_USERS` `EDIT_USER` on
+`SELF`, and `EDIT_USER_ATTRIBUTE` on each attribute) get the same Edit button, form, labels and
+"Account Updated" message. Saved details still show from the next login. What changed:
+
+* A new password needs the current password. The portlet changed the password without asking
+  for it.
+* A confirmation that differs from the new password is refused with "Passwords must match". The
+  portlet saved the password field whatever the confirmation said, because its check never ran.
+* The form's "Add Preference" link is gone. Saving always ignored what it added.
+* The form offers one text field per attribute. A custom `accountEditAttributes` list in
+  `userContext.xml` that uses choice or multi-value inputs is shown as text fields that edit the
+  first value only.
+
+The first two changes await the project owner's decision and may be reverted before 6.0.
+
+The API acts on the signed-in user only and never takes a user name from the request. Guests get
+401, and a change needs the CSRF token of the user's own session (or a bearer token). No answer
+contains a password.
+
+Existing portals keep their Password Management definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/passwordmgr.portlet-definition.xml`, which updates the channel in
+place. For a definition with another fname, make these changes and keep everything else:
+
+* the type to `Web Component`, and the descriptor to the framework portlet `WebComponent`;
+* add the parameters `webComponent.tagName=up-self-edit-account` and
+  `webComponent.moduleUrl=up-self-edit-account`.
+
+The `SelfEditAccount` portlet, its `self-edit-account` flow and `SelfEditAccount-portlet.xml` will
+be removed in a later release. `UserAccountHelper` stays, because the API, the User
+Administration, forgot-password and reset-password flows and the tenant manager use it.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
