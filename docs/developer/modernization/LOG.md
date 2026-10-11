@@ -908,9 +908,14 @@ This supersedes MOD-D24's runtime matrix.
     `CachedPasswordUserInfoService`.
   * Still disabled: BanJNDI (5 findings), SelfAssertion (3, tests) and
     BoxedPrimitiveEquality (2).
-  * Real bugs found: MOD-I100 to I106, all fixed with regression tests
-    (8dcab6efd … bddc4f315). d9774f02d drops their 7 entries from the
-    baselines.
+  * Real bugs found by SpotBugs: MOD-I100 to I103 and MOD-I105, each
+    fixed with a regression test that fails on the old code (8dcab6efd,
+    20b19918e, 5ab591f23, 044e79e0f, f90ebac9e). d9774f02d drops their 7
+    entries from the baselines.
+  * Fixed in the same series, but not found by SpotBugs: MOD-I104, found
+    while tracing MOD-I90 (f213dcad5; its test also passes on the old
+    code, since the race can't be forced), and MOD-I106, a build fix for
+    the webapp's npm install (bddc4f315).
 
 ### MOD-D28: copy tool v0 merged (MOD-D11, 5.17 → 5.17 across vendors)
 
