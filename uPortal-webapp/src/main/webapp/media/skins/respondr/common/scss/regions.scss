@@ -224,7 +224,8 @@
   #region-customize {
     position: relative;
     
-    .background-preference [id*="background-edit-control"] {
+    .background-preference [id*="background-edit-control"],
+    .background-preference up-background-preference {
       position: absolute;
       right: 12px;
       top: 0;
