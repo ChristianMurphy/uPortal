@@ -21,7 +21,7 @@ import org.apereo.portal.concurrency.locking.IClusterLockService;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao.AggrEventsTransactional;
-import org.apereo.portal.utils.time.JodaTimeBridge;
+import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +101,7 @@ public class PortalEventPurgerImpl implements PortalEventPurger {
 
         // Calculate purge end date from most recent aggregation minus the purge delay
         final DateTime lastAggregated = eventAggregatorStatus.getLastEventDate();
-        DateTime purgeEnd = JodaTimeBridge.minus(lastAggregated, this.purgeDelay);
+        DateTime purgeEnd = JodaTimeConversions.minus(lastAggregated, this.purgeDelay);
 
         // Determine the DateTime of the oldest event
         DateTime oldestEventDate = eventPurgerStatus.getLastEventDate();

@@ -24,7 +24,7 @@ import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
-import org.apereo.portal.utils.time.JodaTimeBridge;
+import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.joda.time.DateMidnight;
 import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
@@ -197,12 +197,13 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
             startIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            JodaTimeBridge.minus(now, this.dimensionBuffer));
+                            JodaTimeConversions.minus(now, this.dimensionBuffer));
         } else {
             startIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            JodaTimeBridge.minus(oldestPortalEventTimestamp, this.dimensionBuffer));
+                            JodaTimeConversions.minus(
+                                    oldestPortalEventTimestamp, this.dimensionBuffer));
         }
 
         final AggregationIntervalInfo endIntervalInfo;
@@ -212,12 +213,13 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
             endIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            JodaTimeBridge.plus(now, this.dimensionBuffer));
+                            JodaTimeConversions.plus(now, this.dimensionBuffer));
         } else {
             endIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            JodaTimeBridge.plus(newestPortalEventTimestamp, this.dimensionBuffer));
+                            JodaTimeConversions.plus(
+                                    newestPortalEventTimestamp, this.dimensionBuffer));
         }
 
         final DateMidnight start = startIntervalInfo.getStart().toDateMidnight();

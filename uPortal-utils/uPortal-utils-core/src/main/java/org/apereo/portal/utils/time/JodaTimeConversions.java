@@ -29,8 +29,8 @@ import org.joda.time.DateTimeZone;
  *
  * <p>Temporary: it goes away when the JPA entities and DAOs move to {@code java.time}.
  */
-public final class JodaTimeBridge {
-    private JodaTimeBridge() {}
+public final class JodaTimeConversions {
+    private JodaTimeConversions() {}
 
     /** Converts a Joda {@link DateTime} to a {@link ZonedDateTime} in the same zone. */
     public static ZonedDateTime toZonedDateTime(DateTime dateTime) {

@@ -50,7 +50,7 @@ import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.BaseRawEventsJpaDao.RawEventsTransactional;
 import org.apereo.portal.spring.context.ApplicationEventFilter;
 import org.apereo.portal.utils.cache.CacheKey;
-import org.apereo.portal.utils.time.JodaTimeBridge;
+import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.hibernate.Cache;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -546,7 +546,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         }
 
         final DateTime newestEventTime =
-                JodaTimeBridge.minus(DateTime.now(), this.aggregationDelay)
+                JodaTimeConversions.minus(DateTime.now(), this.aggregationDelay)
                         .secondOfMinute()
                         .roundFloorCopy();
 

@@ -25,24 +25,24 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
-public class JodaTimeBridgeTest {
+public class JodaTimeConversionsTest {
 
     @Test
     public void keepsInstantAndZoneBothWays() {
         for (final String zone : new String[] {"UTC", "America/New_York", "+05:30"}) {
             final DateTime joda =
                     new DateTime(2026, 3, 8, 1, 30, 15, 123, DateTimeZone.forID(zone));
-            final ZonedDateTime javaTime = JodaTimeBridge.toZonedDateTime(joda);
+            final ZonedDateTime javaTime = JodaTimeConversions.toZonedDateTime(joda);
             assertEquals(zone, ZoneId.of(zone), javaTime.getZone());
             assertEquals(zone, joda.getMillis(), javaTime.toInstant().toEpochMilli());
-            assertEquals(zone, joda, JodaTimeBridge.toDateTime(javaTime));
+            assertEquals(zone, joda, JodaTimeConversions.toDateTime(javaTime));
         }
     }
 
     @Test
     public void mapsTheZOffsetToJodaUtc() {
         final ZonedDateTime utc = ZonedDateTime.of(2026, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-        assertEquals(DateTimeZone.UTC, JodaTimeBridge.toDateTime(utc).getZone());
+        assertEquals(DateTimeZone.UTC, JodaTimeConversions.toDateTime(utc).getZone());
     }
 
     @Test
@@ -56,13 +56,13 @@ public class JodaTimeBridgeTest {
                 }) {
             assertEquals(
                     noon.minus(org.joda.time.Period.days(1)),
-                    JodaTimeBridge.minus(noon, Period.ofDays(1)));
+                    JodaTimeConversions.minus(noon, Period.ofDays(1)));
             assertEquals(
                     noon.minus(org.joda.time.Period.hours(24)),
-                    JodaTimeBridge.minus(noon, Duration.ofHours(24)));
+                    JodaTimeConversions.minus(noon, Duration.ofHours(24)));
             assertEquals(
                     noon.plus(org.joda.time.Period.days(30)),
-                    JodaTimeBridge.plus(noon, Period.ofDays(30)));
+                    JodaTimeConversions.plus(noon, Period.ofDays(30)));
         }
     }
 }
