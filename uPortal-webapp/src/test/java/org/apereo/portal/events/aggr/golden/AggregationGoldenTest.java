@@ -510,6 +510,8 @@ public class AggregationGoldenTest {
                         + renderAll(renderer, logins.getAggregatedGroupMappings()));
         final DateTime start = first.minusDays(1);
         final DateTime end = last.plusDays(1);
+        // Everyone's logins per day: from the HOUR rows, and from the DAY row
+        final Map<String, int[]> everyoneByDay = new TreeMap<>();
         for (final AggregationInterval interval :
                 Arrays.asList(
                         AggregationInterval.HOUR,
@@ -522,6 +524,21 @@ public class AggregationGoldenTest {
                             new LoginAggregationKeyImpl(interval, everyone),
                             everyone,
                             students);
+            for (final LoginAggregation aggregation : found) {
+                if (interval != AggregationInterval.MONTH
+                        && "Everyone".equals(aggregation.getAggregatedGroup().getGroupName())) {
+                    everyoneByDay
+                                    .computeIfAbsent(
+                                            aggregation
+                                                    .getDateDimension()
+                                                    .getDate()
+                                                    .toLocalDate()
+                                                    .toString(),
+                                            day -> new int[2])[
+                                    interval == AggregationInterval.HOUR ? 0 : 1] +=
+                            aggregation.getLoginCount();
+                }
+            }
             // Ordered by date and time, then by id (MOD-I191)
             for (int i = 0; i < found.size(); i++) {
                 lines.add(
@@ -533,6 +550,18 @@ public class AggregationGoldenTest {
                                 + " "
                                 + renderer.render(found.get(i)));
             }
+        }
+        // The HOUR rows of a day sum to its DAY row, except where a local hour repeats: there the
+        // second hour is dropped from the HOUR rows (MOD-I140, fixed in the 6.0 schema step)
+        for (final Map.Entry<String, int[]> day : everyoneByDay.entrySet()) {
+            lines.add(
+                    prefix
+                            + "logins of Everyone on "
+                            + day.getKey()
+                            + ": HOUR rows sum to "
+                            + day.getValue()[0]
+                            + ", DAY row counts "
+                            + day.getValue()[1]);
         }
         @SuppressWarnings("unchecked")
         final ConcurrentUserAggregationDao<ConcurrentUserAggregation> concurrent =

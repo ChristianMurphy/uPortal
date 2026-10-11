@@ -16,8 +16,10 @@ commit body.
 | MOD-I142 portlet search | pushed; light CI | `3e7e375` | |
 | MOD-I191 order tie-breakers | pushed; light CI | `98f0524` | |
 | MOD-I141 timestamps in UTC | done locally; uPortal-start part waits for access | see `git log` | |
-| MOD-I140 analytics repeated hour | design note sent (option B recommended), waiting for the decision | | |
-| G-index R4 | not started, needs uPortal-start access and the 6.0 schema-change ruling | | |
+| MOD-I140 analytics repeated hour | design approved (option B), built in the 6.0 schema step; characterisation committed | see `git log` | |
+| G-index R4 | index plan written for the 6.0 schema step; allowlist entries stay | | |
+| 6: pre-delete in `PersistenceUnits` | removed; passes on HSQLDB, needs the six-vendor run | see `git log` | |
+| 7: `TransientPortletEntityDao` NPE | reproduced and fixed | see `git log` | |
 
 ## Running tests in this container
 
@@ -182,3 +184,83 @@ MOD-I141 resolution column:
 > `--target-profile 6.0` converts 5.17's values with `--source-zone`. A value in the repeated
 > autumn hour takes the earlier offset (`UPGRADING-6.0.md`). The marker and start refusal belong
 > to the 6.0 schema step.
+
+## MOD-I140: analytics in the repeated hour (6.0 schema step)
+
+Decision (coordinator, 2026-10-11): option B, local time plus each row's UTC offset. The column is
+a schema change, so it comes with the 6.0 schema step (Hibernate 7, after P7-1). Until then the
+schema stays at zero drift against 5.17 (MOD-D33).
+
+Design:
+
+- Each aggregation row stores the UTC offset of its interval start (in minutes: -240 for EDT) in a new column. The column joins the natural id with date, time, interval and group in
+  the six aggregation tables: login, concurrent user, tab render, portlet execution, portlet
+  layout and search request.
+- Interval lookup and closing use (date, time, offset). `BaseAggregationImpl.getDateTime()`
+  rebuilds the start with the stored offset instead of the JVM zone's default.
+- Reports: the Statistics and ECharts controllers show the offset on sub-day rows only where a
+  local time repeats. In New York on 2025-11-02 the hourly report has 25 rows, the two 01:00 rows
+  labelled -04:00 and -05:00. The spring day has 23 rows. Day and longer rows keep their local days.
+- Copy tool, 5.17 to 6.0: fill the offset from date, time and `--source-zone`. A row in the
+  repeated hour gets the earlier offset. That is exact, because 5.17 dropped the second hour. The
+  spring gap has no rows.
+- Tests then: re-record `aggregation/America_New_York.txt` on purpose, so that the HOUR rows of
+  2025-11-02 sum to the DAY row, and seed a fault (offset left out of the natural id).
+
+Now: for each day of each burst, the aggregation golden has a line with the sum of Everyone's
+HOUR rows and the count of the DAY row. In New York, 2025-11-02 reads `HOUR rows sum to 6, DAY row counts 8`. Every
+other day agrees, and all days agree under UTC. The fix changes that line on purpose.
+
+Proposed LOG text, MOD-I140 resolution column:
+
+> **Design approved (2026-10-11): option B.** Keep local time and store each aggregation row's
+> UTC offset, as part of its natural id. Built in the 6.0 schema step. The copy tool fills the
+> offset with `--source-zone`. The aggregation golden shows the bug as a per-day line (New York,
+> 2025-11-02: HOUR rows 6, DAY row 8).
+
+## G-index R4 (6.0 schema step)
+
+Decision (coordinator, 2026-10-11): an index is a schema change, so it waits for the 6.0 schema
+step. The "6.0: R4" allowlist entries in uPortal-start stay until then.
+
+Every foreign key to `UP_UNIQUE_STR`, none with an index today. Check each against the G-index
+audit when the step runs:
+
+| Table.column | Proposed `@Index` | Where |
+| --- | --- | --- |
+| `UP_LOGIN_EVENT_AGGR.UNIQUE_STRINGS_ID` | `IDX_UP_LOGIN_EVENT_USTR` | `LoginAggregationImpl` `@Table(indexes)` |
+| `UP_CONCURRENT_USER_AGGR.UNIQUE_STRINGS_ID` | `IDX_UP_CONC_USER_USTR` | `ConcurrentUserAggregationImpl` `@Table(indexes)` |
+| `UP_UNIQUE_STR_SEGMENT.UNIQUE_STR_ID` | `IDX_UP_USTR_SEGMENT_USTR` | `UniqueStringsSegment` `@Table(indexes)` |
+
+The third column is the join column of `UniqueStrings`' one-to-many, used whenever segments load or
+are deleted. Hibernate 5.2 rejects `@Index` on the one-to-many itself (hibernate-52 note), so it
+belongs on the segment's `@Table`. The names follow the tables' existing `IDX_UP_..._*` pattern.
+Check them against the G-index note's naming rules, which this session couldn't read.
+
+Expected audit result: no `fk-no-index` finding for these columns, and the two "6.0: R4" entries
+removed with the G-index check still passing.
+
+## 6: the pre-delete in `PersistenceUnits.deleteAll`
+
+Removed. `ElementCollectionDeleteIntegrator` deletes NULL element rows with their owner (MOD-I144),
+so the goldens clean up with `EntityManager#remove` alone. The round-trip, query and aggregation
+goldens pass on HSQLDB. The six-vendor run, Oracle included, decides. If Oracle fails, revert that
+commit and record why.
+
+## 7: `TransientPortletEntityDao` NullPointerException
+
+`getPortletEntity` threw for a transient node id ("ctf...") the user's layout no longer has (a page
+from before a guest session expired), and for one whose portlet definition is gone.
+`TransientPortletEntityDaoTest` reproduced both. Now it returns null, as the JPA DAO does for an
+unknown node. The original stack trace from the first P2 runs is in uPortal-start's runs, which
+this session can't read. The test reproduces the case from the code.
+
+## Proposed new LOG rows (MOD-I220 to MOD-I229)
+
+| ID | Area | Issue | Resolution |
+| --- | --- | --- | --- |
+| MOD-I220 | Persistence | **Found by the entity round trip.** `UP_MUTEX.LOCK_END` (`ClusterMutex.lockEnd`) is stored as JVM-local time too, but MOD-I141's list left it out. | **Fixed** with MOD-I141: `Instant` in UTC, converted by the copy tool. |
+| MOD-I221 | Persistence | `hibernate.jdbc.time_zone=UTC` alone moves `UP_TIME_DIMENSION.TD_TIME` by the JVM's offset (00:00 stored as 05:00 in New York). Without a zone, Jadira's `localTime` binds through Hibernate's time descriptor. | **Fixed:** `JvmZoneLocalTimeType` binds with the JVM zone's calendar, as before. |
+| MOD-I222 | Portlets | `TransientPortletEntityDao.getPortletEntity` threw a NullPointerException for a transient node the layout lacks or whose portlet is gone (seen on `layout.json` with `user=null` in the first P2 runs). | **Fixed:** returns null. |
+| MOD-I223 | Portlets | On SQL Server, `[` in a portlet search term starts a LIKE character class. HSQLDB and Oracle reject escaping it with the `!` escape, so it isn't escaped. | **Open**, not covered by a test. Needs a decision: SQL Server-only escaping, or accept. |
+
