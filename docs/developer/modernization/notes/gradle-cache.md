@@ -51,12 +51,19 @@ wider work than the saver of its key.
 
 ## Size against the 10 GB limit
 
-Measured sizes are in the table below. The limit is per repository, and GitHub evicts the entries
-used least recently when it is exceeded.
+The limit is per repository, and GitHub evicts the entries used least recently when it is exceeded.
+The sizes are the bytes the saving job sent.
 
-| Entry | Size | Run |
+| Entry | Size | Run and job |
 | --- | --- | --- |
-| uPortal, Linux, saved by the DB copy tool (first design) | 415,964,467 bytes | 38150884890 |
+| uPortal, Linux, saved by the DB copy tool (first design) | 415,964,467 bytes | 38150884890, 114503920254 |
+| uPortal, Linux, saved by the `CI` build cell | 549,854,370 bytes | 38157439312, 114523221602 |
+| uPortal-start, the uPortal key, saved by `Build uPortal` of `Integration` | 486,872,376 bytes | 38157305156, 114522826645 |
+| uPortal-start, the uPortal-start key, saved by `Playwright: postgres-18` | 1,208,282,953 bytes | 38160995495, 114553883760 |
+
+One topic branch takes about 0.55 GB of the limit in uPortal and 1.7 GB in uPortal-start (two keys),
+so about 18 and 6 branches fit in 10 GB. The Windows and macOS entries of `CI` add 2 entries to the
+integration branch's runs. `ci-speed.md` ("Cache size") lists what the uPortal-start entry holds and the options.
 
 ## Measurement
 
@@ -85,6 +92,6 @@ Times are the job's `started_at` to `completed_at`, and the step times, from `li
   of downloads from Maven Central. The first run of a key is always cold.
 * The `Setup Gradle` times include the restore. Restoring 416 MB took about 6 s.
 
-The runs of the uPortal `CI` build job and of the uPortal-start `Integration` savers had not
-finished when this note was written, so the sizes of their entries are open. The sizes of the other
-entries are in the log of the saving job (`Sent N of N`).
+More runs are in `ci-speed.md`. On the final head of `-ci-speed`, `DB integration` on postgres-18
+went from 306 s to 146 s in the test step after it restored the entry that the `CI` build cell saved,
+and `Build uPortal` in `Integration` went from 223 s to 114 s.
