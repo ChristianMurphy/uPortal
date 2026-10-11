@@ -13,11 +13,41 @@ export type Messages = Readonly<Record<string, string>>;
 
 export const MESSAGES_PATH = '/api/v6-0/messages';
 
-/** Replaces `{0}`, `{1}`, … with the arguments; placeholders without an argument stay as they are. */
-export function formatMessage(pattern: string, args: readonly (string | number)[] = []): string {
+/** A message argument: text as it is, numbers and dates formatted for the locale. */
+export type MessageArg = string | number | Date;
+
+/** The locale if `Intl` accepts it as a language tag, else English. */
+function intlLocale(locale: string): string {
+    try {
+        return Intl.getCanonicalLocales(locale)[0] ?? 'en';
+    } catch {
+        return 'en';
+    }
+}
+
+/**
+ * Replaces `{0}`, `{1}`, … with the arguments; placeholders without an argument stay as they are.
+ * Numbers are formatted with `Intl.NumberFormat` and dates with `Intl.DateTimeFormat` for the
+ * locale (MOD-I235), so `1234.5` reads `1.234,5` in German and `١٬٢٣٤٫٥` in Egyptian Arabic.
+ */
+export function formatMessage(
+    pattern: string,
+    args: readonly MessageArg[] = [],
+    locale = 'en',
+): string {
+    const tag = intlLocale(locale);
     return pattern.replace(/\{(\d+)\}/g, (placeholder, index: string) => {
         const arg = args[Number(index)];
-        return arg === undefined ? placeholder : String(arg);
+        if (arg === undefined) {
+            return placeholder;
+        }
+        if (typeof arg === 'number') {
+            return new Intl.NumberFormat(tag).format(arg);
+        }
+        if (arg instanceof Date) {
+            return new Intl.DateTimeFormat(tag, { dateStyle: 'medium' }).format(arg);
+        }
+        return arg;
     });
 }
 
@@ -36,12 +66,7 @@ const pluralRules = new Map<string, Intl.PluralRules>();
 function pluralRulesFor(locale: string): Intl.PluralRules {
     let rules = pluralRules.get(locale);
     if (rules === undefined) {
-        try {
-            rules = new Intl.PluralRules(locale);
-        } catch {
-            // Not a well-formed language tag
-            rules = new Intl.PluralRules('en');
-        }
+        rules = new Intl.PluralRules(intlLocale(locale));
         pluralRules.set(locale, rules);
     }
     return rules;
