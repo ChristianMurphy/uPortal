@@ -14,7 +14,9 @@
  */
 package org.apereo.portal.portlet.rendering.worker;
 
+import java.util.Objects;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.springframework.orm.jpa.EntityManagerFactoryUtils;
@@ -46,7 +48,7 @@ public class JpaPortletExecutionInterceptor extends OpenEntityManagerInViewInter
             em = createEntityManager();
             isNewEm = true;
             TransactionSynchronizationManager.bindResource(
-                    getEntityManagerFactory(), new EntityManagerHolder(em));
+                    entityManagerFactory(), new EntityManagerHolder(em));
 
             // For new EM store as attribute so it can be closed
             context.setExecutionAttribute(ENTITY_MANAGER_FACTORY, em);
@@ -63,7 +65,7 @@ public class JpaPortletExecutionInterceptor extends OpenEntityManagerInViewInter
             Exception e) {
         boolean isNewEm = (Boolean) context.getExecutionAttribute(IS_NEW);
         if (isNewEm) {
-            TransactionSynchronizationManager.unbindResource(getEntityManagerFactory());
+            TransactionSynchronizationManager.unbindResource(entityManagerFactory());
             EntityManager em =
                     (EntityManager) context.getExecutionAttribute(ENTITY_MANAGER_FACTORY);
             EntityManagerFactoryUtils.closeEntityManager(em);
@@ -79,5 +81,12 @@ public class JpaPortletExecutionInterceptor extends OpenEntityManagerInViewInter
             HttpServletResponse response,
             IPortletExecutionContext context) {
         // noop
+    }
+
+    /** The configured factory, without which this interceptor can't run (MOD-I225) */
+    private EntityManagerFactory entityManagerFactory() {
+        return Objects.requireNonNull(
+                getEntityManagerFactory(),
+                "JpaPortletExecutionInterceptor has no EntityManagerFactory");
     }
 }
