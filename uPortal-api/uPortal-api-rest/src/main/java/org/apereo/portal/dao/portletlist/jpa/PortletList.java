@@ -3,8 +3,7 @@ package org.apereo.portal.dao.portletlist.jpa;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,7 +34,6 @@ import org.springframework.util.StringUtils;
 @org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 @SuppressWarnings("unused")
 public class PortletList implements IPortletList {
-    private static final ZoneId tz = ZoneId.systemDefault();
     private static final String AUDIT_DATE_FORMAT = "yyyy-MM-dd hh:mm:ss Z";
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
@@ -55,19 +53,15 @@ public class PortletList implements IPortletList {
     @Column(name = "CREATED_BY", updatable = false, nullable = false)
     private String createdBy;
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = AUDIT_DATE_FORMAT)
     @Column(name = "CREATED_ON", updatable = false, nullable = false)
-    private Timestamp createdOn;
+    private Instant createdOn;
 
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @Column(name = "UPDATED_BY", updatable = true, nullable = false)
     private String updatedBy;
 
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = AUDIT_DATE_FORMAT)
     @Column(name = "UPDATED_ON", updatable = true, nullable = false)
-    private Timestamp updatedOn;
+    private Instant updatedOn;
 
     @OneToMany(
             targetEntity = PortletListItem.class,
@@ -137,12 +131,24 @@ public class PortletList implements IPortletList {
 
         // Set / Update audit fields
         if (this.createdOn == null) {
-            this.createdOn = this.updatedOn = Timestamp.valueOf(LocalDateTime.now(tz));
+            this.createdOn = this.updatedOn = Instant.now();
             this.createdBy = this.updatedBy = requester.getUserName();
         } else {
-            this.updatedOn = Timestamp.valueOf(LocalDateTime.now(tz));
+            this.updatedOn = Instant.now();
             this.updatedBy = requester.getUserName();
         }
+    }
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = AUDIT_DATE_FORMAT)
+    public Timestamp getCreatedOn() {
+        return createdOn == null ? null : Timestamp.from(createdOn);
+    }
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = AUDIT_DATE_FORMAT)
+    public Timestamp getUpdatedOn() {
+        return updatedOn == null ? null : Timestamp.from(updatedOn);
     }
 
     public String toString() {
