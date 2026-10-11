@@ -40,6 +40,21 @@ and `web-component-channel.spec.ts`, 29 of 29; `:uPortal-webcomponents:check` wi
 the HSQLDB harness passed all four drift checks and found both intended changes (`UP_PORTLET_DEF_PARAM`
 403 to 408).
 
+## Judgement calls not approved by the owner
+
+Sent to the coordinator on 2026-10-11. The ones not recorded elsewhere:
+
+* A failed `GET /api/v6-0/session` (5xx, network, malformed body) leaves the page without a
+  warning (`inactive`). The portlet's script fell back to 30 minutes.
+* The storage-key e2e test allows 40 seconds between the page load and the check.
+* The model-based tests leave out `disabled` (their input is `enabled=true`). Browser tests
+  cover it.
+* The definition doesn't add portlet-preference rows. The renderer passes preferences to the
+  element only through `webComponent.preferenceAttributes`, and the defaults are in the component.
+* Bootstrap 6's dialog partial is in the shared sheet, which every component loads.
+* `SessionTimeoutRESTController` is a new class beside the legacy `SessionRESTController`
+  (`/api/session.json`), which is unchanged.
+
 ## Seeded faults
 
 Each fault was seeded alone and reverted. The e2e faults were edits of the deployed bundle,
@@ -80,7 +95,8 @@ with Tomcat restarted so the page cache served them.
   characterisation spec passes on the portlet and on the component.
 * Issue: a portal-page keydown listener cancels Escape for modal dialogs in web components
   (first finding above). Locate it before a component relies on Escape.
-* Issue: content-hashed web component modules are served with `max-age=0` (second finding).
+* Issue: content-hashed web component modules are served with `max-age=0`, and the page caching
+  filter keeps stale copies until Tomcat restarts (second finding). It affects every component.
 * Issue: `session-timeout.keep-alive.failed` exists only in English (`Messages.properties`);
   the French and Spanish files have the other session-timeout keys.
 * Sandbox notes for other workers. Maven Central answers 429 to most requests, and Google's
