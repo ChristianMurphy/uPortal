@@ -20,7 +20,7 @@ import org.apereo.portal.concurrency.locking.IClusterLockService;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.session.EventSessionDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao.AggrEventsTransactional;
-import org.apereo.portal.utils.time.JodaTimeBridge;
+import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +78,8 @@ public class PortalEventSessionPurgerImpl implements PortalEventSessionPurger {
         }
 
         final DateTime lastEventDate = eventAggregatorStatus.getLastEventDate();
-        final DateTime sessionPurgeDate = JodaTimeBridge.minus(lastEventDate, eventSessionDuration);
+        final DateTime sessionPurgeDate =
+                JodaTimeConversions.minus(lastEventDate, eventSessionDuration);
         final int purgeCount = eventSessionDao.purgeEventSessionsBefore(sessionPurgeDate);
 
         return new EventProcessingResult(purgeCount, null, sessionPurgeDate, true);

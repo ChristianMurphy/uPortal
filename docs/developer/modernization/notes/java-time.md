@@ -14,7 +14,7 @@ handling.
 
 | | Before | After |
 | --- | --- | --- |
-| Production files referencing `org.joda` | 73 | 62 (61 + the temporary `JodaTimeBridge`) |
+| Production files referencing `org.joda` | 73 | 62 (61 + the temporary `JodaTimeConversions`) |
 | Test files referencing `org.joda` | 14 | 19 (new tests compare against Joda on purpose) |
 | Joda property editors | 2 | 0 |
 | `joda-time-jsptags` in the war | yes | no |
@@ -25,7 +25,7 @@ handling.
    (`java.time.Duration`) and `TemporalAmountEditor` (`TemporalAmount`), registered next to the
    Joda editors.
 2. `refactor(utils): use java.time durations for cluster locks and scheduling`: cluster lock
-   service and DAO, task scheduler; adds `JodaTimeBridge`.
+   service and DAO, task scheduler; adds `JodaTimeConversions`.
 3. `refactor(events): use java.time for event job settings and analytics API`.
 4. `refactor(spring)!: remove the Joda-Time property editors`, plus `portal.properties` docs.
 5. `refactor(marketplace): use java.time for portlet release dates`, plus `entry.jsp`,
@@ -44,7 +44,7 @@ handling.
   Spring has nothing for a mixed period like `P1DT12H`.
 * **uPortal-utils-core:** `ClusterLockServiceImpl`, `JpaClusterLockDao` (only the
   `abandonedLockAge` setting, not query code) and `DelegatingThreadPoolTaskScheduler` take
-  `Duration`. New package `org.apereo.portal.utils.time` (`@NullMarked`) with `JodaTimeBridge`.
+  `Duration`. New package `org.apereo.portal.utils.time` (`@NullMarked`) with `JodaTimeConversions`.
 * **uPortal-events:** `PortalRawEventsAggregatorImpl.aggregationDelay`,
   `PortalEventDimensionPopulatorImpl.dimensionBuffer`, `PortalEventPurgerImpl.purgeDelay` and
   `PortalEventSessionPurgerImpl.eventSessionDuration` are `TemporalAmount`.
@@ -71,7 +71,7 @@ handling.
     differ: a period with both years and months is applied as total months (Joda applied years,
     then months), and the result is resolved differently when it falls in a repeated or skipped
     DST hour.
-* **Joda boundary:** `JodaTimeBridge` keeps both the instant and the zone, so a `DateTime` read
+* **Joda boundary:** `JodaTimeConversions` keeps both the instant and the zone, so a `DateTime` read
   from an entity is shifted in its own zone, as `DateTime.minus(Period)` did.
 * **Default zone:** `ZoneId.systemDefault()` replaces `DateTimeZone.getDefault()`. Both come
   from `user.timezone`, and `TimeZoneTestUtils` sets both.
@@ -102,7 +102,7 @@ All are in `docs/UPGRADING-6.0.md`: the setter types above, `IAnalyticsPortalEve
 ## Tests
 
 New: `DurationEditorTest`, `TemporalAmountEditorTest`, `JavaTimeEditorRegistrationTest`
-(uPortal-spring); `JodaTimeBridgeTest`, `DelegatingThreadPoolTaskSchedulerTest`
+(uPortal-spring); `JodaTimeConversionsTest`, `DelegatingThreadPoolTaskSchedulerTest`
 (uPortal-utils-core); `PortletReleaseNotesTest` (uPortal-marketplace);
 `PortalEventSessionPurgerImplTest`, `PortalEventDimensionPopulatorDimensionBufferTest`,
 `AnalyticsPortalEventsControllerTest` (uPortal-webapp). Each converted computation is checked
@@ -150,9 +150,9 @@ followed it.
   period and would have failed startup if uncommented.
 * **`PortalEventDimensionPopulatorImplTest` is `@Ignore`d** ("Breaks on move to Gradle"), so the
   dimension buffer had no running test. It has one now.
-* **ArchUnit freeze rule (not landed yet):** `JodaTimeBridge` is a new class depending on Joda.
+* **ArchUnit freeze rule (not landed yet):** `JodaTimeConversions` is a new class depending on Joda.
   A frozen "no Joda" rule would report it as new, though the store shrinks overall. The rule
-  should exempt `org.apereo.portal.utils.time.JodaTimeBridge`, or freeze it once; it is the
+  should exempt `org.apereo.portal.utils.time.JodaTimeConversions`, or freeze it once; it is the
   single place where converted code reaches Joda.
 
 ## Remaining Joda inventory (the JPA step)
@@ -187,10 +187,10 @@ followed it.
   (uPortal-core), `jackson-datatype-joda` (uPortal-portlets; keep it while any Joda value can
   reach JSON).
 
-### Remaining Joda call sites for the JPA step
+### Remaining Joda conversion call sites for the JPA step
 
-`JodaTimeBridge` is the only crossing. Its call sites, each removed by deleting the call once
-the other side is `java.time`:
+`JodaTimeConversions` is the only place converted code meets Joda. Its call sites, each
+removed by deleting the call once the other side is `java.time`:
 
 | Call site | Joda value it crosses to |
 | --- | --- |
@@ -216,7 +216,7 @@ the other side is `java.time`:
    changes and month and year ends in several zones.
 3. **Then:** the statistics portlet (form as `LocalDate` with a `M/d/yyyy` editor), the
    aggregation import/export, the cookie service, and `PortalEvent.getTimestampAsDate()`.
-   Delete `JodaTimeBridge`; drop `joda-time`, Jadira and `jackson-datatype-joda`; the ArchUnit
+   Delete `JodaTimeConversions`; drop `joda-time`, Jadira and `jackson-datatype-joda`; the ArchUnit
    Joda rule becomes a plain (unfrozen) rule.
 
 ## Proposed LOG entries
@@ -224,7 +224,7 @@ the other side is `java.time`:
 * **MOD-D?: `java.time` replaces Joda-Time outside the JPA mappings.** The property
   editors (`DurationEditor`, `TemporalAmountEditor`) accept every value the Joda editors
   accepted, and periods keep calendar-day semantics in the value's zone. Code still meeting Joda
-  entities goes through `JodaTimeBridge` only. The Marketplace JSON keeps epoch milliseconds.
+  entities goes through `JodaTimeConversions` only. The Marketplace JSON keeps epoch milliseconds.
   The entities, DAOs and the aggregation engine (61 files) remain, to be converted with the
   Hibernate 5.2 step behind the persistence and analytics goldens.
 * **MOD-I?: the `portal.properties` example `purgeDelay=P1H` was invalid** (fixed to `PT1H`).
