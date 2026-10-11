@@ -100,8 +100,18 @@
     <bean id="portletDefinitionDao" class="org.apereo.portal.spring.MockitoFactoryBean" >
         <constructor-arg value="org.apereo.portal.portlet.dao.IPortletDefinitionDao" />
     </bean>
-    <bean id="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver" class="org.apereo.portal.spring.MockitoFactoryBean" >
-        <qualifier value="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver"/>
-        <constructor-arg value="net.sf.ehcache.Ehcache" />
+    <!--
+     | The Spring CacheManager JpaAggregatedTabLookupDao takes its layout node name cache from, backed
+     | by a real Ehcache as in the portal (as in jpaAggrEventsTestContext.xml)
+     +-->
+    <bean id="goldenEhcacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+        <property name="cacheManagerName" value="goldenAggregationTestContext-#{T(java.util.UUID).randomUUID()}" />
+    </bean>
+    <bean id="goldenLayoutNodeIdNameResolverCache" class="org.springframework.cache.ehcache.EhCacheFactoryBean">
+        <property name="cacheManager" ref="goldenEhcacheManager" />
+        <property name="cacheName" value="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver" />
+    </bean>
+    <bean id="ehCacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager" depends-on="goldenLayoutNodeIdNameResolverCache">
+        <property name="cacheManager" ref="goldenEhcacheManager" />
     </bean>
 </beans>
