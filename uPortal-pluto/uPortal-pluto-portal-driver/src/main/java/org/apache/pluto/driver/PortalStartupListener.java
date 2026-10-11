@@ -132,14 +132,9 @@ public class PortalStartupListener extends ContextLoaderListener
         AdminConfiguration adminConfiguration = (AdminConfiguration)
                 springContext.getBean("AdminConfiguration");
 
-        if (adminConfiguration != null)
-        {
-            LOG.debug(" [2b] Registering Optional AdminConfiguration");
-            servletContext.setAttribute(ADMIN_CONFIG_KEY, adminConfiguration);
-        } else
-        {
-            LOG.info("Optional AdminConfiguration not found. Ignoring.");
-        }
+        // getBean throws for a missing bean, it never returns null (MOD-I225)
+        LOG.debug(" [2b] Registering Optional AdminConfiguration");
+        servletContext.setAttribute(ADMIN_CONFIG_KEY, adminConfiguration);
 
 
         LOG.info("Initializing Portlet Container. . .");

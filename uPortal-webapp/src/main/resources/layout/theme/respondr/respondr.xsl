@@ -390,7 +390,7 @@
     <xsl:if test="$IS_FRAGMENT_ADMIN_MODE='true'">
         <div class="edit-page-permissions-dialog" title="{upMsg:getMessage('edit.page.permissions', $USER_LANG)}" style="display:none;">
             <div class="fl-widget portlet">
-                <div class="fl-widget-titlebar titlebar portlet-titlebar" role="sectionhead">
+                <div class="fl-widget-titlebar titlebar portlet-titlebar">
                     <h2 class="title" role="heading"><xsl:value-of select="/layout/navigation/tab[@activeTab='true']/@name"/></h2>
                 </div>
                 <div class="fl-widget-content content portlet-content">
@@ -418,7 +418,7 @@
         </div>
         <div class="edit-column-permissions-dialog" title="{upMsg:getMessage('edit.column.permissions', $USER_LANG)}" style="display:none;">
             <div class="fl-widget portlet">
-                <div class="fl-widget-titlebar titlebar portlet-titlebar" role="sectionhead">
+                <div class="fl-widget-titlebar titlebar portlet-titlebar">
                     <h2 class="title" role="heading"></h2>
                 </div>
                 <div class="fl-widget-content content portlet-content">
@@ -440,7 +440,7 @@
         </div>
         <div class="edit-portlet-permissions-dialog" title="{upMsg:getMessage('edit.portlet.permissions', $USER_LANG)}" style="display:none;">
             <div class="fl-widget portlet">
-                <div class="fl-widget-titlebar titlebar portlet-titlebar" role="sectionhead">
+                <div class="fl-widget-titlebar titlebar portlet-titlebar">
                     <h2 class="title" role="heading"></h2>
                 </div>
                 <div class="fl-widget-content content portlet-content">

@@ -25,10 +25,10 @@
 <c:set var="n"><portlet:namespace/></c:set>
 
 <!-- Portlet -->
-<div class="card portlet grp-mgr view-editdetails" role="section">
+<div class="card portlet grp-mgr view-editdetails">
 
     <!-- Portlet Title -->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading"><spring:message code="edit.group.details"/></h2>
     </div> <!-- end: portlet-title -->
 

@@ -6,7 +6,14 @@ import { playwright } from 'vite-plus/test/browser-playwright';
  * src/components/<name>/<name>.ts, that the portal loads by its name through the build manifest
  * (build/dist/manifest.json; see WebComponentModuleResolver in uPortal-rendering).
  */
-const components = ['up-favorites', 'up-popular-portlets', 'up-background-preference', 'up-search'];
+const components = [
+    'up-favorites',
+    'up-popular-portlets',
+    'up-background-preference',
+    'up-user-locale',
+    'up-session-timeout',
+    'up-search',
+];
 
 export default defineConfig({
     // Built files import each other relatively, so the bundle works under any context path
@@ -86,6 +93,10 @@ export default defineConfig({
     },
     lint: {
         ignorePatterns: ['build/**', 'node_modules/**'],
+        // uportal/logical-css: no physical CSS (margin-left, text-align: right, …), so the
+        // components mirror in right-to-left locales (src/lint/logical-css.ts)
+        jsPlugins: ['./src/lint/logical-css.ts'],
+        rules: { 'uportal/logical-css': 'error' },
         categories: {
             correctness: 'error',
             suspicious: 'error',

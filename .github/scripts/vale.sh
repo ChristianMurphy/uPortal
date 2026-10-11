@@ -21,6 +21,7 @@ DOC_PATHS=(
   docs/developer/adr
   docs/developer/modernization
   docs/developer/other/STATIC_ANALYSIS.md
+  docs/developer/other/CI_JOBS.md
 )
 
 root=$(git rev-parse --show-toplevel)

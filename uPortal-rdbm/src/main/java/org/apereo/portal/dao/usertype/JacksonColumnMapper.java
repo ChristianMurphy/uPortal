@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import java.io.IOException;
+import java.util.Objects;
 import org.apereo.portal.spring.beans.factory.ObjectMapperFactoryBean;
 import org.jadira.usertype.spi.shared.AbstractStringColumnMapper;
 
@@ -61,7 +62,10 @@ public class JacksonColumnMapper extends AbstractStringColumnMapper<Object> {
         try {
             final ObjectMapperFactoryBean omfb = new ObjectMapperFactoryBean();
             omfb.afterPropertiesSet();
-            mapper = omfb.getObject();
+            // An initialized factory bean has its mapper (MOD-I225)
+            mapper =
+                    Objects.requireNonNull(
+                            omfb.getObject(), "ObjectMapperFactoryBean returned no ObjectMapper");
         } catch (Exception e) {
             throw new RuntimeException("Failed to create ObjectMapper", e);
         }

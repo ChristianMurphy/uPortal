@@ -220,7 +220,10 @@ npx vp build
 
 The browser tests need the Chromium build that the pinned Playwright expects. Run
 `./gradlew :uPortal-webcomponents:installChromium` once, or point `PLAYWRIGHT_BROWSERS_PATH` at
-an existing install of that revision.
+an existing install of that revision. A build without Chromium passes `-PskipWebComponentTests`,
+which leaves `vpTest` out; the unit and browser tests share one coverage threshold, so they run
+together or not at all. CI runs them in one cell, Linux with Temurin 21, and the other cells pass
+the property.
 
 ### The base library (`src/lib`)
 
@@ -239,7 +242,24 @@ an existing install of that revision.
   same keys in the user's locale from `GET /api/v6-0/messages`, which reads the portal's message
   source: `Messages.properties`, its translations, and messages edited in the portal. One request
   per locale and set of keys serves every instance on the page; if it fails, the defaults stay.
-  Keys follow `Messages.properties`, and placeholders are `{0}`, `{1}`, …
+  Keys follow `Messages.properties`, and placeholders are `{0}`, `{1}`, … Numbers and dates
+  passed as arguments are formatted for the locale with `Intl.NumberFormat` and
+  `Intl.DateTimeFormat`. A message with a count is a plural family (`key.one`, `key.other`),
+  read with `this.msgPlural(key, count, ...args)` (see "Adding a language").
+* **Language and direction**: the element sets `lang` and `dir` on its host from its locale,
+  so a right-to-left locale lays it out right to left.
+* **Keys and input methods** (`keyboard.ts`): wrap a keydown handler in `ignoreComposing`, so the
+  keys a Chinese, Japanese or Korean input method uses (Enter, the arrows) do not act on the
+  page while it composes.
+* **Translations** (MOD-D50): each key in a component's `messages.ts` has English, Spanish and
+  French text in `Messages.properties`, `Messages_es.properties` and `Messages_fr.properties`
+  (uPortal-webapp, `properties/i18n`), added in the same commit as the key. The portal formats
+  every message with `MessageFormat`, so an apostrophe is written twice (`l''élément`) and the
+  placeholders stay as in English. The bundles are read as UTF-8 (MOD-I232), so accented
+  letters can be written as they are. `src/lib/translations.unit.test.ts` fails when a key is
+  missing from one of the three, when the Spanish or French text is the English text, or when
+  its placeholders differ or it has an apostrophe that is not doubled. A word that is the same
+  in both languages goes in that test's `SAME_AS_ENGLISH` list, with the reason.
 * **Events** (`events.ts`): components report what happened with `CustomEvent`s named
   `up-<subject>-<past-tense verb>`, such as `up-favorite-removed`. They bubble, are composed
   (they leave the shadow root) and are not cancelable; `detail` is plain data.
@@ -379,6 +399,11 @@ replacing `fetch` with a small router of real `Response` objects (`src/test-supp
 rather than with MSW: there is no service worker to install in the browser runner, and the stub
 records each request for assertions. Snapshots are only for small, stable markup.
 
+A component that waits or counts down takes its timers from a `clock` property (`now`, `after`,
+`every`), and its tests pass a `ManualClock` (`src/test-support/manual-clock.ts`), which fires
+timers only when the test moves it. Vitest's fake timers are not used in the browser project,
+because they also stop the timers of the test runner itself.
+
 A component with a machine adds two kinds of tests:
 
 * **Machine tests** (`<tag>.machine.unit.test.ts`, Node): every transition, guard, action and
@@ -394,6 +419,49 @@ A component with a machine adds two kinds of tests:
 
 Coverage (V8) must stay at 90% or more of lines, branches, functions and statements in every
 source file, not only in total; `vp test` fails below that. The report is in `build/coverage`.
+
+## Adding a language
+
+The release has English, Spanish and French text for every component message (MOD-D50). The
+other bundles in uPortal (de, ja, lv, mk, sv) show English for component keys until someone
+translates them. A site adds a language without changing code (MOD-D51):
+
+1. **Add the bundle.** Put `Messages_<language>.properties` (`Messages_pl.properties`,
+   `Messages_ar.properties`) in `properties/i18n`, in a site overlay of the uPortal webapp.
+   Write it in UTF-8 (MOD-I232). The portal formats each message with `MessageFormat`, so write
+   each apostrophe twice and keep the placeholders. A bundle for a language alone serves all its
+   forms: `Messages_zh.properties` answers `zh-TW`, `zh-Hant-TW` and `zh_TW`. Keys it lacks
+   come from `Messages.properties`.
+2. **List the locale.** Add it to `org.apereo.portal.i18n.LocaleManager.portal_locales`, so
+   users can choose it in the User Locales Selector.
+3. **Write the plural forms the language uses.** A message with a count is a family of keys, one
+   per CLDR plural category. English, Spanish and French use `.one` and `.other`, Polish
+   `.one`, `.few`, `.many` and `.other`, Arabic all six (`.zero`, `.one`, `.two`, `.few`,
+   `.many`, `.other`). Components ask for every category, and fall back to `.other`, then to the
+   bare key (`pluralKey` in `i18n.ts`). Numbers and dates need nothing in the bundle.
+
+**Right to left.** Components set `dir="rtl"` for Arabic, Hebrew, Persian and Urdu (and any
+language the browser's `Intl.Locale` says is written right to left), and their styles use
+logical properties only: the `uportal/logical-css` lint rule (`src/lint/logical-css.ts`) refuses
+`margin-left`, `text-align: right` and the like in `css` templates and SCSS. An icon that points
+left or right takes the `mirror-rtl` class. The page around the components is another matter, since
+Respondr has no right-to-left layout (MOD-I234, the owner's decision is pending), so in Arabic
+the components read right to left inside a left-to-right theme.
+
+**Pseudo-locales.** uPortal-start's `tests/i18n/pseudo-locales.ts` turns English text into two
+test-only locales, built at test time and never released:
+
+* `en-XA`: accented, about 40% longer and in [brackets], for English written into the code
+  (text without brackets) and for text cut off by its box;
+* `ar-XB`: the same, written right to left between RIGHT-TO-LEFT OVERRIDE and POP DIRECTIONAL
+  FORMATTING, with Arabic as its language, so the layout must mirror.
+
+`tests/ux/i18n/pseudo-locales.spec.ts` renders each component in both, at the width of a narrow
+column, by answering `/api/v6-0/messages` with the portal's English messages transformed. It
+fails on text outside brackets that is not data, on clipped text, on a select arrow over its
+value, and on a layout that does not mirror in `ar-XB` (or mirrors in `en-XA`). A theme test can
+use the same functions; to render the whole portal in a pseudo-locale, the test portal also
+needs the bundle on its classpath and the locale in `portal_locales`.
 
 ## REST APIs for web components
 
@@ -471,6 +539,26 @@ the user may not subscribe to and portlets that no longer exist.
 `fname` must be a Background Preference channel (the web component or the old portlet) that the
 user may use, else 404. The choice is the `*SelectedBackgroundImage` preference of the user's own
 portlet entity for the channel, the one the portlet used.
+
+### User locale
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/locale` | `{"selected": "fr_FR", "locales": [{"code": "en_US", "tag": "en-US", "name": "anglais", "nativeName": "English"}, ...]}`: the portal's locales in `portal_locales` order, each named in the user's current language (`name`) and in its own language (`nativeName`, with a capital first letter). The component names each language with `Intl.DisplayNames` and uses `nativeName` only when the browser can't name it. `selected` is null when the user has not chosen one. |
+| `PUT /api/v6-0/locale` with `{"code": "fr_FR"}` | 200 and the same body, now in the new language. 400 for a code that is not one of the portal's locales. |
+
+Guests may call it: their choice goes into the session. A signed-in user's choice also goes into
+their stored locales. The service reuses `UserLocaleHelper`, which the portlet's flow called.
+
+### Session
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/session` | `{"maxInactiveIntervalSeconds": 1800}`, the session's timeout; zero or less means it never expires. |
+| `POST /api/v6-0/session/keep-alive` | 200 and the same body. The request itself extends the session, as any request does. |
+
+Guests and requests without a session get 401. Answers carry `Cache-Control: no-store`.
+`SessionTimeoutRESTController` reads the session with `getSession(false)`.
 
 ## Reference conversion: Favorites
 
@@ -568,6 +656,35 @@ rule on every change. The rule is built with `insertRule` and the CSSOM, so a se
 cannot add rules, and the URL comes only from the API's list. The portlet stays until the data
 migration converts its definitions (MOD-I133).
 
+## Conversion: Session Timeout
+
+| Portlet | Web component |
+| --- | --- |
+| `SessionTimeoutViewController`, `jsp/SessionTimeout/*.jsp`, `scripts/session-timeout.js` | `<up-session-timeout>` (`uPortal-webcomponents/src/components/up-session-timeout`) |
+| Session timeout read in the controller (`getMaxInactiveInterval`) | `GET /api/v6-0/session` |
+| Keep-alive: `GET` of `resetSessionURLFragment` (`/api/ajax-success`) | `POST /api/v6-0/session/keep-alive` with the CSRF token |
+| jQuery UI modal dialog | Native `<dialog>` shown with `showModal()`, Bootstrap 6 Dialog styles |
+| `alert('Error resetting your session!')` | The same text in an alert inside the dialog (`session-timeout.keep-alive.failed`) |
+| Preferences `enabled`, `dialogDisplaySeconds`, `logoutURLFragment` | Attributes `enabled`, `dialog-display-seconds`, `logout-url`, through `webComponent.preferenceAttributes` |
+| Preference `resetSessionURLFragment` | Dropped: the keep-alive is the API |
+
+The timing is the portlet's: the warning opens 30 seconds plus `dialog-display-seconds` before
+the session expires, and the user is logged out when the countdown reaches zero. Tabs share the
+logout time under the portlet's `localStorage` key, `UportalSessionTimeoutLogoutTime`, so a tab
+that still runs the portlet and one that runs the component postpone each other's warning.
+`logout-url` must be a path in the portal; anything else falls back to `/Logout`. When
+`GET /api/v6-0/session` fails with a 5xx, a network error or a malformed body, the element
+assumes the portlet script's default of 30 minutes and still warns; only a 401 turns the warning
+off.
+
+Its machine, `up-session-timeout.machine.ts`, has the states `disabled`, `loading`, `inactive`
+(a guest, or a session that never expires), `waiting`, `warning` (`idle`,
+`extending` or `failed`) and `ended`. The two timers are invoked callback actors that send
+`warning.due`, `tick`, `postponed` and `expired` with the times in the event, so the machine
+never reads the clock. The model-based tests walk every state but `disabled` through 38
+shortest paths and 23 simple paths, moving the element's clock to the time each timer event
+stands for.
+
 ### Converting the next portlet
 
 1. Write the REST API first (`@RestController` under `/api/v6-0/`, a service on the portal's
@@ -575,11 +692,14 @@ migration converts its definitions (MOD-I133).
 2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its machine
    (`<tag>.machine.ts`, see "State machines"), its API client and validators, its messages, and
    its tests (machine, model-based and browser); add the tag to `components` in
-   `vite.config.ts`.
+   `vite.config.ts`. Each new message key gets its Spanish and French text in the same commit,
+   with each apostrophe written twice (see "Translations").
 3. Turn portlet modes into in-place states, preferences into `webComponent.preferenceAttributes`,
    and portlet actions into REST calls.
 4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
-   and document how existing definitions are converted.
+   add one that renders the component for a user whose locale is Spanish and one whose locale is
+   French (see `tests/ux/i18n/web-components-locale.spec.ts`), and document how existing
+   definitions are converted.
 
 ## Conversion: Search
 
@@ -651,3 +771,27 @@ Change, and keep everything else (fname, ID, title, categories, permissions):
 
 The portlet had no preferences. The import upgrader and copy-tool rule described for Favorites
 apply in the same way, with the `PopularPortlets` descriptor.
+
+## Conversion: User Locale
+
+The User Locales Selector (`UserLocale`, a Web Flow with one JSP) became `<up-user-locale>`
+(`uPortal-webcomponents/src/components/up-user-locale`).
+
+| Portlet | Web component |
+| --- | --- |
+| `locale-selector` flow, `selectLocale.jsp` | `<up-user-locale>` |
+| `UserLocaleHelper.getLocales` and `getCurrentUserLocale` in the flow | `GET /api/v6-0/locale` |
+| The form's POST to `UserLocaleHelper.updateUserLocale`, then the portal page re-rendered | `PUT /api/v6-0/locale`, then the component reloads the page |
+| Flag images from the resource server | Dropped, because several countries share a language |
+
+The component's states are the machine in `up-user-locale.machine.ts`: `loading`, `failed`, and
+`ready` with `idle`, `saving` and `saved`. The change is pessimistic: the page reloads only once
+the portal confirms, and a failure keeps the page and shows an alert. In `saved` the form stays
+disabled until the new page arrives. The model-based tests play 23 shortest paths, which cover
+all five states, and 27 simple paths.
+
+uPortal-start publishes `user-locales-selector` as a Web Component channel. Existing definitions
+are converted as UPGRADING-6.0 describes. The import upgrader and copy-tool rule are the same open
+item as for Favorites (MOD-I133). The `UserLocale` portlet, `UserLocale-portlet.xml` and the
+`locale-selector` flow stay until the 6.0 data migration converts existing definitions to the
+new type. `UserLocaleHelper` stays for the API and the Translator portlet.

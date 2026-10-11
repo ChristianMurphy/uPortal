@@ -38,10 +38,10 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 -->
     
 <!-- Portlet -->
-<div class="card portlet ptl-mgr view-choosetype" role="section">
+<div class="card portlet ptl-mgr view-choosetype">
 
 	<!-- Portlet Titlebar -->
-  <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+  <div class="card-header titlebar portlet-titlebar">
   	<h2 class="title" role="heading">
         <spring:message code="${ completed ? 'edit.portlet' : 'register.new.portlet' }"/>
     </h2>

@@ -21,8 +21,11 @@
 @use 'bootstrap/scss/content/tables';
 @use 'bootstrap/scss/forms/labels';
 @use 'bootstrap/scss/alert';
+@use 'bootstrap/scss/dialog';
 @use 'bootstrap/scss/spinner';
 @use 'bootstrap/scss/placeholder';
+@use 'bootstrap/scss/forms/form-field';
+@use 'bootstrap/scss/forms/radio';
 @use 'bootstrap/scss/helpers/theme-colors';
 @use 'bootstrap/scss/helpers/visually-hidden';
 @use 'bootstrap/scss/helpers/focus-ring';
@@ -40,5 +43,11 @@
 @layer custom {
     .alert {
         color: var(--theme-fg-emphasis, var(--alert-color));
+    }
+
+    // Bootstrap 6 pads a select at its inline end but draws the arrow at the right, over the
+    // value in a right-to-left locale (found by the ar-XB pseudo-locale, MOD-D51)
+    select.form-control:dir(rtl) {
+        --control-select-bg-position: left 0.75rem center;
     }
 }

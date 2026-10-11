@@ -1,7 +1,16 @@
 import { LitElement, type PropertyDeclarations, type PropertyValues } from 'lit';
 import { ApiClient } from './api-client';
 import { createEvent } from './events';
-import { formatMessage, loadMessages, type Messages } from './i18n';
+import {
+    formatMessage,
+    intlLocale,
+    loadMessages,
+    messageKeys,
+    pluralKey,
+    textDirection,
+    type MessageArg,
+    type Messages,
+} from './i18n';
 import { bootstrapStyles, hostStyles } from './styles/shared-styles';
 
 /**
@@ -53,7 +62,8 @@ export abstract class UpElement extends LitElement {
     get resolvedLocale(): string {
         return (
             this.locale ||
-            this.closest('[lang]')?.getAttribute('lang') ||
+            // From the parent: the element sets its own lang from this
+            this.parentElement?.closest('[lang]')?.getAttribute('lang') ||
             document.documentElement.lang ||
             navigator.language ||
             'en'
@@ -85,8 +95,28 @@ export abstract class UpElement extends LitElement {
     }
 
     /** The localized message, else its English default, else the key; `{0}`… take `args`. */
-    protected msg(key: string, ...args: (string | number)[]): string {
-        return formatMessage(this.localizedMessages[key] ?? this.defaultMessages[key] ?? key, args);
+    protected msg(key: string, ...args: MessageArg[]): string {
+        return formatMessage(
+            this.localizedMessages[key] ?? this.defaultMessages[key] ?? key,
+            args,
+            this.resolvedLocale,
+        );
+    }
+
+    /**
+     * The plural form of `key` for `count` in the user's locale (see {@link pluralKey}), formatted
+     * like {@link msg}. The component's English defaults list the family's `.one` and `.other`.
+     */
+    protected msgPlural(key: string, count: number, ...args: MessageArg[]): string {
+        const pattern = pluralKey(
+            key,
+            count,
+            this.resolvedLocale,
+            (candidate) =>
+                this.localizedMessages[candidate] !== undefined ||
+                this.defaultMessages[candidate] !== undefined,
+        );
+        return this.msg(pattern, ...args);
     }
 
     /** Dispatches an `up-<subject>-<verb>` event (see events.ts). */
@@ -97,7 +127,17 @@ export abstract class UpElement extends LitElement {
     protected override willUpdate(changed: PropertyValues<this>): void {
         super.willUpdate(changed);
         const locale = this.resolvedLocale;
-        const keys = Object.keys(this.defaultMessages);
+        // The host's language and direction, so the browser picks fonts, hyphenation and
+        // right-to-left layout for the locale (MOD-D51)
+        const lang = intlLocale(locale);
+        const dir = textDirection(locale);
+        if (this.getAttribute('lang') !== lang) {
+            this.setAttribute('lang', lang);
+        }
+        if (this.getAttribute('dir') !== dir) {
+            this.setAttribute('dir', dir);
+        }
+        const keys = messageKeys(Object.keys(this.defaultMessages));
         if (keys.length > 0 && locale !== this.#messagesLocale) {
             this.#messagesLocale = locale;
             this.#messagesReady = loadMessages(this.api, locale, keys).then((messages) => {

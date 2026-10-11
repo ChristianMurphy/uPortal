@@ -16,9 +16,17 @@ export const hostStyles = css`
     :host {
         display: block;
         color-scheme: inherit;
+        /* A long word (a URL, a German compound, a title without spaces) wraps instead of
+           overflowing a narrow column (MOD-D51) */
+        overflow-wrap: anywhere;
     }
 
     :host([hidden]) {
         display: none;
+    }
+
+    /* An icon that points left or right (a chevron, an arrow) mirrors in right-to-left locales */
+    .mirror-rtl:dir(rtl) {
+        transform: scaleX(-1);
     }
 `;
