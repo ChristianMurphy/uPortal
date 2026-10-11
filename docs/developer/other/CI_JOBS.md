@@ -10,7 +10,7 @@ prototype only (MOD-D30, MOD-D55) and go before upstreaming.
 | --- | --- |
 | Push to a workstream branch | Linux with Temurin 21 |
 | Push to `master` or the integration branch, pull request, manual run on any branch | Linux with Temurin 21 and 25, Windows and macOS with Temurin 25 |
-| Nightly: the 03:37 UTC schedule, or a manual run with `nightly` ticked | The cells above, plus Linux with Zulu and Corretto on 21 and 25 |
+| Nightly: a manual run with `nightly` ticked | The cells above, plus Linux with Zulu and Corretto on 21 and 25 |
 
 Every cell runs `./gradlew build jacocoAggregateReport`, which compiles and tests all the Java
 modules.

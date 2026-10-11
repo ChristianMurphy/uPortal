@@ -26,15 +26,17 @@ owner approved items 6 and 7 as MOD-D55. Item 8 was added by the coordinator dur
 | --- | --- | --- |
 | Push to a workstream branch | Linux, Temurin 21 | Linux, Temurin 11 |
 | Other pushes, pull requests, manual runs | Linux Temurin 21 and 25, Windows and macOS Temurin 25 | Linux, Windows and macOS, Temurin 11 |
-| Nightly: the schedule, or a manual run with `nightly` | those, plus Linux Zulu and Corretto on 21 and 25 | those, plus Linux Zulu and Corretto on 11 |
+| Nightly: a manual run with `nightly` ticked | those, plus Linux Zulu and Corretto on 21 and 25 | those, plus Linux Zulu and Corretto on 11 |
 
-* Neither `CI.yml` had a `schedule`. Without one the Zulu and Corretto cells would run only when
-  someone ticks the box, so both files got a daily one (03:37 UTC in uPortal, 03:29 UTC in
-  uPortal-start). Remove those two lines if the nightly set should be manual only.
+* Neither `CI.yml` has a `schedule`, and none was added. A schedule fires only from the default
+  branch's workflow file, so on our branches it does nothing. Upstream it would put a daily run on
+  the maintainers' runners. The nightly set runs from a manual run with `nightly` ticked, which the
+  coordinator's check-in routine dispatches.
 * uPortal-start builds with one JDK for Tomcat and the data tools, 11. Its sets differ in platform
   and vendor, not in Java version.
-* `matrix_cells` check: a script evaluates the matrix expression of each file for eight kinds of
-  run and lists the cells. The results are in the table above.
+* Check: a script evaluates the matrix expression of each file for seven kinds of run (a workstream
+  push, the integration branch, master, a pull request, a manual run on a workstream branch and on
+  master, and a manual run with `nightly`) and lists the cells. The results are in the table above.
 
 ### Item 4, the one difference from the old job set
 
@@ -102,6 +104,6 @@ branch had not started when this note was written. The table is filled in when t
 | MOD-I302 | CI | The separate SpotBugs job set up Java and Gradle and compiled every module again (9 min 44 s in run 38143056177). | SpotBugs runs in the Linux Temurin 21 cell after Build and Test, on the compiled classes. The required check `Static analysis (SpotBugs and FindSecBugs)` is gone. |
 | MOD-I303 | CI | The four `plan` jobs of uPortal-start's database workflows were separate runner starts that the build waited for. | They are the first steps of `Build uPortal`. HTTP replay on a workstream push without replay changes now starts that job for two steps. |
 | MOD-I304 | CI | The database scripts run as one workflow step, so the step list showed only their total time. | Each phase is a log group with its seconds. The table is a job summary and a notice annotation. |
-| MOD-I305 | CI | A full CI run built Zulu and Corretto cells on every push to the integration branch and on every pull request. | They run in the nightly run only (new schedule, `nightly` input). MOD-D55. |
+| MOD-I305 | CI | A full CI run built Zulu and Corretto cells on every push to the integration branch and on every pull request. | They run only in a manual run with the new `nightly` input ticked. MOD-D55. |
 | MOD-I306 | CI | G-index ran on every workstream push, about an hour of a runner each time. | It runs when the push changes persistence, SQL, schema, data files or G-index itself, in uPortal-start or in the uPortal branch of the same name. MOD-D55. |
 | MOD-I307 | CI | The uPortal that uPortal-start's workflows built fell back to the branch name with its last `-suffix` dropped. `-tests-e2e-r3` tested an older `-tests-e2e` from before Hibernate 5.2 (run 38147009440). | The order is the same-name branch, the integration branch, master. The job writes repository, ref and commit as a notice annotation and in the last log lines, and the checkout uses that commit. |
