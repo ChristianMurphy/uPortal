@@ -13,7 +13,7 @@ class ModernFavoriteManager {
         try {
             const response = await fetch(
                 `${this.context}/api/layout?action=addFavorite&channelId=${portletId}`,
-                {method: 'POST'}
+                {method: 'POST', headers: window.up.csrfHeaders()}
             );
 
             if (!response.ok) {
@@ -45,7 +45,7 @@ class ModernFavoriteManager {
         try {
             const response = await fetch(
                 `${this.context}/api/layout?action=removeFavorite&channelId=${portletId}`,
-                {method: 'POST'}
+                {method: 'POST', headers: window.up.csrfHeaders()}
             );
 
             if (!response.ok) {
@@ -95,7 +95,10 @@ class ModernFavoriteManager {
         const url = `${context}/api/layout?action=movePortletAjax&sourceId=${sourceId}&previousNodeId=${previousNodeId}&nextNodeId=${nextNodeId}`;
 
         try {
-            const response = await fetch(url, {method: 'POST'});
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: window.up.csrfHeaders(),
+            });
 
             if (!response.ok) {
                 const body = await response.text().then((t) => {
@@ -136,7 +139,10 @@ class ModernFavoriteManager {
         const url = `${context}/api/layout?action=moveTab&sourceID=${sourceId}&method=${method}&elementID=${elementId}`;
 
         try {
-            const response = await fetch(url, {method: 'POST'});
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: window.up.csrfHeaders(),
+            });
 
             if (!response.ok) {
                 const body = await response.text().then((t) => {
