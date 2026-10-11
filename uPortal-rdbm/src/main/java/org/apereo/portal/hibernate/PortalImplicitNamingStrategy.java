@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.hibernate;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -80,6 +81,11 @@ public class PortalImplicitNamingStrategy extends ImplicitNamingStrategyLegacyJp
         return prefix + hashedName(sb.toString());
     }
 
+    @SuppressFBWarnings(
+            value = "WEAK_MESSAGE_DIGEST_MD5",
+            justification =
+                    "Not security: reproduces the FK_/UK_ names Hibernate 4.3 derived with MD5,"
+                            + " which existing databases carry")
     private static String hashedName(String s) {
         try {
             final MessageDigest md = MessageDigest.getInstance("MD5");
