@@ -1879,6 +1879,10 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   run, so it cancels none. A landing can go out under a `[skip ci]` LOG commit while a
   batch's run is in progress, and the next batch's run covers it. Clean-ups of superseded runs
   leave runs started by hand alone.
+* **Lesson (coordinator, 2026-10-11):** a uPortal change to persistence or SQL also needs one
+  Integration run on uPortal-start with that uPortal build. The six-vendor DB integration
+  workflow runs uPortal's own tests, which didn't load a layout through the path that lost its
+  table alias. The portal's PostgreSQL run would have shown it before the merge.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
@@ -1891,6 +1895,29 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 * **Cost:** a short burst of database load after a split heals.
 * **Work:** `ccr-43ba0785-hzlrj5-cluster`, with a harness leg that splits and heals the two
   nodes and a seeded fault.
+
+### MOD-D55: fewer CI jobs on each push and batch
+
+* **Measured (2026-10-11):** six full runs took 391 runner-minutes. Jobs waited 16 to 123 minutes
+  for a runner and then ran for 3 to 40. Each job waits on its own, so every job a push starts
+  adds a wait. `npm ci` downloaded every package again in each of 16 Integration jobs
+  (34 minutes). uPortal CI compiled the same code 10 times and installed Chromium 8 times. A
+  3-second planning job held back the replay workflow's uPortal build for 44 minutes. G-index,
+  at 39 minutes, is the longest job, and it ran on every uPortal-start topic push.
+* **Changes that keep every test (coordinator):** cache npm and the Playwright browsers; run the
+  web component tests, the JavaScript lint and SpotBugs in one uPortal CI job instead of each
+  OS and Java job; make each planning job the first step of the job that needs its answer;
+  split the long harness steps into timed phases so the next savings are measured.
+* **Decision (project owner, 2026-10-11):**
+  1. The Zulu and Corretto jobs run in the nightly run only. Each batch keeps Temurin 21 and 25
+     on Linux, and Temurin 25 on macOS and Windows.
+  2. A uPortal-start topic push runs G-index only when it, or the uPortal branch of the same
+     name, changes persistence, SQL, the schema, the data files or G-index itself. A batch, a
+     run started by hand and the nightly run always run it.
+* **Cost:** a problem with one vendor's JDK shows up in the next nightly run instead of at
+  landing. A G-index failure that a web component change causes shows up in its batch run,
+  which then reverts that branch. The Session Timeout workload failures were found this way
+  on a topic push.
 
 ## Issues
 
