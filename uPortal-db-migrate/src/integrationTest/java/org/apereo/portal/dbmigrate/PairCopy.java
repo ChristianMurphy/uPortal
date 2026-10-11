@@ -128,7 +128,24 @@ final class PairCopy {
             args.addAll(Arrays.asList(options));
             ToolRun run = ToolRun.run(s, t, rules(), args.toArray(new String[0]));
             if (run.status != DbMigrate.OK) {
-                problems.add(this + ": exit status " + run.status + "\n" + tail(run.output));
+                problems.add(this + ": exit status " + run.status);
+                // Which values differ, by this class's rules (none: the tool's own verification
+                // disagrees with its copy), then the tool's output
+                List<String> differences = new ArrayList<>();
+                try {
+                    compare(
+                            sourceValues,
+                            read(t, target, columns),
+                            EnumSet.noneOf(PropColumn.class),
+                            differences);
+                } catch (SQLException | RuntimeException e) {
+                    differences.add(this + ": reading the target failed: " + e);
+                }
+                if (differences.isEmpty()) {
+                    differences.add(this + ": every value is as documented by this test's rules");
+                }
+                problems.addAll(differences);
+                problems.add(tail(run.output));
                 return problems;
             }
             Map<Long, Map<PropColumn, Object>> targetValues = read(t, target, columns);
