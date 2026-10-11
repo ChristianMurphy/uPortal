@@ -266,6 +266,8 @@ guest's lasts the session, as before. What changed:
   user who can't read the current language can still find their own. The browser supplies each
   own name, so a language added to `portal_locales` doesn't need a new message.
 
+* A user who hasn't chosen a language sees the one the page is in checked. The portlet checked
+  none until the user saved a choice.
 * The flag icons next to the languages are gone. A flag stands for a country, and several
   countries share a language.
 * The API accepts only the locales in `org.apereo.portal.i18n.LocaleManager.portal_locales`, and

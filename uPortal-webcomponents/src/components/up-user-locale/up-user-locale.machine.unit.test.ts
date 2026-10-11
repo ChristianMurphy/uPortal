@@ -11,10 +11,18 @@ import {
 
 const ENGLISH = { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' };
 const FRENCH = { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' };
-const IN_ENGLISH: UserLocaleData = { selected: 'en_US', locales: [ENGLISH, FRENCH] };
-const NONE_CHOSEN: UserLocaleData = { selected: null, locales: [ENGLISH, FRENCH] };
+const IN_ENGLISH: UserLocaleData = {
+    selected: 'en_US',
+    current: 'en_US',
+    locales: [ENGLISH, FRENCH],
+};
+/** No choice, and the portal doesn't say which language the page is in. */
+const NONE_CHOSEN: UserLocaleData = { selected: null, current: null, locales: [ENGLISH, FRENCH] };
+/** No choice, on a page in French. */
+const NONE_CHOSEN_IN_FRENCH: UserLocaleData = { ...NONE_CHOSEN, current: 'fr_FR' };
 const IN_FRENCH: UserLocaleData = {
     selected: 'fr_FR',
+    current: 'fr_FR',
     locales: [
         { ...ENGLISH, name: 'anglais' },
         { ...FRENCH, name: 'français' },
@@ -111,6 +119,15 @@ describe('user locale machine: loading', () => {
         expect(actor.getSnapshot().context.choice).toBeUndefined();
     });
 
+    it('chooses the language the page is in when the user has not chosen one', async () => {
+        const { actor, calls } = await loaded(NONE_CHOSEN_IN_FRENCH);
+
+        expect(actor.getSnapshot().context.choice).toBe('fr_FR');
+        // Update then saves it, which makes it the user's choice
+        actor.send({ type: 'submit' });
+        expect(calls.save[0]?.code).toBe('fr_FR');
+    });
+
     it('fails, and loads again on reload', async () => {
         const running = start();
         running.calls.load[0]?.answer.reject(new ApiError('server', 500, 'boom'));
@@ -189,7 +206,11 @@ describe('user locale machine: choosing and saving', () => {
         running.actor.send({ type: 'choose', code: 'fr_FR' });
         running.actor.send({ type: 'submit' });
 
-        running.calls.save[0]?.answer.resolve({ selected: null, locales: [ENGLISH] });
+        running.calls.save[0]?.answer.resolve({
+            selected: null,
+            current: null,
+            locales: [ENGLISH],
+        });
         await settled(running, (s) => s.matches({ ready: 'saved' }));
 
         expect(running.emitted).toEqual([{ type: 'locale.changed', code: 'fr_FR', tag: 'fr_FR' }]);

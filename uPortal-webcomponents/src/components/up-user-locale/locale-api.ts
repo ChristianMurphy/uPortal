@@ -20,6 +20,11 @@ export interface LocaleOption {
 export interface UserLocaleData {
     /** The code of the user's chosen locale; null when the user has not chosen one. */
     selected: string | null;
+    /**
+     * The code of the locale the page is rendered in, the one to check when the user has not
+     * chosen one; null when the portal doesn't say or names a locale it doesn't list.
+     */
+    current: string | null;
     locales: LocaleOption[];
 }
 
@@ -89,7 +94,9 @@ export function validateUserLocale(body: unknown): UserLocaleData {
     if (selected !== null && chosen === undefined) {
         throw new TypeError('selected is not one of the locales');
     }
-    return { selected: chosen?.code ?? null, locales };
+    // Only a hint for the checked radio button, so a code that isn't listed is ignored
+    const current = locales.find((locale) => locale.code === document['current']);
+    return { selected: chosen?.code ?? null, current: current?.code ?? null, locales };
 }
 
 export function fetchUserLocale(
