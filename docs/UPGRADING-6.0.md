@@ -669,3 +669,18 @@ pages. Respondr and the portlets in uPortal now avoid them:
   `display: none`, which also hides it from screen readers. The text is now hidden only visually
   (`.visually-hidden`), so the button's name is the `search.submit` message. The button looks
   the same.
+
+## Tomcat's error pages no longer show the Tomcat version
+
+uPortal-start's `etc/tomcat/conf/server.xml` now puts an `ErrorReportValve` on the Host with
+`showReport="false"` and `showServerInfo="false"`. Tomcat writes its own error page when no
+webapp's `error-page` answers: a 404 in uPortal (whose `web.xml` maps only 500) or outside every
+webapp, a request the connector rejects (such as an invalid percent-encoding), and an exception in
+a webapp without an `error-page`. These pages used to end in "Apache Tomcat/9.0.x" and show the
+exception message. Now their title and heading give only the status code and its reason phrase.
+Tomcat's logs still record the cause. The connector sends no `Server` header unless its `server`
+attribute is set, and uPortal-start doesn't set it.
+
+A portal that keeps its own `server.xml` adds the same valve inside its `<Host>`. Monitoring that
+read the message text of these pages has to read the status code instead. uPortal-start
+`tests/api/error-pages.spec.ts` checks one page of each kind.
