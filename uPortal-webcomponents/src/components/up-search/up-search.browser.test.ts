@@ -781,6 +781,25 @@ describe('navigation', () => {
         ).toBeNull();
     });
 
+    it('reads the query from the render URL the portal redirects to, and keeps it there', () => {
+        const view = {
+            location: {
+                href: 'https://portal.example.edu/uPortal/p/search.ctf2/max/render.uP?pP_query=cartoon',
+                assign: vi.fn(),
+            },
+            history: { state: null, replaceState: vi.fn() },
+        };
+        const nav = createNavigation(view);
+
+        expect(nav.query()).toBe('cartoon');
+        nav.replaceQuery('calendar');
+        expect(view.history.replaceState).toHaveBeenCalledWith(
+            null,
+            '',
+            'https://portal.example.edu/uPortal/p/search.ctf2/max/render.uP?pP_query=calendar',
+        );
+    });
+
     it('reads and writes a Unicode query intact', () => {
         const view = {
             location: {

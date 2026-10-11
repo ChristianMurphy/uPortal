@@ -51,9 +51,9 @@ export function startCase(type: string): string {
  * Search, the web-component replacement of the Search portlet: a search box and the results of
  * `/api/v6-0/search`, one tab per result type ("People", "Portlets").
  *
- * The query comes from the `query` attribute, else from the page URL's `query` parameter, which
- * `<up-search-launcher>` sets. A search from the element's own box runs in place and updates that
- * parameter. A result type whose search failed (a remote provider that did not answer, say) shows
+ * The query comes from the `query` attribute, else from the page URL: `<up-search-launcher>` opens
+ * `?query=`, which the portal's redirect turns into `pP_query` (see `navigation.ts`). A search from
+ * the element's own box runs in place and updates the URL. A result type whose search failed (a remote provider that did not answer, say) shows
  * an error in its own tab. Each result shows its title, linked when it opens something (a portlet, maximized),
  * and the attributes the Search portlet showed (net ID, names, email, phone, name, description,
  * relevance).
