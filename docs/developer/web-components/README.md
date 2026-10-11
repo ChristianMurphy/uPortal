@@ -424,6 +424,16 @@ A favorite collection or portlet carries its layout `nodeId`, `name`, `url`, `mo
 reuses `FavoritesUtils` and the user's layout manager, so the distributed layout manager's rules
 for locked fragments apply.
 
+### User locale
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/locale` | `{"selected": "fr_FR", "locales": [{"code": "en_US", "tag": "en-US", "name": "anglais"}, ...]}`: the portal's locales in `portal_locales` order, each named in the user's current language. `selected` is null when the user has not chosen one. |
+| `PUT /api/v6-0/locale` with `{"code": "fr_FR"}` | 200 and the same body, now in the new language. 400 for a code that is not one of the portal's locales. |
+
+Guests may call it: their choice goes into the session. A signed-in user's choice also goes into
+their stored locales. The service reuses `UserLocaleHelper`, which the portlet's flow called.
+
 ## Reference conversion: Favorites
 
 The Favorites portlet (Spring Portlet MVC, four JSPs, an EDIT mode) is the first portlet
@@ -521,3 +531,27 @@ ships in the 6.0 data migration, and say so in UPGRADING-6.0.
    and portlet actions into REST calls.
 4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
    and document how existing definitions are converted.
+
+## Conversion: User Locale
+
+The User Locales Selector (`UserLocale`, a Web Flow with one JSP) became `<up-user-locale>`
+(`uPortal-webcomponents/src/components/up-user-locale`).
+
+| Portlet | Web component |
+| --- | --- |
+| `locale-selector` flow, `selectLocale.jsp` | `<up-user-locale>` |
+| `UserLocaleHelper.getLocales` and `getCurrentUserLocale` in the flow | `GET /api/v6-0/locale` |
+| The form's POST to `UserLocaleHelper.updateUserLocale`, then the portal page re-rendered | `PUT /api/v6-0/locale`, then the component reloads the page |
+| Flag images from the resource server | Dropped, because several countries share a language |
+
+The component's states are the machine in `up-user-locale.machine.ts`: `loading`, `failed`, and
+`ready` with `idle`, `saving` and `saved`. The change is pessimistic: the page reloads only once
+the portal confirms, and a failure keeps the page and shows an alert. In `saved` the form stays
+disabled until the new page arrives. The model-based tests play 23 shortest paths, which cover
+all five states, and 27 simple paths.
+
+uPortal-start publishes `user-locales-selector` as a Web Component channel. Existing definitions
+are converted as UPGRADING-6.0 describes. The import upgrader and copy-tool rule are the same open
+item as for Favorites (MOD-I133). The `UserLocale` portlet, `UserLocale-portlet.xml` and the
+`locale-selector` flow stay until the 6.0 data migration converts existing definitions to the
+new type. `UserLocaleHelper` stays for the API and the Translator portlet.
