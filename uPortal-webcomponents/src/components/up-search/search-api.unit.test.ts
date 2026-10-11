@@ -13,9 +13,17 @@ import {
 const BODY = {
     query: 'cartoon',
     groups: [
-        { type: 'people', results: [] },
+        { type: 'people', label: null, results: [], failed: false },
+        {
+            type: 'web',
+            label: 'Campus web',
+            results: [],
+            failed: true,
+        },
         {
             type: 'portlets',
+            label: null,
+            failed: false,
             results: [
                 {
                     title: 'Daily Business Cartoon',
@@ -39,11 +47,18 @@ describe('validateSearchResults', () => {
 
     it('drops links that are not safe', () => {
         const body = structuredClone(BODY);
-        const result = body.groups[1]?.results[0];
+        const result = body.groups[2]?.results[0];
         if (result) {
             result.url = 'javascript:alert(1)';
         }
-        expect(validateSearchResults(body).groups[1]?.results[0]?.url).toBeNull();
+        expect(validateSearchResults(body).groups[2]?.results[0]?.url).toBeNull();
+    });
+
+    it('reads a group without a label or failed flag as a working, unnamed one', () => {
+        expect(
+            validateSearchResults({ query: 'x', groups: [{ type: 'people', results: [] }] })
+                .groups[0],
+        ).toEqual({ type: 'people', label: null, results: [], failed: false });
     });
 
     it('accepts a result without a url', () => {
@@ -59,6 +74,14 @@ describe('validateSearchResults', () => {
         ['a missing query', { groups: [] }],
         ['groups that are not an array', { query: 'x', groups: {} }],
         ['a group without a type', { query: 'x', groups: [{ results: [] }] }],
+        [
+            'a failed flag that is not a boolean',
+            { query: 'x', groups: [{ type: 't', results: [], failed: 'no' }] },
+        ],
+        [
+            'a label that is not a string',
+            { query: 'x', groups: [{ type: 't', results: [], label: 3 }] },
+        ],
         ['a result that is not an object', { query: 'x', groups: [{ type: 't', results: [1] }] }],
         [
             'a url that is not a string',
