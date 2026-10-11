@@ -88,7 +88,9 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
   `PortletPreferenceImpl` that makes the user's next sign-in fail with
   `EntityNotFoundException` until Tomcat restarts. The store code is the existing
   `PortletEntityPreferencesAPIImpl`; the portlet's own `PortletEntityPreferencesImpl` stores the
-  same way. Found when two Playwright workers changed the student's background at once.
+  same way. Found when two Playwright workers changed the student's background at once. Logged
+  as MOD-I230, root cause and fix on `ccr-43ba0785-hzlrj5-preference-cache`
+  (`preference-cache.md`): a stale preference list in a `NONSTRICT_READ_WRITE` cache region.
 * `PortletEntityRegistryImpl.getPortletEntityMap` reads the request attribute
   `PORTLET_ENTITY_ATTRIBUTE + threadId` but stores it under `PORTLET_ENTITY_ATTRIBUTE`, so the
   request-level entity cache never hits.
@@ -101,8 +103,7 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
   and `<up-background-preference>` in uPortal, the Web Component definition in uPortal-start. The
   characterisation spec passes on the portlet and on the component. The portlet stays until
   MOD-I133.
-* Issue: concurrent saves of one user's portlet-entity preferences from two sessions can leave a
-  stale second-level cache entry that breaks the user's sign-in until restart (first finding).
+* MOD-I230 (logged): the stale preference cache of the first finding.
 * Issue: the request-level portlet entity cache never hits (second finding).
 
 ## Running locally
@@ -110,6 +111,27 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
 As in `wc-reset-my-layout.md`, with Google's Maven mirror through a Gradle init script, jasypt in
 `~/.m2`, `JDK_JAVA_OPTIONS` with the two `--add-opens`, and a Chromium 1248 symlink tree for
 Playwright 1.64.
+
+## Owner rulings of 2026-10-11
+
+* MOD-D49: the six new keys have Spanish and French text, with `\u` escapes and the French
+  apostrophes doubled. The captions Galaxy, Mountain and Nebula come from the definition's
+  `backgroundImageCaptions` preference, not from the message bundles, so they stay as the data
+  has them.
+* MOD-D50: uPortal-start's spec renders `/p/background-preference` for a user whose language is
+  es_ES and one whose language is fr_FR, through the User Locales Selector channel, signed in as
+  the quickstart developer user (as in `wc-reset-my-layout.md`). The component has no text
+  inputs, so the Unicode round trip doesn't apply.
+* MOD-D51: the component ignores Escape while `event.isComposing` is true. The list uses `min-inline-size`,
+  `max-block-size` and `overflow-block`, the thumbnails `inline-size`, and the theme rule that
+  places the channel `inset-inline-end` and `inset-block-start`. Long captions wrap
+  (`overflow-wrap: anywhere`). Browser tests cover the composing key and the long caption.
+
+| Seeded fault | Caught by |
+| --- | --- |
+| The `isComposing` check removed | browser "leaves Escape to an input method that is composing" |
+| The wrap removed | browser "wraps a caption too long for its width" (2061px in a 200px element) |
+| The test doesn't set the language | e2e "speaks es": the element's locale stays `en-US` |
 
 ## Next step
 
