@@ -80,11 +80,6 @@ class AnyUnblockedGrantPermissionPolicyTest extends AnyUnblockedGrantPermissionP
         return method;
     }
 
-    // CodeNarc's enhanced rules found these six calls when it was given the classpath (MOD-D53):
-    // each passes true or false as the actual value and containsType() as the expected one.
-    // Swap the two arguments and remove this annotation to fix them. A violation anywhere else
-    // fails the build.
-    @SuppressWarnings('JUnitAssertEqualsConstantActualValue')
     @Test
     void testContainsType() {
         Set<IPermission> onlyGrant = new HashSet([
@@ -99,18 +94,18 @@ class AnyUnblockedGrantPermissionPolicyTest extends AnyUnblockedGrantPermissionP
         ]);
 
         assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyGrant, 'GRANT'), true);
+            true, containsType(onlyGrant, 'GRANT'));
         assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyDeny, 'GRANT'), false);
+            false, containsType(onlyDeny, 'GRANT'));
         assertEquals('Incorrect output from containsType() -- ',
-            containsType(bothGrantAndDeny, 'GRANT'), true);
+            true, containsType(bothGrantAndDeny, 'GRANT'));
 
         assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyGrant, 'DENY'), false);
+            false, containsType(onlyGrant, 'DENY'));
         assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyDeny, 'DENY'), true);
+            true, containsType(onlyDeny, 'DENY'));
         assertEquals('Incorrect output from containsType() -- ',
-            containsType(bothGrantAndDeny, 'DENY'), true);
+            true, containsType(bothGrantAndDeny, 'DENY'));
     }
 
     @Test
