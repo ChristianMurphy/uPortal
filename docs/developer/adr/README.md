@@ -57,3 +57,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0004](0004-deploy-uportal-as-a-war-on-an-external-tomcat-11.md) | Deploy uPortal as a WAR on an external Tomcat 11 | proposed | 2026-10-10 |
 | [0005](0005-prefer-spring-approaches-and-spring-cache-api.md) | Prefer the Spring approach for every migration, and cache through Spring's Cache API | proposed | 2026-10-10 |
 | [0006](0006-upgrade-hibernate-in-steps-with-the-schema-frozen.md) | Upgrade Hibernate in steps with the 5.17 schema frozen | proposed | 2026-10-10 |
+| [0007](0007-replace-joda-time-with-java-time.md) | Replace Joda-Time with java.time | proposed | 2026-10-10 |
