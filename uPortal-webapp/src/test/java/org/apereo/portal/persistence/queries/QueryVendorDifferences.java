@@ -105,9 +105,9 @@ final class QueryVendorDifferences {
             differences.put(
                     "messageDao.getMessagesByLocale(en)",
                     Arrays.asList(
-                            "LinkedHashSet of 2",
-                            "- MessageImpl{code=\"farewell\", locale=en, value=\"Goodbye\"}",
-                            "- MessageImpl{code=\"greeting\", locale=en, value=\"Hello\"}"));
+                            "LinkedHashSet of 2, in order",
+                            "[0] MessageImpl{code=\"farewell\", locale=en, value=\"Goodbye\"}",
+                            "[1] MessageImpl{code=\"greeting\", locale=en, value=\"Hello\"}"));
             differences.put(
                     "messageDao.getCodes()",
                     Arrays.asList("LinkedHashSet of 2", "- \"farewell\"", "- \"greeting\""));

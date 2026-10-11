@@ -74,15 +74,15 @@ messageDao.createMessage("Greeting", en, ...) next to "greeting" -> MessageImpl{
 messageDao.getMessage("greeting", en_US) -> MessageImpl{code="greeting", locale=en-US, value="Howdy"}
 messageDao.getMessage("greeting", de) -> null
 messageDao.getMessage("GREETING", en) -> null
-messageDao.getMessagesByCode("greeting") -> LinkedHashSet of 4
-messageDao.getMessagesByCode("greeting")   - MessageImpl{code="greeting", locale=en, value="Hello"}
-messageDao.getMessagesByCode("greeting")   - MessageImpl{code="greeting", locale=en-US, value="Howdy"}
-messageDao.getMessagesByCode("greeting")   - MessageImpl{code="greeting", locale=fr, value="Bonjour"}
-messageDao.getMessagesByCode("greeting")   - MessageImpl{code="greeting", locale=zh-TW, value="\u4f60\u597d"}
-messageDao.getMessagesByLocale(en) -> LinkedHashSet of 3
-messageDao.getMessagesByLocale(en)   - MessageImpl{code="Greeting", locale=en, value="Upper-case code"}
-messageDao.getMessagesByLocale(en)   - MessageImpl{code="farewell", locale=en, value="Goodbye"}
-messageDao.getMessagesByLocale(en)   - MessageImpl{code="greeting", locale=en, value="Hello"}
+messageDao.getMessagesByCode("greeting") -> LinkedHashSet of 4, in order
+messageDao.getMessagesByCode("greeting")   [0] MessageImpl{code="greeting", locale=en, value="Hello"}
+messageDao.getMessagesByCode("greeting")   [1] MessageImpl{code="greeting", locale=en-US, value="Howdy"}
+messageDao.getMessagesByCode("greeting")   [2] MessageImpl{code="greeting", locale=fr, value="Bonjour"}
+messageDao.getMessagesByCode("greeting")   [3] MessageImpl{code="greeting", locale=zh-TW, value="\u4f60\u597d"}
+messageDao.getMessagesByLocale(en) -> LinkedHashSet of 3, in order
+messageDao.getMessagesByLocale(en)   [0] MessageImpl{code="Greeting", locale=en, value="Upper-case code"}
+messageDao.getMessagesByLocale(en)   [1] MessageImpl{code="farewell", locale=en, value="Goodbye"}
+messageDao.getMessagesByLocale(en)   [2] MessageImpl{code="greeting", locale=en, value="Hello"}
 messageDao.getCodes() -> LinkedHashSet of 3
 messageDao.getCodes()   - "Greeting"
 messageDao.getCodes()   - "farewell"
