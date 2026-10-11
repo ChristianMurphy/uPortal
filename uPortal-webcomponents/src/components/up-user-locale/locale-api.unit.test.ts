@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vite-plus/test';
 import { ApiClient, ApiError } from '../../lib/api-client';
-import { fetchUserLocale, LOCALE_PATH, saveUserLocale, validateUserLocale } from './locale-api';
+import {
+    fetchUserLocale,
+    LOCALE_PATH,
+    ownName,
+    saveUserLocale,
+    validateUserLocale,
+} from './locale-api';
 
 const ENGLISH = { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' };
 const FRENCH = { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' };
@@ -97,5 +103,28 @@ describe('saveUserLocale', () => {
             kind: 'http',
             status: 400,
         });
+    });
+});
+
+describe('ownName', () => {
+    it.each([
+        ['fr-FR', 'Français'],
+        ['es-ES', 'Español'],
+        ['de-DE', 'Deutsch'],
+        ['pl-PL', 'Polski'],
+        ['ar', 'العربية'],
+        ['zh-CN', '中文'],
+        ['ja-JP', '日本語'],
+    ])('names %s in its own language: %s', (tag, name) => {
+        expect(ownName({ code: tag.replace('-', '_'), tag, name: 'x', nativeName: 'x' })).toBe(
+            name,
+        );
+    });
+
+    it.each([
+        ['a language the browser cannot name', 'qaa'],
+        ['a tag the browser cannot read', 'not a tag'],
+    ])('falls back to the portal name for %s', (_case, tag) => {
+        expect(ownName({ code: 'qaa', tag, name: 'Private', nativeName: 'Privé' })).toBe('Privé');
     });
 });

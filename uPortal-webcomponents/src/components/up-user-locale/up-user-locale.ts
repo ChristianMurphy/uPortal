@@ -4,16 +4,15 @@ import { waitFor } from 'xstate';
 import type { Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
-import type { LocaleOption } from './locale-api';
+import { ownName, type LocaleOption } from './locale-api';
 import { USER_LOCALE_MESSAGES } from './messages';
 import { userLocaleMachine, type UserLocaleEmitted } from './up-user-locale.machine';
 
-/** Whether a language's own name is the name the user would read anyway, as English is in English. */
-function sameName(locale: LocaleOption): boolean {
-    return (
-        locale.nativeName.toLocaleLowerCase(locale.tag) ===
-        locale.name.toLocaleLowerCase(locale.tag)
-    );
+/** The label of a language: its own name, then the user's name for it when that reads differently. */
+function label(locale: LocaleOption): { own: string; translated: string | undefined } {
+    const own = ownName(locale);
+    const same = own.toLocaleLowerCase(locale.tag) === locale.name.toLocaleLowerCase(locale.tag);
+    return { own, translated: same ? undefined : locale.name };
 }
 
 /** Details of the `up-locale-changed` event. */
@@ -32,7 +31,8 @@ export const page = {
  * reads and sets it through `/api/v6-0/locale`.
  *
  * It lists the portal's languages as radio buttons, each named in its own language and, when that
- * differs, in the user's current one ("Français (French)"), with the current one checked. Update saves the chosen one and reloads the page, which the
+ * differs, in the user's current one ("Français (French)"), with the current one checked. The
+ * browser supplies the own name (`Intl.DisplayNames`), so a language a site adds needs no message. Update saves the chosen one and reloads the page, which the
  * portal then renders in that language. A signed-in user's choice is kept for their next
  * session; a guest's lasts this session.
  *
@@ -52,6 +52,8 @@ export class UpUserLocale extends UpElement {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: var(--spacer-3);
+                /* A long name or message in any language wraps instead of overflowing */
+                overflow-wrap: anywhere;
             }
 
             h2 {
@@ -158,8 +160,9 @@ export class UpUserLocale extends UpElement {
                 ${repeat(
                     data.locales,
                     (locale) => locale.code,
-                    (locale) =>
-                        html`<div class="form-field">
+                    (locale) => {
+                        const { own, translated } = label(locale);
+                        return html`<div class="form-field">
                             <input
                                 type="radio"
                                 class="radio"
@@ -173,11 +176,12 @@ export class UpUserLocale extends UpElement {
                                 }}
                             />
                             <label for=${`locale-${locale.code}`}
-                                ><span lang=${locale.tag}>${locale.nativeName}</span>${
-                                    sameName(locale) ? nothing : ` (${locale.name})`
+                                ><span lang=${locale.tag} dir="auto">${own}</span>${
+                                    translated === undefined ? nothing : ` (${translated})`
                                 }</label
                             >
-                        </div>`,
+                        </div>`;
+                    },
                 )}
             </div>
             <button type="submit" class="btn-solid theme-primary update" ?disabled=${busy}>

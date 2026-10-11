@@ -54,6 +54,28 @@ function toOption(value: unknown): LocaleOption {
     };
 }
 
+/**
+ * The language's name in that language, as a list item starts ("Français", "العربية", "中文"). The
+ * browser names it (`Intl.DisplayNames`), so a language a site adds needs no message; the API's
+ * `nativeName` stands in when the browser can't name it, or the tag isn't one it reads.
+ */
+export function ownName(locale: LocaleOption): string {
+    let name: string | undefined;
+    try {
+        const language = new Intl.Locale(locale.tag).language;
+        name = new Intl.DisplayNames([locale.tag], { type: 'language', fallback: 'none' }).of(
+            language,
+        );
+    } catch {
+        name = undefined;
+    }
+    if (name === undefined || name === '') {
+        return locale.nativeName;
+    }
+    const [first = '', ...rest] = name;
+    return first.toLocaleUpperCase(locale.tag) + rest.join('');
+}
+
 /** Checks a `/api/v6-0/locale` body; throws a TypeError naming the first problem. */
 export function validateUserLocale(body: unknown): UserLocaleData {
     const document = object(body, 'the body');
