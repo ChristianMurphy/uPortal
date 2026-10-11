@@ -73,17 +73,27 @@ jobs:
         if: ${{ env.MAIN_CELL == 'true' }}
         run: ./gradlew -S --no-daemon :uPortal-webcomponents:installChromium
       - name: Build and Test
+        if: ${{ env.MAIN_CELL != 'true' }}
         env:
           # Every leg but one prints compile errors only (MOD-D53); Linux with Temurin 21 keeps
           # listing the Error Prone and javac warnings. Gradle reads this as -PquietCompile, in
           # any shell.
-          ORG_GRADLE_PROJECT_quietCompile: ${{ !(matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21) }}
+          ORG_GRADLE_PROJECT_quietCompile: true
           # The other cells leave out the web component tests, which need Chromium
-          ORG_GRADLE_PROJECT_skipWebComponentTests: ${{ env.MAIN_CELL != 'true' }}
+          ORG_GRADLE_PROJECT_skipWebComponentTests: true
         # Gradle's parallel mode (org.gradle.parallel in gradle.properties) runs the modules' tests
         # side by side (MOD-I347). With --no-parallel they took 327 s in a row, uPortal-webapp
         # 149 s of it.
         run: ./gradlew -S --stacktrace --no-daemon build jacocoAggregateReport
+      # The main cell also runs SpotBugs (MOD-D27, MOD-I302), in the same Gradle call, so that its
+      # tasks run beside the tests instead of in a second call after them (MOD-I346). It fails on
+      # any finding that is not in the module's config/spotbugs/baseline file. --continue lets
+      # every test and every SpotBugs task run when one of them fails, so one run lists all
+      # failures and all new findings, as the separate step did.
+      - name: Build, Test and SpotBugs
+        id: build-main
+        if: ${{ env.MAIN_CELL == 'true' }}
+        run: ./gradlew -S --stacktrace --no-daemon --continue build jacocoAggregateReport spotbugsMain
       - name: Upload coverage to Coveralls
         if: ${{ matrix.platform == 'ubuntu-latest' && matrix.java-distribution == 'temurin' && matrix.java-version == 21 }}
         uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
@@ -100,19 +110,14 @@ jobs:
       - name: Lint JavaScript
         if: ${{ env.MAIN_CELL == 'true' }}
         run: ./gradlew -S --no-daemon --no-parallel :npm_run_lint-js
-      # Fails on any finding that is not in the module's config/spotbugs/baseline file (MOD-D27).
-      # --continue analyses every module, so one run lists all new findings. SpotBugs runs in this
-      # cell, on the classes Build and Test compiled (MOD-I302): without -PquietCompile, which would
-      # change the compiler options and compile every module again. It runs when Build and Test
-      # fails, as its own job did.
-      - name: Run SpotBugs
-        id: spotbugs
-        if: ${{ !cancelled() && env.MAIN_CELL == 'true' }}
-        run: ./gradlew -S --no-daemon --continue spotbugsMain
+      # The findings of a failed SpotBugs task: its main.txt report is not empty
       - name: Show new findings
-        if: ${{ !cancelled() && steps.spotbugs.outcome == 'failure' }}
+        id: findings
+        if: ${{ !cancelled() && steps.build-main.outcome == 'failure' }}
         run: |
-          find . -path '*/build/reports/spotbugs/main.txt' -size +0c | sort | while read -r report; do
+          reports=$(find . -path '*/build/reports/spotbugs/main.txt' -size +0c | sort)
+          if [ -n "$reports" ]; then echo "found=true" >> "$GITHUB_OUTPUT"; fi
+          echo "$reports" | grep -v '^$' | while read -r report; do
             echo "::group::${report}"
             cat "${report}"
             echo "::endgroup::"
@@ -124,7 +129,7 @@ jobs:
             echo "::error title=SpotBugs findings not in the baseline::${text}"
           done
       - name: Upload SpotBugs reports
-        if: ${{ !cancelled() && steps.spotbugs.outcome == 'failure' }}
+        if: ${{ !cancelled() && steps.findings.outputs.found == 'true' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: spotbugs-reports
