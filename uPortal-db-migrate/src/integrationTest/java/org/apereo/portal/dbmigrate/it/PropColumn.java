@@ -272,6 +272,9 @@ public enum PropColumn {
             case LOB_TEXT:
                 if (k == POSTGRES) {
                     ps.setBytes(i, ((String) v).getBytes(StandardCharsets.UTF_8));
+                } else if (k == ORACLE && !((String) v).isEmpty()) {
+                    // A CLOB, written whole (see BODY below)
+                    ps.setClob(i, new java.io.StringReader((String) v), ((String) v).length());
                 } else {
                     ps.setString(i, (String) v);
                 }
@@ -292,7 +295,12 @@ public enum PropColumn {
                 }
                 break;
             default:
-                if (isString()) {
+                if (k == ORACLE && this == BODY && !((String) v).isEmpty()) {
+                    // A CLOB: Oracle's driver splits a String into chunks of 32,768 characters
+                    // and garbles a surrogate pair split between two of them (MOD-I166)
+                    String text = (String) v;
+                    ps.setClob(i, new java.io.StringReader(text), text.length());
+                } else if (isString()) {
                     ps.setString(i, (String) v);
                 } else if (k == HSQLDB
                         && v instanceof LocalDate
