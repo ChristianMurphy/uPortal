@@ -1697,6 +1697,92 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   Spring's Cache API has no eviction events, and JCache does not report evictions either, so the
   listener becomes an Ehcache 3 event listener or a Caffeine removal listener (cause `SIZE`) then.
 
+### MOD-D44: 6.0 stores text on SQL Server as nvarchar
+
+* **Decision (project owner, 2026-10-11):** SQL Server text columns become `nvarchar`, through
+  Hibernate's nationalized strings, in the 6.0 schema step (MOD-D11). Lengths count characters,
+  and every supported SQL Server version accepts it.
+* **Why:** 5.17's and 6.0's `varchar` columns on the default collation keep only windows-1252
+  (MOD-I196, MOD-I201). Text such as emoji or CJK in group names, portlet titles or user
+  attributes can't be stored, and a copy from another vendor is refused (MOD-I202).
+* **Considered:** `varchar` with a UTF-8 collation. Its lengths count bytes, and every text column
+  would need up to four times its length for the same number of characters. It also depends on
+  each site's database setup.
+* **Cost:** text that fits windows-1252 takes twice the space, and the copy tool converts the
+  columns as part of the 6.0 copy.
+
+### MOD-D45: the password flows get four fixes in 6.0
+
+* **Decision (project owner, 2026-10-11):** all four, each in its own commit with tests:
+  1. Self-Edit Account and User Administration refuse a password confirmation that differs.
+     This also stops "Create a User" from overwriting an existing account (MOD-I195).
+  2. Self-Edit Account asks for the current password before a change.
+  3. Forgot Password gives the same answer for known and unknown user names.
+  4. Password reset links expire (default one hour, as a property).
+* **Resolved conflict (coordinator, 2026-10-11):** fixes 3 and 4 first asked for the page to say
+  when the email couldn't be sent. For an unknown user name nothing is sent, so a "could not be
+  sent" page would show that an account exists. Known and unknown user names get the same neutral page ("if that
+  user name has a local account with an email address, reset instructions were sent; contact the
+  help desk if nothing arrives"), and a failed send is logged at ERROR for administrators,
+  without the token.
+* **Found by:** the Self-Edit Account characterisation specs.
+
+### MOD-D46: Self-Edit Account and Reset My Layout are web components
+
+* **Decision (project owner, 2026-10-11):** both become REST APIs plus web components, which
+  changes MOD-D19's default mapping for these two (it listed them as Thymeleaf full-page flows).
+* **Condition.** Self-Edit Account's password fields work with browser password managers. They
+  carry `autocomplete` hints (`username`, `current-password`, `new-password`), and a browser
+  test checks that the fields can be found, since shadow DOM can hide fields from autofill.
+* **Why:** both conversions were built and tested before the mapping was checked. The API is
+  CSRF-protected, no log line contains a password, and a Thymeleaf page would have to wait for
+  Spring 5.3. Forgot Password and the reset-password flow keep MOD-D19's mapping.
+
+### MOD-D47: hide the Tomcat version and fix the existing accessibility violations
+
+* **Decision (project owner, 2026-10-11):** Tomcat's error pages and headers stop showing the
+  server version. The accessibility violations in the axe baseline (`tests/a11y/baseline.ts`
+  in uPortal-start) are fixed, starting with the Respondr skin, and the baseline only shrinks.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`.
+
+### MOD-D48: fix how uPortal holds database connections before changing pool defaults
+
+* **Decision (project owner, 2026-10-11):** the pool defaults stay as they are for now. First,
+  uPortal stops taking a connection per portlet render to read a cached portlet definition,
+  and stops holding the request's connection while the page waits for its portlets. The
+  budget (MOD-I190) is then set from new measurements.
+* **Why:** with 5.x defaults, 16 users reach about 127 PostgreSQL connections, more than the
+  default limit of 100. A pool of 60 avoids errors, but most of its connections are idle.
+
+### MOD-D49: text inputs accept any Unicode text
+
+* **Decision (project owner, 2026-10-11):** the portal has international users, so a field where
+  people type text accepts any Unicode text, sent as UTF-8. That covers names, titles,
+  descriptions, search terms, email addresses, passwords and tenant names. A field limits its
+  characters only when its value is an identifier that the portal puts in URLs or keys, such as
+  fnames, tenant fnames and event types. Its error message then lists the characters it allows.
+* **Tests:** each new API and component sends a value with accented letters, a non-Latin script
+  and a character outside the Basic Multilingual Plane (four bytes in UTF-8), and reads it back.
+  The persistence goldens do the same on all six vendors.
+* **Storage:** SQL Server follows MOD-D44. A MySQL or MariaDB column must use `utf8mb4` to hold
+  four-byte characters, and any change it needs joins the 6.0 schema step (MOD-D11).
+* **Work:** `ccr-43ba0785-hzlrj5-utf8-inputs` (audit, MOD-I233); each conversion tests its own
+  fields.
+
+### MOD-D50: web components come in English, Spanish and French
+
+* **Decision (project owner, 2026-10-11):** each message a web component uses has English,
+  Spanish and French text (`Messages.properties`, `Messages_es.properties`,
+  `Messages_fr.properties`) in the commit that adds it. A check fails the build when a
+  component's key is missing from one of the three. The other bundles (de, ja, lv, mk, sv) show
+  English for new keys until someone translates them, as today.
+* **Format:** messages go through `MessageFormat` (`alwaysUseMessageFormat`), so an apostrophe
+  is written twice (`l''élément`) and placeholders stay `{0}`, `{1}`.
+* **Tests:** a Playwright test renders each component for a user whose locale is Spanish and
+  one whose locale is French, and finds a translated text.
+* **Work:** `ccr-43ba0785-hzlrj5-i18n` (MOD-I231, MOD-I232, the check); each open conversion
+  adds its own translations.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
@@ -1885,6 +1971,9 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I201 | Copy tool | **Found by the migration-equivalence nightly set** (run 38120962016, job 114422262436). 6.0 on SQL Server can't hold text outside windows-1252: the build under test creates `varchar` columns on the default collation. A 5.17 site on another database with emoji or CJK in group names, portlet titles, layout names or user attributes can't move to 6.0 on SQL Server. The copy from MariaDB 10.6 wrote all 2,185 rows, and verification refused 14 tables (same row counts, other hashes): `news_definition`, `news_role`, `up_dlm_evaluator`, `up_group`, `up_pags_group`, `up_pags_test`, `up_permission`, `up_permission_owner`, `up_permission_activity`, `up_layout_struct`, `up_portlet_def`, `up_portlet_pref`, `up_portlet_pref_values`, `up_person_attr_values`. The copy failed, so nothing was lost without notice. The plan reported 0 warnings. | Open, schema decision with the project owner: `nvarchar` through Hibernate's nationalized strings, or a UTF-8 collation with lengths sized in characters. The nightly copy into SQL Server fails until that decision is made. MOD-I202 makes the plan refuse such a copy before it starts. |
 | MOD-I202 | Copy tool | The plan doesn't compare the target's text encoding with the source's text. A copy into a code-page column (SQL Server's default collation, MOD-I201) of text it can't hold copies every row, and only verification refuses the tables afterwards. | In progress on `ccr-43ba0785-hzlrj5-copy-codepage-warning`. The plan reads the collation of each target text column. For a source value with characters outside the target's code page, it reports a plan error with the table, the column and the row's key. |
 | MOD-I230 | Persistence | **Found by the background-preference conversion.** When one user saves portlet-entity preferences from two sessions at once, Hibernate refuses one save, and a stale cached `PortletPreferenceImpl` can remain. The user's next sign-in then fails with `EntityNotFoundException` until Tomcat restarts. It is the existing `PortletEntityPreferencesAPIImpl` store, which the portlets use too. Seen when two Playwright workers changed the student's background at once. | **Open.** Write a test that saves the same user's entity preferences from two sessions at once and then signs in, and show the failure. Then fix the cache handling (evict on a failed save, or retry). A refused save must not leave a stale entity in the cache. Until then a user can be locked out by saving preferences in two tabs. |
+| MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Open.** Translate them on `ccr-43ba0785-hzlrj5-i18n`. The MOD-D50 check stops it from happening again. |
+| MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Open.** Read message bundles as UTF-8 after checking that each one is valid UTF-8, and test the French line. Existing `\u` escapes keep working. |
+| MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
 
 ## Open questions
 
