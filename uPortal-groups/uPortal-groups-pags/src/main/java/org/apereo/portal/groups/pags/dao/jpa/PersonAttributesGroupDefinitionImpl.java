@@ -106,7 +106,7 @@ public class PersonAttributesGroupDefinitionImpl implements IPersonAttributesGro
             inverseJoinColumns = {@JoinColumn(name = "PAGS_GROUP_MEMBER_ID")})
     @JsonSerialize(using = PagsDefinitionJsonUtils.DefinitionLinkJsonSerializer.class)
     @JsonDeserialize(using = PagsDefinitionJsonUtils.DefinitionLinkJsonDeserializer.class)
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     private Set<IPersonAttributesGroupDefinition> members =
             new HashSet<IPersonAttributesGroupDefinition>(0);
 

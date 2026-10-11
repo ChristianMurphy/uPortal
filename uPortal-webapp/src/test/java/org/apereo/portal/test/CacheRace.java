@@ -49,19 +49,22 @@ public final class CacheRace {
 
         private final AtomicReference<Thread> thread = new AtomicReference<>();
         private volatile Class<?> entityClass;
+        private volatile Object entityId;
         private volatile CountDownLatch read = new CountDownLatch(1);
         private volatile CountDownLatch release = new CountDownLatch(1);
 
-        void pause(Thread reader, Class<?> entity) {
+        void pause(Thread reader, Class<?> entity, Object id) {
             read = new CountDownLatch(1);
             release = new CountDownLatch(1);
             entityClass = entity;
+            entityId = id;
             thread.set(reader);
         }
 
         @Override
         public void onPreLoad(PreLoadEvent event) {
             if (entityClass.isInstance(event.getEntity())
+                    && (entityId == null || entityId.equals(event.getId()))
                     && thread.compareAndSet(Thread.currentThread(), null)) {
                 read.countDown();
                 try {
@@ -101,6 +104,20 @@ public final class CacheRace {
     public static <T> T race(
             EntityManagerFactory emf, Class<?> entity, Callable<T> reader, Runnable writer)
             throws InterruptedException {
+        return race(emf, entity, null, reader, writer);
+    }
+
+    /**
+     * As {@link #race(EntityManagerFactory, Class, Callable, Runnable)}, paused at the load of the
+     * {@code entity} with this id, such as one element of a collection.
+     */
+    public static <T> T race(
+            EntityManagerFactory emf,
+            Class<?> entity,
+            Object id,
+            Callable<T> reader,
+            Runnable writer)
+            throws InterruptedException {
         install(emf);
         final AtomicReference<T> result = new AtomicReference<>();
         final AtomicReference<Throwable> failure = new AtomicReference<>();
@@ -114,7 +131,7 @@ public final class CacheRace {
                             }
                         },
                         "cache-race-reader");
-        PAUSE.pause(thread, entity);
+        PAUSE.pause(thread, entity, id);
         final CountDownLatch read = PAUSE.read;
         final CountDownLatch release = PAUSE.release;
         thread.start();
