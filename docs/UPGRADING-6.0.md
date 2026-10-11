@@ -607,6 +607,28 @@ uPortal's defaults in `security.properties` are unchanged: they still point the 
 URLs at `${cas.protocol.server.context}`, so a portal not built from uPortal-start keeps its CAS
 settings.
 
+## Clusters: permission changes and portal events
+
+**Permission changes take effect at once, on every node.** uPortal 5 cached each permission
+decision on the node that made it, in `AuthorizationImpl.PRINCIPAL_HAS_PERMISSION` (180 s) and
+`AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT` (300 s), and kept it after a grant or a
+revocation. A revoked permission was still granted for up to 5 minutes to sessions that had
+already used it. uPortal 6.0 clears both caches whenever a permission is added, removed or
+updated. `ehcache.xml` now replicates their removals over JGroups, and the other nodes clear
+theirs too. A portal with its own `ehcache.xml` needs the JGroups replicator on both caches,
+with `replicatePuts=false, replicateUpdates=false, replicateRemovals=true` (see uPortal's
+copy). Each permission change now costs a round of fresh permission checks, on every
+node.
+
+**Portal events are written from the start.** A node used to queue its portal events in memory
+for the first 120 s after it started, with its other scheduled tasks. Another node's aggregator
+had passed their time by then, so they were never aggregated, and every restart in a running
+cluster lost the statistics of its first minutes. The queue is now flushed from the start, on
+its own scheduler. The new setting
+`org.apereo.portal.events.handlers.db.PortalEventDaoQueuingEventHandler.flushInitialDelay`
+(default `PT0S`) sets when the first flush runs. Keep it well under
+`org.apereo.portal.events.aggr.PortalRawEventsAggregatorImpl.aggregationDelay` (default `PT30S`).
+
 ## Deep links and failed logins with local login
 
 The new setting `login.refUrlEncoder` (in `security.properties`) says how uPortal sends a guest
