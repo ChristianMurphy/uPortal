@@ -203,7 +203,7 @@ public class DaoQueryGoldenTest {
         ratingDao.createOrUpdateRating(3, "alice", "Fine", calendar);
         ratingDao.createOrUpdateRating(1, "alice", "Changed my mind", calendar);
 
-        ordered("portletTypeDao.getPortletTypes()", typeDao::getPortletTypes);
+        check("portletTypeDao.getPortletTypes()", typeDao::getPortletTypes);
         check(
                 "portletTypeDao.getPortletType(\"Web Proxy\")",
                 () -> typeDao.getPortletType("Web Proxy"));
@@ -377,7 +377,7 @@ public class DaoQueryGoldenTest {
             run(() -> fragments.updateFragmentDefinition(fragment));
         }
 
-        ordered(
+        check(
                 "stylesheetDescriptorDao.getStylesheetDescriptors()",
                 descriptors::getStylesheetDescriptors);
         check(
@@ -401,7 +401,7 @@ public class DaoQueryGoldenTest {
         check(
                 "profileSelectionDao.readProfileSelectionForUser(\"nobody\")",
                 () -> profiles.readProfileSelectionForUser("nobody"));
-        ordered("fragmentDefinitionDao.getAllFragments()", fragments::getAllFragments);
+        check("fragmentDefinitionDao.getAllFragments()", fragments::getAllFragments);
         check(
                 "fragmentDefinitionDao.getFragmentDefinition(\"Academics\")",
                 () -> fragments.getFragmentDefinition("Academics"));

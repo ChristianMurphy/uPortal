@@ -1,7 +1,7 @@
-portletTypeDao.getPortletTypes() -> ArrayList of 3, in order
-portletTypeDao.getPortletTypes()   [0] PortletTypeImpl{cpdUri="/org/apereo/portal/portlets/CustomPortletType.cpd.xml", descr=null, name="Portlet"}
-portletTypeDao.getPortletTypes()   [1] PortletTypeImpl{cpdUri="/org/jasig/portlet/proxy/web-proxy.cpd.xml", descr=null, name="Web Proxy"}
-portletTypeDao.getPortletTypes()   [2] PortletTypeImpl{cpdUri="/last.cpd.xml", descr=null, name="zz Last"}
+portletTypeDao.getPortletTypes() -> ArrayList of 3
+portletTypeDao.getPortletTypes()   - PortletTypeImpl{cpdUri="/last.cpd.xml", descr=null, name="zz Last"}
+portletTypeDao.getPortletTypes()   - PortletTypeImpl{cpdUri="/org/apereo/portal/portlets/CustomPortletType.cpd.xml", descr=null, name="Portlet"}
+portletTypeDao.getPortletTypes()   - PortletTypeImpl{cpdUri="/org/jasig/portlet/proxy/web-proxy.cpd.xml", descr=null, name="Web Proxy"}
 portletTypeDao.getPortletType("Web Proxy") -> PortletTypeImpl{cpdUri="/org/jasig/portlet/proxy/web-proxy.cpd.xml", descr=null, name="Web Proxy"}
 portletTypeDao.getPortletType("web proxy") -> null
 portletTypeDao.getPortletType(-1) -> null
@@ -87,9 +87,9 @@ messageDao.getCodes() -> LinkedHashSet of 3
 messageDao.getCodes()   - "Greeting"
 messageDao.getCodes()   - "farewell"
 messageDao.getCodes()   - "greeting"
-stylesheetDescriptorDao.getStylesheetDescriptors() -> ArrayList of 2, in order
-stylesheetDescriptorDao.getStylesheetDescriptors()   [0] StylesheetDescriptorImpl{description=null, layoutAttributes=[], name="RespondrJS", outputProperties=[], stylesheetParameters=[], stylesheetResource="classpath:/layout/structure/columns.xsl", urlNodeSyntaxHelperName=null}
-stylesheetDescriptorDao.getStylesheetDescriptors()   [1] StylesheetDescriptorImpl{description=null, layoutAttributes=[], name="Ziggy", outputProperties=[], stylesheetParameters=[], stylesheetResource="classpath:/z.xsl", urlNodeSyntaxHelperName=null}
+stylesheetDescriptorDao.getStylesheetDescriptors() -> ArrayList of 2
+stylesheetDescriptorDao.getStylesheetDescriptors()   - StylesheetDescriptorImpl{description=null, layoutAttributes=[], name="RespondrJS", outputProperties=[], stylesheetParameters=[], stylesheetResource="classpath:/layout/structure/columns.xsl", urlNodeSyntaxHelperName=null}
+stylesheetDescriptorDao.getStylesheetDescriptors()   - StylesheetDescriptorImpl{description=null, layoutAttributes=[], name="Ziggy", outputProperties=[], stylesheetParameters=[], stylesheetResource="classpath:/z.xsl", urlNodeSyntaxHelperName=null}
 stylesheetDescriptorDao.getStylesheetDescriptorByName("RespondrJS") -> StylesheetDescriptorImpl{description=null, layoutAttributes=[], name="RespondrJS", outputProperties=[], stylesheetParameters=[], stylesheetResource="classpath:/layout/structure/columns.xsl", urlNodeSyntaxHelperName=null}
 stylesheetDescriptorDao.getStylesheetDescriptorByName("respondrjs") -> null
 stylesheetUserPreferencesDao.getStylesheetUserPreferences(respondr, 7, 1) -> StylesheetUserPreferencesImpl{layoutAttributes=["u7l1s5"->LayoutNodeAttributesImpl{attributes=size 1, nodeId="u7l1s5"}], outputProperties=[], parameters=["skin"->"dark"], profileId=1, stylesheetDescriptor=StylesheetDescriptorImpl{name="RespondrJS"}, userId=7}
@@ -100,10 +100,10 @@ stylesheetUserPreferencesDao.getStylesheetUserPreferences()   - StylesheetUserPr
 stylesheetUserPreferencesDao.getStylesheetUserPreferences()   - StylesheetUserPreferencesImpl{layoutAttributes=[], outputProperties=[], parameters=[], profileId=1, stylesheetDescriptor=StylesheetDescriptorImpl{name="RespondrJS"}, userId=8}
 profileSelectionDao.readProfileSelectionForUser("alice") -> ProfileSelection{profileFName="mobile", userName="alice"}
 profileSelectionDao.readProfileSelectionForUser("nobody") -> null
-fragmentDefinitionDao.getAllFragments() -> ArrayList of 3, in order
-fragmentDefinitionDao.getAllFragments()   [0] FragmentDefinition{description="The Welcome fragment", evaluators=[], name="Welcome", ownerID="fragment-welcome", precedence=8E+1}
-fragmentDefinitionDao.getAllFragments()   [1] FragmentDefinition{description="The Academics fragment", evaluators=[], name="Academics", ownerID="fragment-academics", precedence=20.5}
-fragmentDefinitionDao.getAllFragments()   [2] FragmentDefinition{description="The Admin fragment", evaluators=[], name="Admin", ownerID="admin-lo", precedence=1E+2}
+fragmentDefinitionDao.getAllFragments() -> ArrayList of 3
+fragmentDefinitionDao.getAllFragments()   - FragmentDefinition{description="The Academics fragment", evaluators=[], name="Academics", ownerID="fragment-academics", precedence=20.5}
+fragmentDefinitionDao.getAllFragments()   - FragmentDefinition{description="The Admin fragment", evaluators=[], name="Admin", ownerID="admin-lo", precedence=1E+2}
+fragmentDefinitionDao.getAllFragments()   - FragmentDefinition{description="The Welcome fragment", evaluators=[], name="Welcome", ownerID="fragment-welcome", precedence=8E+1}
 fragmentDefinitionDao.getFragmentDefinition("Academics") -> FragmentDefinition{description="The Academics fragment", evaluators=[], name="Academics", ownerID="fragment-academics", precedence=20.5}
 fragmentDefinitionDao.getFragmentDefinitionByOwner("admin-lo") -> FragmentDefinition{description="The Admin fragment", evaluators=[], name="Admin", ownerID="admin-lo", precedence=1E+2}
 localAccountDao.getPerson("alice") -> LocalAccountPersonImpl{attributes=[LocalAccountPersonAttributeImpl{name="givenName", values=size 1}, LocalAccountPersonAttributeImpl{name="mail", values=size 2}, LocalAccountPersonAttributeImpl{name="mail", values=size 2}, LocalAccountPersonAttributeImpl{name="nickname", values=size 1}], lastPasswordChange=null, name="alice", password=null}
