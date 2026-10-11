@@ -320,7 +320,7 @@ check.
 * **MOD-D? (P3-3 Spring cache layer):** uPortal code gets caches only through Spring's `CacheManager` and
   `CacheLookup.requireCache`, which fails on an unconfigured name. Spring's `Cache` API is
   used where it fits, and `get(key, loader)` replaces `SelfPopulatingCache`. The exceptions
-  are listed in `notes/cache-seam.md`: per-entry TTL, search API, statistics, Ehcache
+  are listed in `notes/spring-cache.md`: per-entry TTL, search API, statistics, Ehcache
   listeners, the expired-element eviction job, the `Map` adapter, and third-party Ehcache
   users. They get thin uPortal interfaces in later PRs. spring-modules-cache is removed.
   Behaviour, sizes, TTLs and replication are unchanged.
