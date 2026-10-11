@@ -124,7 +124,11 @@ export function validateSearchResults(body: unknown): SearchResults {
     return { query: string(document, 'query'), groups: array(document, 'groups').map(toGroup) };
 }
 
-/** Searches for `query`, limited to `types` when there are any. */
+/**
+ * Searches for `query`, limited to `types` when there are any. Every search the components start
+ * is one the user submitted (in a search box, or through the launcher's link), so it is marked
+ * `submitted=true` for the portal's search statistics.
+ */
 export function fetchSearchResults(
     api: ApiClient,
     query: string,
@@ -135,6 +139,7 @@ export function fetchSearchResults(
     for (const type of types) {
         parameters.append('type', type);
     }
+    parameters.append('submitted', 'true');
     return api.get(`${SEARCH_PATH}?${parameters.toString()}`, validateSearchResults, options);
 }
 

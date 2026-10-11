@@ -15,10 +15,10 @@
 package org.apereo.portal.events.aggr.action;
 
 import java.util.List;
-import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.apereo.portal.events.PortalEvent;
 import org.apereo.portal.events.PortletActionExecutionEvent;
+import org.apereo.portal.events.SearchRequestEvent;
 import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.AggregationIntervalInfo;
 import org.apereo.portal.events.aggr.BaseAggregationPrivateDao;
@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class SearchRequestAggregator
         extends BaseIntervalAwarePortalEventAggregator<
-                PortletActionExecutionEvent,
+                PortalEvent,
                 SearchRequestAggregationImpl,
                 SearchRequestAggregationKey> {
     private static final String TARGET_FNAME = "search";
@@ -49,25 +49,33 @@ public class SearchRequestAggregator
 
     @Override
     public boolean supports(Class<? extends PortalEvent> type) {
-        return PortletActionExecutionEvent.class.isAssignableFrom(type);
+        return PortletActionExecutionEvent.class.isAssignableFrom(type)
+                || SearchRequestEvent.class.isAssignableFrom(type);
     }
 
     @Override
     public boolean supports(PortalEvent event) {
-        if (event instanceof PortletActionExecutionEvent) {
-            PortletActionExecutionEvent paee = (PortletActionExecutionEvent) event;
-            if (paee.getFname().equals(TARGET_FNAME)) {
-                Map<String, List<String>> params = paee.getParameters();
-                if (params.containsKey(TARGET_PARAM)) {
-                    if ((params.get(TARGET_PARAM) != null) && !params.get(TARGET_PARAM).isEmpty()) {
-                        if (!StringUtils.isBlank(params.get(TARGET_PARAM).get(0))) {
-                            return true;
-                        }
-                    }
-                }
-            }
+        return searchTermsOf(event) != null;
+    }
+
+    /**
+     * The search terms of a search: a {@link SearchRequestEvent} from {@code /api/v6-0/search}, or
+     * (stored before 6.0) an action of the {@code search} portlet with a {@code query} parameter.
+     * Null for any other event, or when the terms are blank.
+     */
+    static String searchTermsOf(PortalEvent event) {
+        String terms = null;
+        if (event instanceof SearchRequestEvent) {
+            terms = ((SearchRequestEvent) event).getSearchTerms();
+        } else if (event instanceof PortletActionExecutionEvent) {
+            final PortletActionExecutionEvent action = (PortletActionExecutionEvent) event;
+            final List<String> values =
+                    TARGET_FNAME.equals(action.getFname())
+                            ? action.getParameters().get(TARGET_PARAM)
+                            : null;
+            terms = values == null || values.isEmpty() ? null : values.get(0);
         }
-        return false;
+        return StringUtils.isBlank(terms) ? null : terms;
     }
 
     @Override
@@ -78,7 +86,7 @@ public class SearchRequestAggregator
 
     @Override
     protected void updateAggregation(
-            PortletActionExecutionEvent e,
+            PortalEvent e,
             EventAggregationContext eventAggregationContext,
             AggregationIntervalInfo intervalInfo,
             SearchRequestAggregationImpl aggregation) {
@@ -89,7 +97,7 @@ public class SearchRequestAggregator
 
     @Override
     protected SearchRequestAggregationKey createAggregationKey(
-            PortletActionExecutionEvent e,
+            PortalEvent e,
             EventAggregationContext eventAggregationContext,
             AggregationIntervalInfo intervalInfo,
             AggregatedGroupMapping aggregatedGroup) {
@@ -97,7 +105,7 @@ public class SearchRequestAggregator
         final TimeDimension timeDimension = intervalInfo.getTimeDimension();
         final DateDimension dateDimension = intervalInfo.getDateDimension();
         final AggregationInterval aggregationInterval = intervalInfo.getAggregationInterval();
-        String query = e.getParameters().get(TARGET_PARAM).get(0);
+        String query = searchTermsOf(e);
         SearchRequestAggregationKey key =
                 new SearchRequestAggregationKeyImpl(
                         dateDimension, timeDimension, aggregationInterval, aggregatedGroup, query);
