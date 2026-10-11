@@ -12,7 +12,7 @@ its error message lists the allowed characters.
 | Item | State |
 | --- | --- |
 | 1. Audit | done, table below |
-| 2. MOD-I233 tenant names | name rule committed; the fname derived from a non-ASCII name waits for the coordinator |
+| 2. MOD-I233 tenant names | done, names and fnames |
 | 3. Other text fields | PAGS group names and descriptions, portlet list names: committed |
 | 4. Storage | already covered by the round trip's UNICODE variant on six vendors; limits listed below |
 | 5. Portlet search with accented terms | waits for MOD-I142 (persistence-fixes branch) to reach `ccr-43ba0785-hzlrj5` |
@@ -35,7 +35,7 @@ and `\s` are ASCII-only here, because no pattern uses `UNICODE_CHARACTER_CLASS`.
 | --- | --- | --- | --- | --- |
 | Tenant name | `TenantService` | `^[\w ]{5,32}$` | text | **Fixed** (MOD-I233): letters, marks, digits and spaces in any script, 5 to 32 code points |
 | Tenant fname | `TenantService` | `^[a-z_0-9]{5,32}$` | ID | kept; the message lists the characters |
-| Tenant fname from name | `TenantManagerController.calculateFnameFromName` | `replaceAll("[\\s']", "_").toLowerCase()` | ID | **Open**: a non-ASCII name gives an invalid fname (proposal to the coordinator: NFD plus an optional fname field) |
+| Tenant fname from name | `TenantManagerController.calculateFnameFromName` | `replaceAll("[\\s']", "_").toLowerCase()` | ID | **Fixed**: lower case, ł ø æ œ ß đ ħ þ folded, accents dropped (NFD), other runs become `_`. The add-tenant form has an optional fname field, and asks for one when the name gives none |
 | PAGS group name | `PagsService`, `selectEntities.jsp` | `^[\w ]{5,500}$` | text, and the key in the PAGS REST paths | **Fixed**: any text but control characters, `/` and `\`, 5 to 500 code points, in Java and JavaScript |
 | PAGS description | `PagsService` | `^[\w ,\.\(\)]{0,500}$` | text | **Fixed**: any text without control characters, up to 500 code points |
 | Ad hoc group description | `selectEntities.jsp` builds it from the group names | the description rule | text | **Fixed** with the description rule |
