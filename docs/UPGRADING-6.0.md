@@ -484,3 +484,18 @@ attribute is set, and uPortal-start doesn't set it.
 A portal that keeps its own `server.xml` adds the same valve inside its `<Host>`. Monitoring that
 read the message text of these pages has to read the status code instead. uPortal-start
 `tests/api/error-pages.spec.ts` checks one page of each kind.
+
+## Tomcat's documentation, examples and ROOT page are gone
+
+uPortal-start's `tomcatConfig` (which `tomcatInstall` runs) now deletes Tomcat's `docs`,
+`examples` and `ROOT` webapps, and installs `etc/tomcat/webapps/ROOT`, which only redirects `/`
+to `/uPortal/`. Tomcat's ROOT page named the Tomcat version, and anyone could open the
+documentation and the examples, some of which echo request data. `/docs/` and `/examples/` now
+answer 404. A portal whose context path is not `/uPortal` changes the target in
+`etc/tomcat/webapps/ROOT/index.jsp`.
+
+The `manager` and `host-manager` webapps stay. They have no users by default, so they answer 401.
+A site that uses them must add a user with the `manager-gui` or `admin-gui` role to
+`conf/tomcat-users.xml`. A site that doesn't can delete `webapps/manager` and
+`webapps/host-manager` from its Tomcat. uPortal-start `tests/api/tomcat-webapps.spec.ts` checks
+the redirect and that the documentation and examples are gone.
