@@ -122,21 +122,11 @@ they are.
 HSQLDB counts a `VARCHAR` length in UTF-16 units, not code points. A 35-character column holds 17
 emoji there, and the code point checks below allow 35. HSQLDB is for development only.
 
-Known 6.0 limits, for the 6.0 schema step (the SQL Server and MySQL items are also in the
-persistence-fixes note's list; the `MAX_STRING_SIZE` and user name items are new here):
-
-- SQL Server: `nvarchar` text (MOD-D44).
-- Oracle: with the default `MAX_STRING_SIZE=STANDARD`, a `varchar2` holds at most 4000 bytes
-  whatever its semantics. In AL32UTF8 the columns over 1000 characters (the 2000-character
-  parameter, preference, tenant attribute and description values, the 1000 and 1024 ones and
-  `UP_JGROUPS_AUTH.RANDOM_TOKEN`) can refuse a long value in a script of three or four bytes per
-  character. Either document `MAX_STRING_SIZE=EXTENDED` as a minimum for Oracle (MOD-D25) or make
-  those columns `clob`.
-- `UP_PROFILE_SELECTION.USERNAME` holds 70 characters, but user names may have 100 (MOD-I272):
-  widen it to 100.
-- MySQL and MariaDB: the 6.0 DDL should name `utf8mb4` for its tables, so a server configured
-  with another default (`utf8mb3` or `latin1`) can't create tables that lose four-byte
-  characters.
+Known 6.0 limits: the schema step list in the persistence-fixes note holds them all, so there is
+one list. From this audit it has SQL Server `nvarchar` text (MOD-D44), `utf8mb4` in the MySQL and
+MariaDB DDL, Oracle's 4000-byte `varchar2` limit under `MAX_STRING_SIZE=STANDARD` for the columns
+over 1000 characters (EXTENDED or `clob` is an owner decision), and
+`UP_PROFILE_SELECTION.USERNAME` widened from 70 to 100 characters.
 
 ## LOG rows MOD-I270 to MOD-I278
 
