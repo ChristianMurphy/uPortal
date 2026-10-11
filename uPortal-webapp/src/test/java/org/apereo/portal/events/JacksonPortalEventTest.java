@@ -295,7 +295,7 @@ public class JacksonPortalEventTest {
         final String searchJson =
                 assertEventJsonEquals(
                         "{\"@c\":\".SearchRequestEvent\",\"timestamp\":1371745598080,\"serverId\":\"example.com\",\"eventSessionId\":\"1234567890123_system_AAAAAAAAAAA\",\"userName\":\"system\",\"searchTerms\":\"campus"
-                            + " map\"}",
+                                + " map\"}",
                         event);
         assertEventJsonEquals(searchJson, mapper.readValue(searchJson, PortalEvent.class));
     }
