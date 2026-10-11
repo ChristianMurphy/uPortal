@@ -35,6 +35,11 @@ uPortal, oldest first:
 | `feat(search): show provider tabs and failed groups in up-search` | the component reads `label` and `failed`; 377 Vitest tests |
 | `refactor(search)!: remove the search portlet and portlet-event search` | the portlet, JSPs, Spring context, `portlet.xml` entries and event definitions, `IPortalSearchService` and its services, `uPortal-api-search`, the Directory portlet's event handler, `PortletUtils.getStringFromPortletUrl`, the search beans and properties |
 | `docs: describe remote search providers and the removed portlet` | UPGRADING-6.0 (removed parts, provider settings, examples), guide, this note |
+| `feat(search): add spanish and french search messages` | MOD-D49: es and fr text for the ten new keys and `search.score` |
+| `fix(search): count the query limit in characters, not utf-16 units` | MOD-D50: code points; "Zoë Ñandú 李小龍 😀" through the service, controller, a remote provider, the API client, the launcher and the URL |
+| `fix(search): read remote providers from the propertyResolver bean` | the startup bug below; `RemoteJsonSearchProvidersTest` in a root and a servlet context |
+| `fix(search): leave input method keys alone and use logical css` | MOD-D51: `event.isComposing`; logical margins; long words wrap |
+| `fix(search): read the query from the render url the portal redirects to` | the `pP_query` bug below |
 
 uPortal-start, oldest first:
 
@@ -42,6 +47,8 @@ uPortal-start, oldest first:
 | --- | --- |
 | `test(e2e): characterise the search and search launcher channels` | `tests/ux/smoke/search.spec.ts`: 6 tests on what users see, with locators that work for the portlet and the components |
 | `feat(data): render search as web component channels` | `search` and `search-launcher` as Web Component channels; intended row changes; `search-web-component.spec.ts` (5 tests) and `tests/api/search-v6-0.spec.ts` (4 tests) |
+| `test(e2e): check search in spanish, french and any unicode text` | es_ES and fr_FR users (through the locale selector, set back to en_US), the Unicode query from both boxes, the API's limit in characters |
+| `test(e2e): read the search query from the portlet parameter` | the specs read `pP_query`, as the component does |
 
 ## Running
 
@@ -59,12 +66,15 @@ G-index in uPortal-start). Integration builds the uPortal branch of the same nam
    `SearchRequestEvent`; `SearchRequestAggregator` counts it and the stored 5.17 portlet action
    events (`SearchRequestAggregatorTest` reads both from stored JSON). The aggregation golden
    doesn't change: its event stream has no search events.
-3. Push the channel switch; the same spec must pass against the components, with the new specs.
-4. The harness: the intended changes are `UP_PORTLET_DEF_PARAM +7`, `UP_PORTLET_PREF -8` and
-   `UP_PORTLET_PREF_VALUES -8` (the last two estimated: eight preferences with one value each).
-   If the harness reports other counts, correct `intended-changes.txt` from its report.
-5. Seeded faults, as throwaway commits reverted by a new commit: one per new check.
-6. Message the coordinator with the CI run numbers and the proposed LOG rows below.
+3. Done: the channel switch is pushed. The database harness on postgres-18 (Integration run
+   38130101463) matched the baseline (result "ZERO DRIFT") with every intended change found: `UP_PORTLET_TYPE +1`,
+   `UP_PORTLET_DEF_PARAM +9` (403 to 412), `UP_PORTLET_PREF -8` (121 to 113),
+   `UP_PORTLET_PREF_VALUES -8` (132 to 124), and the removed `hibernate_sequences` generators.
+4. Done, locally (MOD-D53): the portal built from this branch, started with uPortal-start's
+   `portalInit` and `tomcatStart`, passes all 21 tests of `search.spec.ts`,
+   `search-web-component.spec.ts` and `search-v6-0.spec.ts` (see "Seeded faults" for the setup).
+5. Landing evidence: the push runs on the branch heads (uPortal CI, and uPortal-start CI,
+   Integration, equivalence and G-index).
 
 ## Seeded faults
 
@@ -92,7 +102,20 @@ JUnit, run by the coordinator in its container (JDK 21), one fault at a time:
 | J4: the controller publishes every search, submitted or not | `SearchResultsRESTControllerTest` | fails: `publishesOnlySubmittedSearchesForTheStatistics` |
 | J5: `MAX_QUERY_LENGTH` raised to 2000 | `SearchServiceTest` | passed on `79bbff8ef`, a gap: the test built its queries from the constant. On `2e46e8936` the test uses a literal 200 and fails: `refusesBlankAndOverlongQueries` |
 
-The Playwright specs: to be filled in.
+Playwright, against a portal started in the session container from this branch (MOD-D53: no CI
+runners). The setup, kept outside the repositories: uPortal `./gradlew install` with a Maven
+Central mirror init script; uPortal-start `gradle.properties` from the example with
+`uPortalVersion=5.17.10-SNAPSHOT`; `portalInit` and `tomcatStart` with `JAVA_HOME` on a JDK 11 (the
+portal's JDK, from `.sdkmanrc`; on JDK 21 the portlets' data import fails) and Gradle's daemon on
+JDK 21. Each fault was applied alone, Tomcat restarted (it keeps serving a changed bundle until
+then), the spec run with `--retries=0`, and the change undone. Afterwards all 21 tests passed
+again.
+
+| Fault | Check | Result |
+| --- | --- | --- |
+| the search field's `maxlength` 100 in the deployed `up-search` bundle | `search.spec.ts` | fails: "the header offers a search box" (expected "200", received "100") |
+| `ArrowRight` no longer moves the results tabs, in the deployed bundle | `search-web-component.spec.ts` | fails: "the results tabs follow the keyboard" |
+| the blank-query message reads "Type something to search for", in a rebuilt `uPortal-api-rest` jar | `search-v6-0.spec.ts` | fails: "refuses a blank query" |
 
 ## Proposed LOG rows (the coordinator numbers them)
 
@@ -135,6 +158,20 @@ The Playwright specs: to be filled in.
   `SearchServiceTest`, which built its queries from `MAX_QUERY_LENGTH`. A test that takes its
   input from the constant it checks follows any change to that constant. The test now uses a
   literal 200. The testing rules could say so.
+* Finding: uPortal did not start with the remote providers in it (MVCDispatcherServlet failed in
+  init, in uPortal-start Integration run 38130101463). `RemoteJsonSearchProviders` had two
+  constructors without `@Autowired`, and the one it needed took a
+  `PortalPropertySourcesPlaceholderConfigurer` by type, of which the MVC servlet's context sees two.
+  The unit tests built the class directly. The fix takes the root `propertyResolver` bean by name,
+  and a test builds the bean in contexts laid out as the portal's. Proposed guide rule: each new
+  Spring bean gets a test that wires it the way the portal does.
+* Finding: the launcher's `/p/search/max?query=...` reaches the channel as
+  `/p/search.ctf2/max/render.uP?pP_query=...`: the portal's redirect turns the parameter into a
+  portlet parameter. The component read only `query`, so a search from the header showed an empty
+  search. Unit and browser tests replace the navigation, so only a portal run found it. The
+  component now reads `pP_query`, else `query`.
+* Finding: MockMvc does not decode `+` in a query string as a space, and Tomcat does. A MockMvc test
+  that sends `URLEncoder` output must write spaces as `%20`.
 * Leftover: the Respondr skin still styles `#webSearchContainer` and `#webSearchSubmit`
   (`header.scss`, `search.scss`), which nothing renders now. They go with the skin migration
   (MOD-D21).
