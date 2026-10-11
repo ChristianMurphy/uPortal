@@ -666,14 +666,28 @@ chosen per portlet.
 ### MOD-D23: multi-database CI is live (MOD-D16 delivered)
 
 * **uPortal `db-integration.yml`:** the JPA/DAO tests read their database
-  from system properties, defaulting to HSQLDB. They run on PostgreSQL 16,
-  MariaDB 11.4 and MySQL 8.4 on every push, and on SQL Server 2022 and
-  Oracle Free 23 nightly. All five were proven on push once (run
-  38061900729).
+  from system properties, defaulting to HSQLDB. As first delivered, they ran
+  on PostgreSQL 16, MariaDB 11.4 and MySQL 8.4 on every push, and on SQL
+  Server 2022 and Oracle Free 23 nightly. All five were proven on push once
+  (run 38061900729).
+  * **Now (MOD-D25, MOD-D30):** since `36c35ecdf`, every push and pull
+    request runs PostgreSQL 18, MySQL 9.7, MariaDB 12.3, SQL Server 2025
+    and Oracle Free 23.26. The canaries run nightly. On workstream
+    branches a push runs PostgreSQL 18 and MariaDB 12.3 (`4900748e3`), and
+    a manual run adds MySQL, SQL Server and Oracle (`d66bdc5a5`). Run
+    38095664677 (`247d76b87`) passed on all five.
 * **uPortal-start `integration.yml`:** builds uPortal from source on the
   same branch, then runs the full Playwright suite (124 tests) on HSQLDB,
   PostgreSQL 16 and MariaDB 11.4, and the DB harness on all 7 vendors.
   Run 38061904020 was green apart from the known drift MOD-I83/I84.
+  * **Now (MOD-D25, MOD-D30):** since uPortal-start `a811eb3b8`, the
+    harness runs on HSQLDB 2.7.4, PostgreSQL 18, MySQL 9.7, MariaDB 12.3,
+    SQL Server 2025 and Oracle Free 23.26. The Playwright suite runs on
+    HSQLDB, PostgreSQL 18 and MariaDB 12.3 on every push, and on MySQL 9.7
+    in the nightly set. Workstream branches run Playwright on HSQLDB, the
+    harness and Playwright on PostgreSQL 18, and one G-migrate pair
+    (`3ebe1a52b`). Run 38087260340 (`5cce78e2d`) passed every one of
+    these jobs.
 * **Harness changes:**
   * The baseline is picked from `uPortalVersion`.
   * Drift and failed specs are published as GitHub annotations, because
