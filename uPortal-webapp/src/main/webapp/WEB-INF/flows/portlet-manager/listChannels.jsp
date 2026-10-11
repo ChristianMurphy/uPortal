@@ -151,7 +151,7 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
 </style>
 
 <!-- Portlet -->
-<div id="${n}portletBrowser" class="card portlet ptl-mgr view-home" role="section">
+<div id="${n}portletBrowser" class="card portlet ptl-mgr view-home">
   <c:if test="${not empty statusMsgCode}">
     <div class="alert alert-success alert-dismissable">
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-hidden="true"></button>
@@ -162,7 +162,7 @@ PORTLET DEVELOPMENT STANDARDS AND GUIDELINES
     </div>
   </c:if>
   <!-- Portlet Titlebar -->
-  <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+  <div class="card-header titlebar portlet-titlebar">
     <h2 class="title" role="heading"><spring:message code="portlet.registry"/></h2>
     <div class="fl-col-flex2 toolbar" role="toolbar">
       <div class="fl-col">
@@ -255,7 +255,7 @@ up.jQuery(function() {
         var $columnFilterWidgets = $('#${n}columnFilterWidgets');
         
         // State filter
-        var stateSelect = $('<select class="form-select form-select-sm"><option value="">State</option></select>');
+        var stateSelect = $('<select class="form-select form-select-sm" aria-label="<spring:message code="state" htmlEscape="true" javaScriptEscape="true"/>"><option value="">State</option></select>');
         var stateData = table.column(2).data().unique().sort();
         stateData.each(function(state) {
             stateSelect.append('<option value="' + state + '">' + state + '</option>');
@@ -268,7 +268,7 @@ up.jQuery(function() {
         });
         
         // Category filter
-        var categorySelect = $('<select class="form-select form-select-sm"><option value="">Category</option></select>');
+        var categorySelect = $('<select class="form-select form-select-sm" aria-label="<spring:message code="category" htmlEscape="true" javaScriptEscape="true"/>"><option value="">Category</option></select>');
         var allCategories = [];
         table.data().each(function(portlet) {
             if (portlet.categories && Array.isArray(portlet.categories)) {

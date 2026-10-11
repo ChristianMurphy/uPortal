@@ -1,7 +1,7 @@
 import { css, html, nothing, svg, type PropertyValues, type TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import { waitFor } from 'xstate';
-import { formatMessage, type Messages } from '../../lib/i18n';
+import { formatMessage, type MessageArg, type Messages } from '../../lib/i18n';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
 import { decodeEntities, POPULAR_PORTLETS_MESSAGES } from './messages';
@@ -112,6 +112,16 @@ export class UpPopularPortlets extends UpElement {
 
             select.form-control {
                 width: auto;
+                /* A filter lists fnames, which can be long: the select and the flex items
+                   around it may shrink below their longest option */
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .filter-widgets,
+            .filter-widget {
+                min-width: 0;
+                max-width: 100%;
             }
 
             .filter-term {
@@ -205,9 +215,9 @@ export class UpPopularPortlets extends UpElement {
     }
 
     /** Messages.properties holds some of these texts as HTML; they are shown as text. */
-    protected override msg(key: string, ...args: (string | number)[]): string {
+    protected override msg(key: string, ...args: MessageArg[]): string {
         const pattern = this.localizedMessages[key] ?? this.defaultMessages[key] ?? key;
-        return formatMessage(decodeEntities(pattern), args);
+        return formatMessage(decodeEntities(pattern), args, this.resolvedLocale);
     }
 
     protected override willUpdate(changed: PropertyValues<this>): void {
@@ -348,8 +358,9 @@ export class UpPopularPortlets extends UpElement {
     #renderPaging(view: TableView, pageSize: number, enabled: boolean): TemplateResult {
         const previous = !enabled || view.page === 0;
         const next = !enabled || view.page >= view.pageCount - 1;
-        const info = this.msg(
+        const info = this.msgPlural(
             'popular.portlets.page.info',
+            view.total,
             view.page + 1,
             view.from,
             view.to,

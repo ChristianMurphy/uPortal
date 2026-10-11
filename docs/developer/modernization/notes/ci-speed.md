@@ -76,24 +76,175 @@ and it shows in Actions once the earlier branches are merged.
 
 ## Evidence
 
-The runner queue of the account had about 25 runs waiting during the work, and the runs of this
-branch had not started when this note was written. The table is filled in when they finish.
+Times are runner seconds: a job's `started_at` to `completed_at` from `list_workflow_jobs`, summed
+over a run, with skipped jobs at 0. Before is the push run of `-log-diet` (uPortal `3aee5e1a4`,
+uPortal-start `3d49ae6b9`). After is the push run of `-ci-speed` (uPortal `3c82080e7`, uPortal-start
+`1ae9222b9`). Both are light pushes on one branch. The matrix changes (items 2 and 6) don't show in
+them, because a push to a workstream branch runs one Linux cell before and after. A manual full run wasn't started
+(`agent-guide.md`). The first batch run after the landing, against batch 1's full runs, gives that
+comparison. The runs after used Gradle and npm entries that earlier pushes of the branch had saved.
 
-| Run | ID | Result |
+### uPortal
+
+| Workflow | Before run | Before | After run | After |
+| --- | --- | --- | --- | --- |
+| `CI` | 38143056177 | 1570 s | 38160993944 | 1347 s |
+| `DB integration` | 38143056196 | 574 s | 38160993925 | 411 s |
+| `DB copy tool` | 38143056181 | 312 s | 38160993973 | 288 s |
+| `Workflow lint` | 38143056178 | 34 s | 38160993957 | 23 s |
+| Total | | 2490 s (41.5 min) | | 2069 s (34.5 min) |
+
+Jobs of `CI`:
+
+| Job | Before | After | What changed |
+| --- | --- | --- | --- |
+| `ubuntu-latest with Java temurin version 21` | 697 s | 1122 s | SpotBugs runs here (482 s). Chromium 82 s to 61 s, Build and Test 559 s to 515 s |
+| `Static analysis (SpotBugs and FindSecBugs)` | 598 s | gone | folded into the cell |
+| `Spring 5.3 compile probe` | 247 s | 198 s | restored Gradle entry (the compile step 181 s) |
+| `Commit messages`, `Prose (Vale)` | 12 s, 16 s | 12 s, 15 s | |
+
+* **Trade-off of item 3.** SpotBugs in the build cell saves 116 runner seconds (598 s gone, 482 s
+  added), but the cell's wall time grows from 697 s to 1122 s, because SpotBugs no longer runs in
+  parallel with the build. Most of SpotBugs is the analysis, not the compile: 482 s in the cell
+  against 584 s as its own job, which also compiled. The fold saves one runner start and one repeat of the compile.
+* **Gradle cache.** `DB integration` on postgres-18, step `Run uPortal-webapp's tests`: 306 s (job
+  114480677391) to 146 s (job 114533674302), after it restored the entry that the `CI` build cell
+  saved. The first run of this branch (`7ab84bf11`, `CI` 38157439312, `DB integration` 38157439409)
+  was cold: `CI` 1508 s, `DB integration` 634 s.
+
+### uPortal-start
+
+| Workflow | Before run | Before | After run | After |
+| --- | --- | --- | --- | --- |
+| `CI` | 38143061745 | 418 s | 38160995511 | 449 s |
+| `HTTP replay` | 38143061767 | 564 s | 38160995486 | 14 s |
+| `Migration equivalence` | 38143061737 | 1352 s | 38160995502 | 1147 s |
+| `G-index` | 38143061735 | 2020 s | 38160995472 | 2283 s |
+| `Integration` | 38143061751 | 3585 s | 38160995495 | 3138 s |
+| `Workflow lint` | 38143061748 | 19 s | 38160995453 | 24 s |
+| Total | | 7958 s (132.6 min) | | 7055 s (117.6 min) |
+
+* **`HTTP replay`:** the earlier push changed `replay.yml`, so it ran the replay (564 s). The later
+  push doesn't change anything the replay uses, and it skips. A skipping push cost 14 s before (the rules
+  and plan jobs) and costs 14 s now (5 s for the rules plus 9 s for `Build uPortal`). Without that row, the
+  totals are 7394 s and 7041 s.
+* **`G-index`:** both runs failed on the same two seq-scan findings for `up_person_attr`
+  (`user_dir_id`), so the failure is not from these changes. The job took 1790 s before and 2116 s
+  now. I didn't find a cause in the changes. Its workload has a fixed length, and the phase table of the
+  job (below) puts 1025 s in the Playwright suite.
+* **`Integration`:** `Build uPortal` 223 s to 114 s (restored entry, plan steps included), the
+  `DB harness: postgres-18` 377 s to 358 s, `G-migrate` 534 s to 478 s, `Playwright: hsqldb` 1180 s to 1039 s.
+* **`Migration equivalence`:** `Build uPortal` 227 s to 160 s, and the 7 s `plan` job is gone.
+* **Item 1, npm and browsers.** `Install npm dependencies` took 139 s (job 114494330925) and 114 s
+  (job 114497461135) before. After, it took 7 s, 8 s and 10 s in the jobs that started once another
+  job had saved the entry (114553883760, 114553883774, 114553883833). It took 89 s in the first job
+  (114553883737), 128 s in the harness job that started at the same moment (114553883766) and 138 s in
+  `G-index`, which failed and so saved nothing. A failed job doesn't save a cache. The Playwright
+  browser cache hit (`playwright-Linux-1.64.0`), but `Install Playwright browsers` still takes 11 s to
+  28 s because `--with-deps` installs the system libraries.
+
+### Runs on the integration branch
+
+The landings ran as full pushes of `ccr-43ba0785-hzlrj5`, so these runs are not comparable with the
+light pushes above. They are the after side for the comparison with batch 1's full runs.
+
+| Repository and commit | Workflow | Run | Runner seconds | Jobs |
+| --- | --- | --- | --- | --- |
+| uPortal `399bccebc` | `CI` | 38170373669 | 3270 s | Linux Temurin 21 1202 s (Chromium 88 s, Build and Test 576 s, lint-js 37 s, SpotBugs 482 s), Linux 25 505 s, macOS 25 518 s, Windows 25 748 s, probe 265 s, commits 13 s, prose 19 s |
+| uPortal `399bccebc` | `DB integration` | 38170373753 | 1818 s | mariadb-12.3 343 s, sqlserver-2025 420 s, mysql-9.7 346 s, postgres-18 329 s, oracle-23 380 s |
+| uPortal `399bccebc` | `DB copy tool` | 38170373594 | 453 s | |
+| uPortal `399bccebc` | `Workflow lint` | 38170373585 | 20 s | |
+| uPortal `399bccebc` | Total | | 5561 s (92.7 min) | |
+
+In the `CI` run only the Linux Temurin 21 cell installs Chromium and runs the web component tests,
+lint-js and SpotBugs (item 2). The other three cells run Build and Test alone.
+
+### The new output, as an agent reads it
+
+* **Annotations** (`gh api repos/ChristianMurphy/uPortal-start/check-runs/<job>/annotations`), job
+  `Build uPortal` of `G-index` 114533692470: `uPortal under test` gives `ChristianMurphy/uPortal
+  ccr-43ba0785-hzlrj5-ci-speed at 3c82080e7e5e9374312cf2235dbf9db87d8f1fa3: uPortal has a branch
+  named ccr-43ba0785-hzlrj5-ci-speed, like this one`. `G-index change check` lists the 14 and 4 files
+  that matched, and `G-index runs` the chosen set. The same lines are in the log, about 60 lines from
+  its end.
+* **Phase times** (item 5), job 114553883766 (`DB harness: postgres-18`): start the database 5 s,
+  deploy, dataInit, snapshot and verify 133 s, start the portal 31 s, the API specs 19 s, stop the
+  portal 10 s, the LOB report 8 s. Job 114547143098 (`G-index`): deploy and dataInit 204 s, template
+  user 83 s, generate and load 252 s, start the portal 61 s, the Playwright suite 1025 s, the driver
+  246 s, audit 25 s `FAILED`.
+* **G-index filter** (item 7): on this stack it says `run`, because the branch still holds the
+  `tests/db` changes of `-log-diet`. The skip path is covered by the 24-row table test, which
+  `Workflow lint` ran green (job `actionlint` of run 38160995453, with the 12-row test of item 8).
+
+## Cache size
+
+The saver of the uPortal-start key, `Playwright: postgres-18` (run 38160995495, job 114553883760),
+saved 1,208,282,953 bytes. The saver of the uPortal key, `Build uPortal` of `Integration` (run
+38157305156, job 114522826645), saved 486,872,376 bytes. One branch of uPortal-start costs about
+1.7 GB. The uPortal build cell saved 549,854,370 bytes (run 38157439312, job 114523221602). Against
+the limit of 10 GB per repository, that is about 6 branches of uPortal-start and 18 of uPortal, and
+GitHub evicts the entry used least recently when the total is over. With about 20 active branches,
+uPortal-start's entries are evicted often, and an entry of `ccr-43ba0785-hzlrj5` can be evicted too.
+The cache listing API isn't open through the proxy (403), so the real total is not read.
+
+**Contents of the entry.** The entry can't be opened without a workflow change, so I measured a
+Gradle home that I built from nothing here: `tomcatInstall tomcatDeploy dbWait dbSetup dataInit
+dbSnapshot dbLobReport` and the portlets' `dataInit` on HSQLDB, with the uPortal 5.17.10-SNAPSHOT
+build of the branch. It is the same work as the saver job except the database and the Playwright
+run. The home was 1,309 MB (the entry is compressed, 1,208 MB).
+
+| Directory | Size | Content |
 | --- | --- | --- |
-| pending | | |
+| `caches/modules-2/files-2.1`, 14 `.war` files | 743 MB | the portlets that the overlays deploy: resource-server-webapp (109 MB and 40 MB, two versions), CalendarPortlet 104, SimpleContentPortlet 88, WebProxyPortlet 86, notification-portlet-webapp 79, NewsReaderPortlet 69, FeedbackPortlet 50, Announcements 47, esup-filemanager 26, BookmarksPortlet 25 |
+| `caches/modules-2/files-2.1`, other | about 250 MB | 241 jars (170 MB), the Node tarball (53 MB), Gradle plugin files |
+| `caches/9.8.1` | 300 MB | `generated-gradle-jars` 185 MB, `transforms` 67 MB, `javaCompile` 43 MB, all rebuilt by Gradle |
+| the rest | about 15 MB | metadata and `jars-9` |
+
+The portlet wars are 57% of the home. They come from Maven Central, as do the jars. The
+uPortal jars themselves come from `~/.m2`, so they aren't in the entry.
+
+**Options.** I didn't change any workflow. Each option needs the coordinator's decision.
+
+1. **Leave the rebuildable and the large files out of the entry** with `gradle-home-cache-excludes`.
+   Excluding `caches/9.8.1/generated-gradle-jars`, `transforms` and `javaCompile` takes out 295 MB
+   (23%), and Gradle rebuilds them in a few seconds. Excluding the wars (`caches/modules-2/files-2.1/org.jasig.*`
+   and `org.esupportail.*`) takes out 743 MB more. The entry falls from 1.3 GB to about 0.3 GB, about
+   0.8 GB per branch with the uPortal key, so about 12 branches fit. Each job that deploys
+   overlays then downloads 743 MB from Maven Central again, and Central answered 403 to a job once
+   (uPortal run 38139808912), which was a reason for the cache. I have not timed the download.
+2. **Save only on the integration branch and on the first run of a branch.** That keeps the
+   total small, but a topic branch reads only its own caches and the default branch's, never
+   `ccr-43ba0785-hzlrj5`'s. So a topic branch would get nothing from the integration branch's
+   entry, and the saving would apply to batch runs only.
+3. **One shared key for all branches.** A key shared by every branch has to be saved on the default
+   branch (`master`), because only that cache is visible from other branches. That needs a workflow
+   in `master`, which is for the maintainers to accept, and `schedule` fires only from there too.
+   It is the way to make one entry serve all branches, and it needs an upstream change.
+4. **The enhanced provider** (`cache-provider: enhanced`) deduplicates and cleans entries. It is
+   under a commercial license, and it was left out for that reason (MOD-I75). The owner decides.
+
+My reading: option 1 for the generated directories costs almost nothing and removes a quarter of
+the entry. The wars are the decision, a trade of 743 MB of storage against 743 MB of downloads per
+job.
 
 ## Findings for the coordinator
 
 * The required check `Static analysis (SpotBugs and FindSecBugs)` no longer exists in uPortal. Its
   failures now show as a failed `Run SpotBugs` step in `ubuntu-latest with Java temurin version 21`.
+* SpotBugs in the build cell saves 116 runner seconds and adds 425 s to the cell's wall time
+  (697 s to 1122 s). Under a shortage of runner minutes that is the right way round. If wall time
+  starts to matter, the separate job comes back with one line.
 * uPortal has no `npm ci` step in a workflow. npm runs inside Gradle (the node plugin), so the npm
   cache of item 1 applies to uPortal-start only.
+* A failed job doesn't save a cache. `G-index` fails on its audit (the seq-scan findings for
+  `up_person_attr`), so it never saves its npm entry and each of its runs starts cold.
+* The cache entry of uPortal-start is large (see "Cache size"). The listing of the repository's
+  caches is closed through the proxy, so nobody here can read the real total.
+* The brief called for manual full runs of uPortal `CI` and uPortal-start `Integration` for the
+  before and after table. `agent-guide.md` says not to start them, and the coordinator agreed. The
+  full comparison is the first batch run after `-ci-speed` against batch 1's full runs.
 * `check-freeze-store.py` and the other checks of the guide were run against
-  `origin/ccr-43ba0785-hzlrj5`.
-* My brief calls for manual full runs of uPortal `CI` and uPortal-start `Integration` for the
-  before and after table. `agent-guide.md` says not to start them. They are not started, and the
-  question is with the coordinator.
+  `origin/ccr-43ba0785-hzlrj5` before each push.
 
 ## Proposed LOG rows (MOD-I300 to MOD-I307)
 
