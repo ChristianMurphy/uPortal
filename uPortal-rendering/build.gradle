@@ -27,5 +27,5 @@ dependencies {
 
 // EventProviderImplTest mocks Pluto's PortletContextService
 dependencies {
-    testImplementation "org.apache.portals.pluto:pluto-container-driver-api:${plutoVersion}"
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-driver-api')
 }
