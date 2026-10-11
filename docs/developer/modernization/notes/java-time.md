@@ -155,7 +155,7 @@ followed it.
   should exempt `org.apereo.portal.utils.time.JodaTimeBridge`, or freeze it once; it is the
   single place where converted code reaches Joda.
 
-## Remaining Joda inventory (the JPA slice)
+## Remaining Joda inventory (the JPA step)
 
 61 production files, all in the graph around the Joda-mapped entities:
 
@@ -187,7 +187,7 @@ followed it.
   (uPortal-core), `jackson-datatype-joda` (uPortal-portlets; keep it while any Joda value can
   reach JSON).
 
-### Bridge call sites left for the JPA slice
+### Remaining Joda call sites for the JPA step
 
 `JodaTimeBridge` is the only crossing. Its call sites, each removed by deleting the call once
 the other side is `java.time`:
@@ -226,5 +226,5 @@ the other side is `java.time`:
   accepted, and periods keep calendar-day semantics in the value's zone. Code still meeting Joda
   entities goes through `JodaTimeBridge` only. The Marketplace JSON keeps epoch milliseconds.
   The entities, DAOs and the aggregation engine (61 files) remain, to be converted with the
-  Hibernate 5.2 slice behind the persistence and analytics goldens.
+  Hibernate 5.2 step behind the persistence and analytics goldens.
 * **MOD-I?: the `portal.properties` example `purgeDelay=P1H` was invalid** (fixed to `PT1H`).
