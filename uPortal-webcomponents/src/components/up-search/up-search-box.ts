@@ -66,14 +66,16 @@ export class UpSearchBox extends UpElement {
                 position: absolute;
                 z-index: 1000;
                 inset-inline: 0;
-                max-height: 20rem;
-                margin: var(--spacer-1) 0 0;
+                max-block-size: 20rem;
+                margin: 0;
+                margin-block-start: var(--spacer-1);
                 overflow-y: auto;
                 text-align: start;
                 box-shadow: var(--box-shadow);
             }
 
             .suggestion {
+                overflow-wrap: anywhere;
                 cursor: pointer;
             }
 
@@ -199,6 +201,11 @@ export class UpSearchBox extends UpElement {
     };
 
     #onKeydown = (event: KeyboardEvent): void => {
+        // Enter or an arrow key that picks characters in an input method (Chinese, Japanese) is
+        // not a command: it neither chooses a suggestion nor moves through them
+        if (event.isComposing) {
+            return;
+        }
         const snapshot = this.#typeAhead.snapshot;
         const type =
             event.key === 'ArrowDown'
