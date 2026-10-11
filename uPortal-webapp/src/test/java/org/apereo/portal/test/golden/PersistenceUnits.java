@@ -58,13 +58,42 @@ public final class PersistenceUnits {
      * delete of its owner (ORA-02292, MOD-I144).
      */
     public static void deleteAll(EntityManagerFactory emf, Predicate<Class<?>> types) {
-        Set<EntityType<?>> remaining = new LinkedHashSet<>();
+        final Set<EntityType<?>> selected = selected(emf, types);
+        deleteElementCollectionRows(emf, selected);
+        final Map<String, String> left = remove(emf, selected);
+        if (!left.isEmpty()) {
+            final StringBuilder message = new StringBuilder("Cannot delete:");
+            for (final Map.Entry<String, String> type : left.entrySet()) {
+                message.append("\n  ").append(type.getKey()).append(": ").append(type.getValue());
+            }
+            throw new IllegalStateException(message.toString());
+        }
+    }
+
+    /**
+     * Removes every entity of the unit with {@code EntityManager#remove} only, as the portal's own
+     * code would, retrying the types that are still referenced.
+     *
+     * @return the types it could not remove (simple class name), each with the root cause of its
+     *     last failure; empty when all were removed
+     */
+    public static Map<String, String> removeAll(EntityManagerFactory emf) {
+        return remove(emf, selected(emf, type -> true));
+    }
+
+    private static Set<EntityType<?>> selected(
+            EntityManagerFactory emf, Predicate<Class<?>> types) {
+        final Set<EntityType<?>> selected = new LinkedHashSet<>();
         for (final EntityType<?> entityType : entityTypes(emf.getMetamodel())) {
             if (types.test(entityType.getJavaType())) {
-                remaining.add(entityType);
+                selected.add(entityType);
             }
         }
-        deleteElementCollectionRows(emf, remaining);
+        return selected;
+    }
+
+    private static Map<String, String> remove(EntityManagerFactory emf, Set<EntityType<?>> types) {
+        Set<EntityType<?>> remaining = types;
         final Map<String, String> causes = new TreeMap<>();
         while (!remaining.isEmpty()) {
             final Set<EntityType<?>> failed = new LinkedHashSet<>();
@@ -80,7 +109,7 @@ public final class PersistenceUnits {
                     em.getTransaction().commit();
                 } catch (RuntimeException e) {
                     failed.add(entityType);
-                    causes.put(entityType.getJavaType().getName(), rootCause(e));
+                    causes.put(entityType.getJavaType().getSimpleName(), rootCause(e));
                     if (em.getTransaction().isActive()) {
                         em.getTransaction().rollback();
                     }
@@ -89,15 +118,16 @@ public final class PersistenceUnits {
                 }
             }
             if (failed.size() == remaining.size()) {
-                final StringBuilder message = new StringBuilder("Cannot delete:");
+                final Map<String, String> left = new TreeMap<>();
                 for (final EntityType<?> entityType : failed) {
-                    final String name = entityType.getJavaType().getName();
-                    message.append("\n  ").append(name).append(": ").append(causes.get(name));
+                    final String name = entityType.getJavaType().getSimpleName();
+                    left.put(name, causes.get(name));
                 }
-                throw new IllegalStateException(message.toString());
+                return left;
             }
             remaining = failed;
         }
+        return new TreeMap<>();
     }
 
     private static void deleteElementCollectionRows(
