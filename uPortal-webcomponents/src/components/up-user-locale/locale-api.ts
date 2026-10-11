@@ -11,8 +11,10 @@ export interface LocaleOption {
     code: string;
     /** The BCP 47 tag, such as `fr-FR`. */
     tag: string;
-    /** The language's name in the user's current language, such as `français`. */
+    /** The language's name in the user's current language, such as `French` for English users. */
     name: string;
+    /** The language's name in that language, such as `Français`. */
+    nativeName: string;
 }
 
 export interface UserLocaleData {
@@ -44,7 +46,12 @@ function string(item: Json, key: string): string {
 
 function toOption(value: unknown): LocaleOption {
     const item = object(value, 'a locale');
-    return { code: string(item, 'code'), tag: string(item, 'tag'), name: string(item, 'name') };
+    return {
+        code: string(item, 'code'),
+        tag: string(item, 'tag'),
+        name: string(item, 'name'),
+        nativeName: string(item, 'nativeName'),
+    };
 }
 
 /** Checks a `/api/v6-0/locale` body; throws a TypeError naming the first problem. */

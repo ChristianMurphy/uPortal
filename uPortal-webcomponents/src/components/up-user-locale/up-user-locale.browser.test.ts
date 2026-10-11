@@ -16,18 +16,18 @@ const ATTRIBUTES =
 const IN_ENGLISH = {
     selected: 'en_US',
     locales: [
-        { code: 'en_US', tag: 'en-US', name: 'English' },
-        { code: 'fr_FR', tag: 'fr-FR', name: 'French' },
-        { code: 'ja_JP', tag: 'ja-JP', name: 'Japanese' },
+        { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' },
+        { code: 'fr_FR', tag: 'fr-FR', name: 'French', nativeName: 'Français' },
+        { code: 'ja_JP', tag: 'ja-JP', name: 'Japanese', nativeName: '日本語' },
     ],
 };
 
 const IN_FRENCH = {
     selected: 'fr_FR',
     locales: [
-        { code: 'en_US', tag: 'en-US', name: 'anglais' },
-        { code: 'fr_FR', tag: 'fr-FR', name: 'français' },
-        { code: 'ja_JP', tag: 'ja-JP', name: 'japonais' },
+        { code: 'en_US', tag: 'en-US', name: 'anglais', nativeName: 'English' },
+        { code: 'fr_FR', tag: 'fr-FR', name: 'français', nativeName: 'Français' },
+        { code: 'ja_JP', tag: 'ja-JP', name: 'japonais', nativeName: '日本語' },
     ],
 };
 
@@ -105,7 +105,9 @@ describe('up-user-locale states', () => {
         expect(await axeViolations(element)).toEqual([]);
 
         answer?.(json(IN_ENGLISH));
-        await expect.poll(() => labels(element)).toEqual(['English', 'French', 'Japanese']);
+        await expect
+            .poll(() => labels(element))
+            .toEqual(['English', 'Français (French)', '日本語 (Japanese)']);
     });
 
     it('lists the languages as a labelled radio group with the saved one checked', async () => {
@@ -116,7 +118,14 @@ describe('up-user-locale states', () => {
         const group = shadow(element).querySelector('[role="radiogroup"]');
         expect(group?.getAttribute('aria-labelledby')).toBe(heading?.id);
         expect(checked(element)).toBe('en_US');
-        await expect.element(radio(element, 'French')).not.toBeChecked();
+        await expect.element(radio(element, 'Français (French)')).not.toBeChecked();
+        // Each language's own name carries its tag, so a screen reader reads it in that language
+        const names = [...shadow(element).querySelectorAll('label span')];
+        expect(names.map((name) => [name.textContent, name.getAttribute('lang')])).toEqual([
+            ['English', 'en-US'],
+            ['Français', 'fr-FR'],
+            ['日本語', 'ja-JP'],
+        ]);
         await expect.element(updateButton(element)).toBeEnabled();
         expect(shadow(element).querySelector('form')?.getAttribute('aria-busy')).toBeNull();
         expect(shadow(element).querySelector('.notice')).toBeNull();
@@ -155,7 +164,9 @@ describe('up-user-locale states', () => {
         await userEvent.click(
             browserPage.elementLocator(element).getByRole('button', { name: 'Try again' }),
         );
-        await expect.poll(() => labels(element)).toEqual(['English', 'French', 'Japanese']);
+        await expect
+            .poll(() => labels(element))
+            .toEqual(['English', 'Français (French)', '日本語 (Japanese)']);
     });
 
     it('reloads on demand', async () => {
@@ -165,7 +176,7 @@ describe('up-user-locale states', () => {
         await element.reload();
         await element.updateComplete;
 
-        expect(labels(element)).toEqual(['anglais', 'français', 'japonais']);
+        expect(labels(element)).toEqual(['English (anglais)', 'Français', '日本語 (japonais)']);
         expect(checked(element)).toBe('fr_FR');
     });
 });
@@ -187,7 +198,7 @@ describe('up-user-locale changing the language', () => {
             changed.push((event as CustomEvent<LocaleChangedDetail>).detail);
         });
 
-        await userEvent.click(radio(element, 'French'));
+        await userEvent.click(radio(element, 'Français (French)'));
         expect(checked(element)).toBe('fr_FR');
         expect(puts()).toHaveLength(0);
         await userEvent.click(updateButton(element));
@@ -209,7 +220,7 @@ describe('up-user-locale changing the language', () => {
         await expect.poll(() => reload.mock.calls.length).toBe(1);
         expect(changed).toEqual([{ code: 'fr_FR', tag: 'fr-FR' }]);
         await element.updateComplete;
-        expect(labels(element)).toEqual(['anglais', 'français', 'japonais']);
+        expect(labels(element)).toEqual(['English (anglais)', 'Français', '日本語 (japonais)']);
         await expect.element(updateButton(element)).toBeDisabled();
     });
 
@@ -237,7 +248,7 @@ describe('up-user-locale changing the language', () => {
         server.on('PUT', API, respond);
         const element = await render();
 
-        await userEvent.click(radio(element, 'Japanese'));
+        await userEvent.click(radio(element, '日本語 (Japanese)'));
         await userEvent.click(updateButton(element));
 
         await expect
@@ -292,14 +303,14 @@ describe('up-user-locale messages', () => {
                 browserPage.elementLocator(element).getByRole('button', { name: 'Mise à jour' }),
             )
             .toBeVisible();
-        await expect.element(radio(element, 'français')).toBeChecked();
+        await expect.element(radio(element, 'Français')).toBeChecked();
     });
 });
 
 describe('up-user-locale lifecycle', () => {
     it('keeps the picked language when it moves in the page', async () => {
         const element = await render();
-        await userEvent.click(radio(element, 'French'));
+        await userEvent.click(radio(element, 'Français (French)'));
         const other = document.createElement('section');
         document.body.append(other);
 
@@ -338,7 +349,7 @@ describe('up-user-locale lifecycle', () => {
 
         element.setAttribute('csrf-token', 'token-2');
         await element.updateComplete;
-        await userEvent.click(radio(element, 'French'));
+        await userEvent.click(radio(element, 'Français (French)'));
         await userEvent.click(updateButton(element));
 
         await expect.poll(() => puts()[0]?.headers['X-CSRF-TOKEN']).toBe('token-2');
