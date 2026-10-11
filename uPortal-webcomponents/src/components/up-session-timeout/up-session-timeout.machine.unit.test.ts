@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vite-plus/test';
 import { createActor } from 'xstate';
 import { ApiClient } from '../../lib/api-client';
 import { ManualClock } from '../../test-support/manual-clock';
-import { KEEP_ALIVE_PATH, SESSION_PATH } from './session-api';
 import type { LogoutTimeStore } from './session-clock';
 import {
     sessionTimeoutMachine,
@@ -47,7 +46,7 @@ class Portal {
             typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
         const method = init?.method ?? 'GET';
         this.requests.push(`${method} ${url}`);
-        const queue = url.endsWith(KEEP_ALIVE_PATH) ? this.keepAlive : this.get;
+        const queue = url.endsWith('/api/v6-0/session/keep-alive') ? this.keepAlive : this.get;
         const answer = queue.length > 1 ? queue.shift() : queue[0];
         if (answer === undefined || answer.status === 0) {
             return Promise.reject(new TypeError('Failed to fetch'));
@@ -120,7 +119,7 @@ describe('sessionTimeoutMachine: starting', () => {
         expect(actor.getSnapshot().value).toBe('loading');
         await settle();
 
-        expect(portal.requests).toEqual([`GET /uPortal${SESSION_PATH}`]);
+        expect(portal.requests).toEqual(['GET /uPortal/api/v6-0/session']);
         expect(actor.getSnapshot().value).toBe('waiting');
         expect(actor.getSnapshot().context.period).toEqual({
             sessionTimeoutMs: 30 * MINUTE,
@@ -232,7 +231,7 @@ describe('sessionTimeoutMachine: keeping the session', () => {
         await settle();
 
         const next = WARNING_AT + 5 * SECOND + 29.5 * MINUTE;
-        expect(portal.requests.at(-1)).toBe(`POST /uPortal${KEEP_ALIVE_PATH}`);
+        expect(portal.requests.at(-1)).toBe('POST /uPortal/api/v6-0/session/keep-alive');
         expect(actor.getSnapshot().value).toBe('waiting');
         expect(actor.getSnapshot().context.period?.logoutTime).toBe(next);
         expect(store.writes.at(-1)).toBe(next);
@@ -343,6 +342,6 @@ describe('sessionTimeoutMachine: properties', () => {
         actor.send({ type: 'keepAlive' });
         await settle();
 
-        expect(other.requests).toEqual([`POST /portal${KEEP_ALIVE_PATH}`]);
+        expect(other.requests).toEqual(['POST /portal/api/v6-0/session/keep-alive']);
     });
 });
