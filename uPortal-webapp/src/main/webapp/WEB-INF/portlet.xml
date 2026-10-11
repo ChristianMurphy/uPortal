@@ -700,91 +700,6 @@
     </portlet>
 
     <portlet>
-        <portlet-name>Search</portlet-name>
-        <display-name xml:lang="en">Search</display-name>
-        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
-        <init-param>
-            <name>contextConfigLocation</name>
-            <value>classpath:/properties/contexts/portlet/Search-portlet.xml</value>
-        </init-param>
-        <expiration-cache>0</expiration-cache>
-        <supports>
-            <mime-type>text/html</mime-type>
-            <portlet-mode>VIEW</portlet-mode>
-        </supports>
-        <supported-locale>en</supported-locale>
-        <portlet-info>
-            <title>Search</title>
-        </portlet-info>
-        <portlet-preferences>
-            <!-- Choose between the standard Search portlet or REST Search. Currently the difference is that
-                 Search portlet includes results from portlet content, while REST Search only matches portlet
-                 metadata (e.g. title, description). Search portlet has a greater performance impact, while
-                 REST Search has newer UI. -->
-            <preference>
-                <name>RESTSearch</name>
-                <value>true</value>
-            </preference>
-            <!-- Optional.  In the REST Search UI, this preference controls which type(s) (search strategies)
-                 will appear in the results.  If empty, all available types will be shown. -->
-            <preference>
-                <name>RESTSearch.type</name>
-            </preference>
-            <!-- Max number of characters returned for title or description for auto-complete search results.
-                 92 found to be a good fit for keeping most description text at 2 lines. -->
-            <preference>
-                <name>autocompleteMaxTextSize</name>
-                <value>92</value>
-            </preference>
-            <!-- Optional.  If specified indicates that the auto-complete search should use prepopulated source data
-                 and not query uPortal based on the user's entered keystrokes.  If not specified, the default search
-                 auto-suggest behavior occurs where auto-suggest queries uPortal with the field data entered by
-                 the user, which is slower but does a broader search within uPortal.  Specify a relative URL;
-                 e.g. for the portlet list used in the Gallery, enter /api/portletList.  The request path
-                 will be prepended. -->
-            <preference>
-                <name>prepopulateAutoSuggestUrl</name>
-                <value></value>
-            </preference>
-            <!-- If pre-populating auto-complete search results, this is the optional pattern for the resulting URL
-                 to display when the user selects an auto-complete search item.  The autoSuggestResultsProcessor can
-                 use this to craft an URL based on the selected item.  The request path will be prepended to this URL.
-                 For example, for the portlet list JSON returned by portlet list api, you would enter
-                 /p/$fname/max because the portletList autoSuggestResultsProcessor replaces $fname with the portlet
-                 fname from the portlet list JSON response. This is optional because not all
-                 autoSuggestResultsProcessors may need it. If the data returned from the prepopulateAutoSuggestUrl
-                 contains an URL, this preference would not need to be used.  -->
-            <preference>
-                <name>prepopulateUrlPattern</name>
-                <value></value>
-            </preference>
-            <!-- The name of the autoSuggestResultsProcessor method in autoSuggestResultsProcessors.js to use to
-                 process the JSON response from the prepopulateAutoSuggestUrl (if specified), or the default search
-                 auto-suggest Url. The default value is 'default' which is used with the default search auto-suggest
-                 feature. Other values, such as portletListProcessor are functions within
-                 autoSuggestResultsProcessors.js.  -->
-            <preference>
-                <name>autoSuggestResultsProcessor</name>
-                <value>default</value>
-            </preference>
-        </portlet-preferences>
-
-        <supported-processing-event>
-            <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchRequest</qname>
-        </supported-processing-event>
-        <supported-processing-event>
-            <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchResults</qname>
-        </supported-processing-event>
-
-        <supported-publishing-event>
-            <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchRequest</qname>
-        </supported-publishing-event>
-        <supported-publishing-event>
-            <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchResults</qname>
-        </supported-publishing-event>
-    </portlet>
-
-    <portlet>
         <portlet-name>Directory</portlet-name>
         <display-name xml:lang="en">Directory</display-name>
         <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
@@ -808,14 +723,6 @@
                 <value>true</value>
             </preference>
         </portlet-preferences>
-
-        <supported-processing-event>
-            <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchRequest</qname>
-        </supported-processing-event>
-
-        <supported-publishing-event>
-            <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchResults</qname>
-        </supported-publishing-event>
     </portlet>
 
     <portlet>
@@ -1197,19 +1104,5 @@
         <description>Indicates whether the user is impersonating</description>
         <name>impersonating</name>
     </user-attribute>
-
-    <event-definition>
-        <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchRequest</qname>
-        <value-type>org.apereo.portal.search.SearchRequest</value-type>
-    </event-definition>
-    <event-definition>
-        <qname xmlns:x="https://source.jasig.org/schemas/uportal/search">x:SearchResults</qname>
-        <value-type>org.apereo.portal.search.SearchResults</value-type>
-    </event-definition>
-
-    <container-runtime-option>
-        <name>org.apereo.portal.globalEvent</name>
-        <value>{https://source.jasig.org/schemas/uportal/search}SearchRequest</value>
-    </container-runtime-option>
 
 </portlet-app>
