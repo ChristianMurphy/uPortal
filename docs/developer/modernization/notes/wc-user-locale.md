@@ -41,16 +41,15 @@ which 104 are new in 4 files (14 API, 15 machine, 23 browser, 52 model-based). E
 
 ## Running
 
-uPortal CI on `794cdf0`, the seeded fault (see below). It was still queued at 08:15.
+uPortal CI on `02a76c7`, which adds `UserLocaleApiTest`.
 
 ## Next steps
 
-1. When uPortal CI on `794cdf0` is red in `UserLocaleServiceTest`, push the revert (`007cc1a`
-   locally, `[skip ci]`, the same files as `5ce0ee9`).
-2. Then dispatch the full-matrix CI on the uPortal branch and `integration.yml` on the
-   uPortal-start branch, and send the coordinator the run IDs and both head SHAs.
-3. When the login and CSRF fix is merged into `ccr-43ba0785-hzlrj5`, merge it into both topic branches
-   and run them again: it tightens CSRF on `/api`.
+1. When uPortal CI on `02a76c7` is green, dispatch the full-matrix CI on the uPortal branch and
+   `integration.yml` on the uPortal-start branch, and send the coordinator the run IDs and both
+   head SHAs (uPortal `02a76c7` or later, uPortal-start `b51fdde`).
+2. When the login and CSRF fix is merged into `ccr-43ba0785-hzlrj5`, merge it into both topic
+   branches and run them again: it tightens CSRF on `/api`.
 
 ## Seeded faults
 
@@ -59,11 +58,12 @@ uPortal CI on `794cdf0`, the seeded fault (see below). It was still queued at 08
 | The machine doesn't emit `locale.changed`, so the page doesn't reload | Vitest, local | 18 of 104 tests failed |
 | The radio buttons are enabled while saving | Vitest, local | 34 of 104 tests failed |
 | The validator accepts a selected code that isn't offered | Vitest, local | 2 of 104 tests failed |
-| `isPortalLocale` accepts every code (`794cdf0`) | uPortal CI, `UserLocaleServiceTest` | Pending |
+| `isPortalLocale` accepts every code (`794cdf0`) | uPortal-api-rest tests, run by the coordinator on JDK 21 | Caught. On `794cdf0`: 193 tests, 1 failed (`UserLocaleServiceTest`). On `02a76c7` with the same change, 2 of the 13 `*UserLocale*` tests failed. The new `UserLocaleApiTest` got 200 instead of 400, and `UserLocaleServiceTest` failed as before. Without the change all 13 passed |
 
-Each local fault was undone before the next one, and the suite passed again (104 of 104). The
-Playwright component spec checks the same 400 answer as the CI fault, through the running portal.
-Runners were short, so it wasn't seeded separately.
+Each Vitest fault was undone before the next one, and the suite passed again (104 of 104). The
+Java fault ran in the coordinator's container instead of CI, because runners were short. Its CI run
+(38122658784) was cancelled, and `007cc1a` reverts it. The Playwright component spec checks the
+same 400 answer through the running portal. It wasn't seeded separately.
 
 ## CI
 
@@ -73,7 +73,7 @@ Runners were short, so it wasn't seeded separately.
 | uPortal-start Integration 38114907893 | `78647e6` (spec against the portlet) | Red: the order problem fixed in `a95e9cb`. The other 138 tests passed on hsqldb and postgres-18 |
 | uPortal-start Integration 38116706216 | `a95e9cb` (spec against the portlet) | Green, all 7 jobs |
 | uPortal-start Integration 38119557843 | `b51fdde` (both specs against the component) | Green, all 7 jobs, with the harness accepting `UP_PORTLET_DEF_PARAM rows +4` |
-| uPortal CI 38122658784 | `794cdf0` (seeded fault) | Pending |
+| uPortal CI 38122658784 | `794cdf0` (seeded fault) | Cancelled; the coordinator ran the tests locally |
 
 ## Proposed LOG rows
 
