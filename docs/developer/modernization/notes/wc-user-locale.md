@@ -58,8 +58,9 @@ which 104 are new in 4 files (14 API, 15 machine, 23 browser, 52 model-based). E
   handlers: the radio buttons and Update are native controls, which an input method doesn't type
   into, so there's no `isComposing` case to handle.
   Plural forms, number formats and the element's `lang` and `dir` come from the -i18n branch.
-* `Messages_de`, `Messages_mk` and `Messages_sv` also read "Lanugage" in
-  `set.language.preference`. MOD-D50 covers es and fr only, so they're unchanged.
+* `Messages_de`, `Messages_mk` and `Messages_sv` read "Lanugage" in `set.language.preference`.
+  At the coordinator's request one commit corrects the word to "Language" and leaves the rest of
+  each value as it was.
 
 ## Running
 
