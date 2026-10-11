@@ -58,9 +58,30 @@ Unit tests: `LocaleDirectionTest` (6), `LocaleTransformerConfigurationSourceTest
 `DynamicRespondrSkinViewControllerTest` (3). With "ar" taken out of the language list, two of
 `LocaleDirectionTest`'s tests fail.
 
+## HTTP replay
+
+Local run (`tests/replay/portal.sh reset .`, then `replay.mjs replay`) against uPortal `-rtl`
+`116b2034`, with uPortal-start `0010794` plus the `-a11y-replay` registry (`8591298`, picked
+locally only). It didn't find any difference from this branch. The outline keeps classes, ids and
+the `role`, `href` and `src` attributes, not `dir` or `lang`, and the replay's users are en-US,
+whose pages link `defaultSkin.css` as before. So nothing goes into `tests/replay`.
+
+Of 2387 exchanges, 5 were unexplained, all from another change on the integration branch:
+`typeAndIdHash` in `/api/entities.json`, `/api/entities/group/*.json` and
+`/api/permissions/principals.json` now writes other characters as `_<hex>_` (uPortal `a939af93`,
+MOD-I274), and the registry has no entry for it yet. With `defaultSkin.css` changed to
+`defaultSkin-rtl.css` on the student's welcome page in the saved run (`--actual`), the replay
+reports a sixth exchange, the stylesheet link.
+
+## Dependency
+
+RTLCSS 4.3.0 (MIT), a dev dependency of the uPortal-webapp workspace. It runs only at build
+time. Its four dependencies were already in the root `package-lock.json`, which gains the one
+`rtlcss` entry. picocolors is ISC; escalade, postcss and strip-json-comments are MIT.
+
 ## Next step
 
-Push both branches and check their push runs. When `-test-suites` is merged, add an axe check of
+Check the push runs of both branches. When `-test-suites` is merged, add an axe check of
 the ar-XB guest page to the spec.
 
 ## Proposed LOG rows (MOD-I253)
