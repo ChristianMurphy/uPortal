@@ -4,3 +4,4 @@
 # Format: full SHA, a space, then the reason.
 d66bdc5a5c0bb7b1600f4a99c66d00d03d3af1e0 MOD-I171: figurative phrase, pushed past a piped check
 cd841c8c3a7eb2ccdf1911c53b3f94bf1c79936d MOD-I171: quotes a jargon word, pushed past a piped check
+2dd6334cea9c58043a51772644a48fac6c1d0fb4 MOD-I171: uses two words that the later jargon rule (0be70c49f) flags
