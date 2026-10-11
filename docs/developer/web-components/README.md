@@ -429,6 +429,17 @@ A favorite collection or portlet carries its layout `nodeId`, `name`, `url`, `mo
 reuses `FavoritesUtils` and the user's layout manager, so the distributed layout manager's rules
 for locked fragments apply.
 
+### Popular Portlets
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/popular-portlets?days=30&locale=en-US` | `{"days": 30, "portlets": [...]}`: the portlets users added to their layouts in the last `days` days (1 to 365, default 30), most added first and ties by fname; 400 for other days. Guests may ask. |
+
+A portlet carries its `fname`, `title` and `description` in the `locale` (default the request's),
+its `url` (`<context path>/p/<fname>`) and its `count`. `PopularPortletsService` sums the daily
+portlet-layout aggregations of the group of all users, as the portlet did, and leaves out portlets
+the user may not subscribe to and portlets that no longer exist.
+
 ### Session
 
 | Request | Answer |
@@ -565,3 +576,34 @@ stands for.
    and portlet actions into REST calls.
 4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
    and document how existing definitions are converted.
+
+## Conversion: Popular Portlets
+
+| Portlet | Web component |
+| --- | --- |
+| `PopularPortletsController` (VIEW) and `jsp/PopularPortlets/listPortlets.jsp`, a DataTables table | `<up-popular-portlets>` (`uPortal-webcomponents/src/components/up-popular-portlets`) |
+| The `popularPortletCounts` resource URL | `GET /api/v6-0/popular-portlets` |
+| The days `<select>` (1, 7, 30, 90, 365) | The same choice; a `days` attribute sets the first one |
+| DataTables sorting, column filters and paging | `table.ts`: the same order (the Title column sorts by fname), filters, page sizes and texts |
+| Texts in the JSP's script | New `popular.portlets.*` keys in `Messages.properties` |
+
+The table needs no chart, so ECharts (MOD-D34) does not apply. The machine,
+`up-popular-portlets.machine.ts`, has the states `loading`, `failed.retryable`,
+`failed.sessionExpired`, `empty` and `list`. Sorting, filters and paging are context, and
+`table.ts` derives the rows shown from it. Choosing other days loads again from any state; the
+earlier request is abandoned.
+
+uPortal-start's `tests/ux/portlets/popular-portlets.spec.ts` was written against the portlet
+first and passes unchanged against the component. It finds the controls by role, label and text.
+Its last three tests are about the component.
+
+### Converting existing Popular Portlets channels
+
+Change, and keep everything else (fname, ID, title, categories, permissions):
+
+* the type to `Web Component`, and the descriptor to the framework portlet `WebComponent`;
+* parameters: add `webComponent.tagName=up-popular-portlets` and
+  `webComponent.moduleUrl=up-popular-portlets`.
+
+The portlet had no preferences. The import upgrader and copy-tool rule described for Favorites
+apply in the same way, with the `PopularPortlets` descriptor.

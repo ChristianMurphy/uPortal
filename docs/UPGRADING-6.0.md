@@ -154,6 +154,33 @@ be removed in a later release.
 Unsafe requests to the new `/api/v6-0/` REST APIs need Spring Security's CSRF token (or an OIDC
 bearer token), unlike the older APIs under `/api`.
 
+## Popular Portlets is a web component
+
+The Popular Portlets channel (`popular-portlets`, titled "Most Popular Apps") was the
+PopularPortlets portlet, a DataTables table. It is now a **Web Component** channel that renders
+`<up-popular-portlets>`, with its data from the new REST API `/api/v6-0/popular-portlets`. Users
+see the same table: the choice of previous days, a link and count for each portlet, sorting,
+the Title and # Times filters, and paging. The differences:
+
+* A filter keeps the rows it names. The portlet's filters kept the right number of rows but
+  showed other portlets once the table was sorted.
+* A portlet without a description has no tooltip. The portlet showed
+  `[no description available]`.
+* Choosing other days keeps the sort, the filters and the rows per page, and shows the first
+  page.
+
+The texts the portlet's script had in English are new `popular.portlets.*` keys in
+`Messages.properties`. Translations that lack them show the English text.
+
+Existing portals keep their PopularPortlets definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/popular-portlets.portlet-definition.xml` (or your copy of it). A
+definition with another fname needs the type `Web Component`, the framework descriptor
+`WebComponent` and the parameters `webComponent.tagName` and `webComponent.moduleUrl`, both
+`up-popular-portlets`. See
+[Converting existing Popular Portlets channels](developer/web-components/README.md#converting-existing-popular-portlets-channels).
+The PopularPortlets portlet itself will be removed in a later release.
+
 ## Session Timeout is a web component
 
 The Session Timeout channel (`session-timeout`) was the SessionTimeout portlet. It is now a **Web
