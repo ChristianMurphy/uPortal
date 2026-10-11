@@ -99,13 +99,18 @@
 
         addPageLevelListeners();
 
-        // Bootstrap 5 dropdown compatibility fix
+        // Bootstrap 5 dropdown compatibility fix. A menu may already be open (the user can open
+        // one before this runs), so its state is kept: aria-expanded follows the toggle's "show"
+        // class, and an existing Bootstrap instance, which holds that state, is reused (MOD-I320).
         setTimeout(function () {
             const dropdownToggles =
                 document.querySelectorAll('.dropdown-toggle');
             for (const [index, toggle] of dropdownToggles.entries()) {
                 toggle.dataset.bsToggle = 'dropdown';
-                toggle.setAttribute('aria-expanded', 'false');
+                toggle.setAttribute(
+                    'aria-expanded',
+                    String(toggle.classList.contains('show'))
+                );
 
                 const menu =
                     toggle.nextElementSibling ||
@@ -118,9 +123,7 @@
                     if (!toggle.id) toggle.id = 'dropdown-' + index;
                 }
 
-                const existingInstance = bootstrap.Dropdown.getInstance(toggle);
-                if (existingInstance) existingInstance.dispose();
-                new bootstrap.Dropdown(toggle);
+                bootstrap.Dropdown.getOrCreateInstance(toggle);
             }
         }, 100);
     });
