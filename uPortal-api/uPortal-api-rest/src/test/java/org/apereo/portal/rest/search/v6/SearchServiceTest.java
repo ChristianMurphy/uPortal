@@ -15,6 +15,7 @@
 package org.apereo.portal.rest.search.v6;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -27,11 +28,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.rest.search.ISearchStrategy;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 public class SearchServiceTest {
@@ -186,6 +189,59 @@ public class SearchServiceTest {
                 service.search("cartoon", Collections.singleton("x"), request)
                         .getGroups()
                         .isEmpty());
+    }
+
+    @Test
+    public void reportsAFailingStrategyInItsGroupOnly() {
+        final ISearchStrategy broken =
+                new ISearchStrategy() {
+                    @Override
+                    public String getResultTypeName() {
+                        return "web";
+                    }
+
+                    @Override
+                    public List<?> search(String query, HttpServletRequest request) {
+                        throw new RemoteSearchException("web: answered 500");
+                    }
+                };
+        final SearchService withBroken = new SearchService(Arrays.asList(people, broken));
+
+        final SearchResults results = withBroken.search("x", null, request);
+
+        assertEquals(2, results.getGroups().size());
+        assertFalse(results.getGroups().get(0).isFailed());
+        assertEquals(1, results.getGroups().get(0).getResults().size());
+        assertTrue(results.getGroups().get(1).isFailed());
+        assertTrue(results.getGroups().get(1).getResults().isEmpty());
+    }
+
+    @Test
+    public void addsTheRemoteProvidersWithTheirLabels() {
+        final MockEnvironment properties =
+                new MockEnvironment()
+                        .withProperty("org.apereo.portal.search.remote.providers", "web")
+                        .withProperty(
+                                "org.apereo.portal.search.remote.web.url",
+                                "http://127.0.0.1:9/?q={query}")
+                        .withProperty("org.apereo.portal.search.remote.web.label", "Campus web")
+                        .withProperty("org.apereo.portal.search.remote.web.timeout", "500");
+        final SearchService withRemote =
+                new SearchService(
+                        Arrays.asList(people, portlets), new RemoteJsonSearchProviders(properties));
+
+        final SearchResults results = withRemote.search("x", null, request);
+
+        assertEquals(
+                Arrays.asList("people", "portlets", "web"),
+                results.getGroups().stream()
+                        .map(SearchResultGroup::getType)
+                        .collect(Collectors.toList()));
+        assertNull(results.getGroups().get(0).getLabel());
+        final SearchResultGroup web = results.getGroups().get(2);
+        assertEquals("Campus web", web.getLabel());
+        // Nothing listens on port 9: the group fails, the search does not
+        assertTrue(web.isFailed());
     }
 
     @Test

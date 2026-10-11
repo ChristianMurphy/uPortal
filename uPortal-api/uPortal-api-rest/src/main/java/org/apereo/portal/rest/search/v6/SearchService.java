@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.rest.search.ISearchStrategy;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -46,15 +49,30 @@ public class SearchService {
     private static final List<String> TITLE_ATTRIBUTES =
             Collections.unmodifiableList(Arrays.asList("displayName", "title", "name"));
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private final List<ISearchStrategy> strategies;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SearchService(List<ISearchStrategy> strategies) {
+    /** The portal's strategy beans and the configured remote JSON search providers. */
+    @Autowired
+    public SearchService(List<ISearchStrategy> strategies, RemoteJsonSearchProviders remote) {
+        this(concat(strategies, remote.getStrategies()));
+    }
+
+    public SearchService(List<? extends ISearchStrategy> strategies) {
         this.strategies =
                 strategies.stream()
                         .sorted(Comparator.comparing(ISearchStrategy::getResultTypeName))
                         .collect(Collectors.toList());
+    }
+
+    private static List<ISearchStrategy> concat(
+            List<ISearchStrategy> first, List<? extends ISearchStrategy> second) {
+        final List<ISearchStrategy> all = new ArrayList<>(first);
+        all.addAll(second);
+        return all;
     }
 
     /**
@@ -76,14 +94,30 @@ public class SearchService {
         for (ISearchStrategy strategy : strategies) {
             final String type = strategy.getResultTypeName();
             if (types == null || types.isEmpty() || types.contains("") || types.contains(type)) {
-                final List<SearchResult> results = new ArrayList<>();
-                for (Object result : strategy.search(trimmed, request)) {
-                    results.add(toSearchResult(result));
-                }
-                groups.add(new SearchResultGroup(type, results));
+                groups.add(search(strategy, trimmed, request));
             }
         }
         return new SearchResults(trimmed, groups);
+    }
+
+    /** One strategy's group; a strategy that fails gives a failed group, not a failed search. */
+    private SearchResultGroup search(
+            ISearchStrategy strategy, String query, HttpServletRequest request) {
+        final String type = strategy.getResultTypeName();
+        final String label =
+                strategy instanceof RemoteJsonSearchStrategy
+                        ? ((RemoteJsonSearchStrategy) strategy).getSettings().getLabel()
+                        : null;
+        try {
+            final List<SearchResult> results = new ArrayList<>();
+            for (Object result : strategy.search(query, request)) {
+                results.add(toSearchResult(result));
+            }
+            return new SearchResultGroup(type, label, results, false);
+        } catch (RuntimeException e) {
+            logger.warn("Search strategy {} failed", type, e);
+            return SearchResultGroup.failed(type, label);
+        }
     }
 
     private SearchResult toSearchResult(@Nullable Object result) {

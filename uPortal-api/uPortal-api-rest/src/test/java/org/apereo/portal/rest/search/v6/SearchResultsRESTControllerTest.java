@@ -101,8 +101,10 @@ public class SearchResultsRESTControllerTest {
                         content()
                                 .json(
                                         "{\"query\":\"cartoon\",\"groups\":["
-                                                + "{\"type\":\"people\",\"results\":[]},"
-                                                + "{\"type\":\"portlets\",\"results\":[{"
+                                                + "{\"type\":\"people\",\"label\":null,"
+                                                + "\"results\":[],\"failed\":false},"
+                                                + "{\"type\":\"portlets\",\"label\":null,"
+                                                + "\"failed\":false,\"results\":[{"
                                                 + "\"title\":\"Daily Business Cartoon\","
                                                 + "\"url\":\"/uPortal/p/cartoon/max/render.uP\","
                                                 + "\"attributes\":{"
