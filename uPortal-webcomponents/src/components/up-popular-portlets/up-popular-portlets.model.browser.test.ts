@@ -220,7 +220,7 @@ function expectRendered(element: UpPopularPortlets, snapshot: Snapshot): void {
         context.page,
     );
     expect(root.querySelector('.info')?.textContent?.trim()).toBe(
-        `Viewing page ${view.page + 1}. Showing records ${view.from} to ${view.to} of ${view.total} items.`,
+        `Viewing page ${view.page + 1}. Showing records ${view.from} to ${view.to} of ${view.total} ${view.total === 1 ? 'item' : 'items'}.`,
     );
     expect(select(element, '#page-size').value).toBe(String(context.pageSize));
     expect(
