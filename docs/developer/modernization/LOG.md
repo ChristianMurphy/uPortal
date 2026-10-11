@@ -478,6 +478,11 @@ research report.
     `<up-favorites>`. uPortal-start publishes Favorites as a Web Component
     channel. The import upgrader and copy-tool rule are not built
     (MOD-I133). Guide: `docs/developer/web-components/README.md`.
+  * Popular Portlets: `/api/v6-0/popular-portlets` and
+    `<up-popular-portlets>`, published by uPortal-start as a Web Component
+    channel. The characterisation spec passed on the portlet and then,
+    unchanged, on the component. The conversion fixes MOD-I193 rather than
+    matching it. Notes: `notes/wc-popular-portlets.md`.
 
 ### MOD-D19: per-portlet choice between REST + web components and server-rendered Spring pages
 
@@ -663,6 +668,9 @@ chosen per portlet.
      and follow the page's light or dark mode. axe checks every state in
      the browser tests; it found the alpha's contrast failures
      (MOD-I132).
+* **Status (2026-10-11):** the shared Bootstrap 6 sheet now also has the
+  pagination, table, label and form-control parts, for Popular Portlets.
+  Bootstrap 6 has no `.form-select`, and `select.form-control` takes its place.
 * **Risks:**
   * Alpha API churn. Mitigation: pin it, and keep Bootstrap-specific
     markup in Thymeleaf fragments and a small set of Lit base classes.
@@ -1195,6 +1203,27 @@ This supersedes MOD-D24's runtime matrix.
   copy tool push runs 38097849648 and 38106385464; every job, the SQL
   Server and Oracle legs and PIT included, passed in run 38111315873
   (8a214d35a), started by hand.
+* **Status (2026-10-11, items 1, 4, 5 and the flaky-test check):**
+  landed on uPortal-start (f7a29cdf1 to 42a0b1c15), described in
+  `docs/migration-equivalence.md`. `tests/db/equivalence.sh` has uPortal
+  5.17.9 write the quickstart data and a fixture of edge values, and
+  requires the build under test to export exactly what 5.17.9 exported,
+  in place or after a `dbMigrate` copy. The reference was recorded by
+  5.17.9 on HSQLDB; MySQL and MariaDB differ from it by a recorded diff
+  (whole seconds, MOD-I95). A seeded MOD-I120 fault (`'_' || ATTR_NAME`
+  in `UP_SS_USER_PREF_LAY_ATTR_VAL`) changed 12 of 271 exported files.
+  `pluto-testsuite.spec.ts` runs the 42 tests of Apache Pluto's test
+  suite by name, and `portlet-modes.spec.ts` renders the 94 bundled
+  portlets in every declared mode and both window states. CI fails on
+  flaky tests, and `global-setup.ts` logs each test user in once.
+  Findings: MOD-I150 to MOD-I159; four fixed in uPortal (d20564691,
+  104858ea0, b1c8ec22e, 3e4977d18), and MOD-I78 and MOD-I91 fixed in
+  uPortal-start. Runs: on the topic branch at the merged state,
+  Integration 38116679825 (Playwright on HSQLDB and PostgreSQL 18 with
+  local login, and the CAS job) and Migration equivalence 38116679805
+  (in place on PostgreSQL 18, MariaDB 11.4 copied to PostgreSQL 18)
+  passed; the first integration push runs are 38119552320 and
+  38119552312, and the nightly set runs as 38119582423.
 * **Gap:** today's suites (124 Playwright tests in 24 specs, 244 unit-test
   classes, the DB harness on 7 databases, copy-tool row hashes) show the
   portal still works on the paths they click. They miss silent changes:
@@ -1749,7 +1778,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I75 | CI security | zizmor 1.30.1 (offline) flags every workflow in both repos: `unpinned-uses` (high) on every action, `artipacked` (checkout persists credentials), and `excessive-permissions` (top-level `contents: write` in uPortal-start `CI.yml`). The new `db-harness.yml` has the same findings. | CI-hardening commit per repo: pin actions to commit SHAs with version comments (Renovate updates the digests), `persist-credentials: false`, least-privilege `permissions:` (top-level `contents: read`; `contents: write` only on the dependency-submission job), and a zizmor + actionlint workflow so findings stay at zero. **Done:** `ebb11e0e2` (uPortal) and `ba38035e9` (uPortal-start). zizmor doesn't report any findings with the regular and pedantic personas (service images pinned by digest too). Workflow lint (zizmor online audits + actionlint) passed on GitHub for both repos. Also found: gradle/actions v6 defaults to a commercial cache provider, so both repos now set `cache-provider: basic`. Upstream candidate. |
 | MOD-I76 | Environment | The prototype container has about 40 GB of writable allowance. Each uPortal-start worktree with a deployed portal takes 2 to 6 GB (Tomcat with ~16 exploded webapps, overlay WAR builds, HSQLDB, node_modules), and the shared Gradle home with four Gradle versions about 4.6 GB. The disk hit 99% twice. | Worktrees are removed right after merge. Unused Gradle distributions, DB images and volumes, and spike copies get pruned. Agents remove the containers and images they started, and `scratchpad/disk-guard.sh` must pass (≥ 6 GB free) before heavy steps. At most two portal-running agents at a time. |
 | MOD-I77 | Correction | The research report says Tomcat's `maxParameterCount` default is 1000. Tomcat 9.0.122's code default is still 10000. The 1000 is set by the `server.xml` in its distribution. FeedbackPortlet's `disableURLRewriting` is already ignored on 8.5. | uPortal-start now sets `maxParameterCount=10000` and `maxPartCount=50` explicitly. |
-| MOD-I78 | Data | NewsReader `dataExport` fails because a `.crn` file is missing from the portlet WAR. Pre-existing. | Portlet-repo fix in 6.x (MOD-D13). |
+| MOD-I78 | Data | NewsReader `dataExport` fails because a `.crn` file is missing from the portlet WAR. Pre-existing. | **Fixed in uPortal-start** (210a54842): the NewsReader overlay adds the missing export script. The fix in the portlet repository stays for 6.x (MOD-D13). |
 | MOD-I79 | Dev DB | The HSQLDB `uPortal.lobs` file grows past 3 GB over repeated `dataInit` runs. | Have `dataInit` (or a clean task) remove the HSQLDB files. Small uPortal-start fix. |
 | MOD-I80 | Runtime | Since JDK 24, `jaxp.properties` disables XSLT extension functions. `TemplatesBuilder` is fixed in code (MOD-I63), but 7 tests that build their own TransformerFactory need `-Djdk.xml.enableExtensionFunctions=true`, which Phase 1 sets on every test JVM. | Before the runtime moves to JDK 25 (by P6, MOD-D6), route those through `TemplatesBuilder` (MOD-I70) so adopters don't need the JVM flag. |
 | MOD-I81 | Environment | The sandbox egress policy blocks `getbootstrap.com` (and `blog.getbootstrap.com`), including the LLM docs at `https://getbootstrap.com/llms-full.txt`. | The block wasn't bypassed. The same content was rebuilt from the official source repo on GitHub (`twbs/bootstrap` main @ `5c8346d`, package version 6.0.0-alpha.1): `site/src/pages/llms-full.txt.ts` concatenates the sidebar-ordered MDX docs, and a scratchpad script mirrors that by reading the files without running repo code. Result: 140 pages, 1.3 MB, at `scratchpad/bootstrap-docs/llms-full.txt`. WS14 and skin agents use it together with the Bootstrap skills. CI and developers can fetch the canonical URL directly. |
@@ -1762,7 +1791,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I88 | Portlets | Web Flow 2.4.8 recognises portlet contexts only by Spring's own context class. Harmless today, because the flow executor is in the root servlet context. | Goes away when the flows are replaced (MOD-D18). |
 | MOD-I89 | Spring | `FixedXMLEventStreamReader` has to stay in `org.springframework.util.xml`, because it extends a package-private Spring class, so MOD-I12 isn't fully closed. | Revisit at P4-1/P6. Replace with a composition-based reader if Spring changes the base class. |
 | MOD-I90 | Runtime | Race: when a re-login swaps the session mid-render, `PortletPreferencesFactoryImpl.isGuestUser` can throw an NPE. Seen once. The baseline hit a similar race in a different class. | Related to MOD-I56 (transient focus state). Track it, and add a test when the rendering code is reworked. |
-| MOD-I91 | uPortal-start | `dataImport` always fails, because `playwright.gradle` looks up a task that the overlay skips for that task name. The workaround is to invoke it as `dataImp`. | Small uPortal-start fix needed. Check whether P1 introduced it. |
+| MOD-I91 | uPortal-start | `dataImport` always fails, because `playwright.gradle` looks up a task that the overlay skips for that task name. The workaround is to invoke it as `dataImp`. | **Fixed in uPortal-start** (f7a29cdf1): `playwright.gradle` looks the skin task up with `findByPath`, so `dataImport` works under its own name. |
 | MOD-I92 | Portlets/data | Bookmarks, Feedback and Notification create their tables on first start (hbm2ddl). That means a target database needs `dataInit` plus one portal start before the copy tool can fill it. | Document this in the copy-tool runbook. Long term, provide portlet DDL or let the tool create the portlet schema. |
 | MOD-I93 | Portlets/data | The portlets share a `hibernate_sequence`, which is an auto-increment column on MariaDB. | Handled by copy-tool rules in uPortal-start. |
 | MOD-I94 | Portlets/data | Notification and SimpleContent also store data in PostgreSQL OID LOB columns, so the `vacuumlo` risk (MOD-I24) extends to portlet tables. | Include them in the adopter warning. The copy tool handles them. |
@@ -1788,7 +1817,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I123 | Persistence | 5.2's defaults (dialects, naming, id optimizers) would change the schema. | Frozen in `hibernate.properties` (MOD-D33). The 6.0 schema and copy tool (MOD-D11) replace the freeze block later. |
 | MOD-I124 | Build | Smaller 5.2 upgrade issues: `@Index` on a one-to-many is rejected, Javassist 3.22 fails on JDK 21, dom4j and Ehcache were each on the classpath twice, and the dialect lookup failed after the SessionFactory closed. | **Fixed in P2-2.** |
 | MOD-I125 | Runtime | New 5.2 log noise: HHH000112, HHH000482, and empty `AggrEvents.AggrEvents.*` query-cache regions. | Quiet or fix in P4-3 (Hibernate 5.6 + JCache regions). |
-| MOD-I126 | DB harness | Harness gaps: DATA counts rows only, `--skip-init` snapshots before deploying, the post-portal LOB report ignores `-PdbPort`, and `--portal` doesn't deploy resource-server. | The data-equivalence workstream covers DATA. The other three are small uPortal-start fixes. |
+| MOD-I126 | DB harness | Harness gaps: DATA counts rows only, `--skip-init` snapshots before deploying, the post-portal LOB report ignores `-PdbPort`, and `--portal` doesn't deploy resource-server. | DATA: `tests/db/equivalence.sh` (uPortal-start d2d0ce7fd, MOD-D29 item 1) compares exported values, in place and through the copy tool. The other three are small uPortal-start fixes. |
 | MOD-I127 | Runtime | `TransientPortletEntityDao` throws an NPE on `layout.json` requests with user=null. It appeared in 3 runs after P2 was rebased onto `22bdf2b23` and in none of 6 before. The tests still pass. | Compare with a 4.3 portal on the same ccr commit to find whether P2 or a ccr change causes it (candidates: MOD-I82, MOD-I97). The HTTP replay workstream should also show it. |
 | MOD-I130 | Security | **Found by WS14.** Every legacy endpoint under `/api` is exempt from CSRF (`PortalCsrfSecurityRequestMatcher` ignores `/api.*`), although browsers call them with the session cookie: `/api/layout` (add, move and remove layout nodes, favorites), portlet lists, permissions. The web-component channel spec adds and removes channels through `/api/layout` without a token. | The WS14 APIs under `/api/v6-0/` are protected: session cookie plus CSRF token, requests with `Authorization: Bearer` exempt (uPortal "feat(favorites): add favorites rest api"). Protect each legacy endpoint when WS14 replaces its callers. Upstream candidate. |
 | MOD-I131 | Favorites | `FavoritesUtils.getDuplicateFavoritesByFNameToDelete`, behind the Options menu's "Remove from my favorites", compared fnames with `==` (also in the SpotBugs baseline as ES_COMPARING_PARAMETER_STRING_WITH_EQ). | **Fixed** ("fix(favorites): compare fnames by value when unfavoriting") with a regression test that fails on the old code. The baseline entry is dropped ("build(spotbugs): drop the fixed FavoritesUtils finding from the baseline"). Upstream candidate. |
@@ -1845,6 +1874,9 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I189 | Persistence | The 5.17.9 MariaDB schema has 43 duplicate or covered InnoDB foreign-key indexes. The integration build creates none of them. | **Open**. G-index R10 fixes it. |
 | MOD-I190 | Deployment | The portal and its portlets together use all 100 default PostgreSQL connections. | **Open**. Document a connection budget for 6.0. |
 | MOD-I191 | Persistence | Queries with `ORDER BY` or `@OrderBy` don't break ties, so rows with the same sort key can come back in any order. The goldens compare tied rows as unordered. | **Owner (2026-10-11):** 6.0 adds a final tie-breaker, usually the id, to each sort, so results come back in a guaranteed order. |
+| MOD-I192 | CI | Playwright on PostgreSQL 18 intermittently loses one bundled portlet application: every page lacks its output, and a different application is missing on each attempt. It failed 22 SimpleContent tests in job 114386349300 and 8 Announcements tests in job 114405187791 (run 38110595100 and its re-run). Run 38117263537 failed the same 8 Announcements tests. Those branches change only REST APIs, web components, tests and docs, not portlets or the database. The Tomcat logs are only in the job artifacts, and the proxy in front of the agents refuses the host that serves them. | **Open.** Probable cause: MOD-I190, the portal and its portlets competing for PostgreSQL's 100 default connections, so the application that starts last fails. uPortal-start fd53c9495 prints Tomcat's startup errors in a failed job's log. The next failure will show the cause. The fix is the connection budget MOD-I190 asks for, not a larger `max_connections` in CI. |
+| MOD-I193 | Portlets | In 5.17's Popular Portlets portlet, the column filters show the wrong rows once the table is sorted. The DataTables search function reads `col.data()`, which is in display order, with each row's load index. | **Fixed in the web component** (WS14). "a filter keeps the rows it names, also after sorting" in uPortal-start's `popular-portlets.spec.ts` and "keeps the rows it names after a sort" in `up-popular-portlets.browser.test.ts` check it; the first fails on the old portlet, which keeps the bug. |
+| MOD-I194 | Portlets | `PopularPortletsController.getEventCounts` throws a `NullPointerException` when the `days` parameter is missing. | **Fixed in the REST API**: `/api/v6-0/popular-portlets` uses 30 days when `days` is missing and answers 400 unless it is a whole number from 1 to 365. The portlet keeps the bug. |
 
 ## Open questions
 
