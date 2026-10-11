@@ -29,9 +29,16 @@ const componentMessages = import.meta.glob<Record<string, Record<string, string>
  * text that matches English and is not listed here is taken as untranslated.
  */
 const SAME_AS_ENGLISH: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-    es: {},
+    es: {
+        'search.results.portlets':
+            'the Spanish bundle keeps "portlets" as the term (fragmentAudit.portlets.label)',
+    },
     fr: {
         'popular.portlets.pagination': '"pagination" is the French word too',
+        'search.results.portlets':
+            'the French bundle keeps "portlets" as the term (fragmentAudit.portlets.label)',
+        'search.suggestions': '"suggestions" is the French word too',
+        description: '"description" is the French word too',
     },
 };
 
