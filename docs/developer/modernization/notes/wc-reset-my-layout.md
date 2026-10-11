@@ -31,8 +31,8 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-reset-my-layout` in uPortal and uPortal-sta
 | --- | --- |
 | 1. Characterisation spec | Done: uPortal-start `b138960`, `tests/ux/smoke/reset-my-layout.spec.ts`, 7 tests pass against the portlet (two runs in a row, then `per-role-pages.spec.ts` still passes) |
 | 2. REST API under `/api/v6-0/` | Done: uPortal `31f57f4` (`ResetMyLayoutRESTController`, 7 MockMvc tests), uPortal-start `f2db0a9` (`tests/api/reset-my-layout.spec.ts`, 5 tests pass on the deployed build) |
-| 3. `<up-reset-my-layout>` | Next: messages, API client, machine and element started in the working tree |
-| 4. Channel definition | Not started |
+| 3. `<up-reset-my-layout>` | Done: uPortal `034f94e`. 80 component tests (37 unit cases, 25 browser cases, 18 model cases). Every new file has 100% lines. `vp check`, `vp test --coverage` (301 tests) and `vp build` pass |
+| 4. Channel definition | Next |
 | 5. Spec against the component, seeded faults | Not started |
 | 6. UPGRADING-6.0 | Not started |
 
@@ -58,15 +58,29 @@ Each fault was seeded alone and reverted.
 | Fault | Caught by |
 | --- | --- |
 | Controller answers guests as users (no `isGuest()` check) | MockMvc `refusesGuests` |
+| Machine doesn't set a notice when a reset answers 500 | 1 machine test, 1 browser test (before the machine tests covered each error kind, only the browser test) |
+| Confirmation heading not focused | 6 browser tests, 10 model tests (none before the model test listed the focus target of each state) |
+| Reset sent as PUT instead of POST | 1 API client test, 10 browser tests, 8 model tests |
 
 ## Design
 
 * `GET /api/v6-0/layout/reset` answers `{"userName": "student"}`, which the confirmation names.
   `POST /api/v6-0/layout/reset` (CSRF) calls `IUserLayoutHelper.resetUserLayout` with the session
   user's attributes and answers the same body. Guests get 401, answers are `no-store`.
+* `<up-reset-my-layout>` loads `GET` first. The confirmation shows the user name it returns. States:
+  `loading`, `failed` (retry), `signedOut` (401), and `ready` with `start`, `confirming`,
+  `resetting` and `done`. A failed reset goes back to `confirming` with a notice. It emits
+  `up-layout-reset`. Focus moves to the new step's heading or button after a step, never on the
+  first load.
+* The confirmation drops the portlet's breadcrumb heading (a link with the user's name, which
+  cancelled) and keeps one "Reset User Layout" heading. Reset Layout is a danger button.
+* New keys `reset.my.layout.load.fail`, `.reset.fail`, `.session.expired` and `.try.again`, in
+  English, French and Spanish.
 * The `userLayoutHelper` bean stays in `flowsContext.xml`, because the admin `reset-user-layout`
   flow uses it too.
 
 ## Next step
 
-Finish `<up-reset-my-layout>` (machine, element, tests) and add the new message keys.
+Publish `reset-my-layout` as a Web Component channel in uPortal-start, list the
+`UP_PORTLET_DEF_PARAM` delta in `intended-changes.txt`, and run the characterisation spec against
+the component.
