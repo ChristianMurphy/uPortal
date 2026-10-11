@@ -15,6 +15,7 @@
 package org.apereo.portal.security.provider;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -36,7 +37,9 @@ import org.apereo.portal.permission.target.IPermissionTargetProvider;
 import org.apereo.portal.permission.target.IPermissionTargetProviderRegistry;
 import org.apereo.portal.security.IAuthorizationPrincipal;
 import org.apereo.portal.security.IAuthorizationService;
+import org.apereo.portal.security.IPermission;
 import org.apereo.portal.security.IPermissionPolicy;
+import org.apereo.portal.security.IPermissionStore;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.utils.cache.CacheFactory;
 import org.apereo.portal.utils.cache.TagTrackingCacheEventListener;
@@ -49,14 +52,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * Behaviour of AuthorizationImpl's caches on a real Ehcache: permission checks are cached per
- * principal, owner, activity and target, and purged with the user's other entries at logout. (The
- * principal cache is not covered here: creating an AuthorizationPrincipalImpl needs the portal's
- * application context.)
+ * principal, owner, activity and target, purged with the user's other entries at logout, and
+ * forgotten when a permission is added, removed or updated. (The principal cache is not covered
+ * here: creating an AuthorizationPrincipalImpl needs the portal's application context.)
  */
 public class AuthorizationImplCacheTest {
 
     private CacheManager ehcacheManager;
     private Ehcache permissionCache;
+    private Ehcache unblockedGrantCache;
     private TagTrackingCacheEventListener tagTracker;
     private AuthorizationImpl authorization;
     private IPermissionPolicy policy;
@@ -72,12 +76,16 @@ public class AuthorizationImplCacheTest {
                 new String[] {
                     CacheFactory.PRINCIPAL_CACHE,
                     CacheFactory.ENTITY_PARENTS_CACHE,
-                    AuthorizationImpl.PRINCIPAL_HAS_PERMISSION_CACHE_NAME
+                    AuthorizationImpl.PRINCIPAL_HAS_PERMISSION_CACHE_NAME,
+                    AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT_CACHE_NAME
                 }) {
             ehcacheManager.addCache(new net.sf.ehcache.Cache(new CacheConfiguration(name, 100)));
         }
         permissionCache =
                 ehcacheManager.getEhcache(AuthorizationImpl.PRINCIPAL_HAS_PERMISSION_CACHE_NAME);
+        unblockedGrantCache =
+                ehcacheManager.getEhcache(
+                        AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT_CACHE_NAME);
         tagTracker = new TagTrackingCacheEventListener();
         permissionCache.getCacheEventNotificationService().registerListener(tagTracker);
         final EhCacheCacheManager springCacheManager = new EhCacheCacheManager(ehcacheManager);
@@ -85,6 +93,9 @@ public class AuthorizationImplCacheTest {
 
         authorization = new AuthorizationImpl();
         authorization.setCacheManager(springCacheManager);
+        authorization.setPermissionStore(mock(IPermissionStore.class));
+        // The permission-set cache needs the portal's entity caching service
+        authorization.setCachePermissions(false);
 
         final IPermissionOwnerDao ownerDao = mock(IPermissionOwnerDao.class);
         final IPermissionActivity activity = mock(IPermissionActivity.class);
@@ -160,5 +171,57 @@ public class AuthorizationImplCacheTest {
         check(principal("staff"), "target1");
 
         verifyPolicyCalls(3);
+    }
+
+    private static IPermission[] changed() {
+        return new IPermission[] {mock(IPermission.class)};
+    }
+
+    @Test
+    public void grantIsSeenByTheNextCheck() {
+        when(policy.doesPrincipalHavePermission(any(), any(), any(), any(), any()))
+                .thenReturn(false, true);
+        assertFalse(check(student, "target1"));
+
+        authorization.addPermissions(changed());
+
+        assertTrue(check(student, "target1"));
+        verifyPolicyCalls(2);
+    }
+
+    @Test
+    public void revocationIsSeenByTheNextCheck() {
+        when(policy.doesPrincipalHavePermission(any(), any(), any(), any(), any()))
+                .thenReturn(true, false);
+        assertTrue(check(student, "target1"));
+
+        authorization.removePermissions(changed());
+
+        assertFalse(check(student, "target1"));
+        verifyPolicyCalls(2);
+    }
+
+    @Test
+    public void updateIsSeenByTheNextCheck() {
+        when(policy.doesPrincipalHavePermission(any(), any(), any(), any(), any()))
+                .thenReturn(true, false);
+        assertTrue(check(student, "target1"));
+
+        authorization.updatePermissions(changed());
+
+        assertFalse(check(student, "target1"));
+    }
+
+    @Test
+    public void aChangeForgetsTheChecksOfEveryPrincipal() {
+        // A grant to a group reaches its members: their cached checks must go too
+        check(student, "target1");
+        check(principal("staff"), "target1");
+        unblockedGrantCache.put(new net.sf.ehcache.Element("unblocked-grant", Boolean.FALSE));
+
+        authorization.addPermissions(changed());
+
+        assertEquals(0, permissionCache.getSize());
+        assertEquals(0, unblockedGrantCache.getSize());
     }
 }
