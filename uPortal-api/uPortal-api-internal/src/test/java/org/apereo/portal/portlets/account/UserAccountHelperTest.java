@@ -22,7 +22,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.persondir.ILocalAccountDao;
 import org.apereo.portal.persondir.ILocalAccountPerson;
 import org.apereo.portal.portletpublishing.xml.Preference;
@@ -348,5 +354,68 @@ public class UserAccountHelperTest {
         verify(accountPerson).setPassword(TEST_USER_ENCRYPTED_PASSWORD);
         verify(accountPerson).removeAttribute("loginToken");
         verify(accountPerson).removeAttribute("loginTokenIssued");
+    }
+
+    /** The helper with sendLoginToken, which builds the portal URL, replaced by a no-op. */
+    private UserAccountHelper helperThatSendsNothing() {
+        final UserAccountHelper helper = spy(userAccountHelper);
+        doNothing().when(helper).sendLoginToken(any(), any(ILocalAccountPerson.class));
+        return helper;
+    }
+
+    @Test
+    public void testRequestPasswordResetSendsANewTokenToTheAccount() {
+        when(accountPerson.getAttributeValue(ILocalAccountPerson.ATTR_MAIL))
+                .thenReturn("jane@example.org");
+        final UserAccountHelper helper = helperThatSendsNothing();
+        final HttpServletRequest request = mock(HttpServletRequest.class);
+
+        helper.requestPasswordReset(request, TEST_USER_NAME);
+
+        verify(accountPerson).setAttribute("loginTokenIssued", NOW.toString());
+        verify(accountDao).updateAccount(accountPerson);
+        verify(helper).sendLoginToken(request, accountPerson);
+    }
+
+    @Test
+    public void testRequestPasswordResetSendsNothingToAnUnknownName() {
+        final UserAccountHelper helper = helperThatSendsNothing();
+        helper.requestPasswordReset(mock(HttpServletRequest.class), "nobody");
+        helper.requestPasswordReset(mock(HttpServletRequest.class), " ");
+        helper.requestPasswordReset(mock(HttpServletRequest.class), null);
+        verify(accountDao, never()).updateAccount(any());
+        verify(helper, never()).sendLoginToken(any(), any(ILocalAccountPerson.class));
+    }
+
+    @Test
+    public void testRequestPasswordResetSendsNothingWithoutAnEmailAddress() {
+        final UserAccountHelper helper = helperThatSendsNothing();
+        helper.requestPasswordReset(mock(HttpServletRequest.class), TEST_USER_NAME);
+        verify(accountPerson, never()).setAttribute(any(String.class), any(String[].class));
+        verify(accountDao, never()).updateAccount(any());
+        verify(helper, never()).sendLoginToken(any(), any(ILocalAccountPerson.class));
+    }
+
+    /** A failed send must not change the page, which would show that the account exists. */
+    @Test
+    public void testRequestPasswordResetLogsAFailedSendAtError() {
+        when(accountPerson.getAttributeValue(ILocalAccountPerson.ATTR_MAIL))
+                .thenReturn("jane@example.org");
+        final UserAccountHelper helper = spy(userAccountHelper);
+        doThrow(new IllegalStateException("no portal URL"))
+                .when(helper)
+                .sendLoginToken(any(), any(ILocalAccountPerson.class));
+        final Logger logger = (Logger) LoggerFactory.getLogger(UserAccountHelper.class);
+        final ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            helper.requestPasswordReset(mock(HttpServletRequest.class), TEST_USER_NAME);
+        } finally {
+            logger.detachAppender(appender);
+        }
+        final ILoggingEvent error = appender.list.get(appender.list.size() - 1);
+        assertEquals(Level.ERROR, error.getLevel());
+        assertTrue(error.getFormattedMessage().contains(TEST_USER_NAME));
     }
 }

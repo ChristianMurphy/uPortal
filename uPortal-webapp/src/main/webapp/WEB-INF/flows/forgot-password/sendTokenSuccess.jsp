@@ -31,7 +31,7 @@
 
     <!-- Portlet Titlebar -->
     <div class="card-header titlebar portlet-titlebar" data-role="header">
-        <h2 class="title" role="heading"><spring:message code="reset.email.sent"/></h2>
+        <h2 class="title" role="heading"><spring:message code="password.reset.requested"/></h2>
     </div>
 
     <div class="card-body content portlet-content" data-role="content">
@@ -40,7 +40,7 @@
     <div class="portlet-section" role="region">
 
       <div class="portlet-section-body">
-          <p><spring:message code="password.reset.instructions.have.been.sent.to.your.email.address"/></p>
+          <p><spring:message code="password.reset.requested.instructions"/></p>
 
           <p><a href="${ loginUrl }"><spring:message code="return.to.log.in.form"/></a></p>
       </div>
