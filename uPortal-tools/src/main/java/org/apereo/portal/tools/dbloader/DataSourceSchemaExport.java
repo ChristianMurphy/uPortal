@@ -27,6 +27,7 @@ import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullWriter;
 import org.apache.commons.lang.StringUtils;
@@ -94,15 +95,18 @@ public class DataSourceSchemaExport implements ISchemaExport, HibernateConfigura
 
     @Override
     public void update(boolean export, String outputFile, boolean append) {
+        // The schema tool always returns a list, empty when nothing changes (MOD-I225)
         final List<String> updateSQL =
-                this.jdbcOperations.execute(
-                        new ConnectionCallback<List<String>>() {
-                            @Override
-                            public List<String> doInConnection(Connection con)
-                                    throws SQLException, DataAccessException {
-                                return schemaTool.getUpdateScript(con);
-                            }
-                        });
+                Objects.requireNonNull(
+                        this.jdbcOperations.execute(
+                                new ConnectionCallback<List<String>>() {
+                                    @Override
+                                    public List<String> doInConnection(Connection con)
+                                            throws SQLException, DataAccessException {
+                                        return schemaTool.getUpdateScript(con);
+                                    }
+                                }),
+                        "No update script from the schema tool");
 
         perform(updateSQL, export, outputFile, append, true);
     }
