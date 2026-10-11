@@ -47,8 +47,8 @@ Defects found:
 * The page says the email was sent whether or not it was. `EmailPasswordResetNotificationImpl`
   logs a failed send and carries on. The test portal has no mail server.
 * Tokens never expire.
-* A failed token check logs the account's real token and the submitted one at INFO
-  (`UserAccountHelper.validateLoginToken`), so anyone who can read the log can reset that account.
+* Fixed here: a failed token check logged the account's real token and the submitted one at INFO
+  (`UserAccountHelper.validateLoginToken`), and the reset email logged the link at DEBUG.
 * The reset page's password inputs have no labels (their captions are table cells), and a
   differing confirmation or a blank password gets only "Password was not updated.".
 * The link works only before the login portlet has started its flow in the session: after the
@@ -67,6 +67,9 @@ uPortal, oldest first:
 | `docs: rescope the self edit account note to the password flows` | This note, rescoped |
 | `fix(account): refuse a password confirmation that differs` | Alias `accountFormValidator` for `personValidator` in `flowsContext.xml`, and the self-edit form's script and error block. Also turns on `PersonFormValidator` in User Administration's edit-account flow |
 | `docs: record the password flows' defects and proposed log rows` | This note |
+| merge of `ccr-43ba0785-hzlrj5` | The login and CSRF fixes |
+| `fix(account): stop logging password reset tokens` | `validateLoginToken` logs the user name only, the reset email the account name; log-capturing unit tests (logback-classic, test scope) |
+| `docs: record the token logging fix and the held defects` | This note |
 
 uPortal-start, oldest first:
 
@@ -77,6 +80,10 @@ uPortal-start, oldest first:
 | `test(e2e): expect a differing password confirmation to be refused` | Pairs with the uPortal fix: two tests (form script, and portal with scripts off) replace the "saved anyway" test |
 | `test(e2e): share the local account helpers of the self edit spec` | `tests/ux/utils/local-account-utils.ts` |
 | `test(e2e): record what forgot password and the reset link do today` | `forgot-password.spec.ts` (5 tests), `reset-password.spec.ts` (6 tests). The commit body enumerates a local test result, which the Vale commit check refuses; when landing, replace its last paragraph with "Each test imports its own account. The specs pass in any order and in parallel." |
+| `test(e2e): refuse creating a user whose name is taken` | MOD-I195: a `user-administration.spec.ts` test, with the list of `PersonFormValidator`'s checks in the body |
+| merge of `ccr-43ba0785-hzlrj5` | The login and CSRF fixes, with `tests/api/utils/csrf-request.ts` |
+| `test(e2e): send the csrf token with the account imports` | `importXml` sends `sessionCsrfHeaders()` |
+| `test(e2e): note that the reset flow no longer logs tokens` | The reset spec's header |
 
 ### The confirmation fix
 
@@ -95,36 +102,67 @@ in the deployed flows (Forgot Password not saving the account; the reset flow ac
 failed "stores a reset token…", "a second request replaces the token", "sets the password…" and "a
 wrong token is invalid…".
 
+### MOD-I195 and the token logging fix
+
+MOD-I195 ("Create a User" with an existing name saved over that account) is fixed by the same
+alias, uPortal `fix(account): refuse a password confirmation that differs`, and tested by
+uPortal-start `test(e2e): refuse creating a user whose name is taken`. That test failed without
+the alias, when the portal logged that it had updated the existing account, and failed with the
+edit-account error block seeded to read another model.
+
+`fix(account): stop logging password reset tokens`: each new log-capturing unit test failed with
+the old log line put back.
+
 ## Next steps
 
-1. When the login and CSRF fix is in the integration branch, merge it here and use its
-   `tests/api/utils/csrf-request.ts` helper in `importXml` (`local-account-utils.ts`).
-2. Wait for the owner's ruling on the confirmation fix (keep or revert) and on the current password.
+Wait for the owner's rulings: the confirmation fix (keep or revert), the current password, whether
+Self-Edit Account may be a web component (a revert of the two revert commits brings it back), and
+the held defects below.
 
 ## Proposed LOG rows
 
-For the coordinator to number:
+For the coordinator to number. Held for the owner, each with how a fix could look:
+
+* Issue (Portlets, security): the Forgot Password flow answers an unknown user name with the channel error
+  (the flow calls `setAttribute` on a null account) and a known one with "Reset email sent", so it
+  tells anyone which local accounts exist. Fix: show the same "if an account exists, we have
+  emailed it" page for every user name. Send nothing for an unknown one.
+* Issue (Portlets): the Forgot Password flow says the email was sent when sending failed
+  (`EmailPasswordResetNotificationImpl` logs the failure and returns). Fix: return the outcome and
+  show "The email could not be sent. Contact the help desk." on failure. With the enumeration fix,
+  show it only for a failed send to an existing account, so it does not reveal accounts.
+* Issue (Portlets, security): reset tokens never expire. Fix: store the time the token was issued
+  next to it (a `loginTokenIssued` attribute), and refuse tokens older than
+  `org.apereo.portal.portlets.account.resetTokenLifetime`, an ISO-8601 duration with a default of
+  `PT1H`. An expired token gets the "Invalid password reset URL" page and loses its attribute.
+* Issue (Portlets, accessibility): the reset form's password inputs have no labels (their captions
+  are table cells), and a differing confirmation or a blank password gets only "Password was not
+  updated.". Fix: `<label for>` on both inputs, and the `passwords.must.match` and a new
+  `please.enter.new.password` message in place of the generic one.
+* Issue (Portlets): the reset link is ignored once the login portlet has started its flow in the
+  session, because the portlet resumes that flow. Fix: in the Thymeleaf version, make the reset
+  page its own URL, such as `/uPortal/password/reset?user=...&token=...`, not a parameter of the
+  login portlet. Until then, end the login flow when a request has a `loginToken` parameter.
+* Issue (Portlets): the update-password flow is unreachable (no portlet maps a `flowId` to it),
+  and so is its `AccountPasswordFormValidator`. Fix: delete both with the Web Flow removal. A current-password check, if the
+  owner rules for one, could reuse the validator.
+
+Decided or fixed:
 
 * MOD-D19 is confirmed for these flows. Self-Edit Account, Forgot Password and the reset-password
   flow stay Thymeleaf full-page flows, to be converted with Spring 5.3 (P4-1). Their
   characterisation specs are `self-edit-account.spec.ts`, `forgot-password.spec.ts` and
-  `reset-password.spec.ts` in uPortal-start. The update-password flow is unreachable and needs no
-  conversion. Drop it with the Web Flow removal.
+  `reset-password.spec.ts` in uPortal-start.
 * Issue (Portlets): `PersonFormValidator` never ran, because Web Flow looks for
-  `accountFormValidator`; the self-edit form's script check was dead too, so differing
+  `accountFormValidator`, and the self-edit form's script check was dead too, so differing
   confirmations were saved. **Fixed** by `fix(account): refuse a password confirmation that
-  differs`, pending the owner. The same fix turns the validator on in User Administration, whose
-  "Create a User" with an existing user name used to update that account (from the code, not
-  reproduced).
-* Issue (Portlets): the Self-Edit Account flow changes the password without the current password. Owner to
-  decide for the Thymeleaf page.
-* Issue (Security): a failed reset-token check logs the account's real token at INFO
-  (`UserAccountHelper.validateLoginToken`), and reset tokens never expire.
-* Issue (Portlets): the Forgot Password flow fails with the channel error for an unknown username and
-  answers differently for a known one (account enumeration), and reports an email as sent when the
-  send failed.
-* Issue (Portlets): the reset link is ignored once the login portlet has started its flow in the
-  session. The reset form's inputs have no labels, and its errors don't say what was wrong.
+  differs`, pending the owner.
+* MOD-I195: **fixed** by the same commit, tested by uPortal-start `test(e2e): refuse creating a
+  user whose name is taken`.
+* Issue (Security): a failed reset-token check logged the account's real token at INFO, and the
+  reset email logged its link. **Fixed** by `fix(account): stop logging password reset tokens`.
+* Issue (Portlets): the Self-Edit Account flow changes the password without the current password.
+  Owner to decide for the Thymeleaf page.
 * Issue (Portlets, Thymeleaf conversion): drop Self-Edit Account's "Add Preference" link, whose
   inputs saving ignores.
 * Issue (uPortal-start): the account specs create local accounts through `/api/import` and can't
