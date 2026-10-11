@@ -19,6 +19,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import java.sql.BatchUpdateException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -162,8 +164,8 @@ public class PortletPreferencesCacheTest extends BasePortalJpaDaoTest {
                         ExecutionException.class,
                         () -> secondSave.get(WAIT_SECONDS, TimeUnit.SECONDS));
         assertTrue(
-                "Expected an optimistic locking failure, got " + refused.getCause(),
-                refused.getCause() instanceof OptimisticLockingFailureException);
+                "Expected the save to be refused, got " + refused.getCause(),
+                isRefusedSave(refused.getCause()));
 
         // The first load caches the entity again; the second reads it and its list from the cache
         for (int load = 1; load <= 3; load++) {
@@ -173,6 +175,34 @@ public class PortletPreferencesCacheTest extends BasePortalJpaDaoTest {
         // And the user can choose again
         saveBackground(entityId, "nebula");
         assertEquals(Arrays.asList("nebula"), backgroundValues(entityId));
+    }
+
+    /**
+     * Whether a save failed because another session changed the preferences since this one read
+     * them. Hibernate's version check refuses it as an optimistic locking failure, except where the
+     * database refuses the write first: MariaDB 11.6 and later under REPEATABLE READ with
+     * innodb_snapshot_isolation, its default, answer error 1020, "Record has changed since last
+     * read" (MOD-I99), which Hibernate does not map.
+     */
+    private static boolean isRefusedSave(Throwable failure) {
+        if (failure instanceof OptimisticLockingFailureException) {
+            return true;
+        }
+        for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException && ((SQLException) cause).getErrorCode() == 1020) {
+                return true;
+            }
+            if (cause instanceof BatchUpdateException) {
+                for (SQLException next = ((SQLException) cause).getNextException();
+                        next != null;
+                        next = next.getNextException()) {
+                    if (next.getErrorCode() == 1020) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     /** The second of two saves that do not overlap is not refused. */

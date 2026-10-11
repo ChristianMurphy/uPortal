@@ -81,7 +81,12 @@ before the list is cached. The order above then happens on every run.
 * `refusedConcurrentSaveLeavesNoStaleCachedPreferences`: the first save
   clears the background while the second chooses another. The second save
   is refused. Each of the next three loads finds the background cleared,
-  and a later save works.
+  and a later save works. Hibernate's version check refuses the save as an
+  optimistic locking failure. MariaDB 11.6 and later refuse the write first,
+  with error 1020 "Record has changed since last read" (snapshot isolation
+  under REPEATABLE READ, MOD-I99). The test accepts either. The first DB
+  integration run (38138250419) failed on MariaDB 12.3 because the test
+  expected only the optimistic locking failure.
 * `saveAfterSaveKeepsTheLaterChoice`: saves that do not overlap.
 
 Before the fix the first test failed on the second load: the entity came
