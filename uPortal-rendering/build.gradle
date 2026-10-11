@@ -1,10 +1,12 @@
 description = "Apereo uPortal Rendering"
 
 dependencies {
-    api project(':uPortal-api:uPortal-api-search')
     api project(':uPortal-marketplace')
     api project(':uPortal-security:uPortal-security-core')
     api project(':uPortal-url')
+    // JAXB at uPortal's version, in place of the older one that Pluto's container brings (excluded
+    // below); uPortal-api-search used to provide it
+    api "javax.xml.bind:jaxb-api:${jaxbApiVersion}"
 
     implementation "org.apache.httpcomponents:httpcore:${httpcomponentsVersion}"
     implementation "org.apache.commons:commons-pool2:${commonsPoolVersion}"

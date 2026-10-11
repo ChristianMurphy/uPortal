@@ -40,14 +40,6 @@
     <Match><Class name="org.apereo.portal.portlets.portletadmin.PortletDefinitionForm"/><Field name="logger"/><Bug pattern="SE_BAD_FIELD"/></Match>
     <Match><Class name="org.apereo.portal.portlets.portletadmin.PortletDefinitionForm"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
     <Match><Class name="org.apereo.portal.portlets.portletadmin.PortletDefinitionFormValidator"/><Method name="&lt;init&gt;"/><Bug pattern="CT_CONSTRUCTOR_THROW"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController"/><Method name="performSearch"/><Bug pattern="CRLF_INJECTION_LOGS"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController"/><Method name="performSearch"/><Bug pattern="PREDICTABLE_RANDOM"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController"/><Method name="setMaxAutocompleteSearchResults"/><Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController"/><Method name="setMaximumSearchesPerMinute"/><Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController"/><Method name="showSearchError"/><Bug pattern="SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController"/><Method name="showSearchForm"/><Bug pattern="SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController"/><Method name="showSearchResults"/><Bug pattern="SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING"/></Match>
-    <Match><Class name="org.apereo.portal.portlets.search.SearchPortletController$SpELEnvironmentRoot"/><Bug pattern="SIC_INNER_SHOULD_BE_STATIC"/></Match>
     <Match><Class name="org.apereo.portal.portlets.sqlquery.SqlQueryConfigurationController"/><Method name="getAccountFormView"/><Bug pattern="SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING"/></Match>
     <Match><Class name="org.apereo.portal.portlets.sqlquery.SqlQueryConfigurationController"/><Method name="saveConfiguration"/><Bug pattern="SPRING_CSRF_UNRESTRICTED_REQUEST_MAPPING"/></Match>
     <Match><Class name="org.apereo.portal.portlets.sqlquery.SqlQueryPortletController"/><Method name="handleRenderRequest"/><Bug pattern="SQL_INJECTION_SPRING_JDBC"/></Match>

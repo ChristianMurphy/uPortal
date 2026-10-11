@@ -23,7 +23,6 @@ include 'uPortal-webcomponents'
 
 include 'uPortal-api:uPortal-api-internal'
 include 'uPortal-api:uPortal-api-rest'
-include 'uPortal-api:uPortal-api-search'
 
 include 'uPortal-content:uPortal-content-portlet'
 include 'uPortal-content:uPortal-content-publishing'
