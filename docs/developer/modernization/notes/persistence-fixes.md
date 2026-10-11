@@ -35,6 +35,17 @@ Next step:
 read their results. A red golden on a vendor other than HSQLDB is this branch's to fix. If Oracle
 fails on the removed pre-delete (fix 6), revert `502d3e2` and record why.
 
+## Items for the 6.0 schema step (with Hibernate 7, after P7-1)
+
+Each one changes the schema and waits for that step. The sections below give the details.
+
+| Item | Change | Copy tool, 5.17 to 6.0 |
+| --- | --- | --- |
+| MOD-I140 | each aggregation row's UTC offset, in its natural id, in the six aggregation tables | fills the offset with `--source-zone` |
+| G-index R4 | indexes on the three foreign keys to `UP_UNIQUE_STR` | creates them with the 6.0 schema |
+| MOD-I141 marker | `dataInit` and the copy tool write a marker, and a 6.0 portal refuses to start on an unconverted database | writes the marker |
+| MOD-D44 | SQL Server text columns become `nvarchar` (Hibernate's nationalized strings) | converts the text |
+
 ## Running tests in this container
 
 Gradle runs here with JDK 21 and an init script outside the repos
