@@ -186,6 +186,23 @@ describe('selfEditAccountMachine', () => {
         expect(actor.getSnapshot().context.confirmPassword).toBe('');
     });
 
+    it.each([
+        ['a confirmation that differs', 'secret', 'secrets'],
+        ['a password without confirmation', 'secret', ''],
+        ['a confirmation without password', '', 'secret'],
+    ])('refuses %s without sending anything', async (_name, password, confirmPassword) => {
+        const { actor, calls } = await editing();
+        actor.send({ type: 'password.change', field: 'password', value: password });
+        actor.send({ type: 'password.change', field: 'confirmPassword', value: confirmPassword });
+        actor.send({ type: 'submit' });
+
+        expect(actor.getSnapshot().matches({ editing: 'idle' })).toBe(true);
+        expect(actor.getSnapshot().context.notice).toEqual({ kind: 'passwords-differ' });
+        expect(actor.getSnapshot().context.password).toBe('');
+        expect(actor.getSnapshot().context.confirmPassword).toBe('');
+        expect(calls.save).toEqual([]);
+    });
+
     it('reports a save without a password as such', async () => {
         const { actor, calls, emitted } = await editing();
         actor.send({ type: 'submit' });
@@ -214,6 +231,7 @@ describe('selfEditAccountMachine', () => {
             const { actor, calls, emitted } = await editing();
             actor.send({ type: 'change', name: 'title', value: 'Dr' });
             actor.send({ type: 'password.change', field: 'password', value: 'secret' });
+            actor.send({ type: 'password.change', field: 'confirmPassword', value: 'secret' });
             actor.send({ type: 'submit' });
             calls.save[0]?.answer.reject(error);
             await waitFor(actor, (snapshot) => snapshot.matches({ editing: 'idle' }));
