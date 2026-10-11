@@ -145,8 +145,9 @@ h1.portal-logo a:hover {
 }
 
 #webSearchSubmit {
+  /* Only the icon shows; the text stays as the button's accessible name */
   span {
-    display: none;
+    @extend .visually-hidden;
   }
 }
 
