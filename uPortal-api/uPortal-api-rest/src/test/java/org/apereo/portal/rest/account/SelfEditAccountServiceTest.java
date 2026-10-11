@@ -275,15 +275,25 @@ public class SelfEditAccountServiceTest {
     }
 
     @Test
-    public void savesThePasswordWhateverTheConfirmationSays() {
-        // As the portlet did; a later change may refuse this
+    public void refusesAConfirmationThatDiffers() {
         when(helper.canEditUser(student, "student")).thenReturn(true);
 
-        service.updateAccount(
-                request,
-                new SelfEditAccountService.Update(
-                        Collections.<String, String>emptyMap(), SECRET, "typo"));
-
-        assertEquals(SECRET, savedForm().getPassword());
+        for (String[] passwords :
+                new String[][] {{SECRET, SECRET + "-typo"}, {SECRET, null}, {null, SECRET}}) {
+            try {
+                service.updateAccount(
+                        request,
+                        new SelfEditAccountService.Update(
+                                Collections.<String, String>emptyMap(),
+                                passwords[0],
+                                passwords[1]));
+                fail("Expected a refusal");
+            } catch (AccountException e) {
+                assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+                assertEquals("passwords.must.match", e.getCode());
+                assertFalse(String.valueOf(e.getMessage()).contains(SECRET));
+            }
+        }
+        verify(helper, never()).updateAccount(any(), any());
     }
 }

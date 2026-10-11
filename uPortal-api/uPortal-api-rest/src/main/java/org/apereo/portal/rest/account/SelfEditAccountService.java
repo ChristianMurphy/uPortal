@@ -52,6 +52,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class SelfEditAccountService {
 
+    static final String PASSWORDS_MUST_MATCH = "passwords.must.match";
+
     private final IPersonManager personManager;
     private final UserAccountHelper userAccountHelper;
     private final MessageSource messageSource;
@@ -141,10 +143,9 @@ public class SelfEditAccountService {
      * Saves the user's changes. An attribute left out keeps its value, an empty one is removed. A
      * non-blank password replaces the current one.
      *
-     * <p>Like the portlet, it saves the password whatever the confirmation says.
-     *
      * @throws AccountException 401 for guests; 403 when the user may not edit their account or
-     *     names an attribute they may not edit
+     *     names an attribute they may not edit; 400 with the code {@value #PASSWORDS_MUST_MATCH}
+     *     when the password and its confirmation differ
      */
     public void updateAccount(HttpServletRequest request, Update update) {
         final IPerson person = requireUser(request);
@@ -161,6 +162,16 @@ public class SelfEditAccountService {
             if (!editable.contains(name)) {
                 throw new AccountException(
                         HttpStatus.FORBIDDEN, "You may not edit the attribute " + name);
+            }
+        }
+
+        if (StringUtils.isNotBlank(update.password)
+                || StringUtils.isNotBlank(update.confirmPassword)) {
+            if (update.password == null || !update.password.equals(update.confirmPassword)) {
+                throw new AccountException(
+                        HttpStatus.BAD_REQUEST,
+                        "The password and its confirmation differ",
+                        PASSWORDS_MUST_MATCH);
             }
         }
 
