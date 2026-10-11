@@ -118,6 +118,7 @@ public class HsqldbFailClosedTest {
         }
     }
 
+    /** The plan is refused for the reason given by its ERROR line, before writing anything. */
     private void assertRefusedBeforeWriting(String expected) throws SQLException {
         assertEquals(output, DbMigrate.PLAN_ERROR, run());
         assertTrue(output, output.contains(expected));
@@ -131,28 +132,32 @@ public class HsqldbFailClosedTest {
     public void aNotNullTargetColumnTheSourceLeavesEmptyFailsThePlan() throws Exception {
         // CODE is NULL in every third source row
         execute(target, "ALTER TABLE UP_THING ALTER COLUMN CODE SET NOT NULL");
-        assertRefusedBeforeWriting("UP_THING.CODE");
+        assertRefusedBeforeWriting(
+                "ERROR: Target column UP_THING.CODE is NOT NULL, but 6 source rows of UP_THING.CODE are NULL");
     }
 
     @Test
     public void aTargetColumnShorterThanTheSourceValuesFailsThePlan() throws Exception {
         // TITLE values are up to 10 characters long
         execute(target, "ALTER TABLE UP_THING ALTER COLUMN TITLE SET DATA TYPE VARCHAR(5)");
-        assertRefusedBeforeWriting("UP_THING.TITLE");
+        assertRefusedBeforeWriting(
+                "ERROR: Target column UP_THING.TITLE holds 5 characters, but 19 source rows of UP_THING.TITLE are longer");
     }
 
     @Test
     public void aTargetUniqueKeyTheSourceRowsShareFailsThePlan() throws Exception {
         // Four things per type
         execute(target, "CREATE UNIQUE INDEX UQ_THING_TYPE ON UP_THING (TYPE_ID)");
-        assertRefusedBeforeWriting("UP_THING");
+        assertRefusedBeforeWriting(
+                "ERROR: Target table UP_THING has a unique key on [TYPE_ID], but 5 values of UP_THING [TYPE_ID] occur more than once");
     }
 
     @Test
     public void aTargetForeignKeyTheSourceRowsBreakFailsThePlan() throws Exception {
         execute(source, "ALTER TABLE UP_THING DROP CONSTRAINT FK_THING_TYPE");
         execute(source, "UPDATE UP_THING SET TYPE_ID = 77 WHERE THING_ID = 15");
-        assertRefusedBeforeWriting("UP_THING_TYPE");
+        assertRefusedBeforeWriting(
+                "ERROR: Target foreign key FK_THING_TYPE UP_THING[TYPE_ID] -> UP_THING_TYPE[TYPE_ID]: 1 source rows of UP_THING [TYPE_ID] reference no row of UP_THING_TYPE [TYPE_ID]");
     }
 
     @Test
