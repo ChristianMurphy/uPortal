@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apereo.portal.hibernate.DelegatingHibernateIntegrator.HibernateConfiguration;
 import org.apereo.portal.hibernate.HibernateConfigurationAware;
 import org.hibernate.dialect.Dialect;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -33,6 +34,7 @@ import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.interceptor.TransactionAttribute;
 import org.springframework.transaction.interceptor.TransactionAttributeSource;
+import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -57,8 +59,12 @@ public class DialectAwareTransactionInterceptor
                                         + ".NoopTransactionManager");
 
                 @Override
-                public TransactionStatus getTransaction(TransactionDefinition definition)
+                public TransactionStatus getTransaction(@Nullable TransactionDefinition definition)
                         throws TransactionException {
+                    if (definition == null) {
+                        // The contract allows null for the default definition (MOD-I225)
+                        definition = new DefaultTransactionDefinition();
+                    }
                     DefaultTransactionStatus status = statusCache.get(definition);
                     if (status == null) {
                         logger.debug(

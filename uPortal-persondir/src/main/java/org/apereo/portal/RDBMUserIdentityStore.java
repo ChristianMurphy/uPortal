@@ -20,6 +20,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import javax.sql.DataSource;
@@ -153,17 +154,22 @@ public class RDBMUserIdentityStore implements IUserIdentityStore {
                                     "CANNOT RESET LAYOUT FOR A GUEST USER");
                         }
 
+                        // Primary keys: a row has one, and no row throws (MOD-I225)
                         final int userId =
-                                jdbcOperations.queryForObject(
-                                        "SELECT USER_ID FROM UP_USER WHERE USER_NAME=?",
-                                        Integer.class,
-                                        userName);
+                                Objects.requireNonNull(
+                                        jdbcOperations.queryForObject(
+                                                "SELECT USER_ID FROM UP_USER WHERE USER_NAME=?",
+                                                Integer.class,
+                                                userName),
+                                        "No USER_ID in UP_USER for " + userName);
 
                         final int type =
-                                jdbcOperations.queryForObject(
-                                        "SELECT ENTITY_TYPE_ID FROM UP_ENTITY_TYPE WHERE ENTITY_TYPE_NAME = ?",
-                                        Integer.class,
-                                        IPerson.class.getName());
+                                Objects.requireNonNull(
+                                        jdbcOperations.queryForObject(
+                                                "SELECT ENTITY_TYPE_ID FROM UP_ENTITY_TYPE WHERE ENTITY_TYPE_NAME = ?",
+                                                Integer.class,
+                                                IPerson.class.getName()),
+                                        "No ENTITY_TYPE_ID in UP_ENTITY_TYPE for IPerson");
 
                         jdbcOperations.update(
                                 "DELETE FROM UP_PERMISSION WHERE PRINCIPAL_KEY=? AND PRINCIPAL_TYPE=?",
@@ -430,144 +436,151 @@ public class RDBMUserIdentityStore implements IUserIdentityStore {
 
     private int addNewUser(final int newUID, final IPerson person) {
 
-        return this.transactionOperations.execute(
-                status ->
-                        jdbcOperations.execute(
-                                new ConnectionCallback<Integer>() {
-                                    @Override
-                                    public Integer doInConnection(Connection con)
-                                            throws SQLException, DataAccessException {
+        // The callback always returns the new user's id (MOD-I225)
+        return Objects.requireNonNull(
+                this.transactionOperations.execute(
+                        status ->
+                                jdbcOperations.execute(
+                                        new ConnectionCallback<Integer>() {
+                                            @Override
+                                            public Integer doInConnection(Connection con)
+                                                    throws SQLException, DataAccessException {
 
-                                        int uPortalUID;
-                                        PreparedStatement queryStmt = null;
-                                        PreparedStatement insertStmt = null;
-                                        try {
-                                            // Add to UP_USER
-                                            String insert =
-                                                    "INSERT INTO UP_USER (USER_ID, USER_NAME, USER_DFLT_LAY_ID, NEXT_STRUCT_ID, LST_CHAN_UPDT_DT)"
-                                                            + "VALUES (?, ?, ?, null, null)";
+                                                int uPortalUID;
+                                                PreparedStatement queryStmt = null;
+                                                PreparedStatement insertStmt = null;
+                                                try {
+                                                    // Add to UP_USER
+                                                    String insert =
+                                                            "INSERT INTO UP_USER (USER_ID, USER_NAME, USER_DFLT_LAY_ID, NEXT_STRUCT_ID, LST_CHAN_UPDT_DT)"
+                                                                    + "VALUES (?, ?, ?, null, null)";
 
-                                            String userName = person.getUserName();
+                                                    String userName = person.getUserName();
 
-                                            insertStmt = con.prepareStatement(insert);
-                                            insertStmt.setInt(1, newUID);
-                                            insertStmt.setString(2, userName);
-                                            insertStmt.setInt(3, USER_DFLT_LAY_ID);
-
-                                            if (log.isDebugEnabled())
-                                                log.debug(
-                                                        "RDBMUserIdentityStore::addNewUser(USER_ID="
-                                                                + newUID
-                                                                + ", USER_NAME="
-                                                                + userName
-                                                                + ", USER_DFLT_LAY_ID="
-                                                                + USER_DFLT_LAY_ID
-                                                                + "): "
-                                                                + insert);
-                                            insertStmt.executeUpdate();
-                                            insertStmt.close();
-                                            insertStmt = null;
-
-                                            // Start copying...
-                                            ResultSet rs = null;
-                                            String query;
-                                            try {
-
-                                                /*
-                                                 * NOTE:  in former times, we used a "template user" for this
-                                                 * purpose;  going forward we will use the system profile(s).
-                                                 */
-                                                final IPerson system =
-                                                        PersonFactory.createSystemPerson();
-                                                query =
-                                                        "SELECT upup.USER_ID, upup.PROFILE_FNAME, upup.PROFILE_NAME, upup.DESCRIPTION, "
-                                                                + "upup.STRUCTURE_SS_ID, upup.THEME_SS_ID "
-                                                                + "FROM UP_USER upu, UP_USER_PROFILE upup "
-                                                                + "WHERE upup.USER_ID = upu.USER_ID "
-                                                                + "AND upu.USER_NAME = ?";
-                                                queryStmt = con.prepareStatement(query);
-                                                queryStmt.setString(1, system.getUserName());
-                                                if (log.isDebugEnabled())
-                                                    log.debug(
-                                                            "RDBMUserIdentityStore::addNewUser(USER_NAME="
-                                                                    + system.getUserName()
-                                                                    + "): "
-                                                                    + query);
-                                                rs = queryStmt.executeQuery();
-
-                                                insert =
-                                                        "INSERT INTO UP_USER_PROFILE (USER_ID, PROFILE_ID, PROFILE_FNAME, PROFILE_NAME, DESCRIPTION, LAYOUT_ID, STRUCTURE_SS_ID, THEME_SS_ID) "
-                                                                + "VALUES(?, ?, ?, ?, ?, NULL, ?, ?)";
-                                                insertStmt = con.prepareStatement(insert);
-                                                while (rs.next()) {
-                                                    int id = getNextKey();
-
-                                                    String profileFname =
-                                                            rs.getString("PROFILE_FNAME");
-                                                    String profileName =
-                                                            rs.getString("PROFILE_NAME");
-                                                    String description =
-                                                            rs.getString("DESCRIPTION");
-                                                    int structure = rs.getInt("STRUCTURE_SS_ID");
-                                                    int theme = rs.getInt("THEME_SS_ID");
-
+                                                    insertStmt = con.prepareStatement(insert);
                                                     insertStmt.setInt(1, newUID);
-                                                    insertStmt.setInt(2, id);
-                                                    insertStmt.setString(3, profileFname);
-                                                    insertStmt.setString(4, profileName);
-                                                    insertStmt.setString(5, description);
-                                                    insertStmt.setInt(6, structure);
-                                                    insertStmt.setInt(7, theme);
+                                                    insertStmt.setString(2, userName);
+                                                    insertStmt.setInt(3, USER_DFLT_LAY_ID);
 
                                                     if (log.isDebugEnabled())
                                                         log.debug(
                                                                 "RDBMUserIdentityStore::addNewUser(USER_ID="
                                                                         + newUID
-                                                                        + ", PROFILE_FNAME="
-                                                                        + profileFname
-                                                                        + ", PROFILE_NAME="
-                                                                        + profileName
-                                                                        + ", DESCRIPTION="
-                                                                        + description
+                                                                        + ", USER_NAME="
+                                                                        + userName
+                                                                        + ", USER_DFLT_LAY_ID="
+                                                                        + USER_DFLT_LAY_ID
                                                                         + "): "
                                                                         + insert);
                                                     insertStmt.executeUpdate();
-                                                }
-                                                rs.close();
-                                                queryStmt.close();
-
-                                                if (insertStmt != null) {
                                                     insertStmt.close();
                                                     insertStmt = null;
+
+                                                    // Start copying...
+                                                    ResultSet rs = null;
+                                                    String query;
+                                                    try {
+
+                                                        /*
+                                                         * NOTE:  in former times, we used a "template user" for this
+                                                         * purpose;  going forward we will use the system profile(s).
+                                                         */
+                                                        final IPerson system =
+                                                                PersonFactory.createSystemPerson();
+                                                        query =
+                                                                "SELECT upup.USER_ID, upup.PROFILE_FNAME, upup.PROFILE_NAME, upup.DESCRIPTION, "
+                                                                        + "upup.STRUCTURE_SS_ID, upup.THEME_SS_ID "
+                                                                        + "FROM UP_USER upu, UP_USER_PROFILE upup "
+                                                                        + "WHERE upup.USER_ID = upu.USER_ID "
+                                                                        + "AND upu.USER_NAME = ?";
+                                                        queryStmt = con.prepareStatement(query);
+                                                        queryStmt.setString(
+                                                                1, system.getUserName());
+                                                        if (log.isDebugEnabled())
+                                                            log.debug(
+                                                                    "RDBMUserIdentityStore::addNewUser(USER_NAME="
+                                                                            + system.getUserName()
+                                                                            + "): "
+                                                                            + query);
+                                                        rs = queryStmt.executeQuery();
+
+                                                        insert =
+                                                                "INSERT INTO UP_USER_PROFILE (USER_ID, PROFILE_ID, PROFILE_FNAME, PROFILE_NAME, DESCRIPTION, LAYOUT_ID, STRUCTURE_SS_ID, THEME_SS_ID) "
+                                                                        + "VALUES(?, ?, ?, ?, ?, NULL, ?, ?)";
+                                                        insertStmt = con.prepareStatement(insert);
+                                                        while (rs.next()) {
+                                                            int id = getNextKey();
+
+                                                            String profileFname =
+                                                                    rs.getString("PROFILE_FNAME");
+                                                            String profileName =
+                                                                    rs.getString("PROFILE_NAME");
+                                                            String description =
+                                                                    rs.getString("DESCRIPTION");
+                                                            int structure =
+                                                                    rs.getInt("STRUCTURE_SS_ID");
+                                                            int theme = rs.getInt("THEME_SS_ID");
+
+                                                            insertStmt.setInt(1, newUID);
+                                                            insertStmt.setInt(2, id);
+                                                            insertStmt.setString(3, profileFname);
+                                                            insertStmt.setString(4, profileName);
+                                                            insertStmt.setString(5, description);
+                                                            insertStmt.setInt(6, structure);
+                                                            insertStmt.setInt(7, theme);
+
+                                                            if (log.isDebugEnabled())
+                                                                log.debug(
+                                                                        "RDBMUserIdentityStore::addNewUser(USER_ID="
+                                                                                + newUID
+                                                                                + ", PROFILE_FNAME="
+                                                                                + profileFname
+                                                                                + ", PROFILE_NAME="
+                                                                                + profileName
+                                                                                + ", DESCRIPTION="
+                                                                                + description
+                                                                                + "): "
+                                                                                + insert);
+                                                            insertStmt.executeUpdate();
+                                                        }
+                                                        rs.close();
+                                                        queryStmt.close();
+
+                                                        if (insertStmt != null) {
+                                                            insertStmt.close();
+                                                            insertStmt = null;
+                                                        }
+
+                                                        // If we made it all the way though, commit
+                                                        // the
+                                                        // transaction
+                                                        if (RDBMServices.getDbMetaData()
+                                                                .supportsTransactions())
+                                                            con.commit();
+
+                                                        uPortalUID = newUID;
+
+                                                    } finally {
+                                                        try {
+                                                            if (rs != null) rs.close();
+                                                        } catch (Exception e) {
+                                                        }
+                                                    }
+                                                } finally {
+                                                    try {
+                                                        if (queryStmt != null) queryStmt.close();
+                                                    } catch (Exception e) {
+                                                    }
+                                                    try {
+                                                        if (insertStmt != null) insertStmt.close();
+                                                    } catch (Exception e) {
+                                                    }
                                                 }
 
-                                                // If we made it all the way though, commit the
-                                                // transaction
-                                                if (RDBMServices.getDbMetaData()
-                                                        .supportsTransactions()) con.commit();
-
-                                                uPortalUID = newUID;
-
-                                            } finally {
-                                                try {
-                                                    if (rs != null) rs.close();
-                                                } catch (Exception e) {
-                                                }
+                                                return uPortalUID;
                                             }
-                                        } finally {
-                                            try {
-                                                if (queryStmt != null) queryStmt.close();
-                                            } catch (Exception e) {
-                                            }
-                                            try {
-                                                if (insertStmt != null) insertStmt.close();
-                                            } catch (Exception e) {
-                                            }
-                                        }
-
-                                        return uPortalUID;
-                                    }
-                                }));
+                                        })),
+                "No USER_ID from adding user " + person.getUserName());
     }
 
     private int getNextKey() {

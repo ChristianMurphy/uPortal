@@ -61,7 +61,14 @@ class PortletBrowser {
         if (searchInput) {
             searchInput.addEventListener('input', (event_) => {
                 const query = event_.target.value.trim();
-                this.state.portletRegex = query ? new RegExp(query, 'i') : null;
+                // The term is text, not a pattern: escape (, [ and the rest.
+                // The u flag folds case across scripts.
+                this.state.portletRegex = query
+                    ? new RegExp(
+                          query.replaceAll(/[$()*+./?[\\\]^{|}]/g, '\\$&'),
+                          'iu'
+                      )
+                    : null;
                 this.portletView.refresh();
             });
         }

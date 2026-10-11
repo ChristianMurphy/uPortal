@@ -50,6 +50,8 @@
   }
 
   .menu-toggle {
+    /* Bootstrap 5's .row > * makes it as wide as the row, and the margin then pushes it past the edge */
+    width: auto;
     margin: 2px 0 2px 12px;
     padding: 0.25rem 1rem;
     background: $menu-toggle-background-color;
@@ -145,8 +147,9 @@ h1.portal-logo a:hover {
 }
 
 #webSearchSubmit {
+  /* Only the icon shows; the text stays as the button's accessible name */
   span {
-    display: none;
+    @extend .visually-hidden;
   }
 }
 

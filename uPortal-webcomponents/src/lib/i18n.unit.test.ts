@@ -3,8 +3,13 @@ import { ApiClient } from './api-client';
 import {
     clearMessageCache,
     formatMessage,
+    intlLocale,
+    intlTextDirection,
     loadMessages,
+    messageKeys,
     MESSAGES_PATH,
+    pluralKey,
+    textDirection,
     validateMessages,
 } from './i18n';
 
@@ -41,6 +46,29 @@ describe('formatMessage', () => {
 
     it('leaves other braces and quotes alone', () => {
         expect(formatMessage("It's {name} {", ['x'])).toBe("It's {name} {");
+    });
+});
+
+describe('formatMessage for a locale', () => {
+    it("formats numbers with the locale's digits and separators", () => {
+        expect(formatMessage('{0} items', [1234567.5], 'de-DE')).toBe('1.234.567,5 items');
+        expect(formatMessage('{0} items', [1234567.5], 'en-US')).toBe('1,234,567.5 items');
+        expect(formatMessage('{0}', [1234.5], 'ar-EG')).toBe('١٬٢٣٤٫٥');
+        expect(formatMessage('{0} / {1}', [3, 12], 'ar-EG')).toBe('٣ / ١٢');
+    });
+
+    it('formats dates for the locale', () => {
+        const date = new Date(2026, 9, 11, 12);
+        expect(formatMessage('{0}', [date], 'de-DE')).toBe('11.10.2026');
+        expect(formatMessage('{0}', [date], 'en-US')).toBe('Oct 11, 2026');
+        expect(formatMessage('{0}', [date], 'ar-EG')).toBe(
+            new Intl.DateTimeFormat('ar-EG', { dateStyle: 'medium' }).format(date),
+        );
+        expect(formatMessage('{0}', [date], 'ar-EG')).toMatch(/[٠-٩]/);
+    });
+
+    it('keeps text as it is and uses English for a tag that is not well formed', () => {
+        expect(formatMessage('{0} {1}', ['1234', 1234], 'not a tag')).toBe('1234 1,234');
     });
 });
 
@@ -100,5 +128,128 @@ describe('loadMessages', () => {
         await expect(loadMessages(api, 'en', ['a'])).resolves.toEqual({});
         await expect(loadMessages(api, 'en', ['a'])).resolves.toEqual({ a: 'A' });
         expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('pluralKey', () => {
+    // Test messages only: the release has no Polish or Arabic bundle (MOD-D50)
+    const polish = new Set(['items.one', 'items.few', 'items.many', 'items.other']);
+    const arabic = new Set([
+        'items.zero',
+        'items.one',
+        'items.two',
+        'items.few',
+        'items.many',
+        'items.other',
+    ]);
+    const english = new Set(['items.one', 'items.other']);
+
+    it.each([
+        [1, 'items.one'],
+        [2, 'items.few'],
+        [5, 'items.many'],
+        [12, 'items.many'],
+        [22, 'items.few'],
+        [25, 'items.many'],
+    ])('picks the Polish form for %i', (count, key) => {
+        expect(pluralKey('items', count, 'pl', (k) => polish.has(k))).toBe(key);
+    });
+
+    it.each([
+        [0, 'items.zero'],
+        [1, 'items.one'],
+        [2, 'items.two'],
+        [3, 'items.few'],
+        [11, 'items.many'],
+        [100, 'items.other'],
+    ])('picks the Arabic form for %i', (count, key) => {
+        expect(pluralKey('items', count, 'ar', (k) => arabic.has(k))).toBe(key);
+    });
+
+    it('falls back to .other when the language has no key for the category', () => {
+        // Polish 5 is "many", which a bundle with English forms only lacks
+        expect(pluralKey('items', 5, 'pl', (k) => english.has(k))).toBe('items.other');
+        expect(pluralKey('items', 1, 'en-US', (k) => english.has(k))).toBe('items.one');
+        expect(pluralKey('items', 0, 'fr', (k) => english.has(k))).toBe('items.one');
+        expect(pluralKey('items', 0, 'es', (k) => english.has(k))).toBe('items.other');
+    });
+
+    it('falls back to the bare key when there is no family', () => {
+        expect(pluralKey('items', 1, 'en', () => false)).toBe('items');
+    });
+
+    it('uses English rules for a tag that is not well formed', () => {
+        expect(pluralKey('items', 1, 'not a tag', (k) => english.has(k))).toBe('items.one');
+        expect(pluralKey('items', 3, 'not a tag', (k) => english.has(k))).toBe('items.other');
+    });
+});
+
+describe('messageKeys', () => {
+    it('adds every plural category of each family', () => {
+        expect(messageKeys(['title', 'items.one', 'items.other'])).toEqual([
+            'title',
+            'items.one',
+            'items.other',
+            'items.zero',
+            'items.two',
+            'items.few',
+            'items.many',
+        ]);
+    });
+
+    it('leaves keys without a family alone', () => {
+        expect(messageKeys(['a', 'b.one'])).toEqual(['a', 'b.one']);
+    });
+});
+
+describe('intlLocale', () => {
+    it.each([
+        ['en_US', 'en-US'],
+        ['zh_hant_tw', 'zh-Hant-TW'],
+        ['ar-eg', 'ar-EG'],
+        ['not a tag', 'en'],
+    ])('reads %s as %s', (locale, tag) => {
+        expect(intlLocale(locale)).toBe(tag);
+    });
+});
+
+/** A browser whose Intl.Locale has no text info. */
+function noTextInfo(): undefined {
+    return undefined;
+}
+
+describe('textDirection', () => {
+    it.each([
+        ['ar', 'rtl'],
+        ['ar_EG', 'rtl'],
+        ['he-IL', 'rtl'],
+        ['fa', 'rtl'],
+        ['ur-PK', 'rtl'],
+        ['en-US', 'ltr'],
+        ['zh-Hant-TW', 'ltr'],
+        ['not a tag', 'ltr'],
+    ])('gives %s %s', (locale, direction) => {
+        expect(textDirection(locale)).toBe(direction);
+    });
+
+    it('uses the list when the browser has no text info', () => {
+        expect(textDirection('ar', noTextInfo)).toBe('rtl');
+        expect(textDirection('ur', noTextInfo)).toBe('rtl');
+        expect(textDirection('de', noTextInfo)).toBe('ltr');
+    });
+
+    it('trusts the browser for languages the list lacks', () => {
+        // Dhivehi is written right to left
+        expect(textDirection('dv', () => 'rtl')).toBe('rtl');
+        expect(textDirection('ar', () => 'ltr')).toBe('ltr');
+    });
+
+    it('reads the text info of Intl.Locale where it exists', () => {
+        const locale = new Intl.Locale('ar');
+        expect(intlTextDirection(locale)).toBe('rtl');
+        expect(
+            intlTextDirection({ textInfo: { direction: 'rtl' } } as unknown as Intl.Locale),
+        ).toBe('rtl');
+        expect(intlTextDirection({} as Intl.Locale)).toBeUndefined();
     });
 });

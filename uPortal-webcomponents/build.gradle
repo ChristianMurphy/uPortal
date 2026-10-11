@@ -17,7 +17,9 @@ description = "Apereo uPortal Web Components"
  *
  * The browser tests need the Chromium that the pinned Playwright expects. CI installs it with
  * installChromium; locally, run that task once (or point PLAYWRIGHT_BROWSERS_PATH at an
- * existing install).
+ * existing install). -PskipWebComponentTests leaves vpTest out, for a build without Chromium:
+ * the unit and browser tests share one coverage threshold, so they run together or not at all.
+ * CI runs them in one cell, Linux with Temurin 21 (MOD-I301).
  */
 apply plugin: 'com.github.node-gradle.node'
 
@@ -49,12 +51,21 @@ tasks.register('vpCheck', NpmTask) {
     }
 }
 
+def skipWebComponentTests = providers.gradleProperty('skipWebComponentTests').map { it != 'false' }.getOrElse(false)
+
 tasks.register('vpTest', NpmTask) {
     group = 'verification'
+    onlyIf('the web component tests are not skipped (-PskipWebComponentTests)') { !skipWebComponentTests }
     description = 'Runs the web components\' unit and browser tests with coverage (vp test).'
     dependsOn tasks.named('npmInstall')
     args = ['run', 'test']
     inputs.files(workspaceInputs).withPathSensitivity(PathSensitivity.RELATIVE)
+    // src/lib/translations.unit.test.ts checks the components' keys in these bundles (MOD-D50)
+    // and that no Messages bundle, main or test, sets a key twice. One tree per module's src: a
+    // tree on the root directory would hold the nodeSetup outputs, which Gradle rejects.
+    inputs.files(rootProject.allprojects.collect { module ->
+        fileTree(module.file('src')) { include '*/resources/**/*Messages*.properties' }
+    }).withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.dir(layout.buildDirectory.dir('coverage'))
 }
 

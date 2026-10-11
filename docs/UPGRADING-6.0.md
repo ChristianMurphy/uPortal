@@ -527,8 +527,8 @@ The other timestamps (raw events, aggregation, event sessions, cookies) were alr
 UTC, and the analytics date and time dimensions keep their local dates and times.
 
 **Upgrade with the copy tool and the source server's zone.** Copy the 5.17 database into a 6.0
-database with `--target-profile 6.0` and `--source-zone` set to the time zone of the 5.17
-portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
+database with `--target-profile 6.0` (the default) and `--source-zone` set to the time zone of the
+5.17 portal's JVM (its `user.timezone`, or the operating system's zone if that isn't set):
 
 ```sh
 db-migrate --source-properties 517.properties --target-properties 60.properties \
@@ -537,8 +537,8 @@ db-migrate --source-properties 517.properties --target-properties 60.properties 
 
 The copy converts the columns above from that zone's clock time to UTC. If any of them holds a
 value and `--source-zone` is missing, the copy stops before writing anything and names the
-columns. A copy between two 5.17 databases (the default `--target-profile 5.17`) leaves the values
-as they are.
+columns. A copy between two 5.17 databases (`--target-profile 5.17`) leaves the values as they
+are.
 
 **The repeated hour.** A clock time in the hour that repeats when daylight time ends (01:00 to
 01:59 on the first Sunday of November in New York) can be either of two instants, and 5.17 didn't
@@ -550,6 +550,21 @@ if one is there, the copy moves it forward by an hour, as `java.time` does.
 Code that reads these columns with SQL of its own gets UTC clock times from 6.0 on. The Java API
 (`IPortletLifecycleEntry.getDate()`, `ILocalAccountPerson.getLastPasswordChange()`, the portlet
 list REST API) returns the same instants as before.
+
+## Passwords with letters outside ASCII
+
+Local account passwords may contain any Unicode text. uPortal hashes a password as its UTF-8 bytes
+(Jasypt's digester), as 5.x did, so stored hashes are the same whatever the server's default
+charset was. You don't need to reset any password.
+
+The sign-in path changed. 5.x turned the typed password into bytes with the
+JVM's default charset before checking it. On a server whose default charset wasn't UTF-8 (Java 11
+to 17 on Windows, or a Linux container in the POSIX locale), a password with letters outside that
+charset didn't sign in, although its hash was right. 6.0 uses UTF-8 on every step, for local
+accounts, LDAP and JAAS.
+
+`CliPasswordUpdateTool` reads the new password from standard input as UTF-8. Run it in a terminal
+that uses UTF-8 when the password has letters outside ASCII.
 
 ## PostgreSQL: do not run `vacuumlo`
 
@@ -704,3 +719,77 @@ calls (uPortal-home's `addPortlet`, `removeByFName` and `movePortletAjax` with `
 on), Marketplace rating (`saveRating`), skin (`chooseSkin`) and add-to-home calls fail against
 6.0. Adopters still running them must change their own copies to send the token or a Bearer
 token, or stop using those calls.
+
+## Respondr fixes for the accessibility checks
+
+The accessibility check (axe-core, WCAG 2.1 A and AA) found these problems on the portal's key
+pages. Respondr and the portlets in uPortal now avoid them:
+
+* Cards and title bars of the uPortal portlets and of Respondr's portlet chrome had
+  `role="section"` or `role="sectionhead"`. Both are abstract ARIA roles, which a page must not
+  use. The attributes are gone. A skin or script that selects on `[role="section"]` or
+  `[role="sectionhead"]` must select on the classes instead, such as `.portlet` and
+  `.portlet-titlebar`.
+* `#portalNavigation` and each region portlet's `section` had `aria-selected="false"`, which
+  their roles don't allow. The attribute is gone.
+* Links in paragraphs and in the footer regions are underlined. Before, only their colour marked
+  them, and they were underlined only on hover. To keep the old look, a skin overrides
+  `p a` and `footer a` in Respondr's `tags.scss` (the colour must then give a contrast of at
+  least 3:1 with the text around it).
+* The Permissions search inputs and the Portlet Manager's State and Category filters have
+  accessible names.
+* The header's search button showed only its icon, because `header.scss` hid its text with
+  `display: none`, which also hides it from screen readers. The text is now hidden only visually
+  (`.visually-hidden`), so the button's name is the `search.submit` message. The button looks
+  the same.
+
+## Tomcat's error pages no longer show the Tomcat version
+
+uPortal-start's `etc/tomcat/conf/server.xml` now puts an `ErrorReportValve` on the Host with
+`showReport="false"` and `showServerInfo="false"`. Tomcat writes its own error page when no
+webapp's `error-page` answers: a 404 in uPortal (whose `web.xml` maps only 500) or outside every
+webapp, a request the connector rejects (such as an invalid percent-encoding), and an exception in
+a webapp without an `error-page`. These pages used to end in "Apache Tomcat/9.0.x" and show the
+exception message. Now their title and heading give only the status code and its reason phrase.
+Tomcat's logs still record the cause. The connector sends no `Server` header unless its `server`
+attribute is set, and uPortal-start doesn't set it.
+
+A portal that keeps its own `server.xml` adds the same valve inside its `<Host>`. Monitoring that
+read the message text of these pages has to read the status code instead. uPortal-start
+`tests/api/error-pages.spec.ts` checks one page of each kind.
+
+## Tomcat's documentation, examples and ROOT page are gone
+
+uPortal-start's `tomcatConfig` (which `tomcatInstall` runs) now deletes Tomcat's `docs`,
+`examples` and `ROOT` webapps, and installs `etc/tomcat/webapps/ROOT`, which only redirects `/`
+to `/uPortal/`. Tomcat's ROOT page named the Tomcat version, and anyone could open the
+documentation and the examples, some of which echo request data. `/docs/` and `/examples/` now
+answer 404. A portal whose context path is not `/uPortal` changes the target in
+`etc/tomcat/webapps/ROOT/index.jsp`.
+
+The `manager` and `host-manager` webapps stay. They have no users by default, so they answer 401.
+A site that uses them must add a user with the `manager-gui` or `admin-gui` role to
+`conf/tomcat-users.xml`. A site that doesn't can delete `webapps/manager` and
+`webapps/host-manager` from its Tomcat. uPortal-start `tests/api/tomcat-webapps.spec.ts` checks
+the redirect and that the documentation and examples are gone.
+
+## Respondr's tab bar, header and phone menu fit their boxes again
+
+Respondr's header, phone menu and tab bar broke in the move to Bootstrap 5, whose `.row > *` and `.container-fluid`
+now set `width: 100%`. The layout checks at standard screen sizes (uPortal-start
+`tests/layout`) found them, and the skin now fixes them:
+
+* Below 576 pixels, the menu button was as wide as the screen, plus a 12-pixel margin that put
+  its right end past the edge. The user links went on a second row, and the fixed header covered
+  the top of the logo. The menu button is now a small button on the left, with the user links on
+  the same row.
+* Below 576 pixels, the open menu showed the tabs side by side in a sidebar wider than the 270
+  pixels that the page moves over. The first tab was cut off and the last ones could not be
+  reached. The tabs now stack in a 270-pixel sidebar.
+* From 576 pixels, the first tab started 4 pixels left of the tab bar, because every tab has a
+  -4px left margin. The tab bar now starts with the first tab, so all tabs sit 4 pixels further
+  right.
+
+A portlet in the pre-content region that floats its content, such as the quickstart's feedback
+link, now has the height of that content instead of 0. Skins that copy Respondr's
+`navigation.scss`, `header.scss` or `regions.scss` need the same changes.

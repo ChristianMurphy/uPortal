@@ -16,7 +16,7 @@ package org.apereo.portal.tenants;
 
 import java.util.Collections;
 import java.util.Set;
-import javax.mail.internet.InternetAddress;
+import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.IUserIdentityStore;
 import org.apereo.portal.persondir.ILocalAccountDao;
@@ -41,6 +41,15 @@ public final class ResetPasswordTenantOperationsListener extends AbstractTenantO
 
     public static final String ADMIN_CONTACT_USERNAME = "adminContactUsername";
     public static final String ADMIN_CONTACT_EMAIL = "adminContactEmail";
+
+    /** An email local part: no spaces, control characters or @, in any script (MOD-I273) */
+    private static final Pattern LOCAL_PART = Pattern.compile("[^\\s\\p{Cc}@]+");
+
+    /** A domain label: no spaces, control characters, @ or dots, in any script */
+    private static final Pattern DOMAIN_LABEL = Pattern.compile("[^\\s\\p{Cc}@.]+");
+
+    /** The SMTP path limit */
+    private static final int EMAIL_MAX_LENGTH = 254;
 
     private static final String TENANT_ADMIN_EMAIL_SENT = "tenant.admin.email.sent";
     private static final String UNABLE_TO_SEND_TENANT_ADMIN_EMAIL =
@@ -118,12 +127,38 @@ public final class ResetPasswordTenantOperationsListener extends AbstractTenantO
                 }
                 break;
             case ADMIN_CONTACT_EMAIL:
-                InternetAddress emailAddr = new InternetAddress(value);
-                emailAddr.validate();
+                if (value == null || !isEmailAddress(value)) {
+                    throw new IllegalArgumentException("Invalid email address:  " + value);
+                }
                 break;
             default:
                 // No problem;  fall through
         }
+    }
+
+    /**
+     * True when {@code value} is a local part, @ and a domain of two or more labels,
+     * internationalized addresses included, at most 254 code points in all (MOD-I273). Each part is
+     * checked on its own, so no pattern nests quantifiers.
+     */
+    private static boolean isEmailAddress(String value) {
+        if (value.codePointCount(0, value.length()) > EMAIL_MAX_LENGTH) {
+            return false;
+        }
+        final int at = value.indexOf('@');
+        if (at < 0 || !LOCAL_PART.matcher(value.substring(0, at)).matches()) {
+            return false;
+        }
+        final String[] labels = value.substring(at + 1).split("\\.", -1);
+        if (labels.length < 2) {
+            return false;
+        }
+        for (String label : labels) {
+            if (!DOMAIN_LABEL.matcher(label).matches()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /*

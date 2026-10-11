@@ -219,7 +219,10 @@ npx vp build
 
 The browser tests need the Chromium build that the pinned Playwright expects. Run
 `./gradlew :uPortal-webcomponents:installChromium` once, or point `PLAYWRIGHT_BROWSERS_PATH` at
-an existing install of that revision.
+an existing install of that revision. A build without Chromium passes `-PskipWebComponentTests`,
+which leaves `vpTest` out; the unit and browser tests share one coverage threshold, so they run
+together or not at all. CI runs them in one cell, Linux with Temurin 21, and the other cells pass
+the property.
 
 ### The base library (`src/lib`)
 
@@ -238,7 +241,24 @@ an existing install of that revision.
   same keys in the user's locale from `GET /api/v6-0/messages`, which reads the portal's message
   source: `Messages.properties`, its translations, and messages edited in the portal. One request
   per locale and set of keys serves every instance on the page; if it fails, the defaults stay.
-  Keys follow `Messages.properties`, and placeholders are `{0}`, `{1}`, …
+  Keys follow `Messages.properties`, and placeholders are `{0}`, `{1}`, … Numbers and dates
+  passed as arguments are formatted for the locale with `Intl.NumberFormat` and
+  `Intl.DateTimeFormat`. A message with a count is a plural family (`key.one`, `key.other`),
+  read with `this.msgPlural(key, count, ...args)` (see "Adding a language").
+* **Language and direction**: the element sets `lang` and `dir` on its host from its locale,
+  so a right-to-left locale lays it out right to left.
+* **Keys and input methods** (`keyboard.ts`): wrap a keydown handler in `ignoreComposing`, so the
+  keys a Chinese, Japanese or Korean input method uses (Enter, the arrows) do not act on the
+  page while it composes.
+* **Translations** (MOD-D50): each key in a component's `messages.ts` has English, Spanish and
+  French text in `Messages.properties`, `Messages_es.properties` and `Messages_fr.properties`
+  (uPortal-webapp, `properties/i18n`), added in the same commit as the key. The portal formats
+  every message with `MessageFormat`, so an apostrophe is written twice (`l''élément`) and the
+  placeholders stay as in English. The bundles are read as UTF-8 (MOD-I232), so accented
+  letters can be written as they are. `src/lib/translations.unit.test.ts` fails when a key is
+  missing from one of the three, when the Spanish or French text is the English text, or when
+  its placeholders differ or it has an apostrophe that is not doubled. A word that is the same
+  in both languages goes in that test's `SAME_AS_ENGLISH` list, with the reason.
 * **Events** (`events.ts`): components report what happened with `CustomEvent`s named
   `up-<subject>-<past-tense verb>`, such as `up-favorite-removed`. They bubble, are composed
   (they leave the shadow root) and are not cancelable; `detail` is plain data.
@@ -398,6 +418,49 @@ A component with a machine adds two kinds of tests:
 
 Coverage (V8) must stay at 90% or more of lines, branches, functions and statements in every
 source file, not only in total; `vp test` fails below that. The report is in `build/coverage`.
+
+## Adding a language
+
+The release has English, Spanish and French text for every component message (MOD-D50). The
+other bundles in uPortal (de, ja, lv, mk, sv) show English for component keys until someone
+translates them. A site adds a language without changing code (MOD-D51):
+
+1. **Add the bundle.** Put `Messages_<language>.properties` (`Messages_pl.properties`,
+   `Messages_ar.properties`) in `properties/i18n`, in a site overlay of the uPortal webapp.
+   Write it in UTF-8 (MOD-I232). The portal formats each message with `MessageFormat`, so write
+   each apostrophe twice and keep the placeholders. A bundle for a language alone serves all its
+   forms: `Messages_zh.properties` answers `zh-TW`, `zh-Hant-TW` and `zh_TW`. Keys it lacks
+   come from `Messages.properties`.
+2. **List the locale.** Add it to `org.apereo.portal.i18n.LocaleManager.portal_locales`, so
+   users can choose it in the User Locales Selector.
+3. **Write the plural forms the language uses.** A message with a count is a family of keys, one
+   per CLDR plural category. English, Spanish and French use `.one` and `.other`, Polish
+   `.one`, `.few`, `.many` and `.other`, Arabic all six (`.zero`, `.one`, `.two`, `.few`,
+   `.many`, `.other`). Components ask for every category, and fall back to `.other`, then to the
+   bare key (`pluralKey` in `i18n.ts`). Numbers and dates need nothing in the bundle.
+
+**Right to left.** Components set `dir="rtl"` for Arabic, Hebrew, Persian and Urdu (and any
+language the browser's `Intl.Locale` says is written right to left), and their styles use
+logical properties only: the `uportal/logical-css` lint rule (`src/lint/logical-css.ts`) refuses
+`margin-left`, `text-align: right` and the like in `css` templates and SCSS. An icon that points
+left or right takes the `mirror-rtl` class. The page around the components is another matter, since
+Respondr has no right-to-left layout (MOD-I234, the owner's decision is pending), so in Arabic
+the components read right to left inside a left-to-right theme.
+
+**Pseudo-locales.** uPortal-start's `tests/i18n/pseudo-locales.ts` turns English text into two
+test-only locales, built at test time and never released:
+
+* `en-XA`: accented, about 40% longer and in [brackets], for English written into the code
+  (text without brackets) and for text cut off by its box;
+* `ar-XB`: the same, written right to left between RIGHT-TO-LEFT OVERRIDE and POP DIRECTIONAL
+  FORMATTING, with Arabic as its language, so the layout must mirror.
+
+`tests/ux/i18n/pseudo-locales.spec.ts` renders each component in both, at the width of a narrow
+column, by answering `/api/v6-0/messages` with the portal's English messages transformed. It
+fails on text outside brackets that is not data, on clipped text, on a select arrow over its
+value, and on a layout that does not mirror in `ar-XB` (or mirrors in `en-XA`). A theme test can
+use the same functions; to render the whole portal in a pseudo-locale, the test portal also
+needs the bundle on its classpath and the locale in `portal_locales`.
 
 ## REST APIs for web components
 
@@ -605,11 +668,14 @@ stands for.
 2. Add `src/components/<tag>/<tag>.ts` (a subclass of `UpElement`), its machine
    (`<tag>.machine.ts`, see "State machines"), its API client and validators, its messages, and
    its tests (machine, model-based and browser); add the tag to `components` in
-   `vite.config.ts`.
+   `vite.config.ts`. Each new message key gets its Spanish and French text in the same commit,
+   with each apostrophe written twice (see "Translations").
 3. Turn portlet modes into in-place states, preferences into `webComponent.preferenceAttributes`,
    and portlet actions into REST calls.
 4. Publish the channel as a Web Component in uPortal-start's data, retarget its Playwright specs,
-   and document how existing definitions are converted.
+   add one that renders the component for a user whose locale is Spanish and one whose locale is
+   French (see `tests/ux/i18n/web-components-locale.spec.ts`), and document how existing
+   definitions are converted.
 
 ## Conversion: Popular Portlets
 

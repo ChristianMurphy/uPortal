@@ -87,6 +87,8 @@ public class MarketplaceRESTControllerTest {
                 .thenReturn(null);
         Mockito.when(marketplaceRatingDAO.getRating(remoteUser, tempPortlet)).thenReturn(null);
         ModelAndView modelAndView = marketplaceRESTController.getUserRating(req, F_NAME);
+        // The JSON answer is {"rating": null}: the key is there, with no value
+        Assert.assertTrue(modelAndView.getModel().containsKey("rating"));
         Assert.assertNull(modelAndView.getModel().get("rating"));
     }
 

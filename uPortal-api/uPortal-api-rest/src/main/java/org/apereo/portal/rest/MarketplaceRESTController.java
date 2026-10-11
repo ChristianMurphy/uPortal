@@ -131,7 +131,8 @@ public class MarketplaceRESTController {
             }
         }
 
-        return new ModelAndView("json", "ratings", null);
+        // No ratings: {"ratings": null}. addObject takes a null value, the constructor doesn't
+        return new ModelAndView("json").addObject("ratings", null);
     }
 
     @RequestMapping(value = "/marketplace/{fname}/getRating", method = RequestMethod.GET)
@@ -148,7 +149,7 @@ public class MarketplaceRESTController {
                     "rating",
                     new MarketplaceEntryRating(tempRating.getRating(), tempRating.getReview()));
         }
-        return new ModelAndView("json", "rating", null);
+        return new ModelAndView("json").addObject("rating", null);
     }
 
     @RequestMapping(value = "/marketplace/{fname}/rating/{rating}", method = RequestMethod.POST)

@@ -41,9 +41,9 @@
 <!--
 | Portlet.
 ================================================-->
-<div class="card portlet grp-mgr view-selectgroups" role="section">
+<div class="card portlet grp-mgr view-selectgroups">
     <!--titlebar-->
-    <div class="card-header titlebar portlet-titlebar" role="sectionhead">
+    <div class="card-header titlebar portlet-titlebar">
         <h2 class="title" role="heading"><spring:message code="${pageTitleCode}" text="${pageTitleText}"/></h2>
         <h3 class="subtitle"><spring:message code="${pageSubtitleCode}" arguments="${pageSubtitleArgument}" text="${pageSubtitleText}"/></h3>
     </div>
@@ -291,8 +291,10 @@
          */
 
         $("#groupName").on('input', function () {
-            var nameRegex = /^[\w ]{5,500}$/;
-            if (nameRegex.test($(this).val())) {
+            // Any text but control characters, / and \, 5 to 500 code points (as PagsService)
+            var nameRegex = /^[^\p{Cc}\/\\]{5,500}$/u;
+            var name = $(this).val();
+            if (nameRegex.test(name) && name.trim().length > 0) {
                 $("#${n}saveAdHocButton").prop('disabled', false);
                 $(this).parent().removeClass("is-invalid");
             } else {

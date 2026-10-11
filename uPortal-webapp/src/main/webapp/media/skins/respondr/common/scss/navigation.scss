@@ -50,10 +50,17 @@
       position: absolute;
       top: 10px;
       left: 0;
+
+      /* As wide as the 270px the page moves over, without padding: Bootstrap 5's .container-fluid
+         would make it 100% wide and pad it, which hides the start of the 260px tab list */
+      width: 270px;
+      padding: 0;
       transform: translate3d(-100%, 0, 0);
       backface-visibility: hidden;
 
       #portalNavigation {
+        /* The 260px list, moved 10px in, ends at the sidebar's edge */
+        width: 260px;
         top: $mobile-navbar-top-position;
         filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=70);
         opacity: 0.7;
@@ -69,6 +76,8 @@
         ul.menu {
           @include inline-block-list;
 
+          /* The theme marks the list .list-group-horizontal for the tab bar; in this menu the tabs stack */
+          flex-direction: column;
           background-color: transparent;
           width: 260px;
 
@@ -450,6 +459,11 @@
 
             border-width: 0;
             background-color: transparent;
+
+            /* The tabs float, so the -4px above only overlaps neighbours; the first one would stick out of the bar */
+            &:first-child {
+              margin-left: 0;
+            }
 
             &:last-child {
               border-bottom: initial;

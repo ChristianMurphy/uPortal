@@ -18,7 +18,6 @@ import com.ctc.wstx.api.WstxInputProperties;
 import com.google.common.base.Function;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -119,18 +118,21 @@ public final class PortalDataKeyFileProcessor implements Function<Resource, Obje
 
         final IPortalDataType portalDataType = this.dataKeyTypes.get(portalDataKey);
         if (portalDataType == null) {
-            Iterator<PortalDataKey> iter = dataKeyTypes.keySet().iterator();
-            StringBuffer potentialKeys = new StringBuffer();
-            potentialKeys.append("---------------- Potential Keys To Match -------------------");
-            while (iter.hasNext()) {
-                PortalDataKey key = iter.next();
-                potentialKeys.append(key + "\n");
-            }
             logger.warn(
-                    "{}No IPortalDataType configured for {}, the resource will be ignored: {}",
-                    potentialKeys,
+                    "No IPortalDataType configured for {}, the resource will be ignored: {}",
                     portalDataKey,
                     input);
+            if (logger.isDebugEnabled()) {
+                // The keys of every data type: about 40 lines, and a portlet's data files in the
+                // import directory each repeated them in the warning
+                StringBuilder potentialKeys = new StringBuilder();
+                potentialKeys.append(
+                        "---------------- Potential Keys To Match -------------------");
+                for (final PortalDataKey key : dataKeyTypes.keySet()) {
+                    potentialKeys.append(key).append('\n');
+                }
+                logger.debug("{}", potentialKeys);
+            }
             return null;
         }
 

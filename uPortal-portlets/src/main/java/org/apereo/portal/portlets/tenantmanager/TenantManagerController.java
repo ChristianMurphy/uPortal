@@ -14,12 +14,14 @@
  */
 package org.apereo.portal.portlets.tenantmanager;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Resource;
@@ -192,18 +194,24 @@ public class TenantManagerController {
             ActionRequest req,
             ActionResponse res,
             final PortletSession session,
-            @RequestParam("name") String name) {
+            @RequestParam("name") String name,
+            @RequestParam(value = "fname", required = false) String fnameParameter) {
 
         final Map<String, String> attributes = gatherAttributesFromPortletRequest(req);
 
-        final String fname = calculateFnameFromName(name);
+        // The fname the administrator typed, or else one made from the name
+        final String fname =
+                StringUtils.isBlank(fnameParameter)
+                        ? calculateFnameFromName(name)
+                        : fnameParameter.trim();
         // Validation
         final Set<String> invalidFields = detectInvalidFields(name, fname, attributes);
         if (!invalidFields.isEmpty()) {
             /*
              * Something wasn't valid;  return the user to the addTenant screen.
              */
-            this.returnToInvalidForm(req, res, name, attributes, invalidFields, "showAddTenant");
+            this.returnToInvalidForm(
+                    req, res, name, fnameParameter, attributes, invalidFields, "showAddTenant");
             return;
         }
 
@@ -244,7 +252,13 @@ public class TenantManagerController {
              * Something wasn't valid;  return the user to the addTenant screen.
              */
             this.returnToInvalidForm(
-                    req, res, tenant.getName(), attributes, invalidFields, "showTenantDetails");
+                    req,
+                    res,
+                    tenant.getName(),
+                    tenant.getFname(),
+                    attributes,
+                    invalidFields,
+                    "showTenantDetails");
             return;
         }
 
@@ -296,6 +310,7 @@ public class TenantManagerController {
             final ActionRequest req,
             final ActionResponse res,
             final String name,
+            final String fname,
             final Map<String, String> attributes,
             final Set<String> invalidFields,
             final String actionParameter) {
@@ -315,6 +330,7 @@ public class TenantManagerController {
         session.setAttribute(INVALID_FIELDS, invalidFieldsMap);
         final Map<String, String> previousResponses = new HashMap<>();
         previousResponses.put("name", name);
+        previousResponses.put("fname", fname);
         previousResponses.putAll(attributes);
         session.setAttribute(PREVIOUS_RESPONSES, previousResponses);
 
@@ -345,12 +361,16 @@ public class TenantManagerController {
         // Name & Fname
         try {
             tenantService.validateName(name);
-            // Fname is generated from name;  the only way to
-            // fix an invalid fname is to change the name.
-            tenantService.validateFname(fname);
         } catch (Exception e) {
             log.warn("Validation failure for tenant name={}", name, e);
             result.add("name");
+        }
+        try {
+            tenantService.validateFname(fname);
+        } catch (Exception e) {
+            // Typed, or made from a name without Latin letters: the form asks for one
+            log.warn("Validation failure for tenant fname={}", fname, e);
+            result.add("fname");
         }
 
         // Attributes
@@ -367,8 +387,30 @@ public class TenantManagerController {
         return result;
     }
 
-    private String calculateFnameFromName(final String name) {
-        return name.replaceAll("[\\s']", "_").toLowerCase();
+    /** Latin letters that Unicode doesn't decompose into a base letter and a mark */
+    private static final String[][] LATIN_FOLDS = {
+        {"\u0142", "l"}, // ł
+        {"\u00f8", "o"}, // ø
+        {"\u00e6", "ae"}, // æ
+        {"\u0153", "oe"}, // œ
+        {"\u00df", "ss"}, // ß
+        {"\u0111", "d"}, // đ
+        {"\u0127", "h"}, // ħ
+        {"\u00fe", "th"}, // þ
+    };
+
+    /**
+     * An fname made of a-z, 0-9 and _ from a tenant name: lower case, the Latin letters above
+     * folded, accents dropped (Unicode NFD), and each run of other characters turned into one _. A
+     * name without Latin letters or digits gives an fname too short to be valid.
+     */
+    static String calculateFnameFromName(final String name) {
+        String fname = name.toLowerCase(Locale.ROOT);
+        for (final String[] fold : LATIN_FOLDS) {
+            fname = fname.replace(fold[0], fold[1]);
+        }
+        fname = Normalizer.normalize(fname, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return fname.replaceAll("[^a-z0-9]+", "_").replaceAll("^_+|_+$", "");
     }
 
     private Map<String, String> gatherAttributesFromPortletRequest(ActionRequest req) {

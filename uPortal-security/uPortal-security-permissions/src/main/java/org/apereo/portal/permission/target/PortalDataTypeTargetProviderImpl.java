@@ -16,6 +16,7 @@ package org.apereo.portal.permission.target;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import org.apereo.portal.io.xml.IPortalDataHandlerService;
@@ -49,7 +50,7 @@ public class PortalDataTypeTargetProviderImpl implements IPermissionTargetProvid
     public Collection<IPermissionTarget> searchTargets(String term) {
 
         // ensure that the search term is all lowercase to aid in string comparison
-        term = term.toLowerCase();
+        term = term.toLowerCase(Locale.ROOT);
 
         // initialize a new collection of matching targets
         Collection<IPermissionTarget> matching = new ArrayList<IPermissionTarget>();
@@ -58,8 +59,8 @@ public class PortalDataTypeTargetProviderImpl implements IPermissionTargetProvid
         for (IPermissionTarget target : targetMap.values()) {
             // if the target's key or display name contains the search term,
             // count it as matching
-            if (target.getKey().toLowerCase().contains(term)
-                    || target.getName().toLowerCase().contains(term)) {
+            if (target.getKey().toLowerCase(Locale.ROOT).contains(term)
+                    || target.getName().toLowerCase(Locale.ROOT).contains(term)) {
                 matching.add(target);
             }
         }
