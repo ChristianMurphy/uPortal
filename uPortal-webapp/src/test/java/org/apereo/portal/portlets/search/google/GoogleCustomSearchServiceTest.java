@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 import javax.portlet.PortletRequest;
@@ -64,8 +65,7 @@ public class GoogleCustomSearchServiceTest {
         final List<MediaType> supportedMediaTypes =
                 new LinkedList<MediaType>(converter.getSupportedMediaTypes());
         final MediaType textJavascriptMediaType =
-                new MediaType(
-                        "text", "javascript", MappingJackson2HttpMessageConverter.DEFAULT_CHARSET);
+                new MediaType("text", "javascript", StandardCharsets.UTF_8);
         supportedMediaTypes.add(textJavascriptMediaType);
         converter.setSupportedMediaTypes(supportedMediaTypes);
         restTemplate.getMessageConverters().add(converter);
@@ -78,7 +78,7 @@ public class GoogleCustomSearchServiceTest {
 
         when(clientHttpRequest.getHeaders()).thenReturn(requestHttpHeaders);
         when(clientHttpRequest.execute()).thenReturn(clientHttpResponse);
-        when(clientHttpResponse.getStatusCode()).thenReturn(HttpStatus.OK);
+        when(clientHttpResponse.getRawStatusCode()).thenReturn(HttpStatus.OK.value());
         when(clientHttpResponse.getHeaders()).thenReturn(responseHttpHeaders);
         when(responseHttpHeaders.getContentType()).thenReturn(textJavascriptMediaType);
     }
