@@ -46,16 +46,14 @@ changes.
 * The Favorites portlet class stays in uPortal, unused by the quickstart data. The guide's
   "Deleting the Favorites portlet" section lists what removing it needs.
 
-## Pushed and running
+## CI results
 
-uPortal `76636e0cf..9c996809b`. Its last commit is docs-only (`[skip ci]`), so CI ran by
-dispatch: CI 38104024957 and Workflow lint 38104026344. uPortal-start `defd95dd4..4bddf44a7`: CI
-38104005708, Integration 38104005683 and Workflow lint 38104005697. Integration is the first CI
-run of the WS14 specs and of `intended-changes.txt` on every 6.0 database.
+On uPortal-start 4bddf44a7 both CI 38104005708 and Integration 38104005683 are green. Integration
+ran the WS14 specs on three databases and the harness on all six 6.0 servers. uPortal:
+CI 38104024957 failed on Windows (CRLF in `.ts` files), and CI 38105388258 on the fix
+(`95493437d`, `*.ts` and `*.scss` with `eol=lf`) passed on every leg.
 
 ## Next step
 
-Check those runs. A harness job that fails on `UP_PORTLET_TYPE` or `UP_PORTLET_DEF_PARAM`
-means a vendor moved its generator differently. The drift report shows the line that differs. Then record the
-conclusions in the MOD-D29 status line. The next conversion follows "Converting the next portlet"
-in the guide.
+The next conversion follows "Converting the next portlet" in the guide. A statistics report that
+becomes a component draws its chart with ECharts from the `ReportTable` rows (guide, "Charts").
