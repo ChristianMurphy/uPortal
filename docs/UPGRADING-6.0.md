@@ -154,6 +154,50 @@ be removed in a later release.
 Unsafe requests to the new `/api/v6-0/` REST APIs need Spring Security's CSRF token (or an OIDC
 bearer token), unlike the older APIs under `/api`.
 
+## Background Preference is a web component
+
+The Background Preference channel (`background-preference`) was the backgroundPreference portlet.
+It is now a **Web Component** channel that renders `<up-background-preference>`. The element
+reads the offered images and the user's choice from
+`GET /api/v6-0/background-preference/{fname}` and saves a choice with a `PUT` to the same path.
+The API accepts only one of the offered images (or none), and answers anything else with 400.
+Guests get 401.
+
+Users see the same control: "Change Background Image" opens a list of None and the images with
+their thumbnails, and the chosen image shows behind the page at once and on every page after.
+Some things are different:
+
+* The background is set through one stylesheet that the element adopts into the page
+  (`document.adoptedStyleSheets`), not through `<style>` elements, so a Content-Security-Policy
+  that forbids inline styles no longer blocks it.
+* The element applies the background after it has loaded the choice, so it appears a moment
+  after the page.
+* None removes the chosen image, and the skin's own background shows, as after a reload with the
+  portlet. The portlet also set the page's background color to transparent when an image was
+  chosen, until the next page.
+* "Change Background Image" and "None" are messages now (`background.preference.change`,
+  `background.preference.none`), translated into French and Spanish.
+
+The preferences keep their names and meaning: `defaultBackgroundImages`,
+`defaultBackgroundThumbnailImages`, `backgroundImageCaptions`,
+`defaultBackgroundContainerSelector`, and the `mobile*` versions for users in the "Mobile Device
+Access" group. Paths may still contain `${portalContext}`. The user's choice is still the
+`defaultSelectedBackgroundImage` (or `mobileSelectedBackgroundImage`) preference of their portlet
+entity, so choices made with the portlet stay. The container selector defaults to
+`body.portal #portalPageBody::before` (`body.portal #portalPageBody` for mobile), as the
+portlet's `portlet.xml` did, and must be one CSS style rule's selector. `applyOpacityTo` and
+`opacityCssValue` were never used by the portlet's view and are ignored.
+
+To convert an existing portal, import uPortal-start's Web Component portlet type (if another
+conversion has not imported it already), then its
+`data/quickstart/portlet-definition/background-preference.portlet-definition.xml`. The import
+updates the channel by fname and keeps its ID, layout placements and users' choices. A
+definition with another fname is converted by the same changes: the type becomes `Web Component`
+with the `WebComponent` framework portlet, and two parameters are added,
+`webComponent.tagName` and `webComponent.moduleUrl`, both `up-background-preference`. The
+backgroundPreference portlet, `ViewBackgroundPreferenceController` and its JSP stay in this
+release for definitions that are not converted yet, and will be removed later.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
