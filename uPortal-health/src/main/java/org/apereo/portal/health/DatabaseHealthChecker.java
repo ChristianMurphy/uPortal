@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -59,7 +60,11 @@ public class DatabaseHealthChecker implements IHealthChecker {
                 executor.submit(
                         () -> {
                             final String query = dataSourceFactory.getValidationQuery();
-                            DataSource dataSource = dataSourceFactory.getObject();
+                            // An initialized factory bean always has its pool (MOD-I225)
+                            DataSource dataSource =
+                                    Objects.requireNonNull(
+                                            dataSourceFactory.getObject(),
+                                            "The health check's TomcatDataSourceFactory has no DataSource");
                             try (Connection connection = dataSource.getConnection()) {
                                 Statement statement = connection.createStatement();
                                 long startTime = System.nanoTime();
