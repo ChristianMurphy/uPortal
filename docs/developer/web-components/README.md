@@ -283,7 +283,14 @@ shadow root, that the page can theme a component, and that the color scheme foll
 Components that draw charts use Apache ECharts. Import it from `echarts/core` and register only
 the chart types, components and renderer the component needs (`echarts.use([...])`), so a page
 loads only the chart code it shows. Do not use Google Charts or Chart.js. No component draws a
-chart yet; the first one adds `echarts` to `package.json` at an exact version.
+chart yet. The first one adds `echarts` to `package.json` at an exact version.
+
+The statistics reports already build their data as a `ReportTable` (uPortal-web,
+`org.apereo.portal.web.report`): typed columns and one value per column in each row. Jackson
+writes it as the DataTable JSON that today's Google Charts pages read, and `ReportTableRenderer`
+writes CSV and HTML. When a report becomes a component (MOD-D34 step 2), its REST endpoint returns
+that table's columns and rows as plain JSON, and the component passes the rows to ECharts as a
+`dataset`. Turn on ECharts' `aria` option so screen readers get a description of each chart.
 
 ### State machines (MOD-D31)
 
