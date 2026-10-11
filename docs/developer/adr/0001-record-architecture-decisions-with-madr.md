@@ -15,12 +15,14 @@ uPortal 6.0 changes the Java level, the servlet namespace, the Spring and Hibern
 portlet container and the user interface stack. Each change needs a reason that reviewers can
 read before they merge it, and that adopters and later maintainers can find afterwards.
 
-uPortal has no written proposal process. Neither uPortal nor uPortal-start had an ADR folder. The
-closest documents are [`docs/developer/other/ARCHITECTURE.md`](../other/ARCHITECTURE.md), which
-describes the Gradle build and module coupling, and `docs/architecture/subsystem-analysis.md`,
-which analyses the subsystems. The 6.0 prototype recorded its decisions in a running log and
-drafted a request for comments (RFC) for the whole release. The log mixes decisions that matter
-to uPortal with notes about how the prototype itself was run, and it stays with the prototype.
+uPortal's code repositories have no written proposal process. The `uPortal-Project/community`
+README names that repository's Discussions as the place for design proposals and requests for
+comments (RFCs). Neither uPortal nor uPortal-start had an ADR folder. The closest documents are
+[`docs/developer/other/ARCHITECTURE.md`](../other/ARCHITECTURE.md), which describes the Gradle
+build and module coupling, and `docs/architecture/subsystem-analysis.md`, which analyses the
+subsystems. The 6.0 prototype recorded its decisions in a running log and drafted an RFC for the
+whole release. The log mixes decisions that matter to uPortal with notes about how the prototype
+itself was run, and it stays with the prototype.
 
 Where should uPortal record its architecture decisions, and in what format?
 
@@ -85,7 +87,8 @@ index in `README.md` lists every ADR.
 The prototype drafted one for the `uPortal-Project/community` discussions.
 
 * Good, because one document shows the whole plan.
-* Bad, because uPortal has no RFC process to accept or reject it.
+* Bad, because the community README names Discussions as the place for RFCs, but describes no
+  way to accept or reject one.
 * Bad, because the community could only take or leave the whole plan.
 * Bad, because a discussion post is kept outside the repository and its history.
 
