@@ -656,7 +656,7 @@ chosen per portlet.
 | Schema migrations after 6.0 | hbm2ddl | Flyway (MOD-Q4), as Spring Boot integrates it |
 | Configuration | 113 XML contexts | New code uses `@Configuration` Java config; XML is converted opportunistically when a context is touched |
 | Observability | custom JMX/statistics (3 files) | Micrometer, via Spring's observation API (6.x) |
-| Packaging | external Tomcat WAR | Spring Boot's `SpringBootServletInitializer` WAR stays the 6.x candidate (MOD-Q1). Boot's BOM is used for version alignment now. |
+| Packaging | external Tomcat WAR | Spring Boot's `SpringBootServletInitializer` WAR stays the 6.x candidate (MOD-Q1). Only `uPortal-db-migrate` imports Boot's BOM (MOD-D28). The portal's versions stay in `gradle.properties`. |
 
 * **Limits:** where no Spring option exists, or the Spring option would
   break adopters without benefit (the portlet container for third-party
