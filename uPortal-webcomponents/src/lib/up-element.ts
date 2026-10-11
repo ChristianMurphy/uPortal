@@ -3,9 +3,11 @@ import { ApiClient } from './api-client';
 import { createEvent } from './events';
 import {
     formatMessage,
+    intlLocale,
     loadMessages,
     messageKeys,
     pluralKey,
+    textDirection,
     type MessageArg,
     type Messages,
 } from './i18n';
@@ -60,7 +62,8 @@ export abstract class UpElement extends LitElement {
     get resolvedLocale(): string {
         return (
             this.locale ||
-            this.closest('[lang]')?.getAttribute('lang') ||
+            // From the parent: the element sets its own lang from this
+            this.parentElement?.closest('[lang]')?.getAttribute('lang') ||
             document.documentElement.lang ||
             navigator.language ||
             'en'
@@ -124,6 +127,16 @@ export abstract class UpElement extends LitElement {
     protected override willUpdate(changed: PropertyValues<this>): void {
         super.willUpdate(changed);
         const locale = this.resolvedLocale;
+        // The host's language and direction, so the browser picks fonts, hyphenation and
+        // right-to-left layout for the locale (MOD-D51)
+        const lang = intlLocale(locale);
+        const dir = textDirection(locale);
+        if (this.getAttribute('lang') !== lang) {
+            this.setAttribute('lang', lang);
+        }
+        if (this.getAttribute('dir') !== dir) {
+            this.setAttribute('dir', dir);
+        }
         const keys = messageKeys(Object.keys(this.defaultMessages));
         if (keys.length > 0 && locale !== this.#messagesLocale) {
             this.#messagesLocale = locale;
