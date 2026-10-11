@@ -129,7 +129,7 @@ public class DataSourceSchemaExport implements ISchemaExport, HibernateConfigura
                         // Needed until Hibernate 5.  See
                         // https://hibernate.atlassian.net/browse/HHH-7002.
                         if (sqlCommand.contains("drop constraint")) {
-                            logger.info(
+                            logger.debug(
                                     "Failed to execute (probably ignorable): {}, error message {}",
                                     sqlCommand,
                                     e.getMessage());
@@ -151,7 +151,7 @@ public class DataSourceSchemaExport implements ISchemaExport, HibernateConfigura
             logger.error("Failed to execute: {}\n\t{}", sqlCommand, e.getMessage());
             throw new RuntimeException("Failed to execute: " + sqlCommand, e);
         } else {
-            logger.info(
+            logger.debug(
                     "Failed to execute (probably ignorable): {}, error message {}",
                     sqlCommand,
                     e.getMessage());
