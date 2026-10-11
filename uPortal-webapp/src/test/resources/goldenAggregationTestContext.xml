@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Apereo under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Apereo licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License.  You may obtain a
+    copy of the License at the following location:
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+<!--
+ | The raw-event store and the whole aggregation pipeline, wired as in eventHandlerContext.xml and
+ | the component-scanned beans of uPortal-events, for the analytics goldens (MOD-D29 item 3). Only
+ | what lies outside the pipeline is replaced: the cluster lock (single node), the groups service,
+ | the layout tables that name tabs, the portlet registry and the server name.
+ +-->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+                        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+    <import resource="classpath:goldenPersistenceTestContext.xml"/>
+
+    <bean class="org.apereo.portal.spring.beans.factory.ObjectMapperFactoryBean" />
+
+    <!-- Raw events -->
+    <bean id="portalEventDao" class="org.apereo.portal.events.handlers.db.JpaPortalEventStore" />
+
+    <!-- Aggregation DAOs -->
+    <bean id="intervalHelper" class="org.apereo.portal.events.aggr.AggregationIntervalHelperImpl" />
+    <bean id="timeDimensionDao" class="org.apereo.portal.events.aggr.dao.jpa.JpaTimeDimensionDao" />
+    <bean id="dateDimensionDao" class="org.apereo.portal.events.aggr.dao.jpa.JpaDateDimensionDao" />
+    <bean id="eventAggregationManagementDao" class="org.apereo.portal.events.aggr.dao.jpa.JpaEventAggregationManagementDao" />
+    <bean id="aggregatedGroupLookupDao" class="org.apereo.portal.events.aggr.groups.JpaAggregatedGroupLookupDao" />
+    <bean id="aggregatedPortletLookupDao" class="org.apereo.portal.events.aggr.portlets.JpaAggregatedPortletLookupDao" />
+    <bean id="aggregatedTabLookupDao" class="org.apereo.portal.events.aggr.tabs.JpaAggregatedTabLookupDao" />
+    <bean id="eventSessionDao" class="org.apereo.portal.events.aggr.session.JpaEventSessionDao" />
+    <bean id="loginAggregationDao" class="org.apereo.portal.events.aggr.login.JpaLoginAggregationDao" />
+    <bean id="concurrentUserAggregationDao" class="org.apereo.portal.events.aggr.concuser.JpaConcurrentUserAggregationDao" />
+    <bean id="tabRenderAggregationDao" class="org.apereo.portal.events.aggr.tabrender.JpaTabRenderAggregationDao" />
+    <bean id="portletExecutionAggregationDao" class="org.apereo.portal.events.aggr.portletexec.JpaPortletExecutionAggregationDao" />
+    <bean id="portletLayoutAggregationDao" class="org.apereo.portal.events.aggr.portletlayout.JpaPortletLayoutAggregationDao" />
+    <bean id="searchRequestAggregationDao" class="org.apereo.portal.events.aggr.action.JpaSearchRequestAggregationDao" />
+    <bean id="versionDao" class="org.apereo.portal.version.dao.jpa.JpaVersionDao" />
+
+    <!-- The aggregators (component-scanned in the portal, plus eventHandlerContext.xml) -->
+    <bean class="org.apereo.portal.events.aggr.login.LoginPortalEventAggregator" />
+    <bean class="org.apereo.portal.events.aggr.concuser.ConcurrentUserAggregator" />
+    <bean class="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator" />
+    <bean class="org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregator" />
+    <bean class="org.apereo.portal.events.aggr.action.SearchRequestAggregator" />
+    <bean class="org.apereo.portal.events.aggr.analytics.AnalyticsEventAggregator" />
+    <bean id="portletExecutionAggregatorAll" class="org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregator"/>
+    <bean id="portletExecutionAggregatorAction" class="org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregator">
+        <property name="executionType" value="ACTION" />
+    </bean>
+    <bean id="portletExecutionAggregatorEvent" class="org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregator">
+        <property name="executionType" value="EVENT" />
+    </bean>
+    <bean id="portletExecutionAggregatorRender" class="org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregator">
+        <property name="executionType" value="RENDER" />
+    </bean>
+    <bean id="portletExecutionAggregatorResource" class="org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregator">
+        <property name="executionType" value="RESOURCE" />
+    </bean>
+    <util:list id="aggregatorEventFilters">
+        <bean class="org.apereo.portal.events.handlers.UserFilteringPortalEventHandler" />
+    </util:list>
+
+    <!-- The pipeline the scheduler drives (schedulerContext.xml: portalEventAggregationManager) -->
+    <bean id="portalEventAggregationManager" class="org.apereo.portal.events.aggr.PortalEventProcessingManagerImpl" />
+    <bean class="org.apereo.portal.events.aggr.PortalRawEventsAggregatorImpl" />
+    <bean class="org.apereo.portal.events.aggr.PortalEventDimensionPopulatorImpl" />
+    <bean class="org.apereo.portal.events.aggr.PortalEventPurgerImpl" />
+    <bean class="org.apereo.portal.events.aggr.PortalEventSessionPurgerImpl" />
+    <util:map id="productVersions" value-type="org.apereo.portal.version.om.Version">
+        <entry key="RawEventsDb"><bean class="org.apereo.portal.version.VersionUtils" factory-method="parseVersion"><constructor-arg value="4.1.0"/></bean></entry>
+        <entry key="AggrEventsDb"><bean class="org.apereo.portal.version.VersionUtils" factory-method="parseVersion"><constructor-arg value="4.1.0"/></bean></entry>
+    </util:map>
+
+    <!-- Outside the pipeline -->
+    <bean id="clusterLockService" class="org.apereo.portal.events.aggr.golden.SingleNodeClusterLockService" />
+    <bean id="portalInfoProvider" class="org.apereo.portal.events.aggr.golden.GoldenPortalInfoProvider" />
+    <bean id="compositeGroupService" class="org.apereo.portal.events.aggr.golden.GoldenGroupServiceFactory" />
+    <bean id="portalJdbcOperations" class="org.apereo.portal.events.aggr.golden.GoldenLayoutJdbcOperations">
+        <property name="dataSource" ref="PortalDb" />
+        <qualifier value="PortalDb" />
+    </bean>
+    <bean id="portletDefinitionDao" class="org.apereo.portal.spring.MockitoFactoryBean" >
+        <constructor-arg value="org.apereo.portal.portlet.dao.IPortletDefinitionDao" />
+    </bean>
+    <bean id="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver" class="org.apereo.portal.spring.MockitoFactoryBean" >
+        <qualifier value="org.apereo.portal.events.aggr.tabrender.TabRenderAggregator.layoutNodeIdNameResolver"/>
+        <constructor-arg value="net.sf.ehcache.Ehcache" />
+    </bean>
+</beans>
