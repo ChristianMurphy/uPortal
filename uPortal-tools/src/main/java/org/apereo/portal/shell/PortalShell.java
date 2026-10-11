@@ -35,8 +35,8 @@ import org.apereo.portal.utils.PortalApplicationContextLocator;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 
 public class PortalShell {
     static final Logger LOGGER = LoggerFactory.getLogger(PortalShell.class);
@@ -78,9 +78,18 @@ public class PortalShell {
                 shell.run(scriptFile, args);
             }
         } finally {
-            if (applicationContext instanceof DisposableBean) {
-                ((DisposableBean) applicationContext).destroy();
-            }
+            closeContext(applicationContext);
+        }
+    }
+
+    /**
+     * Closes the context, which shuts down its cache manager and its JGroups threads. They are not
+     * daemon threads, so the JVM would not exit while they run. Spring 4.3's application contexts
+     * also implemented DisposableBean; Spring 5's no longer do.
+     */
+    static void closeContext(ApplicationContext applicationContext) {
+        if (applicationContext instanceof ConfigurableApplicationContext) {
+            ((ConfigurableApplicationContext) applicationContext).close();
         }
     }
 
