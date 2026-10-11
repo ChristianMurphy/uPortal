@@ -53,6 +53,7 @@ import org.apereo.portal.persondir.LocalAccountQuery;
 import org.apereo.portal.portlet.dao.IMarketplaceRatingDao;
 import org.apereo.portal.portlet.dao.IPortletCookieDao;
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao;
+import org.apereo.portal.portlet.dao.IPortletDefinitionDao.SearchMatch;
 import org.apereo.portal.portlet.dao.IPortletEntityDao;
 import org.apereo.portal.portlet.dao.IPortletTypeDao;
 import org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl;
@@ -177,6 +178,8 @@ public class DaoQueryGoldenTest {
             {"unicode", "Zoë's 日本語 Portlet", "Übersicht", "p"},
             {"percent", "100%_Done", "Wildcards 100%_Done", "x"},
             {"trailing", "Trailing Space ", "Trailing Space ", "p"},
+            {"bang", "Bang!Portlet", "100xyDone", "p"},
+            {"bracket", "Sel[x]ect", "Brackets [x]", "p"},
         };
         final List<IPortletDefinition> saved = new ArrayList<>();
         for (final String[] d : definitions) {
@@ -251,6 +254,37 @@ public class DaoQueryGoldenTest {
             check(
                     "portletDefinitionDao.searchForPortlets(\"" + term + "\", false)",
                     () -> definitionDao.searchForPortlets(term, false));
+        }
+        // The partial searches ignore case and find %, _ and the escape character ! literally
+        final Object[][] searches = {
+            {"campus", SearchMatch.STARTS_WITH},
+            {"cAL", SearchMatch.STARTS_WITH},
+            {"%", SearchMatch.STARTS_WITH},
+            {"CALENDAR", SearchMatch.ENDS_WITH},
+            {"%_done", SearchMatch.ENDS_WITH},
+            {"campus", SearchMatch.ENDS_WITH},
+            {"_", SearchMatch.CONTAINS},
+            {"100", SearchMatch.CONTAINS},
+            {"!", SearchMatch.CONTAINS},
+            {"g!p", SearchMatch.CONTAINS},
+            {"!!", SearchMatch.CONTAINS},
+            // [ starts a character class in SQL Server's LIKE (MOD-I223)
+            {"[", SearchMatch.CONTAINS},
+            {"]", SearchMatch.CONTAINS},
+            {"[x]", SearchMatch.CONTAINS},
+            {"sel[", SearchMatch.STARTS_WITH},
+            {"x]", SearchMatch.ENDS_WITH},
+        };
+        for (final Object[] search : searches) {
+            final String term = (String) search[0];
+            final SearchMatch match = (SearchMatch) search[1];
+            check(
+                    "portletDefinitionDao.searchForPortlets(\""
+                            + GoldenRenderer.escape(term)
+                            + "\", "
+                            + match
+                            + ")",
+                    () -> definitionDao.searchForPortlets(term, match));
         }
 
         check(

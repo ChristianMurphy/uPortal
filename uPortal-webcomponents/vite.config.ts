@@ -6,7 +6,13 @@ import { playwright } from 'vite-plus/test/browser-playwright';
  * src/components/<name>/<name>.ts, that the portal loads by its name through the build manifest
  * (build/dist/manifest.json; see WebComponentModuleResolver in uPortal-rendering).
  */
-const components = ['up-favorites', 'up-popular-portlets', 'up-user-locale'];
+const components = [
+    'up-favorites',
+    'up-popular-portlets',
+    'up-background-preference',
+    'up-user-locale',
+    'up-session-timeout',
+];
 
 export default defineConfig({
     // Built files import each other relatively, so the bundle works under any context path

@@ -38,11 +38,6 @@ entity org.apereo.portal.portlet.dao.jpa.PortletPreferencesImpl
 entity org.apereo.portal.portlet.dao.jpa.PortletTypeImpl
 entity org.apereo.portal.tenants.JpaTenant
 entity org.apereo.portal.version.dao.jpa.VersionImpl
-class ClusterMutex.lastUpdate (java.util.Date): java.sql.Timestamp
-class ClusterMutex.lockEnd (java.util.Date): java.sql.Timestamp
-class ClusterMutex.lockStart (java.util.Date): java.sql.Timestamp
-class LocalAccountPersonImpl.lastPasswordChange (java.util.Date): java.sql.Timestamp
-class PortletLifecycleEntryImpl.date (java.util.Date): java.sql.Timestamp
 lossy MessageImpl[UNICODE].locale: expected Locale(sr_RS_#Latn, tag sr-Latn-RS) but was Locale(sr_RS_#Latn, tag sr-RS)
 lossy LocalAccountPersonAttributeImpl[MAX].attributes: expected the entities [e1] but was [e1, e1, e1]
 lossy LocalAccountPersonAttributeImpl[UNICODE].attributes: expected the entities [e1] but was [e1, e1]

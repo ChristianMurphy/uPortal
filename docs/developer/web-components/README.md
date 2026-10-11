@@ -378,6 +378,11 @@ replacing `fetch` with a small router of real `Response` objects (`src/test-supp
 rather than with MSW: there is no service worker to install in the browser runner, and the stub
 records each request for assertions. Snapshots are only for small, stable markup.
 
+A component that waits or counts down takes its timers from a `clock` property (`now`, `after`,
+`every`), and its tests pass a `ManualClock` (`src/test-support/manual-clock.ts`), which fires
+timers only when the test moves it. Vitest's fake timers are not used in the browser project,
+because they also stop the timers of the test runner itself.
+
 A component with a machine adds two kinds of tests:
 
 * **Machine tests** (`<tag>.machine.unit.test.ts`, Node): every transition, guard, action and
@@ -437,6 +442,17 @@ its `url` (`<context path>/p/<fname>`) and its `count`. `PopularPortletsService`
 portlet-layout aggregations of the group of all users, as the portlet did, and leaves out portlets
 the user may not subscribe to and portlets that no longer exist.
 
+### Background Preference
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/background-preference/{fname}` | `{"containerSelector": ..., "images": [{"url", "thumbnailUrl", "caption"}, ...], "selected": url or null}` |
+| `PUT /api/v6-0/background-preference/{fname}` with `{"selected": url or null}` | Saves the choice and answers the same body; 400 for a URL that is not one of the offered images. |
+
+`fname` must be a Background Preference channel (the web component or the old portlet) that the
+user may use, else 404. The choice is the `*SelectedBackgroundImage` preference of the user's own
+portlet entity for the channel, the one the portlet used.
+
 ### User locale
 
 | Request | Answer |
@@ -446,6 +462,16 @@ the user may not subscribe to and portlets that no longer exist.
 
 Guests may call it: their choice goes into the session. A signed-in user's choice also goes into
 their stored locales. The service reuses `UserLocaleHelper`, which the portlet's flow called.
+
+### Session
+
+| Request | Answer |
+| --- | --- |
+| `GET /api/v6-0/session` | `{"maxInactiveIntervalSeconds": 1800}`, the session's timeout; zero or less means it never expires. |
+| `POST /api/v6-0/session/keep-alive` | 200 and the same body. The request itself extends the session, as any request does. |
+
+Guests and requests without a session get 401. Answers carry `Cache-Control: no-store`.
+`SessionTimeoutRESTController` reads the session with `getSession(false)`.
 
 ## Reference conversion: Favorites
 
@@ -531,6 +557,46 @@ it means removing `AbstractFavoritesController`, `FavoritesController`,
 messages only those JSPs use. `FavoritesUtils` and the options-menu script
 (`modern-favorite.js`) stay: the API and the theme use them. Do it once the conversion above
 ships in the 6.0 data migration, and say so in UPGRADING-6.0.
+
+### Background Preference
+
+The Background Preference portlet (Spring Portlet MVC, one JSP that wrote `<style>` elements) is
+`<up-background-preference>` (`uPortal-webcomponents/src/components/up-background-preference`).
+Its machine has `loading`, `failed`, `signedOut` and `ready` (`closed`, `open`, `saving`). The
+background belongs to the page, outside the shadow root, so `page-background.ts` keeps one
+constructable stylesheet per document in `document.adoptedStyleSheets` and replaces its single
+rule on every change. The rule is built with `insertRule` and the CSSOM, so a selector or URL
+cannot add rules, and the URL comes only from the API's list. The portlet stays until the data
+migration converts its definitions (MOD-I133).
+
+## Conversion: Session Timeout
+
+| Portlet | Web component |
+| --- | --- |
+| `SessionTimeoutViewController`, `jsp/SessionTimeout/*.jsp`, `scripts/session-timeout.js` | `<up-session-timeout>` (`uPortal-webcomponents/src/components/up-session-timeout`) |
+| Session timeout read in the controller (`getMaxInactiveInterval`) | `GET /api/v6-0/session` |
+| Keep-alive: `GET` of `resetSessionURLFragment` (`/api/ajax-success`) | `POST /api/v6-0/session/keep-alive` with the CSRF token |
+| jQuery UI modal dialog | Native `<dialog>` shown with `showModal()`, Bootstrap 6 Dialog styles |
+| `alert('Error resetting your session!')` | The same text in an alert inside the dialog (`session-timeout.keep-alive.failed`) |
+| Preferences `enabled`, `dialogDisplaySeconds`, `logoutURLFragment` | Attributes `enabled`, `dialog-display-seconds`, `logout-url`, through `webComponent.preferenceAttributes` |
+| Preference `resetSessionURLFragment` | Dropped: the keep-alive is the API |
+
+The timing is the portlet's: the warning opens 30 seconds plus `dialog-display-seconds` before
+the session expires, and the user is logged out when the countdown reaches zero. Tabs share the
+logout time under the portlet's `localStorage` key, `UportalSessionTimeoutLogoutTime`, so a tab
+that still runs the portlet and one that runs the component postpone each other's warning.
+`logout-url` must be a path in the portal; anything else falls back to `/Logout`. When
+`GET /api/v6-0/session` fails with a 5xx, a network error or a malformed body, the element
+assumes the portlet script's default of 30 minutes and still warns; only a 401 turns the warning
+off.
+
+Its machine, `up-session-timeout.machine.ts`, has the states `disabled`, `loading`, `inactive`
+(a guest, or a session that never expires), `waiting`, `warning` (`idle`,
+`extending` or `failed`) and `ended`. The two timers are invoked callback actors that send
+`warning.due`, `tick`, `postponed` and `expired` with the times in the event, so the machine
+never reads the clock. The model-based tests walk every state but `disabled` through 38
+shortest paths and 23 simple paths, moving the element's clock to the time each timer event
+stands for.
 
 ### Converting the next portlet
 

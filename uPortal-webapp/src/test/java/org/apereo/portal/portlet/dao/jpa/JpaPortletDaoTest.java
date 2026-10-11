@@ -17,6 +17,7 @@ package org.apereo.portal.portlet.dao.jpa;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +26,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import org.apereo.portal.EntityIdentifier;
 import org.apereo.portal.concurrency.CallableWithoutResult;
+import org.apereo.portal.groups.IGroupConstants.SearchMethod;
+import org.apereo.portal.groups.local.searchers.PortletDefinitionSearcher;
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao;
 import org.apereo.portal.portlet.dao.IPortletEntityDao;
 import org.apereo.portal.portlet.dao.IPortletTypeDao;
@@ -35,6 +39,7 @@ import org.apereo.portal.portlet.om.IPortletEntity;
 import org.apereo.portal.portlet.om.IPortletEntityId;
 import org.apereo.portal.portlet.om.IPortletPreference;
 import org.apereo.portal.portlet.om.IPortletType;
+import org.apereo.portal.portlet.registry.IPortletDefinitionRegistry;
 import org.apereo.portal.test.BasePortalJpaDaoTest;
 import org.junit.Before;
 import org.junit.Test;
@@ -221,6 +226,86 @@ public class JpaPortletDaoTest extends BasePortalJpaDaoTest {
                         assertEquals(expectedPrefsList4, prefsList4);
                     }
                 });
+    }
+
+    /**
+     * The partial searches of the groups {@link PortletDefinitionSearcher} ignore case, honour
+     * starts-with and ends-with, and treat {@code %}, {@code _} and the escape character {@code !}
+     * in the term as literal characters (MOD-I142). The exact search stays case-sensitive.
+     */
+    @Test
+    public void searchMatchesTheTermLiterallyAndIgnoresCase() throws Exception {
+        execute(
+                () -> {
+                    final IPortletType type = jpaChannelTypeDao.createPortletType("Type", "x");
+                    final String[][] definitions = {
+                        // fname, name, title
+                        {"calendar", "Campus Calendar", "Calendar"},
+                        {"weather", "Weather", "Campus Weather"},
+                        {"percent", "100%_Done", "Wildcards 100%_Done"},
+                        {"lookalike", "100xyDone", "100xyDone"},
+                        {"bang", "Bang!Portlet", "Bang!Portlet"},
+                    };
+                    for (final String[] d : definitions) {
+                        jpaPortletDefinitionDao.savePortletDefinition(
+                                new PortletDefinitionImpl(
+                                        type, d[0], d[1], d[2], "/" + d[0], d[0], false));
+                    }
+                    return null;
+                });
+        final IPortletDefinitionRegistry registry =
+                mock(
+                        IPortletDefinitionRegistry.class,
+                        invocation ->
+                                IPortletDefinitionDao.class
+                                        .getMethod(
+                                                invocation.getMethod().getName(),
+                                                invocation.getMethod().getParameterTypes())
+                                        .invoke(
+                                                jpaPortletDefinitionDao,
+                                                invocation.getArguments()));
+        final PortletDefinitionSearcher searcher = new PortletDefinitionSearcher();
+        searcher.setPortletDefinitionRegistry(registry);
+        final Object[][] cases = {
+            // method, term, the fnames found
+            {SearchMethod.CONTAINS, "cal", "calendar"},
+            {SearchMethod.CONTAINS, "cAMPUS", "calendar weather"},
+            {SearchMethod.STARTS_WITH, "campus", "calendar weather"},
+            {SearchMethod.STARTS_WITH, "cal", "calendar"},
+            {SearchMethod.STARTS_WITH, "Weather", "weather"},
+            {SearchMethod.ENDS_WITH, "CALENDAR", "calendar"},
+            {SearchMethod.ENDS_WITH, "campus", ""},
+            {SearchMethod.CONTAINS, "%", "percent"},
+            {SearchMethod.CONTAINS, "_", "percent"},
+            {SearchMethod.CONTAINS, "100%_", "percent"},
+            {SearchMethod.CONTAINS, "100", "lookalike percent"},
+            {SearchMethod.STARTS_WITH, "%", ""},
+            {SearchMethod.ENDS_WITH, "%_done", "percent"},
+            {SearchMethod.CONTAINS, "!", "bang"},
+            {SearchMethod.CONTAINS, "g!p", "bang"},
+            {SearchMethod.CONTAINS, "!!", ""},
+            {SearchMethod.STARTS_WITH, "!", ""},
+            {SearchMethod.DISCRETE, "Calendar", "calendar"},
+            {SearchMethod.DISCRETE, "calendar", ""},
+        };
+        for (final Object[] c : cases) {
+            final List<String> found =
+                    execute(
+                            () -> {
+                                final List<String> fnames = new ArrayList<>();
+                                for (final EntityIdentifier id :
+                                        searcher.searchForEntities(
+                                                (String) c[1], (SearchMethod) c[0])) {
+                                    fnames.add(
+                                            jpaPortletDefinitionDao
+                                                    .getPortletDefinition(id.getKey())
+                                                    .getFName());
+                                }
+                                Collections.sort(fnames);
+                                return fnames;
+                            });
+            assertEquals(c[0] + " \"" + c[1] + "\"", c[2], String.join(" ", found));
+        }
     }
 
     @Test

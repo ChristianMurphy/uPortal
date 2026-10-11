@@ -33,8 +33,10 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
 import javax.persistence.criteria.JoinType;
 import javax.persistence.criteria.ParameterExpression;
+import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
+import javax.persistence.metamodel.EntityType;
 import org.apereo.portal.events.aggr.dao.jpa.DateDimensionImpl;
 import org.apereo.portal.events.aggr.dao.jpa.DateDimensionImpl_;
 import org.apereo.portal.events.aggr.dao.jpa.TimeDimensionImpl;
@@ -79,6 +81,15 @@ public abstract class JpaBaseAggregationDao<
     protected ParameterExpression<LocalDate> endDate;
     protected ParameterExpression<LocalTime> startTime;
     protected ParameterExpression<LocalTime> endTime;
+
+    /**
+     * The id of an aggregation, the last sort key of the ordered queries, so that rows tied on
+     * their date and time come back in the same order on every database (MOD-I191)
+     */
+    protected static Path<?> id(Root<?> root) {
+        final EntityType<?> model = root.getModel();
+        return root.get(model.getId(model.getIdType().getJavaType()).getName());
+    }
 
     public JpaBaseAggregationDao(Class<T> aggregationEntityType) {
         this.aggregationEntityType = aggregationEntityType;
@@ -259,7 +270,8 @@ public abstract class JpaBaseAggregationDao<
                                         keyPredicates.toArray(new Predicate[keyPredicates.size()]));
                                 criteriaQuery.orderBy(
                                         cb.desc(dd.get(DateDimensionImpl_.date)),
-                                        cb.desc(td.get(TimeDimensionImpl_.time)));
+                                        cb.desc(td.get(TimeDimensionImpl_.time)),
+                                        cb.asc(id(ba)));
 
                                 return criteriaQuery;
                             }
