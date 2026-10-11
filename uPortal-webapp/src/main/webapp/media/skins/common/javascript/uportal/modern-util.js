@@ -86,4 +86,15 @@ var up = up || {};
         }
         return s;
     };
+
+    /**
+     * Returns the headers that carry the portal's CSRF token, for a POST, PUT, PATCH or DELETE
+     * to the portal (such as its /api endpoints). The page has the token in its _csrf and
+     * _csrf_header meta tags. Returns an empty object on a page without them.
+     */
+    up.csrfHeaders = function () {
+        const token = document.querySelector('meta[name="_csrf"]');
+        const header = document.querySelector('meta[name="_csrf_header"]');
+        return token && header ? {[header.content]: token.content} : {};
+    };
 })(jQuery);

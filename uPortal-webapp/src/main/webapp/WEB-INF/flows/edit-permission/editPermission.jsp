@@ -139,23 +139,24 @@ up.jQuery(function() {
 
     var updatePermission = function(principal, type) {
         $("#assignments").html("");
-        $.get(
-            "<c:url value="/api/updatePermission"/>",
-            {
+        $.ajax({
+            url: "<c:url value="/api/updatePermission"/>",
+            type: "POST",
+            headers: up.csrfHeaders(),
+            data: {
                 principal: principal,
                 assignment: type,
                 owner: '${ owner.fname }',
                 activity: '${ activity.fname }',
                 target: '${ target.key }',
                 principals: principals
-
             },
-            function(data) {
+            dataType: "json",
+            success: function(data) {
                 allAssignments = data.assignments;
                 addAssignments(allAssignments, $("#assignments"));
-            },
-            "json"
-        );
+            }
+        });
     };
 
     var renderPermissionMap = function() {
