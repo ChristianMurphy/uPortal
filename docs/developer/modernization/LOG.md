@@ -1880,6 +1880,18 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   batch's run is in progress, and the next batch's run covers it. Clean-ups of superseded runs
   leave runs started by hand alone.
 
+### MOD-D54: servers clear their replicated caches after a healed network split
+
+* **Decision (project owner, 2026-10-11):** when the JGroups channel reports a merge view (the two
+  halves of a split rejoining), each server clears its replicated caches and reloads from the
+  database. A normal join doesn't clear anything.
+* **Why:** during a split each server misses the other's invalidations, so a portlet definition
+  or a permission decision could stay out of date until its cache entry expires, up to six hours.
+  The join fix (MOD-I210, more join attempts) covers restarts, not a real network split.
+* **Cost:** a short burst of database load after a split heals.
+* **Work:** `ccr-43ba0785-hzlrj5-cluster`, with a harness leg that splits and heals the two
+  nodes and a seeded fault.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
