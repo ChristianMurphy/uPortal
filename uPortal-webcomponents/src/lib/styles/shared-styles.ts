@@ -16,6 +16,9 @@ export const hostStyles = css`
     :host {
         display: block;
         color-scheme: inherit;
+        /* A long word (a URL, a German compound, a title without spaces) wraps instead of
+           overflowing a narrow column (MOD-D51) */
+        overflow-wrap: anywhere;
     }
 
     :host([hidden]) {

@@ -447,6 +447,24 @@ describe('up-popular-portlets filters', () => {
     });
 });
 
+describe('up-popular-portlets long text', () => {
+    it('wraps long titles and descriptions in a narrow column', async () => {
+        const word = 'Donaudampfschifffahrtsgesellschaftskapitänsmütze'.repeat(3);
+        // The Title filter lists fnames, so the fname is long too
+        server.on('GET', API, json(body([portlet(word.toLowerCase(), word, 3, word), CALENDAR])));
+        const element = await render();
+        element.style.width = '240px';
+        await element.updateComplete;
+
+        await expect.poll(() => element.scrollWidth).toBeLessThanOrEqual(element.clientWidth);
+        const container = shadow(element).querySelector('.popular') as HTMLElement;
+        expect(container.scrollWidth).toBeLessThanOrEqual(container.clientWidth);
+        for (const control of shadow(element).querySelectorAll('select')) {
+            expect(control.getBoundingClientRect().width).toBeLessThanOrEqual(240);
+        }
+    });
+});
+
 describe('up-popular-portlets messages and events', () => {
     it('uses the messages the portal returns, also those written as HTML', async () => {
         server.on(
