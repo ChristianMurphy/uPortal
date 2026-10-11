@@ -30,8 +30,8 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-reset-my-layout` in uPortal and uPortal-sta
 | Step | State |
 | --- | --- |
 | 1. Characterisation spec | Done: uPortal-start `b138960`, `tests/ux/smoke/reset-my-layout.spec.ts`, 7 tests pass against the portlet (two runs in a row, then `per-role-pages.spec.ts` still passes) |
-| 2. REST API under `/api/v6-0/` | Next |
-| 3. `<up-reset-my-layout>` | Not started |
+| 2. REST API under `/api/v6-0/` | Done: uPortal `31f57f4` (`ResetMyLayoutRESTController`, 7 MockMvc tests), uPortal-start `f2db0a9` (`tests/api/reset-my-layout.spec.ts`, 5 tests pass on the deployed build) |
+| 3. `<up-reset-my-layout>` | Next: messages, API client, machine and element started in the working tree |
 | 4. Channel definition | Not started |
 | 5. Spec against the component, seeded faults | Not started |
 | 6. UPGRADING-6.0 | Not started |
@@ -51,7 +51,22 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-reset-my-layout` in uPortal and uPortal-sta
 * Tab names in the layout hold at most 35 characters (`UP_LAYOUT_STRUCT.NAME`); a longer name
   makes `/api/layout?action=addTab` answer 500.
 
+## Seeded faults
+
+Each fault was seeded alone and reverted.
+
+| Fault | Caught by |
+| --- | --- |
+| Controller answers guests as users (no `isGuest()` check) | MockMvc `refusesGuests` |
+
+## Design
+
+* `GET /api/v6-0/layout/reset` answers `{"userName": "student"}`, which the confirmation names.
+  `POST /api/v6-0/layout/reset` (CSRF) calls `IUserLayoutHelper.resetUserLayout` with the session
+  user's attributes and answers the same body. Guests get 401, answers are `no-store`.
+* The `userLayoutHelper` bean stays in `flowsContext.xml`, because the admin `reset-user-layout`
+  flow uses it too.
+
 ## Next step
 
-Commit the REST API (`ResetMyLayoutRESTController`, MockMvc tests) and an API spec in
-uPortal-start.
+Finish `<up-reset-my-layout>` (machine, element, tests) and add the new message keys.
