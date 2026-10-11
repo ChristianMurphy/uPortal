@@ -90,10 +90,6 @@ export class UpFavorites extends UpElement {
                 min-width: 0;
             }
 
-            .favorite-name {
-                overflow-wrap: anywhere;
-            }
-
             .icon,
             .favorite-image {
                 flex: none;

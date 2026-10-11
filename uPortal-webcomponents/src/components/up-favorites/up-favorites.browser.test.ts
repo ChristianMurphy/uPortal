@@ -268,6 +268,30 @@ describe('up-favorites states', () => {
     });
 });
 
+describe('up-favorites long text', () => {
+    it('wraps long names, descriptions and notices in a narrow column', async () => {
+        const word = 'Donaudampfschifffahrtsgesellschaftskapitänsmütze'.repeat(3);
+        server.on(
+            'GET',
+            API,
+            json(
+                favorites({
+                    collections: [collection('u12l1s9', word)],
+                    portlets: [portlet('u12l1n30', 'long', word, { description: word })],
+                }),
+            ),
+        );
+        const element = await render();
+        element.style.width = '200px';
+        await startEditing(element);
+
+        await expect.poll(() => element.scrollWidth).toBeLessThanOrEqual(element.clientWidth);
+        for (const name of shadow(element).querySelectorAll<HTMLElement>('.favorite-name')) {
+            expect(name.scrollWidth).toBeLessThanOrEqual(name.clientWidth);
+        }
+    });
+});
+
 describe('up-favorites attributes', () => {
     it('limits the height of the list with max-height-pixels', async () => {
         const element = await render(`${ATTRIBUTES} max-height-pixels="120"`);
