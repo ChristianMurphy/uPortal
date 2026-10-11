@@ -464,3 +464,16 @@ calls (uPortal-home's `addPortlet`, `removeByFName` and `movePortletAjax` with `
 on), Marketplace rating (`saveRating`), skin (`chooseSkin`) and add-to-home calls fail against
 6.0. Adopters still running them must change their own copies to send the token or a Bearer
 token, or stop using those calls.
+
+## The account forms check what they are given
+
+In 5.x the Self Edit Account and User Administration forms saved a password whose confirmation
+differed, and "Create a User" with a user name that was already taken saved over that account
+(MOD-I195). Web Flow looks for a validator bean named after the form's model, `accountFormValidator`,
+but the bean was `personValidator`, so `PersonFormValidator` never ran. `flowsContext.xml` now
+gives the bean the alias `accountFormValidator`. Both forms now refuse a differing confirmation
+("Passwords must match") and a new account with a taken user name ("Username is already in use").
+
+A site that overrides `self-edit-account/editLocalAccount.jsp` should start again from the new
+page. The old page's script compared the inputs' `textLength`, which is undefined on an input. Its
+error block showed the errors of a model called `person`, not `accountForm`.
