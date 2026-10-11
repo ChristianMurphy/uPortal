@@ -16,16 +16,34 @@ package org.apereo.portal.rest.search.v6;
 
 import java.util.Collections;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
-/** The results of one search strategy, such as {@code people} or {@code portlets}. */
+/**
+ * The results of one search strategy, such as {@code people} or {@code portlets}, or the failure of
+ * that strategy.
+ */
 public final class SearchResultGroup {
 
     private final String type;
+    private final @Nullable String label;
     private final List<SearchResult> results;
+    private final boolean failed;
 
     public SearchResultGroup(String type, List<SearchResult> results) {
+        this(type, null, results, false);
+    }
+
+    public SearchResultGroup(
+            String type, @Nullable String label, List<SearchResult> results, boolean failed) {
         this.type = type;
+        this.label = label;
         this.results = Collections.unmodifiableList(results);
+        this.failed = failed;
+    }
+
+    /** A group whose strategy failed: no results, and the other groups are unaffected. */
+    public static SearchResultGroup failed(String type, @Nullable String label) {
+        return new SearchResultGroup(type, label, Collections.emptyList(), true);
     }
 
     /** The strategy's result type name, which the {@code type} request parameter selects. */
@@ -33,7 +51,17 @@ public final class SearchResultGroup {
         return type;
     }
 
+    /** The name of the group's tab, as configured for a remote provider; null for the others. */
+    public @Nullable String getLabel() {
+        return label;
+    }
+
     public List<SearchResult> getResults() {
         return results;
+    }
+
+    /** True when the strategy failed (a remote service did not answer, say). */
+    public boolean isFailed() {
+        return failed;
     }
 }
