@@ -43,10 +43,16 @@ Issue IDs: MOD-I140 to MOD-I149 (I140 to I143 are used).
 
 ## Half done
 
-- Oracle and SQL Server jobs of run 38103140369 are still running. The
-  cause of the first Oracle run's slowness is unknown. The commit "time
-  out stuck golden test cases with a stack" makes the job log print the
-  stuck test and its stack.
+- Run 38103140369: sqlserver-2025 failed only on map keys and String
+  ids with multi-byte text; fixed in "apply sql server's string
+  conversion to keys and ids". oracle-23 failed the query golden on
+  `getAllFragments` order (fixed: queries without ORDER BY are compared
+  unordered), then the round trip could not delete some PortalDb rows,
+  and `BaseJpaDaoTest.deleteAllEntities` retried forever until the job
+  limit. It now fails when a pass doesn't delete any type, and lists
+  the types left and the constraint error.
+- Run 38107283955 (tip d9f0c835e) is queued. Its oracle-23 log is
+  expected to list the PortalDb rows that Oracle cannot delete.
 
 ## Next steps
 
