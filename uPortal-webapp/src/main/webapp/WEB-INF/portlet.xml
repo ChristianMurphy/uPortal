@@ -581,6 +581,25 @@
     </portlet>
 
     <portlet>
+        <portlet-name>ResetMyLayout</portlet-name>
+        <display-name xml:lang="en">Reset My Layout</display-name>
+        <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
+        <init-param>
+            <name>contextConfigLocation</name>
+            <value>classpath:/properties/contexts/portlet/ResetMyLayout-portlet.xml</value>
+        </init-param>
+        <expiration-cache>0</expiration-cache>
+        <supports>
+            <mime-type>text/html</mime-type>
+            <portlet-mode>VIEW</portlet-mode>
+        </supports>
+        <supported-locale>en</supported-locale>
+        <portlet-info>
+            <title>Reset My Layout</title>
+        </portlet-info>
+    </portlet>
+
+    <portlet>
         <portlet-name>FragmentAudit</portlet-name>
         <display-name xml:lang="en">Audit DLM Fragments</display-name>
         <portlet-class>org.apereo.portal.spring.web.portlet.DispatcherPortlet</portlet-class>
