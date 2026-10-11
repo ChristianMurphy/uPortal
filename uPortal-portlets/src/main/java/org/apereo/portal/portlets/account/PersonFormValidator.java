@@ -16,6 +16,8 @@ package org.apereo.portal.portlets.account;
 
 import org.apache.commons.lang.StringUtils;
 import org.apereo.portal.persondir.ILocalAccountDao;
+import org.apereo.portal.persondir.ILocalAccountPerson;
+import org.apereo.portal.security.IPortalPasswordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.binding.message.MessageBuilder;
 import org.springframework.binding.message.MessageContext;
@@ -23,10 +25,16 @@ import org.springframework.binding.message.MessageContext;
 public class PersonFormValidator {
 
     private ILocalAccountDao accountDao;
+    private IPortalPasswordService passwordService;
 
     @Autowired(required = true)
     public void setLocalAccountDao(ILocalAccountDao accountDao) {
         this.accountDao = accountDao;
+    }
+
+    @Autowired(required = true)
+    public void setPortalPasswordService(IPortalPasswordService passwordService) {
+        this.passwordService = passwordService;
     }
 
     public void validateEditLocalAccount(PersonForm person, MessageContext context) {
@@ -41,6 +49,43 @@ public class PersonFormValidator {
                             .build());
         }
 
+        validatePasswordsMatch(person, context);
+    }
+
+    /**
+     * Self Edit Account (the self-edit-account flow's editOwnAccount state): the passwords must
+     * match, and a new password needs the account's current password.
+     */
+    public void validateEditOwnAccount(PersonForm person, MessageContext context) {
+        validatePasswordsMatch(person, context);
+
+        if (StringUtils.isBlank(person.getPassword())) {
+            return;
+        }
+        if (StringUtils.isBlank(person.getCurrentPassword())) {
+            context.addMessage(
+                    new MessageBuilder()
+                            .error()
+                            .source("currentPassword")
+                            .code("please.enter.current.password")
+                            .build());
+            return;
+        }
+        final ILocalAccountPerson account = accountDao.getPerson(person.getId());
+        if (account == null
+                || account.getPassword() == null
+                || !passwordService.validatePassword(
+                        person.getCurrentPassword(), account.getPassword())) {
+            context.addMessage(
+                    new MessageBuilder()
+                            .error()
+                            .source("currentPassword")
+                            .code("current.password.doesnt.match")
+                            .build());
+        }
+    }
+
+    private static void validatePasswordsMatch(PersonForm person, MessageContext context) {
         if (StringUtils.isNotBlank(person.getPassword())
                 || StringUtils.isNotBlank(person.getConfirmPassword())) {
             if (person.getPassword() == null

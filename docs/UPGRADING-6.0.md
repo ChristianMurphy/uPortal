@@ -477,3 +477,19 @@ gives the bean the alias `accountFormValidator`. Both forms now refuse a differi
 A site that overrides `self-edit-account/editLocalAccount.jsp` should start again from the new
 page. The old page's script compared the inputs' `textLength`, which is undefined on an input. Its
 error block showed the errors of a model called `person`, not `accountForm`.
+
+## Self Edit Account asks for the current password
+
+In 5.x anyone at a signed-in user's screen could change that user's password in Self Edit Account
+without knowing it. The form now has a "Current Password" field, and the portal saves a new
+password only when that field holds the user's password. If it is empty, the form shows "Please
+enter your current password"; if it is wrong, "Provided password does not match the current
+account password". Saving changed attributes without a new password doesn't need it. User
+Administration, where an administrator sets other users' passwords, does not ask for one.
+
+The check is `PersonFormValidator.validateEditOwnAccount`. Web Flow calls it because the form's
+view-state in `self-edit-account.xml` is now `editOwnAccount` (the view is still
+`editLocalAccount`). A site that overrides `self-edit-account.xml` or
+`self-edit-account/editLocalAccount.jsp` should take the new state id and the `currentPassword`
+input from this version. A site with its own message bundles can translate the new key
+`please.enter.current.password`.
