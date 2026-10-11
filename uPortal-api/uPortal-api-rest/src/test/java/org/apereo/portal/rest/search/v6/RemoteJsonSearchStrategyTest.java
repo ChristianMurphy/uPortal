@@ -92,7 +92,8 @@ public class RemoteJsonSearchStrategyTest {
             http.getResponseHeaders().add("Location", exchange.location);
         }
         final byte[] bytes = exchange.body.getBytes(StandardCharsets.UTF_8);
-        http.sendResponseHeaders(exchange.status, bytes.length);
+        // -1: no body at all, which a 204 needs (0 would mean a chunked body)
+        http.sendResponseHeaders(exchange.status, bytes.length == 0 ? -1 : bytes.length);
         try (OutputStream out = http.getResponseBody()) {
             out.write(bytes);
         }
@@ -229,6 +230,15 @@ public class RemoteJsonSearchStrategyTest {
         exchange.status = 500;
 
         expectFailure("answered 500");
+    }
+
+    @Test
+    public void answersNoResultsForAnAnswerWithoutABody() {
+        // MOD-I225: a search engine can answer 204 No Content
+        exchange.status = 204;
+        exchange.body = "";
+
+        assertEquals(Collections.emptyList(), strategy().search("portal", userRequest()));
     }
 
     @Test
