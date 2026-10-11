@@ -17,6 +17,7 @@ package org.apereo.portal.dbmigrate.rules;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -63,6 +64,26 @@ final class BuiltInTransforms {
                                                     : ((LocalDateTime) v)
                                                             .atZone(zone)
                                                             .toOffsetDateTime());
+                        }),
+                // local-time-to-utc zone=<IANA zone>: wall-clock time in that zone -> the same
+                // instant as UTC wall-clock time (5.17's java.util.Date columns, MOD-I141). A time
+                // in an hour the zone repeats when it leaves daylight time takes the earlier
+                // offset, and a time in an hour it skips moves forward by the gap, as
+                // ZonedDateTime.ofLocal does.
+                named(
+                        "local-time-to-utc",
+                        args -> {
+                            ZoneId zone =
+                                    ZoneId.of(RuleSet.required(args, "zone", "local-time-to-utc"));
+                            return function(
+                                    Family.TIMESTAMP,
+                                    (v, row) ->
+                                            v == null
+                                                    ? null
+                                                    : ((LocalDateTime) v)
+                                                            .atZone(zone)
+                                                            .withZoneSameInstant(ZoneOffset.UTC)
+                                                            .toLocalDateTime());
                         }),
                 // timestamp-in-zone zone=<IANA zone>: the reverse, instant -> wall-clock time
                 named(
