@@ -353,8 +353,8 @@ public class JpaStylesheetDescriptorDaoTest extends BasePortalJpaDaoTest {
 
     /**
      * A layout attribute whose target element names Hibernate loads as empty, because the only row
-     * holds NULL (Oracle stores '' as NULL), is deleted with its rows: before MOD-I144 was fixed
-     * the rows stayed and the delete failed on the foreign key.
+     * holds NULL (Oracle stores '' as NULL; the INSERT leaves ELEMENT_NAME out), is deleted with
+     * its rows: before MOD-I144 was fixed the rows stayed and the delete failed on the foreign key.
      */
     @Test
     public void testDeleteRemovesNullTargetElementNames() throws Exception {
@@ -378,10 +378,8 @@ public class JpaStylesheetDescriptorDaoTest extends BasePortalJpaDaoTest {
                 () ->
                         getEntityManager()
                                 .createNativeQuery(
-                                        "INSERT INTO UP_SS_DESC_LAY_ATTR_ELMS (ATTR_ID,"
-                                                + " ELEMENT_NAME) SELECT SS_DESC_LAYOUT_ATTR_ID,"
-                                                + " CAST(NULL AS VARCHAR(255)) FROM"
-                                                + " UP_SS_DESC_LAY_ATTR")
+                                        "INSERT INTO UP_SS_DESC_LAY_ATTR_ELMS (ATTR_ID) SELECT"
+                                                + " SS_DESC_LAYOUT_ATTR_ID FROM UP_SS_DESC_LAY_ATTR")
                                 .executeUpdate());
 
         this.execute(
