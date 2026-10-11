@@ -310,7 +310,10 @@ The `enabled`, `dialogDisplaySeconds` and `logoutURLFragment` preferences keep t
 defaults (`true`, 60 and `/Logout`). As with the portlet's script, a portal that can't report the
 session timeout (a server error, a network failure or an unreadable body) gets a 30-minute default
 and the warning still shows. A guest's 401 turns it off. `logoutURLFragment` must be a path in the
-portal: a value that starts with `//` or names another host falls back to `/Logout`.
+portal: a value that starts with `//` or names another host falls back to `/Logout`. A portal that
+pointed it at another site, such as a CAS or single sign-on logout page, should leave it at
+`/Logout` and set `logout.redirect` in `security.properties` to that page instead. `/Logout` ends
+the portal session and then sends the browser there.
 `resetSessionURLFragment` is no longer read, because the keep-alive is the REST API. A portal that
 pointed it at its own URL should check that `POST /api/v6-0/session/keep-alive` reaches uPortal. The
 SessionTimeout portlet, `SessionTimeoutViewController` and `scripts/session-timeout.js` stay in this
