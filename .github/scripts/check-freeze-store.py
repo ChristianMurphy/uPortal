@@ -13,15 +13,17 @@
 # express or implied. See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Fails when a commit range adds entries to the ArchUnit freeze store (MOD-D43).
+"""Fails when a commit range adds to the ArchUnit freeze store (MOD-D43).
 
 Usage: check-freeze-store.py <base> [<head>]   (head defaults to HEAD)
 
-The store records the uses of the APIs the migration retires (MOD-D29). Removing entries is
-fine; adding one means new code uses a retired API, so this exits 1 and lists it. Entries are
-compared the way ArchUnit matches them: line numbers and the numbers of anonymous classes and
-lambdas are ignored, so moving code around does not count as growth. A rule that is new in
-<head> is listed but does not fail the check: it records existing uses of an API that a later
+The store records the uses of the APIs the migration retires (MOD-D29). A change must not make
+that worse: for each rule, the number of recorded uses in <head> may not be larger than in <base>.
+A change may still move a use, for example when it takes a retired type out of a service and
+leaves one call in the adapter that calls it; each added entry is listed as a warning so that
+reviewers see it. Entries are compared the way ArchUnit matches them: line numbers and the numbers
+of anonymous classes and lambdas are ignored, so moving code within a file is not a change. A rule
+that is new in <head> is listed but not counted: it records existing uses of an API that a later
 change starts retiring, and reviewers judge it with the rest of that change."""
 import re
 import subprocess
@@ -71,22 +73,27 @@ def main():
         sys.exit(__doc__.splitlines()[2])
     base, head = sys.argv[1], sys.argv[2] if len(sys.argv) == 3 else 'HEAD'
     before, after = rules(base), rules(head)
-    added = 0
+    grew = []
     for name, description in sorted(after.items(), key=lambda item: item[1]):
         now = entries(head, name)
         if name not in before:
             print(f'New rule, {sum(now.values())} recorded uses (not counted): {description}')
             continue
-        grown = now - entries(base, name)
-        for line, count in sorted(grown.items()):
+        then = entries(base, name)
+        for line, count in sorted((now - then).items()):
             for _ in range(count):
-                print(f'::error title=Freeze store grew (MOD-D43)::{description}: {line}')
-            added += count
-    if added:
-        print(f'{added} new use(s) of retired APIs were added to {STORE}. Use the modern API '
-              'instead (MOD-D43); the store may only shrink.')
+                print(f'::warning title=Freeze store entry added (MOD-D43)::{description}: {line}')
+        old_total, new_total = sum(then.values()), sum(now.values())
+        print(f'{old_total} -> {new_total} recorded uses: {description}')
+        if new_total > old_total:
+            grew.append(f'{description}: {old_total} -> {new_total}')
+    for line in grew:
+        print(f'::error title=Freeze store grew (MOD-D43)::{line}')
+    if grew:
+        print(f'{len(grew)} rule(s) in {STORE} record more uses of retired APIs than before. Use '
+              'the modern API instead (MOD-D43); the store may only shrink.')
         sys.exit(1)
-    print(f'Freeze store: no entries added between {base} and {head}.')
+    print(f'Freeze store: no rule grew between {base} and {head}.')
 
 
 if __name__ == '__main__':

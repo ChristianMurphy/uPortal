@@ -49,8 +49,8 @@ import org.junit.Test;
  *
  * and commit the changed store files. {@code -Darchunit.freeze.refreeze=true} records every current
  * violation, including new ones. The store must never grow (MOD-D43): CI's {@code
- * .github/scripts/check-freeze-store.py} fails on a commit range that adds an entry, so a new use
- * of a retired API has to use the modern API instead.
+ * .github/scripts/check-freeze-store.py} fails when a rule records more uses than before, so new
+ * code has to use the modern API instead.
  *
  * <p>Type names are given as strings, so the rules compile whichever Hibernate, Ehcache or Joda
  * version is on the classpath. The rules read the main classes of every uPortal module this module
