@@ -34,7 +34,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # By event too: a push waiting in the group would otherwise cancel a waiting nightly or manual run
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
   # Prototype only (MOD-D30): a newer push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>)
   # cancels the older run.
   cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') }}
