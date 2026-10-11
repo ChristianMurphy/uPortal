@@ -263,7 +263,8 @@ guest's lasts the session, as before. What changed:
 
 * Each language is named in its own language, then in the user's current language when that reads
   differently: "Français (French)" for an English user, "English (anglais)" for a French one. A
-  user who can't read the current language can still find their own.
+  user who can't read the current language can still find their own. The browser supplies each
+  own name, so a language added to `portal_locales` doesn't need a new message.
 
 * The flag icons next to the languages are gone. A flag stands for a country, and several
   countries share a language.

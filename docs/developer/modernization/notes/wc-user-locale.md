@@ -26,6 +26,7 @@ uPortal:
 | `docs: describe the user locale web component` | UPGRADING-6.0 section, guide sections, this note |
 | `feat(i18n): add spanish and french text for the user locale messages` | MOD-D50: the three `locale.*` messages in `Messages_es` and `Messages_fr`, and `set.language.preference` in Spanish without the "Lanugage" typo |
 | `feat(webcomponents): name each language in its own language` | MOD-D50: the API's `nativeName` ("Español", "Français"), and labels such as "Français (French)" with the own name in a `lang` span |
+| `feat(webcomponents): name languages a site adds through the browser` | MOD-D51: `Intl.DisplayNames` names each language, `dir="auto"` on each name, long words wrap |
 
 uPortal-start:
 
@@ -43,13 +44,20 @@ which 104 are new in 4 files (14 API, 15 machine, 23 browser, 52 model-based). E
 100% lines, functions and statements, and branches from 94.4% (`up-user-locale.ts`) to 100%.
 `vp build` writes `up-user-locale` into `manifest.json` (6.4 kB, 2.3 kB gzipped).
 
-## Owner rulings MOD-D49 and MOD-D50
+## Owner rulings MOD-D49, MOD-D50 and MOD-D51
 
 * MOD-D50 (English, Spanish and French): done in the commits above. The es and fr tests run as a
   guest, whose choice lasts its session, because other specs sign in as staff and student at the
   same time.
 * MOD-D49 (Unicode text inputs): the component has no text input. Its only input is a choice
   among the portal's locale codes, which the API checks against `portal_locales`.
+* MOD-D51 (languages a site adds): the component gets each language's own name from
+  `Intl.DisplayNames`, falling back to the API's `nativeName`, so Polski, العربية and 中文 don't
+  need a message. Each name has `dir="auto"`, and the form lets long words wrap
+  (`overflow-wrap: anywhere`). The CSS doesn't use physical properties. The component has no key
+  handlers: the radio buttons and Update are native controls, which an input method doesn't type
+  into, so there's no `isComposing` case to handle.
+  Plural forms, number formats and the element's `lang` and `dir` come from the -i18n branch.
 * `Messages_de`, `Messages_mk` and `Messages_sv` also read "Lanugage" in
   `set.language.preference`. MOD-D50 covers es and fr only, so they're unchanged.
 

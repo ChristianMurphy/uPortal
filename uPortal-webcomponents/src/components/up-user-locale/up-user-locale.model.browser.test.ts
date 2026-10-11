@@ -13,7 +13,7 @@ import { clearMessageCache, MESSAGES_PATH } from '../../lib/i18n';
 import { axeViolations } from '../../test-support/axe';
 import { FetchStub, json, text } from '../../test-support/fetch-stub';
 import { cleanupFixtures, fixture } from '../../test-support/fixture';
-import { LOCALE_PATH, type UserLocaleData } from './locale-api';
+import { LOCALE_PATH, ownName, type UserLocaleData } from './locale-api';
 import { page, type UpUserLocale } from './up-user-locale';
 import {
     userLocaleMachine,
@@ -178,9 +178,9 @@ function expectRendered(element: UpUserLocale, snapshot: Snapshot): void {
     // Each language in its own language, then in the user's when that reads differently
     expect(radios.map((radio) => radio.labels?.[0]?.textContent)).toEqual(
         data.locales.map((locale) =>
-            locale.nativeName.toLowerCase() === locale.name.toLowerCase()
-                ? locale.nativeName
-                : `${locale.nativeName} (${locale.name})`,
+            ownName(locale).toLowerCase() === locale.name.toLowerCase()
+                ? ownName(locale)
+                : `${ownName(locale)} (${locale.name})`,
         ),
     );
     expect(radios.map((radio) => radio.labels?.[0]?.querySelector('span')?.lang)).toEqual(

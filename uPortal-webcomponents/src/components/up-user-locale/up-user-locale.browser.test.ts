@@ -132,6 +132,56 @@ describe('up-user-locale states', () => {
         expect(await axeViolations(element)).toEqual([]);
     });
 
+    it('names a language a site adds in its own language, in any script', async () => {
+        server.on(
+            'GET',
+            API,
+            json({
+                selected: 'en_US',
+                locales: [
+                    { code: 'en_US', tag: 'en-US', name: 'English', nativeName: 'English' },
+                    { code: 'pl_PL', tag: 'pl-PL', name: 'Polish', nativeName: 'polski' },
+                    { code: 'ar', tag: 'ar', name: 'Arabic', nativeName: 'العربية' },
+                    { code: 'zh_CN', tag: 'zh-CN', name: 'Chinese', nativeName: '中文' },
+                    { code: 'qaa', tag: 'qaa', name: 'Private', nativeName: 'Privé' },
+                ],
+            }),
+        );
+        const element = await render();
+
+        expect(labels(element)).toEqual([
+            'English',
+            'Polski (Polish)',
+            'العربية (Arabic)',
+            '中文 (Chinese)',
+            'Privé (Private)',
+        ]);
+        // Each own name keeps its script's direction inside the page's
+        const names = [...shadow(element).querySelectorAll('label span')];
+        expect(names.map((name) => name.getAttribute('dir'))).toEqual(Array(5).fill('auto'));
+        await expect.element(radio(element, 'العربية (Arabic)')).toBeVisible();
+        expect(await axeViolations(element)).toEqual([]);
+    });
+
+    it('wraps a long word instead of overflowing', async () => {
+        const word = 'Donaudampfschifffahrtsgesellschaftskapitänsmütze';
+        server.on(
+            'GET',
+            API,
+            json({
+                selected: null,
+                locales: [{ code: 'qaa', tag: 'qaa', name: word.repeat(4), nativeName: word }],
+            }),
+        );
+        const element = await render();
+        element.style.display = 'block';
+        element.style.inlineSize = '10rem';
+
+        const form = shadow(element).querySelector('form');
+        expect(form && getComputedStyle(form).overflowWrap).toBe('anywhere');
+        expect(form?.scrollWidth).toBeLessThanOrEqual(form?.clientWidth ?? 0);
+    });
+
     it('checks nothing when the user has not chosen a language', async () => {
         server.on('GET', API, json({ ...IN_ENGLISH, selected: null }));
 
