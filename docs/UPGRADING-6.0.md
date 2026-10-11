@@ -599,3 +599,7 @@ pages. Respondr and the portlets in uPortal now avoid them:
   least 3:1 with the text around it).
 * The Permissions search inputs and the Portlet Manager's State and Category filters have
   accessible names.
+* The header's search button showed only its icon, because `header.scss` hid its text with
+  `display: none`, which also hides it from screen readers. The text is now hidden only visually
+  (`.visually-hidden`), so the button's name is the `search.submit` message. The button looks
+  the same.
