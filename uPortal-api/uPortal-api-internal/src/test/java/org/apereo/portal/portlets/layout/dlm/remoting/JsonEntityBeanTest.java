@@ -4,6 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.groups.IGroupMember;
 import org.apereo.portal.layout.dlm.remoting.JsonEntityBean;
@@ -135,7 +139,27 @@ public class JsonEntityBeanTest {
 
         JsonEntityBean jeb = new JsonEntityBean(entityGroup, EntityEnum.PORTLET);
         assertEquals(
-                "portlet_test__one__two__three__four__five__________six", jeb.getTypeAndIdHash());
+                "portlet_test_20_one_2b_two_2e_three_25_four_29_five_28__2a__21__40__23_six",
+                jeb.getTypeAndIdHash());
+    }
+
+    private String hashOf(String key) {
+        Mockito.when(entityGroup.getKey()).thenReturn(key);
+        return new JsonEntityBean(entityGroup, EntityEnum.GROUP).getTypeAndIdHash();
+    }
+
+    /** Ids that differ only in characters outside A-Z, a-z and 0-9 keep apart (MOD-I274) */
+    @Test
+    public void testGetTypeAndIdHashKeepsIdsApart() {
+        final List<String> keys =
+                Arrays.asList("pags.Café", "pags.Cafè", "pags.Caf😀", "a.b", "a_b", "a__b", "a b");
+        final Set<String> hashes = new HashSet<>();
+        for (String key : keys) {
+            final String hash = hashOf(key);
+            assertTrue(hash, hash.matches("[A-Za-z0-9_]+"));
+            hashes.add(hash);
+        }
+        assertEquals(keys.size(), hashes.size());
     }
 
     @Test(expected = java.lang.AssertionError.class)
