@@ -115,6 +115,12 @@ jobs:
             echo "::group::${report}"
             cat "${report}"
             echo "::endgroup::"
+            # The first findings of each module as an annotation, for readers who can't open the
+            # log or download the artifact
+            text="${report}"$'\n'"$(head -n 20 "${report}")"
+            text=${text//'%'/'%25'}
+            text=${text//$'\n'/'%0A'}
+            echo "::error title=SpotBugs findings not in the baseline::${text}"
           done
       - name: Upload SpotBugs reports
         if: ${{ !cancelled() && steps.spotbugs.outcome == 'failure' }}
