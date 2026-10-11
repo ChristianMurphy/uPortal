@@ -2,6 +2,9 @@
  * Client for the favorites REST API (FavoritesRESTController in uPortal-api-rest).
  */
 import { ApiError, type ApiClient, type RequestOptions } from '../../lib/api-client';
+import { safeUrl } from '../../lib/safe-url';
+
+export { safeUrl };
 
 export const FAVORITES_PATH = '/api/v6-0/favorites';
 
@@ -85,18 +88,6 @@ function array(body: Json, key: string): unknown[] {
         throw new TypeError(`${key} is not an array`);
     }
     return value;
-}
-
-/**
- * Keeps links that are paths on this site or http(s) URLs. Anything else, such as a
- * `javascript:` URL in a channel's parameters, is dropped rather than put in an `href`.
- */
-export function safeUrl(value: string | null): string | null {
-    if (value === null) {
-        return null;
-    }
-    const trimmed = value.trim();
-    return /^(\/(?!\/)|https?:\/\/)/i.test(trimmed) ? trimmed : null;
 }
 
 function toCollection(value: unknown): FavoriteCollection {
