@@ -41,6 +41,13 @@
           depends-on="systemPropertySetter, authDao"
           p:shared="true"
           p:configLocation="classpath:/properties/${org.apereo.portal.ehcache.filename:ehcache.xml}" />
+    <!--
+     | After a split heals, JGroups installs a MergeView, and each node empties its replicated
+     | caches: invalidations sent while the nodes were split never reached them.
+     +-->
+    <bean id="replicatedCachesMergeClearer" class="org.apereo.portal.utils.cache.ReplicatedCachesMergeClearer"
+          p:cacheManager-ref="cacheManager"
+          p:enabled="${org.apereo.portal.cache.clearReplicatedCachesOnMerge:true}" />
     <bean id="cacheManagerExpiredElementEvictor" class="org.apereo.portal.utils.cache.ExpiredElementEvictor">
         <property name="cacheManager" ref="cacheManager"></property>
     </bean>
