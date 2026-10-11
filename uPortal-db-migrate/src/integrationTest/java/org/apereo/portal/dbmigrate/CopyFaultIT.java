@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 import org.apereo.portal.dbmigrate.it.DbServer;
 import org.apereo.portal.dbmigrate.it.DbServer.Kind;
 import org.apereo.portal.dbmigrate.it.TestDatabase;
@@ -71,12 +71,16 @@ public class CopyFaultIT {
 
     private static final String RULES = Fixture.RULES;
 
-    @Parameters(name = "{0}")
+    /** Each target server, {@code dbmigrate.it.repeat} times (-PdbMigrateRepeat; default once). */
+    @Parameters(name = "{1}")
     public static Collection<Object[]> targets() {
+        int repeat = Math.max(1, Integer.getInteger("dbmigrate.it.repeat", 1));
         List<Object[]> out = new ArrayList<>();
         for (Kind k : DbServer.enabled()) {
             if (k != Kind.HSQLDB) {
-                out.add(new Object[] {k});
+                for (int i = 1; i <= repeat; i++) {
+                    out.add(new Object[] {k, repeat == 1 ? k.toString() : k + " #" + i});
+                }
             }
         }
         return out;
@@ -84,7 +88,7 @@ public class CopyFaultIT {
 
     private final Kind kind;
 
-    public CopyFaultIT(Kind kind) {
+    public CopyFaultIT(Kind kind, String label) {
         this.kind = kind;
     }
 
@@ -480,9 +484,60 @@ public class CopyFaultIT {
 
     // ------------------------------------------------------------------ lost target
 
-    /** Runs a copy in another thread and calls {@code fault} once the target has rows. */
-    private ToolRun copyWithFault(
-            TestDatabase s, TestDatabase t, Consumer<Thread> fault, String... options)
+    /**
+     * Where a copy under a fault is held: one source counter's key, which a {@link Blocker} keeps
+     * uncommitted in the target. The copy's insert of it waits on the unique key, after thousands
+     * of rows in key order and in insertion order alike, until the blocker ends. So the fault
+     * always meets a running copy, however fast the copy and however slow the test machine.
+     */
+    private static final String HELD_KEY = "COUNTER_15000";
+
+    /** A target session that holds {@link #HELD_KEY} uncommitted until it is closed. */
+    private static final class Blocker implements AutoCloseable {
+        final Connection connection;
+        final String sessionId;
+
+        Blocker(TestDatabase t) throws SQLException {
+            // SQL Server's readers would wait for the uncommitted row too, the tool's own checks
+            // included; with a snapshot they see what the other servers' readers see
+            t.server().readCommittedSnapshot(t);
+            connection = t.connect();
+            connection.setAutoCommit(false);
+            try (PreparedStatement ps =
+                    connection.prepareStatement(
+                            "INSERT INTO UP_SEQUENCE (SEQUENCE_NAME, SEQUENCE_VALUE) VALUES (?, ?)")) {
+                ps.setString(1, HELD_KEY);
+                ps.setInt(2, -1);
+                ps.executeUpdate();
+            }
+            sessionId = t.server().sessionId(connection);
+        }
+
+        /** Rolls the row back, so a copy waiting for it goes on; quiet when the server is gone. */
+        @Override
+        public void close() {
+            try {
+                connection.rollback();
+            } catch (SQLException e) {
+                // the session or the server has ended
+            }
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                // likewise
+            }
+        }
+    }
+
+    interface Fault {
+        void inject(Thread copy, Blocker blocker) throws Exception;
+    }
+
+    /**
+     * Runs a copy in another thread, waits until it is held at {@link #HELD_KEY} with rows already
+     * committed, injects {@code fault}, then releases the copy.
+     */
+    private ToolRun copyWithFault(TestDatabase s, TestDatabase t, Fault fault, String... options)
             throws Exception {
         AtomicReference<ToolRun> result = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
@@ -498,30 +553,60 @@ public class CopyFaultIT {
                             }
                         },
                         "copy-under-fault");
-        copy.start();
-        waitForRows(t, copy);
-        fault.accept(copy);
+        boolean held;
+        try (Blocker blocker = new Blocker(t)) {
+            copy.start();
+            held = waitUntilHeld(t, copy::isAlive);
+            if (held) {
+                fault.inject(copy, blocker);
+            }
+        }
         copy.join(TimeUnit.MINUTES.toMillis(5));
         assertFalse("the copy hung after the fault", copy.isAlive());
         if (error.get() != null) {
             throw new AssertionError("the tool threw instead of reporting", error.get());
         }
+        if (!held) {
+            throw new AssertionError(
+                    "the copy ended without waiting for " + HELD_KEY + ":\n" + result.get());
+        }
         return result.get();
     }
 
-    private static void waitForRows(TestDatabase t, Thread copy) throws Exception {
+    /**
+     * Waits until the copy waits for the blocker's row, with some of its chunks committed: the
+     * server reports the lock wait, or the committed rows stop growing for five seconds (the copy
+     * cannot get past the held row, so a stall means it waits there). Returns false when the copy
+     * ended first.
+     */
+    private static boolean waitUntilHeld(TestDatabase t, BooleanSupplier running) throws Exception {
         long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3);
-        while (System.nanoTime() < deadline && copy.isAlive()) {
-            try {
-                if (count(t, "UP_SEQUENCE") >= 200) {
-                    return;
-                }
-            } catch (SQLException e) {
-                // Not created yet or busy; try again
+        long last = -1;
+        long since = System.nanoTime();
+        while (running.getAsBoolean()) {
+            assertTrue(
+                    "the copy did not reach " + HELD_KEY + " within 3 minutes",
+                    System.nanoTime() < deadline);
+            long committed = count(t, "UP_SEQUENCE");
+            if (committed != last) {
+                last = committed;
+                since = System.nanoTime();
+            }
+            boolean stalled = System.nanoTime() - since > TimeUnit.SECONDS.toNanos(5);
+            if (committed > 0 && (stalled || t.server().lockWaits(t) > 0)) {
+                System.out.println(
+                        "Held at "
+                                + HELD_KEY
+                                + " with "
+                                + committed
+                                + " rows committed ("
+                                + (stalled ? "no progress for 5 s" : "lock wait")
+                                + ")");
+                return true;
             }
             Thread.sleep(20);
         }
-        throw new AssertionError("the copy ended before the fault could be injected");
+        return false;
     }
 
     @Test
@@ -533,13 +618,9 @@ public class CopyFaultIT {
                     copyWithFault(
                             s,
                             t,
-                            thread -> {
-                                try {
-                                    assertTrue(t.killSessions() > 0);
-                                } catch (SQLException e) {
-                                    throw new IllegalStateException(e);
-                                }
-                            });
+                            // The held insert's session among them; the blocker's stays
+                            (thread, blocker) ->
+                                    assertTrue(t.server().killSessions(t, blocker.sessionId) > 0));
             assertFailedClosed(run);
             assertEquals(run.toString(), DbMigrate.FAILED, run.status);
             MigrationReport.TableEntry counters = run.table("UP_SEQUENCE");
@@ -566,7 +647,7 @@ public class CopyFaultIT {
         try (TestDatabase s = source()) {
             TestDatabase t = target(server);
             addCounters(s, COUNTERS);
-            ToolRun run = copyWithFault(s, t, thread -> server.stop());
+            ToolRun run = copyWithFault(s, t, (thread, blocker) -> server.stop());
             assertFailedClosed(run);
             assertEquals(run.toString(), DbMigrate.FAILED, run.status);
         } finally {
@@ -579,7 +660,7 @@ public class CopyFaultIT {
         try (TestDatabase s = source();
                 TestDatabase t = target()) {
             addCounters(s, COUNTERS);
-            ToolRun run = copyWithFault(s, t, Thread::interrupt);
+            ToolRun run = copyWithFault(s, t, (thread, blocker) -> thread.interrupt());
             if (run.status == DbMigrate.OK) {
                 // The interrupt was absorbed: then everything must be there and verified
                 assertEquals(ALL_COUNTERS, count(t, "UP_SEQUENCE"));
@@ -632,16 +713,17 @@ public class CopyFaultIT {
             Files.write(rulesFile, rules().getBytes(StandardCharsets.UTF_8));
             cmd.add("--rules");
             cmd.add(rulesFile.toString());
-            Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            Thread pump = pump(p.getInputStream(), out);
-            long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(3);
-            while (count(t, "UP_SEQUENCE") < 200 && p.isAlive() && System.nanoTime() < deadline) {
-                Thread.sleep(20);
+            Process p;
+            Thread pump;
+            try (Blocker blocker = new Blocker(t)) {
+                p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+                pump = pump(p.getInputStream(), out);
+                boolean held = waitUntilHeld(t, p::isAlive);
+                assertTrue("the copy ended without waiting for " + HELD_KEY + ":\n" + out, held);
+                p.destroyForcibly(); // SIGKILL: no shutdown hook, no last words
+                assertTrue(p.waitFor(1, TimeUnit.MINUTES));
             }
-            assertTrue("the copy ended before it could be killed:\n" + out, p.isAlive());
-            p.destroyForcibly(); // SIGKILL: no shutdown hook, no last words
-            assertTrue(p.waitFor(1, TimeUnit.MINUTES));
             pump.join(10_000);
             String output = out.toString(StandardCharsets.UTF_8);
             assertNotEquals(output, 0, p.exitValue());
