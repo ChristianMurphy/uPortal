@@ -113,6 +113,14 @@ edit-account error block seeded to read another model.
 `fix(account): stop logging password reset tokens`: each new log-capturing unit test failed with
 the old log line put back.
 
+### A possible parallel-run flake
+
+On 2026-10-11 at about 09:02 UTC, a local run of every admin spec and the three account specs
+with 4 workers (uPortal `c763c7d` on HSQLDB) failed `portlet-manager.spec.ts`, "register, render
+and delete a CMS portlet", at a `toContainText` check. It passed when run alone right after. Its
+edit-portlet flow uses the `portlet` model, which the `accountFormValidator` alias does not reach,
+so this looks like a flake under parallel load.
+
 ## Next steps
 
 Wait for the owner's rulings: the confirmation fix (keep or revert), the current password, whether
