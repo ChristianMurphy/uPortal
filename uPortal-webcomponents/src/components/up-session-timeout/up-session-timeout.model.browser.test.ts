@@ -14,7 +14,6 @@ import { clearMessageCache, MESSAGES_PATH } from '../../lib/i18n';
 import { axeViolations } from '../../test-support/axe';
 import { FetchStub, json, text } from '../../test-support/fetch-stub';
 import { ManualClock } from '../../test-support/manual-clock';
-import { KEEP_ALIVE_PATH, SESSION_PATH } from './session-api';
 import { logoutTimeFrom, type LogoutTimeStore } from './session-clock';
 import './up-session-timeout';
 import type { UpSessionTimeout } from './up-session-timeout';
@@ -110,8 +109,8 @@ class Portal {
     readonly #waiting = new Map<string, ((response: Response) => void)[]>();
 
     constructor(server: FetchStub) {
-        server.on('GET', `/uPortal${SESSION_PATH}`, () => this.#hold('loadSession'));
-        server.on('POST', `/uPortal${KEEP_ALIVE_PATH}`, () => this.#hold('keepAlive'));
+        server.on('GET', '/uPortal/api/v6-0/session', () => this.#hold('loadSession'));
+        server.on('POST', '/uPortal/api/v6-0/session/keep-alive', () => this.#hold('keepAlive'));
     }
 
     #hold(call: string): Promise<Response> {

@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { ApiClient, ApiError } from '../../lib/api-client';
-import {
-    extendSession,
-    fetchSession,
-    KEEP_ALIVE_PATH,
-    SESSION_PATH,
-    validateSession,
-} from './session-api';
+import { extendSession, fetchSession, validateSession } from './session-api';
 
 function client(response: Response, requests: { url: string; init: RequestInit }[] = []) {
     return new ApiClient({
@@ -63,7 +57,7 @@ describe('fetchSession', () => {
         );
 
         expect(session).toEqual({ maxInactiveIntervalSeconds: 900 });
-        expect(requests[0]?.url).toBe(`/uPortal${SESSION_PATH}`);
+        expect(requests[0]?.url).toBe('/uPortal/api/v6-0/session');
         expect(requests[0]?.init.method).toBe('GET');
     });
 });
@@ -77,14 +71,14 @@ describe('extendSession', () => {
         );
 
         expect(session).toEqual({ maxInactiveIntervalSeconds: 1800 });
-        expect(requests[0]?.url).toBe(`/uPortal${KEEP_ALIVE_PATH}`);
+        expect(requests[0]?.url).toBe('/uPortal/api/v6-0/session/keep-alive');
         expect(requests[0]?.init.method).toBe('POST');
         expect(requests[0]?.init.headers).toMatchObject({ 'X-CSRF-TOKEN': 'token-1' });
     });
 
     it('refuses an answer without a body', async () => {
         await expect(extendSession(client(new Response(null, { status: 204 })))).rejects.toEqual(
-            new ApiError('malformed', 204, `POST ${KEEP_ALIVE_PATH} returned no body`),
+            new ApiError('malformed', 204, 'POST /api/v6-0/session/keep-alive returned no body'),
         );
     });
 
