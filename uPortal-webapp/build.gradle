@@ -85,6 +85,7 @@ dependencies {
     compileOnly "org.apereo.service.persondir:person-directory-api:${personDirectoryVersion}"
     compileOnly "${servletApiDependency}"
 
+    testImplementation "com.tngtech.archunit:archunit-junit4:${archunitVersion}"
     testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
     testImplementation project(':uPortal-pluto:uPortal-pluto-container-driver-api')
     testImplementation "org.skyscreamer:jsonassert:${jsonassertVersion}"
@@ -134,7 +135,8 @@ dependencies {
 
 // Pass the database the JPA/DAO tests run on (src/test/resources/dataSource.properties) from
 // the Gradle command line to the test JVM, e.g. -Duportal.test.db.url=jdbc:postgresql://...
-// Also passes the switch that re-records the migration goldens (MOD-D29); see GoldenFiles.
+// Also passes the switches of the migration goldens (uportal.golden.*, MOD-D29) and of the
+// ArchUnit freeze store (archunit.*); see MigrationFreezeRulesTest and GoldenFiles.
 tasks.withType(Test).configureEach {
     ['driver', 'url', 'username', 'password', 'dialect'].each { String key ->
         String name = "uportal.test.db.${key}"
@@ -143,7 +145,9 @@ tasks.withType(Test).configureEach {
             systemProperty name, value
         }
     }
-    ['uportal.golden.record'].each { String name ->
+    ['uportal.golden.record',
+     'archunit.freeze.store.default.allowStoreUpdate', 'archunit.freeze.store.default.allowStoreCreation',
+     'archunit.freeze.refreeze'].each { String name ->
         String value = providers.systemProperty(name).getOrNull()
         if (value != null) {
             systemProperty name, value
