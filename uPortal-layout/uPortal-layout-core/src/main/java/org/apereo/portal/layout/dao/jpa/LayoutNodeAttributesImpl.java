@@ -75,7 +75,7 @@ class LayoutNodeAttributesImpl {
     @CollectionTable(
             name = "UP_SS_USER_PREF_LAY_ATTR_VAL",
             joinColumns = @JoinColumn(name = "UP_SS_USER_PREF_LAY_ATTR_ID", nullable = false))
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private Map<String, String> attributes = new LinkedHashMap<String, String>(0);
 

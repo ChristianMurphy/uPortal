@@ -60,7 +60,7 @@ import org.hibernate.annotations.Type;
         sequenceName = "UP_SS_USER_PREF_SEQ",
         allocationSize = 5)
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class StylesheetUserPreferencesImpl implements IStylesheetUserPreferences {
     @Id
     @GeneratedValue(generator = "UP_SS_USER_PREF_GEN")
@@ -110,7 +110,7 @@ class StylesheetUserPreferencesImpl implements IStylesheetUserPreferences {
     @CollectionTable(
             name = "UP_SS_USER_PREF_PARAM",
             joinColumns = @JoinColumn(name = "SS_USER_PREF_ID", nullable = false))
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private final Map<String, String> parameters = new LinkedHashMap<String, String>(0);
 
@@ -121,7 +121,7 @@ class StylesheetUserPreferencesImpl implements IStylesheetUserPreferences {
             orphanRemoval = true)
     @MapKey(name = "nodeId")
     @JoinColumn(name = "SS_USER_PREF_ID", nullable = false)
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private final Map<String, LayoutNodeAttributesImpl> layoutAttributes =
             new LinkedHashMap<String, LayoutNodeAttributesImpl>(0);
