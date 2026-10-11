@@ -164,6 +164,22 @@ async function renderLauncher(attributes = ATTRIBUTES): Promise<UpSearchLauncher
     return element;
 }
 
+/**
+ * A key pressed while an input method (Chinese, Japanese) composes text, as the browser sends it:
+ * `isComposing` is true. Returns whether the element let the key through (did not prevent it).
+ */
+function composingKey(target: Element, key: string): boolean {
+    return target.dispatchEvent(
+        new KeyboardEvent('keydown', {
+            key,
+            isComposing: true,
+            bubbles: true,
+            composed: true,
+            cancelable: true,
+        }),
+    );
+}
+
 async function typeInto(box: UpSearchBox, keys: string): Promise<void> {
     await userEvent.click(input(box));
     await userEvent.keyboard(keys);
@@ -305,6 +321,26 @@ describe('type-ahead', () => {
         await userEvent.keyboard('{ArrowUp}{Enter}');
 
         expect(assign).toHaveBeenCalledWith('/uPortal/p/courses/max');
+    });
+
+    it('leaves Enter and the arrow keys to an input method while it composes', async () => {
+        const launcher = await renderLauncher();
+        const box = boxOf(launcher);
+        await typeInto(box, 'c');
+        await expect.poll(() => suggestionTitles(box)).toHaveLength(3);
+        await userEvent.keyboard('{ArrowDown}');
+        await box.updateComplete;
+
+        // Picking characters with the arrow keys and Enter neither moves nor chooses
+        expect(composingKey(input(box), 'ArrowDown')).toBe(true);
+        expect(composingKey(input(box), 'Enter')).toBe(true);
+        await box.updateComplete;
+        expect(input(box).getAttribute('aria-activedescendant')).toBe('suggestion-0');
+        expect(suggestionTitles(box)).toHaveLength(3);
+        expect(assign).not.toHaveBeenCalled();
+        expect(composingKey(input(box), 'Escape')).toBe(true);
+        await box.updateComplete;
+        expect(suggestionTitles(box)).toHaveLength(3);
     });
 
     it('closes with Escape and when the focus leaves, and Enter then searches', async () => {
@@ -659,6 +695,11 @@ describe('up-search behaviour', () => {
         await userEvent.keyboard('{Home}');
         expect(focused()).toBe('People');
         await userEvent.keyboard('a');
+        expect(selected()).toBe('People');
+        // An input method's keys are not tab commands
+        const first = shadow(element).querySelector('[role="tab"]');
+        expect(first && composingKey(first, 'ArrowRight')).toBe(true);
+        await element.updateComplete;
         expect(selected()).toBe('People');
         const inactive = shadow(element).querySelectorAll('[role="tab"][tabindex="-1"]');
         expect(inactive).toHaveLength(2);
