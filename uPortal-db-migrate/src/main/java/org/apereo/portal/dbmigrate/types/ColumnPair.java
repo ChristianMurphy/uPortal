@@ -109,7 +109,9 @@ public final class ColumnPair {
         if (source != null
                 && logical == Family.STRING
                 && source.column().size() > target.column().size()
-                && target.column().size() > 0) {
+                && target.column().size() > 0
+                // Oracle's driver reports a CLOB as 4000 wide; it holds any length
+                && !target.largeText()) {
             notes.add(
                     "target is narrower ("
                             + target.column().size()
@@ -121,6 +123,11 @@ public final class ColumnPair {
                 && target.emptyStringIsNull()
                 && (source == null || !source.emptyStringIsNull())) {
             notes.add("empty strings become NULL (Oracle stores '' as NULL)");
+        }
+        if (logical == Family.BINARY
+                && target.emptyStringIsNull()
+                && (source == null || !source.emptyStringIsNull())) {
+            notes.add("empty binary values become NULL (Oracle stores them as NULL)");
         }
         if (source != null && logical == Family.DOUBLE && source.family() != Family.DOUBLE) {
             notes.add("copied as a binary double: digits beyond its precision (about 15) are lost");

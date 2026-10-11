@@ -164,9 +164,8 @@ final class PairCopy {
         if (v == null) {
             return null;
         }
-        if (c.isString()) {
-            String s = (String) v;
-            return target == Kind.ORACLE && s.isEmpty() ? null : s;
+        if (c.isString() || c.isBinary()) {
+            return target == Kind.ORACLE && isEmpty(v) ? null : v;
         }
         switch (c) {
             case AT_TIME:
@@ -304,8 +303,9 @@ final class PairCopy {
             long id = (Long) row.get(PropColumn.ID);
             for (PropColumn c : columns) {
                 Object written = forSource(c, row.get(c));
-                // What the source vendor itself does with the value: Oracle '' is NULL
-                if (source == Kind.ORACLE && "".equals(written)) {
+                // What the source vendor itself does with the value: Oracle stores '' and an
+                // empty binary value as NULL
+                if (source == Kind.ORACLE && isEmpty(written)) {
                     written = null;
                 }
                 Object back = stored.get(id).get(c);

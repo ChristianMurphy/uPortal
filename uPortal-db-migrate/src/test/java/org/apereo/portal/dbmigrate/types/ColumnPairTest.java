@@ -18,13 +18,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
+import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import org.apereo.portal.dbmigrate.Vendor;
 import org.apereo.portal.dbmigrate.schema.Column;
 import org.junit.Test;
@@ -194,5 +200,97 @@ public class ColumnPairTest {
         assertNotEquals(
                 type(Vendor.HSQLDB, Types.TIME, "TIME", 12, null).fractionDigits(),
                 type(Vendor.HSQLDB, Types.TIME, "TIME", 8, null).fractionDigits());
+    }
+
+    private static final ColumnType ORACLE_CLOB =
+            // Oracle's driver reports a CLOB's COLUMN_SIZE as 4000
+            type(Vendor.ORACLE, Types.CLOB, "CLOB", 4000, null);
+    private static final ColumnType ORACLE_BLOB =
+            type(Vendor.ORACLE, Types.BLOB, "BLOB", 4000, null);
+    private static final ColumnType PG_BYTEA =
+            type(Vendor.POSTGRESQL, Types.BINARY, "bytea", Integer.MAX_VALUE, null);
+
+    @Test
+    public void anOracleClobIsNotNarrowerThanItsSource() {
+        ColumnType hsqldbClob = type(Vendor.HSQLDB, Types.CLOB, "CLOB", 1 << 26, null);
+        assertEquals(
+                Collections.singletonList("empty strings become NULL (Oracle stores '' as NULL)"),
+                pair(hsqldbClob, ORACLE_CLOB).notes());
+    }
+
+    @Test
+    public void emptyBinaryValuesBecomeNullInOracle() {
+        // As '' does; 5.17 itself stores them as NULL there (Hibernate binds byte[] with setBytes)
+        ColumnPair into = pair(PG_BYTEA, ORACLE_BLOB);
+        assertEquals(
+                Collections.singletonList(
+                        "empty binary values become NULL (Oracle stores them as NULL)"),
+                into.notes());
+        assertNull(ValueCodec.adapt(new byte[0], into));
+        assertNull(ValueCodec.normalize(new byte[0], into));
+        byte[] one = {1};
+        assertEquals(one, ValueCodec.adapt(one, into));
+        assertNotNull(ValueCodec.normalize(one, into));
+        // From Oracle nothing changes, and an empty LOB it holds verifies as NULL
+        ColumnPair from = pair(ORACLE_BLOB, PG_BYTEA);
+        assertEquals(Collections.emptyList(), from.notes());
+        assertNull(ValueCodec.normalize(new byte[0], from));
+        // Elsewhere empty is not NULL
+        assertNotNull(ValueCodec.normalize(new byte[0], pair(PG_BYTEA, PG_BYTEA)));
+    }
+
+    /** The JDBC calls a write makes, with the text of a Reader argument. */
+    private static List<String> writeCalls(ColumnType target, String value) throws Exception {
+        return writeCalls(target, ColumnType.Family.STRING, value);
+    }
+
+    private static List<String> writeCalls(
+            ColumnType target, ColumnType.Family logical, Object value) throws Exception {
+        List<String> calls = new java.util.ArrayList<>();
+        PreparedStatement ps =
+                (PreparedStatement)
+                        Proxy.newProxyInstance(
+                                ColumnPairTest.class.getClassLoader(),
+                                new Class<?>[] {PreparedStatement.class},
+                                (proxy, method, args) -> {
+                                    StringBuilder call = new StringBuilder(method.getName());
+                                    for (Object a : args == null ? new Object[0] : args) {
+                                        if (a instanceof Reader) {
+                                            call.append(' ').append(read((Reader) a));
+                                        }
+                                    }
+                                    calls.add(call.toString());
+                                    return null;
+                                });
+        ValueCodec.write(ps, 1, target, logical, value);
+        return calls;
+    }
+
+    private static String read(Reader r) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        char[] buf = new char[8192];
+        for (int n; (n = r.read(buf)) > 0; ) {
+            sb.append(buf, 0, n);
+        }
+        return sb.toString();
+    }
+
+    @Test
+    public void oracleClobsAreWrittenWhole() throws Exception {
+        // Oracle's driver converts a character stream or a String in chunks of 32,768
+        // characters, and a surrogate pair split between two of them became two U+FFFD
+        String text = "\uD834\uDD1E line";
+        assertEquals(Collections.singletonList("setClob " + text), writeCalls(ORACLE_CLOB, text));
+        assertEquals(
+                Collections.singletonList("setNClob " + text),
+                writeCalls(type(Vendor.ORACLE, Types.NCLOB, "NCLOB", 4000, null), text));
+        // Not an empty one, which Oracle's driver refuses as a Clob
+        assertEquals(Collections.singletonList("setString"), writeCalls(ORACLE_CLOB, ""));
+        // The other drivers take a character stream, or a String for a column with a length
+        ColumnType hsqldbClob = type(Vendor.HSQLDB, Types.CLOB, "CLOB", 1 << 20, null);
+        assertEquals(
+                Collections.singletonList("setCharacterStream " + text),
+                writeCalls(hsqldbClob, text));
+        assertEquals(Collections.singletonList("setString"), writeCalls(PG_VARCHAR, text));
     }
 }
