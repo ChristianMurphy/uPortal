@@ -97,7 +97,6 @@ dependencies {
     runtimeOnly "ch.qos.logback:logback-classic:${logbackVersion}"
     runtimeOnly "org.aspectj:aspectjweaver:${aspectjVersion}"
     runtimeOnly "org.codehaus.groovy:groovy-jsr223:${groovyVersion}"
-    runtimeOnly "org.hibernate:hibernate-entitymanager:${hibernateVersion}"
     runtimeOnly "org.jasig.cas.client:cas-client-support-distributed-ehcache:${casClientVersion}"
     runtimeOnly "org.jasig.ehcache:ehcache-jgroups3replication:${ehcacheJgroups3ReplicationVersion}"
     runtimeOnly "org.jasig.portlet.utils:portlet-ws-util:${apereoPortletUtilsVersion}"

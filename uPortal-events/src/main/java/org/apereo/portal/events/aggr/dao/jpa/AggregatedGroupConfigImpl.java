@@ -27,7 +27,6 @@ import javax.persistence.JoinTable;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.AggregatedGroupConfig;
@@ -46,10 +45,6 @@ import org.hibernate.annotations.NaturalId;
 @SequenceGenerator(
         name = "UP_EVENT_AGGR_CONF_GROUPS_GEN",
         sequenceName = "UP_EVENT_AGGR_CONF_GROUPS_SEQ",
-        allocationSize = 1)
-@TableGenerator(
-        name = "UP_EVENT_AGGR_CONF_GROUPS_GEN",
-        pkColumnValue = "UP_EVENT_AGGR_CONF_GROUPS",
         allocationSize = 1)
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

@@ -19,10 +19,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import org.hibernate.cfg.Configuration;
+import org.hibernate.boot.Metadata;
+import org.hibernate.boot.spi.MetadataImplementor;
+import org.hibernate.dialect.Dialect;
+import org.hibernate.engine.config.spi.ConfigurationService;
+import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.metamodel.source.MetadataImplementor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,41 +65,38 @@ public class DelegatingHibernateIntegrator implements Integrator {
 
     @Override
     public void integrate(
-            Configuration configuration,
+            Metadata metadata,
             SessionFactoryImplementor sessionFactory,
             SessionFactoryServiceRegistry serviceRegistry) {
 
-        final String persistenceUnitName = configuration.getProperty("persistenceUnitName");
+        final Object persistenceUnitName =
+                serviceRegistry
+                        .getService(ConfigurationService.class)
+                        .getSettings()
+                        .get("persistenceUnitName");
         if (persistenceUnitName == null) {
             logger.warn(
-                    "Hibernate Configuration does not have '"
-                            + persistenceUnitName
-                            + "' set. It will not be considered for injecting into HibernateConfigurationAware beans: "
-                            + configuration);
+                    "Hibernate configuration does not have 'persistenceUnitName' set. It will not be"
+                            + " considered for injecting into HibernateConfigurationAware beans: "
+                            + sessionFactory);
             return;
         }
 
         final HibernateConfiguration hibernateConfiguration =
-                new HibernateConfiguration(configuration, sessionFactory, serviceRegistry);
+                new HibernateConfiguration(
+                        new MetadataSchemaTool((MetadataImplementor) metadata, serviceRegistry),
+                        sessionFactory,
+                        serviceRegistry);
 
         synchronized (configurationAwareBeans) {
-            hibernateInfoMap.put(persistenceUnitName, hibernateConfiguration);
+            hibernateInfoMap.put(persistenceUnitName.toString(), hibernateConfiguration);
 
             for (final HibernateConfigurationAwareInjector configurationAwareBean :
                     configurationAwareBeans) {
                 configurationAwareBean.setConfiguration(
-                        persistenceUnitName, hibernateConfiguration);
+                        persistenceUnitName.toString(), hibernateConfiguration);
             }
         }
-    }
-
-    @Override
-    public void integrate(
-            MetadataImplementor metadata,
-            SessionFactoryImplementor sessionFactory,
-            SessionFactoryServiceRegistry serviceRegistry) {
-        throw new UnsupportedOperationException(
-                "TODO REWRITE CODE AFTER HIBERNATE SWITCHES TO METAMODEL");
     }
 
     @Override
@@ -107,21 +107,30 @@ public class DelegatingHibernateIntegrator implements Integrator {
     }
 
     public static final class HibernateConfiguration {
-        private final Configuration configuration;
+        private final SchemaTool schemaTool;
+        private final Dialect dialect;
         private final SessionFactoryImplementor sessionFactory;
         private final SessionFactoryServiceRegistry serviceRegistry;
 
         public HibernateConfiguration(
-                Configuration configuration,
+                SchemaTool schemaTool,
                 SessionFactoryImplementor sessionFactory,
                 SessionFactoryServiceRegistry serviceRegistry) {
-            this.configuration = configuration;
+            this.schemaTool = schemaTool;
+            // Resolved now: the registry no longer answers once the session factory is closed
+            this.dialect = serviceRegistry.getService(JdbcServices.class).getDialect();
             this.sessionFactory = sessionFactory;
             this.serviceRegistry = serviceRegistry;
         }
 
-        public Configuration getConfiguration() {
-            return configuration;
+        /** The DDL of this persistence unit, independent of the Hibernate bootstrap API. */
+        public SchemaTool getSchemaTool() {
+            return schemaTool;
+        }
+
+        /** The dialect the persistence unit's session factory uses. */
+        public Dialect getDialect() {
+            return dialect;
         }
 
         public SessionFactoryImplementor getSessionFactory() {
