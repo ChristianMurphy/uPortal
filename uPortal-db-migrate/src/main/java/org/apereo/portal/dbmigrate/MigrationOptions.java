@@ -52,7 +52,7 @@ public final class MigrationOptions {
     private boolean clearTarget;
     private boolean verify = true;
     private String sourceProfile = "5.17";
-    private String targetProfile = "5.17";
+    private String targetProfile = "6.0";
     private ZoneId sourceZone;
     private final List<Path> ruleFiles = new ArrayList<>();
     private MissingLobPolicy missingLobPolicy = MissingLobPolicy.FAIL;

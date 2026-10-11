@@ -182,16 +182,26 @@ public class HsqldbLocalTimeConversionTest {
     }
 
     @Test
+    public void convertsByDefault() throws Exception {
+        // 6.0 is the default target profile: a copy without --target-profile needs the zone
+        insertLocalTimes();
+        assertEquals(2, run());
+        assertEquals(0, targetRows());
+        assertEquals(0, run("--source-zone", "America/New_York"));
+        assertEquals(LocalDateTime.parse("2026-11-01T05:30:00.250"), password(3));
+    }
+
+    @Test
     public void keepsLocalTimesInACopyBetween517Databases() throws Exception {
         insertLocalTimes();
-        assertEquals(0, run());
+        assertEquals(0, run("--target-profile", "5.17"));
         assertEquals(LocalDateTime.parse("2026-11-01T01:30:00.250"), password(3));
     }
 
     @Test
     public void rejectsASourceZoneWithoutAProfileThatConverts() throws Exception {
         insertLocalTimes();
-        assertEquals(2, run("--source-zone", "America/New_York"));
+        assertEquals(2, run("--target-profile", "5.17", "--source-zone", "America/New_York"));
         assertEquals(0, targetRows());
     }
 }
