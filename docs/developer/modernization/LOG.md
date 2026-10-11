@@ -1651,7 +1651,11 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   things worse." A change may remove recorded uses of the APIs the migration retires (MOD-D29's
   freeze rules) but never add one. Code that has to cross between an old and a new API uses the
   new one wherever it can.
-* **Check:** CI fails when a commit adds entries to `uPortal-webapp/src/test/resources/archunit_store`.
+* **Check:** `.github/scripts/check-freeze-store.py`, run by the CI workflow's `Commit messages`
+  job, fails when a push adds entries to `uPortal-webapp/src/test/resources/archunit_store`. It
+  ignores line numbers the way ArchUnit does. It lists a new rule's entries without failing,
+  because those record uses that already exist. Run against the commit that added the 12 entries
+  below, it reports exactly those 12.
 * **Status:** the 12 uses the java.time and Spring cache batches added (11 in
   `JodaTimeConversions`, 1 in `InsufficientSizeCacheEventListener`) are re-examined.
   `JodaTimeConversions` stays until the JPA mappings leave Joda-Time (P3-5). The cache listener
