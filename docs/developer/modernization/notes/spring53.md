@@ -21,7 +21,7 @@ below. This note says what is done and what comes next, so the work can resume f
 | uPortal-start: removed-API allowlist entry for Spring Session 2's `HttpSessionAdapter` | **Done** on uPortal-start branch `ccr-43ba0785-hzlrj5-spring53` |
 | Portal from uPortal-start, Playwright suite | **Done** locally: 324 of 326 pass. The 2 Web Proxy specs fetch `http://example.com/`, which this container can't resolve |
 | HTTP replay | **Done** locally: the Spring differences are fixed (health check, `.html` content type) or registered on uPortal-start's branch. 54 exchanges stay unexplained, all from the Background Preference web component on the integration branch, not from Spring |
-| SpotBugs: 41 findings that Spring 5's `@Nullable` annotations expose in unchanged code | **Waiting** for the coordinator's decision (fix, baseline, or both) |
+| SpotBugs: 41 findings that Spring 5's `@Nullable` annotations expose in unchanged code | **Expected red** on this branch. The fixes are on `ccr-43ba0785-hzlrj5-spring53-nullness` (Spring 4.3, one commit per module), which is merged before P4-1. Merge the integration branch after that; the baselines don't grow |
 | UPGRADING-6.0.md, "Spring Framework 5.3" | **Done**: versions, URL suffixes under `/api`, Redis sessions, logging |
 
 ## Unit suite (local, JDK 21)
@@ -60,6 +60,59 @@ Registered as intended on uPortal-start (`tests/replay/intended-differences.json
 * `spring53-security-headers-on-small-images`: four small `/media` images now get the Spring
   Security headers every other `/media` answer had on 5.17.
 * `spring53-cors-vary`: `swagger-ui.html` gains Spring 5's CORS `Vary` values.
+
+## SpotBugs findings on Spring 5.3
+
+`./gradlew spotbugsMain` on this branch reports 41 findings outside the baselines, none in code
+the branch changes. Spring 5 annotates its API with `@Nullable` (such as
+`JdbcOperations.queryForObject`, `TransactionOperations.execute`, `AnnotationUtils.findAnnotation`,
+`ApplicationContext.getBean` through `getApplicationContext()`), so SpotBugs now sees results
+that could be null on 4.3 as well. The SpotBugs job fails here until the nullness branch
+is merged.
+
+| Module | Location | Pattern |
+| --- | --- | --- |
+| uPortal-api/uPortal-api-rest | `MarketplaceRESTController:134` | `NP_NONNULL_PARAM_VIOLATION` |
+| uPortal-api/uPortal-api-rest | `MarketplaceRESTController:151` | `NP_NONNULL_PARAM_VIOLATION` |
+| uPortal-events | `JpaAggregatedTabLookupDao:159` | `RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE` |
+| uPortal-events | `BatchTinCanAPIProvider:79` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-events | `CachingPersonAttributeDao:118` | `RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE` |
+| uPortal-health | `DatabaseHealthChecker:63` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-layout/uPortal-layout-impl | `RDBMDistributedLayoutStore:351` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-layout/uPortal-layout-impl | `RDBMUserLayoutStore:1495` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-layout/uPortal-layout-impl | `RDBMUserLayoutStore:598` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-layout/uPortal-layout-impl | `RDBMUserLayoutStore:212` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-persondir | `RDBMUserIdentityStore:433` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-persondir | `RDBMUserIdentityStore:157` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-persondir | `RDBMUserIdentityStore:163` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-pluto/uPortal-pluto-portal-driver | `PortalStartupListener:135` | `RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE` |
+| uPortal-portlets | `GoogleCustomSearchService:120` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-portlets | `GsaSearchService:80` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-portlets | `SqlQueryPortletController:129` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-rdbm | `JacksonColumnMapper:71` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-rdbm | `HibernateStyleCounterStore:213` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-rendering | `PortletDefinitionPreferencesImpl:99` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-rendering | `PortletEntityPreferencesAPIImpl:138` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-rendering | `PortletEntityPreferencesImpl:136` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-rendering | `JpaPortletExecutionInterceptor:66` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-rendering | `JpaPortletExecutionInterceptor:48` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-session | `SpringSessionRedisEnabledCondition:35` | `NP_NONNULL_PARAM_VIOLATION` |
+| uPortal-spring-portlet | `HandlerMethodInvoker:401` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring-portlet | `HandlerMethodInvoker:162` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring-portlet | `HandlerMethodInvoker:590` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring-portlet | `AbstractHandlerMapping:217` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring-portlet | `AbstractMapBasedHandlerMapping:150` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring-portlet | `AbstractMapBasedHandlerMapping:151` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring-portlet | `DefaultAnnotationHandlerMapping:110` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring | `AspectJAroundAdviceFactory:62` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-spring | `DialectAwareTransactionInterceptor:62` | `NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE` |
+| uPortal-spring | `ZeroLeggedOAuthInterceptor:86` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-tools | `DataSourceSchemaExport:107` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-utils/uPortal-utils-core | `MediatingFactoryBean:79` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-utils/uPortal-utils-core | `MediatingFactoryBean:81` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-utils/uPortal-utils-core | `JdbcUtils:65` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-utils/uPortal-utils-core | `CacheKey:59` | `NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` |
+| uPortal-web | `PortletDelegationView:77` | `NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE` |
 
 ## Commons-logging
 
