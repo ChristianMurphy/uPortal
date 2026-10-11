@@ -199,10 +199,14 @@ class GeneratorProperties {
             try (Connection c = t.connect()) {
                 c.setAutoCommit(false);
                 long v;
+                // Hibernate's dialects lock the row: SQL Server with a table hint, the others
+                // with FOR UPDATE
+                String select =
+                        kind == Kind.SQLSERVER
+                                ? "SELECT next_val FROM " + generator + " WITH (UPDLOCK, ROWLOCK)"
+                                : "SELECT next_val FROM " + generator + " FOR UPDATE";
                 try (Statement st = c.createStatement();
-                        ResultSet rs =
-                                st.executeQuery(
-                                        "SELECT next_val FROM " + generator + " FOR UPDATE")) {
+                        ResultSet rs = st.executeQuery(select)) {
                     rs.next();
                     v = rs.getLong(1);
                 }
