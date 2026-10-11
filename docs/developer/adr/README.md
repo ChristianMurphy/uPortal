@@ -68,3 +68,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0015](0015-draw-charts-with-apache-echarts.md) | Draw statistics charts with Apache ECharts | proposed | 2026-10-10 |
 | [0016](0016-default-to-local-login-with-cas-as-an-option.md) | Make uPortal's local login the uPortal-start default, with CAS as an option | proposed | 2026-10-10 |
 | [0017](0017-require-static-analysis-in-ci.md) | Require static analysis in CI, with a SpotBugs baseline and NullAway on null-marked code | proposed | 2026-10-10 |
+| [0018](0018-check-commit-messages-and-prose-in-ci.md) | Check commit messages and 6.0 docs in CI, and keep history linear | proposed | 2026-10-10 |
