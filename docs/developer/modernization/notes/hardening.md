@@ -9,7 +9,9 @@ LOG numbers: MOD-I250 to MOD-I259.
 
 | Part | State |
 | --- | --- |
-| 1. Tomcat error pages without the version | done locally, pushed. Integration 38135446281 was cancelled by the next push, and 38139468035 (uPortal-start `2412f7d`) runs it with the layout checks |
+| 1. Tomcat error pages without the version | done locally, pushed. Integration 38135446281 was cancelled by the next push. The coordinator may merge part 1 on its own once a push run is green (MOD-D53) |
+| 1a. Tomcat's docs, examples and ROOT page removed (MOD-I251) | done locally (uPortal-start `e7b70d3`, UPGRADING-6.0 section "Tomcat's documentation, examples and ROOT page are gone") |
+| 1b. HTTP replay registry entry for the new error pages | waits for the http-replay branch to land; then merge ccr and add it here (coordinator, 2026-10-11) |
 | Layout checks at standard sizes (MOD-D52) | done locally, pushed (uPortal-start `2412f7d`, uPortal `bc6eb94`); Integration 38139468035 queued |
 | 2. Existing axe violations in the Respondr skin | not started: after the layout checks, and the coordinator's go-ahead once the cluster branch is merged |
 | 3. Respondr right to left (MOD-I234, MOD-D51) | not started: comes after part 2 |
@@ -45,13 +47,18 @@ not yet against a whole portal (CI does that).
 The HTTP replay recordings of these error pages change. The h3 version line goes, and so do
 the Type, Message and Description paragraphs. About 20 recorded request paths show Tomcat's page, among them
 `/uPortal/does-not-exist.html`, `/uPortal/s/does-not-exist` and several `/uPortal/api/*`. The
-registry entry is the replay session's to add, through the coordinator; it can cite the
-UPGRADING-6.0 section above. The existing entries `tomcat-9-error-page-version` and
+coordinator decided that this branch adds the registry entry (`tests/replay/intended-differences.json`,
+format in uPortal-start `docs/http-replay.md`) after the http-replay branch is merged. It cites the
+UPGRADING-6.0 section above and MOD-I250. The replay check on this branch then shows whether it
+matches the changed paths. The existing entries `tomcat-9-error-page-version` and
 `api-unmapped-404-page` match only the h3 line and the title or h1.
 
-Not changed, because it is outside the task. Tomcat's default webapps stay installed. The ROOT page at `/`
-has "Apache Tomcat/9.0.122" in its title and h1, `/docs/` and `/examples/` answer 200, and
-`/manager/html` and `/host-manager/html` answer 401. Proposed as MOD-I251.
+Tomcat's default webapps (MOD-I251, approved by the coordinator). The ROOT page at `/` had
+"Apache Tomcat/9.0.122" in its title and h1, `/docs/` and `/examples/` answered 200, and
+`/manager/html` and `/host-manager/html` answer 401. uPortal-start `e7b70d3` makes `tomcatConfig`
+delete docs, examples and ROOT, and installs a ROOT that redirects `/` to `/uPortal/`. The
+manager webapps stay. `tests/api/tomcat-webapps.spec.ts` failed all three tests on the old install
+and passes after `tomcatConfig`.
 
 ## Layout checks at standard screen sizes (MOD-D52)
 
@@ -133,15 +140,24 @@ reuses them once that branch is merged.
 | ID | Area | Finding | Resolution |
 | --- | --- | --- | --- |
 | MOD-I250 | Security | Tomcat's own error pages (a 404 in uPortal or outside every webapp, a 400 from the connector, a 500 in a webapp without an error-page) show "Apache Tomcat/9.0.122" and the exception message. | **Fixed** by uPortal-start "fix(tomcat): leave the report and version off tomcat's error pages", which adds an ErrorReportValve to the Host with `showReport="false"` and `showServerInfo="false"`. No response has a Server header. Test: `tests/api/error-pages.spec.ts` (4 pages, fails on all four without the valve). UPGRADING-6.0: "Tomcat's error pages no longer show the Tomcat version". HTTP replay registers the changed error pages. |
-| MOD-I251 | Security | uPortal-start installs Tomcat's default webapps (ROOT, docs, examples, manager, host-manager). The ROOT page at `/` names the Tomcat version, `/docs/` and `/examples/` answer 200, and the managers answer 401. | Proposed: remove the default webapps in `tomcatInstall` (or send `/` to `/uPortal/`). Needs the coordinator's decision. It is not part of the approved task. |
+| MOD-I251 | Security | uPortal-start installs Tomcat's default webapps (ROOT, docs, examples, manager, host-manager). The ROOT page at `/` names the Tomcat version, `/docs/` and `/examples/` answer 200, and the managers answer 401. | **Fixed** (coordinator, 2026-10-11) by uPortal-start `e7b70d3`. `tomcatConfig` now deletes the documentation and examples webapps along with Tomcat's ROOT page, and a new ROOT redirects `/` to `/uPortal/`. manager and host-manager stay. UPGRADING-6.0: "Tomcat's documentation, examples and ROOT page are gone". Test: `tests/api/tomcat-webapps.spec.ts`. |
 | MOD-I280 | Tests | No test checked that pages fit the standard screen sizes (MOD-D52). | **Done** by uPortal-start `41883a6`. `tests/layout/measure.ts` measures the six checks of MOD-D52 from element boxes, a helper compares the result with a baseline, and a fixture spec seeds 12 faults. |
 | MOD-I281 | Tests | The portal's pages already have layout problems at the standard sizes (the list in uPortal-start `2412f7d`). | **Recorded** in `tests/layout/baseline.ts` by uPortal-start `2412f7d`: 21 pages at 6 widths. A new problem fails. Fixing them is part 2, and each fix removes its entries. |
 | MOD-I282 | Tests | The web components were not checked in a narrow portlet column. | **Done** by uPortal `bc6eb94`, which tests Favorites and Popular Portlets at container widths of 280, 400, 800 and 1200 pixels, with the same checks (`src/test-support/layout.ts`). Other components add theirs when the coordinator announces the helper. |
 | MOD-I283 | Theme | Respondr's body has `overflow-x: hidden`, so a page wider than the screen doesn't scroll sideways: the part past the edge is cut off without any sign. At 320 pixels this cuts off the menu toggle. | The layout check counts it as a scroll problem. Part 2 fixes the width. Whether the body keeps `overflow-x: hidden` is for the skin owner to decide. |
 
+## Working rules (MOD-D53, 2026-10-11)
+
+Gradle runs in the session (with the Maven mirror init script outside the repos). Push once a
+step passes locally, since each push cancels the branch's running checks. The push run (light
+profile) on the head commit is the evidence for landing; there are no full-matrix runs per
+branch, and queued runs stay where they are. This branch is the follow-up branch for MOD-D52:
+any component on ccr that fails the layout checks goes into the baseline, or gets fixed if the
+fix is small.
+
 ## Next step
 
-Wait for uPortal-start Integration 38139468035. If it is green, start the full-matrix runs
-(`workflow_dispatch` of CI.yml and integration.yml in both repos) and send the coordinator the
-head SHAs and run IDs. If the layout specs fail on problems that CI's fonts show, add those to
-the baseline first. Then wait for the go-ahead for part 2.
+Push both repos once the full local Playwright suite passes, and wait for the push runs. When
+uPortal-start's Integration run is green, send the coordinator the head SHAs and run IDs, so part
+1 can land. After the http-replay branch is merged, merge ccr and add the registry entry (1b). Then
+part 2, after the coordinator's go-ahead.
