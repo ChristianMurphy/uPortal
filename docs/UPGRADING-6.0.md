@@ -146,6 +146,49 @@ on `/resources/*`. It served static files packaged in jars such as `spring-js`, 
 requested them, and Web Flow 2.5 removed the class. If your overlay links to files under
 `/uPortal/resources/`, serve them from the web application instead.
 
+## Spring Framework 5.3
+
+uPortal now runs on these versions:
+
+| Library | uPortal 5.17 | uPortal 6.0 |
+| --- | --- | --- |
+| Spring Framework | 4.3.30 | 5.3.39 |
+| Spring Security | 4.2.20 | 5.8.16 |
+| Spring Web Flow | 2.4.8 | 2.5.1 |
+| Spring Session | 1.3.5 | 2.7.4 |
+| Spring LDAP | 2.3.4 | 2.4.4 |
+| Spring-WS | 2.1.2 | 3.1.8 |
+
+Spring Security keeps its 5.x defaults. Its settings that prepare for Spring Security 6 come in
+later releases.
+
+If your overlay or a portlet deployed inside the portal web application has its own Java code or
+Spring XML, check it against the Spring Framework 5 and Spring Security 5 migration notes. Spring 5
+removed, among others, Spring Portlet MVC (uPortal's own copy is described above), the
+`orm.hibernate3` package, `DefaultAnnotationHandlerMapping` and `AnnotationMethodHandlerAdapter`.
+
+### Sessions stored in Redis
+
+* Sessions that Spring Session stored in Redis are lost at the upgrade, so everyone is signed out
+  once. They hold serialized Spring Security 4 objects, which Spring Security 5 can't read. Delete
+  the `spring:session:*` keys when you upgrade. Sessions Tomcat saved to disk hold the same
+  objects and are dropped too.
+* uPortal connects to Redis with Lettuce instead of Jedis. The `org.apereo.portal.session.redis.*`
+  settings are unchanged, with one difference: `org.apereo.portal.session.redis.timeout` (in
+  milliseconds) is now the time a Redis command may take. When it is not set, Lettuce allows 60
+  seconds, where Jedis allowed 2 seconds. Set it to `2000` to keep the old limit.
+  `org.apereo.portal.session.redis.database` applies to standalone and sentinel servers. A Redis
+  cluster has only database 0.
+* If your overlay defines its own `RedisConnectionFactory` with `JedisConnectionFactory`, add Jedis 3
+  to the web application or move it to `LettuceConnectionFactory`.
+
+### Logging
+
+Spring 5 includes its own commons-logging jar, `spring-jcl`. uPortal leaves it out and keeps
+`jcl-over-slf4j`, so libraries that log through commons-logging still go to SLF4J and Logback as
+before. If your overlay adds Spring jars, exclude `org.springframework:spring-jcl` there too:
+both jars define the `org.apache.commons.logging` classes.
+
 ## uPortal-start runs Tomcat 9
 
 uPortal-start installs Tomcat 9.0 instead of 8.5, and these answers look different:
