@@ -11,6 +11,13 @@ public class InputValidator {
     private static final Pattern ALPHANUMERIC_AND_DASH_VALIDATOR_PATTERN =
             Pattern.compile(ALPHANUMERIC_AND_DASH_VALIDATOR_REGEX);
 
+    /**
+     * A user name, as RDBMUserIdentityStore checks it (1 to 100 code points, no whitespace), and
+     * without control characters, which could forge log lines
+     */
+    private static final Pattern USER_NAME_VALIDATOR_PATTERN =
+            Pattern.compile("^[^\\s\\p{Cc}]{1,100}$");
+
     /** Text in any script without control characters, 1 to 255 code points (MOD-D49) */
     private static final Pattern TEXT_VALIDATOR_PATTERN = Pattern.compile("^[^\\p{Cc}]{1,255}$");
 
@@ -25,6 +32,22 @@ public class InputValidator {
                     "Specified "
                             + inputType
                             + " must have 1 to 500 of the characters A-Z, a-z, 0-9, _ and -.");
+        }
+        return s;
+    }
+
+    /**
+     * Validates a user name, such as a portlet list's owner. Email-style user names are common with
+     * single sign-on.
+     *
+     * @param s value to validate
+     * @param inputType not sanitized and will be returned in json.
+     * @return The validated value
+     */
+    public static String validateAsUserName(String s, String inputType) {
+        if (!USER_NAME_VALIDATOR_PATTERN.matcher(s).matches()) {
+            throw new IllegalArgumentException(
+                    "Specified " + inputType + " must have 1 to 100 characters and no spaces.");
         }
         return s;
     }
