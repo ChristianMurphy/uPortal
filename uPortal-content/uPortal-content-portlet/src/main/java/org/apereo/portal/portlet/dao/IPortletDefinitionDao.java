@@ -53,6 +53,8 @@ public interface IPortletDefinitionDao {
     enum SearchMatch {
         /** Equal to the term, case-sensitive on every database */
         EXACT,
+        /** Equal to the term, ignoring case (MOD-I203) */
+        EXACT_IGNORE_CASE,
         /** Starts with the term, ignoring case */
         STARTS_WITH,
         /** Ends with the term, ignoring case */
