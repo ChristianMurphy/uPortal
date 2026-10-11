@@ -172,11 +172,11 @@ imported, because it is the one that runs.
 
 | Check | Result |
 | --- | --- |
-| uPortal CI (`ccr-43ba0785-hzlrj5-pluto`) | run 38089044859: _pending_ |
-| uPortal DB integration | run 38089044904: _pending_ |
-| uPortal-start CI | run 38089219745: _pending_ |
-| uPortal-start Integration, uPortal from this branch (after) | run 38089219769: _pending_ |
-| uPortal-start Integration, uPortal from the integration branch (before) | run 38089226181 (workflow_dispatch, `uportal-ref=ccr-43ba0785-hzlrj5`): _pending_ |
+| uPortal CI on `e10520b` (`ccr-43ba0785-hzlrj5-pluto`, light profile for workstream branches) | run 38091265141: green |
+| uPortal DB integration on `e10520b` | run 38091265157: green on MySQL 9.7, MariaDB 12.3, PostgreSQL 18, Oracle 23 and SQL Server 2025. Run 38089044904 on `a27321a` was green too |
+| uPortal-start CI | run 38094114880 on `f0cfc1a`: green |
+| uPortal-start Integration, uPortal built from this branch (`92f6185`, which has `e10520b`) | run 38096492575 on `60e4557`: green. Build, DB harness on PostgreSQL 18, Playwright on HSQLDB and on PostgreSQL 18, and the MariaDB 11.4 to PostgreSQL 18 copy all passed |
+| uPortal-start Integration with uPortal from the integration branch | run 38089226181 was cancelled when newer pushes superseded it. The local before and after runs below take its place |
 | Full Playwright suite, local portal on this branch (HSQLDB, Tomcat 9, JDK 11) | 123 passed, 2 failed: only the two web-proxy tests that need internet access (sandbox, as in MOD-D17) |
 | Pluto testsuite before / after (local, HSQLDB, Tomcat 9, JDK 11) | identical for all 32 tests (12 passed, 10 failed, 8 manual and 2 warnings), with 144 checks passed and 16 failed (see below) |
 
@@ -301,7 +301,9 @@ issues.
   * Built with Servlet 2.4 and `--release 8`; Spotless and Error Prone off;
     SpotBugs baselines with 84 findings.
   * `shared/lib` keeps Apache's jars until P5-5.
-  * Required checks: (run IDs).
+  * Required checks: uPortal CI 38091265141, DB integration 38091265157 (5
+    databases), uPortal-start CI 38094114880 and Integration 38096492575, all
+    green.
 * **MOD-I?: the Pluto container doesn't define Servlet 3.1's `ServletOutputStream`
   methods** (F1). P6-1 must add `isReady`/`setWriteListener` to three classes.
 * **MOD-I?: the Pluto modules need `--release 8`** (F2). Fix `getPrefixes` and move to 11
