@@ -399,4 +399,15 @@ describe('up-reset-my-layout attributes and messages', () => {
         expect(shadow(element).querySelector('h2')?.textContent?.trim()).toBe('Reset User Layout');
         other.remove();
     });
+
+    it('wraps a user name too long for its width', async () => {
+        const userName = 'student'.repeat(30);
+        server.on('GET', API, json({ userName }));
+        const element = await render(`${ATTRIBUTES} style="display: block; inline-size: 200px"`);
+        await button(element, 'Reset Now').click();
+        await expect.poll(() => textOf(element)).toContain(userName);
+
+        const confirmationView = shadow(element).querySelector<HTMLElement>('.confirmation');
+        expect(confirmationView?.scrollWidth).toBeLessThanOrEqual(200);
+    });
 });
