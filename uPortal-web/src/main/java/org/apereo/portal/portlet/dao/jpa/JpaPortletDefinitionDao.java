@@ -267,7 +267,7 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public List<IPortletDefinition> searchForPortlets(String term, SearchMatch match) {
         final CriteriaQuery<PortletDefinitionImpl> criteriaQuery;
-        if (match == SearchMatch.EXACT) {
+        if (match == SearchMatch.EXACT || match == SearchMatch.EXACT_IGNORE_CASE) {
             criteriaQuery = this.findDefinitionByNameOrTitleQuery;
         } else {
             criteriaQuery = this.searchDefinitionByNameOrTitleQuery;
