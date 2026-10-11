@@ -52,7 +52,7 @@ import org.springframework.util.Assert;
         sequenceName = "UP_PERSON_DIR_SEQ",
         allocationSize = 5)
 @Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {
     private static final long serialVersionUID = 1L;
 
@@ -81,7 +81,7 @@ class LocalAccountPersonImpl implements Serializable, ILocalAccountPerson {
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     @JoinColumn(name = "USER_DIR_ID", nullable = false)
-    @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
+    @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @Fetch(FetchMode.JOIN)
     private final Collection<LocalAccountPersonAttributeImpl> attributes =
             new ArrayList<LocalAccountPersonAttributeImpl>(0);
