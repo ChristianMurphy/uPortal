@@ -55,7 +55,11 @@ public class UrlCanonicalizingFilter extends OncePerRequestFilter {
         this.servletFactoryService = servletFactoryService;
     }
 
-    @Autowired(required = false)
+    /**
+     * Where a guest who opens a page that needs a login is sent, with the page appended. The portal
+     * configures it in mvcContext.xml: the {@code loginRefUrlEncoder} that {@code
+     * login.refUrlEncoder} selects. Without one, guests get the canonical URL.
+     */
     public void setLoginRefUrlEncoder(LoginRefUrlEncoder loginRefUrlEncoder) {
         this.loginRefUrlEncoder = loginRefUrlEncoder;
     }

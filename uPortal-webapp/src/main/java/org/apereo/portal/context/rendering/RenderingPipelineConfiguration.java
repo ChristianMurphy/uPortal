@@ -77,6 +77,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RenderingPipelineConfiguration {
 
+    /** The CsrfToken that Spring Security's CsrfFilter puts on the request, or null. */
+    private static final String CSRF_TOKEN_EXPRESSION =
+            "request.nativeRequest.getAttribute('org.springframework.security.web.csrf.CsrfToken')";
+
     private static final String POST_USER_LAYOUT_STORE_LOGGER_NAME =
             "org.apereo.portal.rendering.LoggingStAXComponent.POST_LAYOUT";
     private static final String POST_USER_LAYOUT_STORE_LOGGER_STEP_IDENTIFIER =
@@ -453,6 +457,10 @@ public class RenderingPipelineConfiguration {
         parameterExpressions.put(
                 "STATS_SESSION_ID",
                 "@portalEventFactory.getPortalEventSessionId(request.nativeRequest, person)");
+        // The session's CSRF token for the page's meta tags. It is part of the cache key, so a
+        // cached page never carries another session's token.
+        parameterExpressions.put("CSRF_TOKEN", CSRF_TOKEN_EXPRESSION + "?.token");
+        parameterExpressions.put("CSRF_HEADER", CSRF_TOKEN_EXPRESSION + "?.headerName");
 
         final Set<String> cacheKeyExcludedParameters = new HashSet<>();
         cacheKeyExcludedParameters.add("CURRENT_REQUEST");

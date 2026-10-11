@@ -42,7 +42,6 @@ changes.
 * MOD-I133: the import upgrader and the copy-tool rule for converting Favorites definitions are
   documented, not built.
 * MOD-I137: harness drift from aggregation jobs that write rows during a slow `dataInit`.
-* MOD-I130: the legacy `/api` endpoints are still exempt from CSRF.
 * The Favorites portlet class stays in uPortal, unused by the quickstart data. The guide's
   "Deleting the Favorites portlet" section lists what removing it needs.
 

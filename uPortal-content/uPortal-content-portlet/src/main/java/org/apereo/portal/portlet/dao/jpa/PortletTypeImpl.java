@@ -26,7 +26,6 @@ import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import javax.persistence.TableGenerator;
 import javax.persistence.Version;
 import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletType;
@@ -42,7 +41,6 @@ import org.hibernate.annotations.NaturalIdCache;
         name = "UP_PORTLET_TYPE_GEN",
         sequenceName = "UP_PORTLET_TYPE_SEQ",
         allocationSize = 1)
-@TableGenerator(name = "UP_PORTLET_TYPE_GEN", pkColumnValue = "UP_PORTLET_TYPE", allocationSize = 1)
 @NaturalIdCache(region = "org.apereo.portal.portlet.dao.jpa.PortletTypeImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)

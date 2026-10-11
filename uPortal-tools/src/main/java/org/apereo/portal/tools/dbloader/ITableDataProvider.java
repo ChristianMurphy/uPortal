@@ -15,12 +15,12 @@
 package org.apereo.portal.tools.dbloader;
 
 import java.util.Map;
-import org.hibernate.mapping.Table;
+import org.apereo.portal.hibernate.TableDefinition;
 
 /** */
 public interface ITableDataProvider {
 
-    public Map<String, Table> getTables();
+    public Map<String, TableDefinition> getTables();
 
     public Map<String, Map<String, Integer>> getTableColumnTypes();
 }

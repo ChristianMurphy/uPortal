@@ -25,6 +25,11 @@ If your 5.17 database runs on an older server, use it as a migration source. The
 (`uPortal-db-migrate`, run with `./gradlew dbMigrate` in uPortal-start) copies 5.17 data from it
 into a new server of any supported vendor and checks every table after the copy.
 
+Before it writes a row, the copy tool also checks that the target can store your text. On SQL
+Server's default collation, `varchar` columns keep only windows-1252, so emoji or CJK text in
+group names, portlet titles, layout names or user attributes doesn't fit. The tool then stops
+and reports each such column, the number of rows and the key of one of them.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
@@ -152,7 +157,35 @@ for definitions with another fname or customized preferences. The Favorites port
 be removed in a later release.
 
 Unsafe requests to the new `/api/v6-0/` REST APIs need Spring Security's CSRF token (or an OIDC
-bearer token), unlike the older APIs under `/api`.
+bearer token), like every unsafe request under `/api` (see
+[Unsafe requests to `/api` need the CSRF token](#unsafe-requests-to-api-need-the-csrf-token)).
+
+## Popular Portlets is a web component
+
+The Popular Portlets channel (`popular-portlets`, titled "Most Popular Apps") was the
+PopularPortlets portlet, a DataTables table. It is now a **Web Component** channel that renders
+`<up-popular-portlets>`, with its data from the new REST API `/api/v6-0/popular-portlets`. Users
+see the same table: the choice of previous days, a link and count for each portlet, sorting,
+the Title and # Times filters, and paging. The differences:
+
+* A filter keeps the rows it names. The portlet's filters kept the right number of rows but
+  showed other portlets once the table was sorted.
+* A portlet without a description has no tooltip. The portlet showed
+  `[no description available]`.
+* Choosing other days keeps the sort, the filters and the rows per page, and shows the first
+  page.
+
+The texts the portlet's script had in English are new `popular.portlets.*` keys in
+`Messages.properties`. Translations that lack them show the English text.
+
+Existing portals keep their PopularPortlets definition until it is converted. Convert it by
+importing uPortal-start's `data/base/portlet-type/Web_Component.portlet-type.xml`, then its
+`data/base/portlet-definition/popular-portlets.portlet-definition.xml` (or your copy of it). A
+definition with another fname needs the type `Web Component`, the framework descriptor
+`WebComponent` and the parameters `webComponent.tagName` and `webComponent.moduleUrl`, both
+`up-popular-portlets`. See
+[Converting existing Popular Portlets channels](developer/web-components/README.md#converting-existing-popular-portlets-channels).
+The PopularPortlets portlet itself will be removed in a later release.
 
 ## Reset My Layout is a web component
 
@@ -328,6 +361,69 @@ the wrong type throws `IllegalArgumentException` instead. The view bean names,
 The CSV and HTML downloads format numbers and dates as before. In locales whose default calendar
 isn't Gregorian or Buddhist, such as `ar-SA` and `fa-IR`, dates are now Gregorian.
 
+## Hibernate 5.2
+
+uPortal now runs on Hibernate ORM 5.2.18 instead of 4.3.11. An existing database upgrades in
+place: no SQL needs to be run, and new rows keep the identifiers the old ones were given.
+
+uPortal keeps every database on the schema and identifier generation it had under Hibernate
+4.3. The settings that do this are in `hibernate.properties` (a "freeze block"), together with
+the dialect choice in `PortalDialectResolver`. Do not override them in your own
+`hibernate.properties` or `hibernate*.cfg.xml`:
+
+| Setting | Why it is there |
+| --- | --- |
+| `hibernate.dialect_resolvers=org.apereo.portal.utils.PortalDialectResolver` | Keeps each database on the dialect Hibernate 4.3 chose. MySQL 8, and MariaDB reporting MySQL metadata, get `MySQL55Dialect`, where Hibernate 5.2 would pick `MySQL57Dialect` with `datetime(6)` columns, or a MariaDB dialect with sequences. PostgreSQL 10 and later get `PostgreSQL81Dialect` (as `PostgreSQL81TextClobDialect`, see below). SQL Server gets `SQLServer2005Dialect`, which doesn't use sequences. |
+| `hibernate.implicit_naming_strategy=org.apereo.portal.hibernate.PortalImplicitNamingStrategy` | Join column names and the `FK_…`/`UK_…` constraint names of Hibernate 4.3 |
+| `hibernate.physical_naming_strategy=…PhysicalNamingStrategyStandardImpl` | Names are used as they are mapped |
+| `hibernate.id.optimizer.pooled.preferred=pooled` | Identifiers are allocated as before from the `UP_*_SEQ` sequences or one-row tables |
+| `hibernate.id.sequence.increment_size_mismatch_strategy=EXCEPTION` | Takes effect from Hibernate 5.4: startup stops if a sequence's increment no longer matches its mapping |
+
+If you customized any of the following, adapt it before you upgrade:
+
+* **Code that uses Hibernate APIs directly**, in overlays or custom portlets deployed inside the
+  portal web application: `org.hibernate.Query` is deprecated in favour of
+  `org.hibernate.query.Query`, `Session.setFlushMode(FlushMode)` in favour of
+  `setHibernateFlushMode`, and `Integrator` implementations receive a
+  `org.hibernate.boot.Metadata` instead of a `Configuration`. `HibernateConfigurationAware`
+  beans get the dialect and a `SchemaTool` from `HibernateConfiguration`; `getConfiguration()` is
+  gone.
+* **Custom dialects or `UserType`s.** User types now receive a
+  `SharedSessionContractImplementor`. uPortal uses Jadira Usertype 6.0.1.GA; its Joda-Time types
+  store values exactly as Jadira 3.2.0.GA did.
+* **`@Type` on a `Map` element collection.** Hibernate 4.3 applied it to the map keys as well as
+  the values. Hibernate 5 applies it to the values only. uPortal's own maps declare `@MapKeyType`
+  so that existing rows are read and written as before. An entity of your own that relies on
+  the old behaviour needs `@MapKeyType(@Type(type = "…"))` too.
+* **`hibernate.dialect.storage_engine`.** Hibernate 5.2's `MySQL5Dialect` creates MyISAM tables
+  unless this is set. uPortal does not use that dialect, but a dialect you configured yourself
+  might.
+* **dom4j.** Hibernate 5.2.18 depends on `org.dom4j:dom4j` 2.1. The portal keeps
+  `dom4j:dom4j` 1.6.1, which the uPortal code is written against, and excludes 2.1.
+
+On Oracle, some deletes that failed in 5.17 now work. Oracle stores an empty string as NULL, and
+Hibernate does not load a NULL value of an element collection, so it did not delete that row with
+its owner, and the owner's delete failed with ORA-02292. This hit a portlet entity with an empty
+window state, a layout attribute with an empty target element name, and a portlet definition with
+an empty localization. uPortal now deletes those rows with their owner.
+
+## PostgreSQL: do not run `vacuumlo`
+
+On PostgreSQL, uPortal stores the raw event data (`UP_RAW_EVENTS.EVENT_DATA` and
+`UP_ANALYTICS_EVENTS.EVENT_DATA`) as large objects and keeps each large object's OID in a `text`
+column. uPortal 5.17 does this, and 6.0 keeps it: `PortalDialectResolver` picks
+`PostgreSQL81TextClobDialect` for PostgreSQL 10 and later, which still declares these columns
+`text` where Hibernate 5.6.2 and later would declare them `oid`.
+
+`vacuumlo` only counts references from `oid` and `lo` columns, so it treats the data of
+every stored raw event as orphaned and deletes it: on a 5.17 test portal, `vacuumlo -n` reported
+that it would remove all 720 large objects written during one portal session. Do not run
+`vacuumlo` (or any other clean-up of "orphaned" large objects) against a uPortal database, and
+exclude it from scheduled maintenance.
+
+A later release will migrate these columns to a large-object type. After that, `vacuumlo` is safe
+to use again.
+
 ## uPortal-start signs users in locally; CAS is opt-in
 
 uPortal-start no longer deploys a CAS 3.6 server (`overlays/cas`) into the portal's Tomcat.
@@ -337,7 +433,8 @@ uPortal's own login form (`SimpleSecurityContextFactory`) against the accounts i
 database:
 
 * `org.apereo.portal.security.provider.cas.CasAssertionSecurityContextFactory.enabled=false`
-* `org.apereo.portal.channels.CLogin.CasLoginUrl=${portal.context}/p/login?refUrl=`
+* `org.apereo.portal.channels.CLogin.CasLoginUrl=${portal.context}/p/login`
+* `login.refUrlEncoder=local` (see the next section)
 * `logout.redirect=` (empty: back to the guest page)
 
 To keep signing in through CAS, build with `authMode=cas` and `casServerUrl` pointing at your CAS
@@ -350,3 +447,58 @@ if you set it for CAS 3.6.
 uPortal's defaults in `security.properties` are unchanged: they still point the login and logout
 URLs at `${cas.protocol.server.context}`, so a portal not built from uPortal-start keeps its CAS
 settings.
+
+## Deep links and failed logins with local login
+
+The new setting `login.refUrlEncoder` (in `security.properties`) says how uPortal sends a guest
+who opens a page that needs a login, such as `/uPortal/p/user-administration`, to the Sign In URL
+(`org.apereo.portal.channels.CLogin.CasLoginUrl`):
+
+* `cas`, the default, works as in 5.x: the page is encoded into the CAS `service` URL.
+* `local`: the Sign In URL is the portal's own login form, such as `${portal.context}/p/login`.
+  The page goes in a `refUrl` parameter and the form posts it to `/Login`, which opens the page
+  after signing in. A wrong user name or password returns to the form, which shows "Invalid
+  username or password" at once. In 5.x it went to the guest page without a message.
+
+A portal that signs users in with uPortal's login form sets `login.refUrlEncoder=local`. In 5.x
+such a portal sent guests' deep links to the form in the CAS encoding, which failed with HTTP 400
+unless the Sign In URL ended in a query parameter such as `?refUrl=`. Remove that suffix. An
+unknown value stops the portal at startup.
+
+`LocalLoginRefUrlEncoder` now appends the page to its `loginUrl` (the Sign In URL) instead of
+always sending guests to `/Login`. If you wired it in your own Spring files, set `loginUrl`, or
+use `login.refUrlEncoder=local` instead.
+
+## Unsafe requests to `/api` need the CSRF token
+
+Every POST, PUT, PATCH and DELETE under `/api` now needs Spring Security's CSRF token, as
+`/api/v6-0/` already did. 5.x exempted all of `/api`, although browsers call these endpoints with
+the session cookie, so another web site could make a signed-in user's browser change their
+layout, permissions or portal data. The endpoints concerned are `/api/layout`,
+`/api/marketplace/{fname}/rating/{rating}`, `/api/preferences/{fname}`,
+`/api/preferences/definition/{fname}`, `/api/portlet-list`, `/api/v4-3/pags/{group}.json`,
+`/api/import`, `/api/entity/{type}/{id}`, `/api/deletePermission`, `/api/updatePermission`,
+`/api/v5-4/caches` and `/api/analytics`. Without a valid token they answer HTTP 403.
+
+A client sends the token in the `X-CSRF-TOKEN` header, or as a `_csrf` request parameter. Every
+Respondr page has the session's token in `<meta name="_csrf">` and the header name in
+`<meta name="_csrf_header">`. Scripts on the page get both with `up.csrfHeaders()` from
+`modern-util.js`. A client outside the page reads the meta tags of a portal page that it loaded
+with the same session; the token changes when the session does, at login and logout.
+
+These requests don't need the CSRF token:
+
+* requests with an `Authorization: Bearer` header, such as the ID token from
+  `/api/v5-1/userinfo`;
+* `/api/v5-5/oauth/token` and `/api/v5-1/userinfo`;
+* `/Login` and `/Logout`.
+
+`/api/updatePermission` changed permissions on a GET, which no CSRF check covers. It now accepts
+POST only.
+
+Customizations that call these endpoints with the session cookie must send the header. The
+archived projects uPortal-home and uportal-app-framework don't send a CSRF token, so their layout
+calls (uPortal-home's `addPortlet`, `removeByFName` and `movePortletAjax` with `useOldLayout`
+on), Marketplace rating (`saveRating`), skin (`chooseSkin`) and add-to-home calls fail against
+6.0. Adopters still running them must change their own copies to send the token or a Bearer
+token, or stop using those calls.

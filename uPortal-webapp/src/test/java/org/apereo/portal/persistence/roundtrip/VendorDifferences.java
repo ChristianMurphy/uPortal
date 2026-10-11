@@ -97,32 +97,6 @@ final class VendorDifferences {
                 : id;
     }
 
-    /**
-     * The entity types {@code EntityManager#remove} cannot delete after the round trip, with the
-     * database error (MOD-I144). Oracle stores the '' elements of element collections without the
-     * nullSafeString type as NULL, which Hibernate 4.3 does not read, so it sees an empty
-     * collection and skips deleting its rows; the owner's delete then fails with ORA-02292. In
-     * PortalDb that blocks stylesheet descriptors (target element names), portlet entities (window
-     * states) and portlet definitions (empty localizations), and with them the portlet preferences
-     * and types they reference. Every other database deletes everything.
-     */
-    static Map<String, String> leftByRemove(DatabaseVendor vendor, String persistenceUnit) {
-        final Map<String, String> left = new java.util.TreeMap<>();
-        if (vendor == DatabaseVendor.ORACLE && "PortalDb".equals(persistenceUnit)) {
-            for (final String type :
-                    java.util.Arrays.asList(
-                            "LayoutAttributeDescriptorImpl",
-                            "PortletDefinitionImpl",
-                            "PortletEntityImpl",
-                            "PortletPreferencesImpl",
-                            "PortletTypeImpl",
-                            "StylesheetDescriptorImpl")) {
-                left.put(type, "ORA-02292");
-            }
-        }
-        return left;
-    }
-
     /** What the database is documented to return for {@code value} after a round trip */
     static Object expectedAfterRoundTrip(DatabaseVendor vendor, Slot slot, Object value) {
         if (value == null) {
