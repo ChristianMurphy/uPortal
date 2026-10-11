@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Licensed to Apereo under one or more contributor license
+    agreements. See the NOTICE file distributed with this work
+    for additional information regarding copyright ownership.
+    Apereo licenses this file to you under the Apache License,
+    Version 2.0 (the "License"); you may not use this file
+    except in compliance with the License.  You may obtain a
+    copy of the License at the following location:
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+
+-->
+<!--
+ | The three persistence units (PortalDb, RawEventsDb, AggrEventsDb) side by side, wired as in
+ | properties/contexts/persistenceContext.xml and eventPersistenceContext.xml, for the migration
+ | goldens (MOD-D29). Like sharedJpaTestContext.xml, the database comes from dataSource.properties
+ | (in-memory HSQLDB unless the uportal.test.db.* system properties name another), so the
+ | multi-database CI job runs these tests on every vendor. Caches are off, so every read goes to
+ | the database. The tests build this context themselves, after setting the JVM time zone.
+ +-->
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:aop="http://www.springframework.org/schema/aop"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+                        http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.1.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd">
+
+    <!-- @Autowired, @Value, @Resource, @PostConstruct and @PersistenceContext, as the test runner
+         (and the portal's component scanning) enables them -->
+    <context:annotation-config/>
+
+    <import resource="classpath:commonTestContext.xml"/>
+
+    <bean id="propertyPlaceholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:/dataSource.properties</value>
+            </list>
+        </property>
+        <!-- Settings without defaults, used by the aggregation goldens -->
+        <property name="properties">
+            <props>
+                <prop key="org.apereo.portal.events.aggr.PortalEventProcessingManagerImpl.aggregateRawEventsPeriod">60000</prop>
+                <prop key="org.apereo.portal.events.aggr.PortalEventProcessingManagerImpl.purgeRawEventsPeriod">60000</prop>
+                <prop key="org.apereo.portal.events.aggr.PortalEventProcessingManagerImpl.purgeEventSessionsPeriod">60000</prop>
+            </props>
+        </property>
+    </bean>
+
+    <!--
+     | The Tomcat JDBC pool, as in properties/contexts/datasourceContext.xml (commons-dbcp 1, which
+     | the other test contexts use, predates JDBC 4 and cannot bind the CLOB streams Hibernate uses)
+     +-->
+    <bean id="GoldenTestDb" abstract="true" class="org.apache.tomcat.jdbc.pool.DataSource" destroy-method="close">
+        <property name="driverClassName" value="${hibernate.connection.driver_class}" />
+        <property name="url" value="${hibernate.connection.url}" />
+        <property name="username" value="${hibernate.connection.username}" />
+        <property name="password" value="${hibernate.connection.password}" />
+        <property name="initialSize" value="1" />
+        <property name="maxActive" value="20" />
+        <property name="maxIdle" value="5" />
+        <property name="maxWait" value="10000" />
+    </bean>
+    <bean id="PortalDb" parent="GoldenTestDb"><qualifier value="PortalDb" /></bean>
+    <bean id="RawEventsDb" parent="GoldenTestDb"><qualifier value="RawEventsDb" /></bean>
+    <bean id="AggrEventsDb" parent="GoldenTestDb"><qualifier value="AggrEventsDb" /></bean>
+
+    <bean id="jpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+        <property name="generateDdl" value="true" />
+    </bean>
+
+    <bean id="GoldenEntityManagerFactory" abstract="true" class="org.apereo.portal.jpa.EventingLocalContainerEntityManagerFactoryBean">
+        <property name="jpaVendorAdapter" ref="jpaVendorAdapter" />
+    </bean>
+
+    <bean id="PortalDbEntityManagerFactory" parent="GoldenEntityManagerFactory">
+        <qualifier value="PortalDb" />
+        <property name="dataSource" ref="PortalDb" />
+        <property name="persistenceUnitName" value="PortalDb" />
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.cache.use_query_cache">false</prop>
+                <prop key="hibernate.cache.use_second_level_cache">false</prop>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="persistenceUnitName">PortalDb</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="RawEventsDbEntityManagerFactory" parent="GoldenEntityManagerFactory">
+        <qualifier value="RawEventsDb" />
+        <property name="dataSource" ref="RawEventsDb" />
+        <property name="persistenceUnitName" value="RawEventsDb" />
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.cache.use_query_cache">false</prop>
+                <prop key="hibernate.cache.use_second_level_cache">false</prop>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="persistenceUnitName">RawEventsDb</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="AggrEventsDbEntityManagerFactory" parent="GoldenEntityManagerFactory">
+        <qualifier value="AggrEventsDb" />
+        <property name="dataSource" ref="AggrEventsDb" />
+        <property name="persistenceUnitName" value="AggrEventsDb" />
+        <property name="jpaProperties">
+            <props>
+                <prop key="hibernate.cache.use_query_cache">false</prop>
+                <prop key="hibernate.cache.use_second_level_cache">false</prop>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="persistenceUnitName">AggrEventsDb</prop>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <qualifier value="PortalDb" />
+        <property name="entityManagerFactory" ref="PortalDbEntityManagerFactory" />
+    </bean>
+    <bean id="rawEventsTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <qualifier value="RawEventsDb" />
+        <property name="entityManagerFactory" ref="RawEventsDbEntityManagerFactory" />
+    </bean>
+    <bean id="aggrEventsTransactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <qualifier value="AggrEventsDb" />
+        <property name="entityManagerFactory" ref="AggrEventsDbEntityManagerFactory" />
+    </bean>
+    <bean id="transactionOperations" class="org.springframework.transaction.support.TransactionTemplate">
+        <qualifier value="PortalDb" />
+        <property name="transactionManager" ref="transactionManager" />
+    </bean>
+    <bean id="rawTransactionOperations" class="org.springframework.transaction.support.TransactionTemplate">
+        <qualifier value="RawEventsDb" />
+        <property name="transactionManager" ref="rawEventsTransactionManager" />
+    </bean>
+    <bean id="aggrTransactionOperations" class="org.springframework.transaction.support.TransactionTemplate">
+        <qualifier value="AggrEventsDb" />
+        <property name="transactionManager" ref="aggrEventsTransactionManager" />
+    </bean>
+
+    <bean class="org.apereo.portal.hibernate.HibernateConfigurationAwareInjector" />
+    <bean class="org.apereo.portal.jpa.OpenEntityManagerAspect" />
+
+    <!-- As sharedJpaTestContext.xml: <tx:annotation-driven/> with uPortal's transaction interceptor -->
+    <bean id="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource#0"
+            class="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource"/>
+    <bean id="org.springframework.transaction.interceptor.TransactionInterceptor#0"
+            class="org.apereo.portal.spring.tx.DialectAwareTransactionInterceptor">
+        <property name="transactionAttributeSource" ref="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource#0" />
+        <property name="transactionManagerBeanName" value="transactionManager" />
+    </bean>
+    <bean id="org.springframework.transaction.config.internalTransactionAdvisor"
+            class="org.springframework.transaction.interceptor.BeanFactoryTransactionAttributeSourceAdvisor">
+        <property name="transactionAttributeSource" ref="org.springframework.transaction.annotation.AnnotationTransactionAttributeSource#0" />
+        <property name="adviceBeanName" value="org.springframework.transaction.interceptor.TransactionInterceptor#0" />
+    </bean>
+    <aop:aspectj-autoproxy/>
+
+
+    <bean class="org.apereo.portal.jpa.cache.EntityManagerCacheImpl">
+        <property name="contentCache">
+            <bean class="org.apereo.portal.spring.MockitoFactoryBean">
+                <constructor-arg value="net.sf.ehcache.Ehcache" />
+            </bean>
+        </property>
+    </bean>
+    <bean id="taggedCacheEntryPurger" class="org.apereo.portal.spring.MockitoFactoryBean">
+        <constructor-arg value="org.apereo.portal.utils.cache.TaggedCacheEntryPurger" />
+    </bean>
+</beans>
