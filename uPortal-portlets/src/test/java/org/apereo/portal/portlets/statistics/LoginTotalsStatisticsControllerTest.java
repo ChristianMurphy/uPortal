@@ -139,13 +139,13 @@ public class LoginTotalsStatisticsControllerTest {
 
         assertEquals(
                 "{\"table\":{\"cols\":["
-                    + "{\"id\":\"date\",\"label\":\"Date\",\"type\":\"date\",\"pattern\":\"\"},{\"id\":\"Everyone-uniqueLogins\",\"label\":\"Everyone"
-                    + " - Unique Logins\","
-                    + "\"type\":\"number\",\"pattern\":\"\"},{\"id\":\"Everyone-totalLogins\",\"label\":\"Everyone"
-                    + " - Total Logins\",\"type\":\"number\",\"pattern\":\"\"}],\"rows\":["
-                    + "{\"c\":[{\"v\":\"Date(2026,9,1)\"},{\"v\":3.0},{\"v\":10.0}]},"
-                    + "{\"c\":[{\"v\":\"Date(2026,9,2)\"},{\"v\":0.0},{\"v\":0.0}]},"
-                    + "{\"c\":[{\"v\":\"Date(2026,9,3)\"},{\"v\":1.0},{\"v\":2.0}]}]}}",
+                        + "{\"id\":\"date\",\"label\":\"Date\",\"type\":\"date\",\"pattern\":\"\"},{\"id\":\"Everyone-uniqueLogins\",\"label\":\"Everyone"
+                        + " - Unique Logins\","
+                        + "\"type\":\"number\",\"pattern\":\"\"},{\"id\":\"Everyone-totalLogins\",\"label\":\"Everyone"
+                        + " - Total Logins\",\"type\":\"number\",\"pattern\":\"\"}],\"rows\":["
+                        + "{\"c\":[{\"v\":\"Date(2026,9,1)\"},{\"v\":3.0},{\"v\":10.0}]},"
+                        + "{\"c\":[{\"v\":\"Date(2026,9,2)\"},{\"v\":0.0},{\"v\":0.0}]},"
+                        + "{\"c\":[{\"v\":\"Date(2026,9,3)\"},{\"v\":1.0},{\"v\":2.0}]}]}}",
                 response.getContentAsString());
     }
 
