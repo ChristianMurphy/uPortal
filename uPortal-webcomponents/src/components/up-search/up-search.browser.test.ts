@@ -4,6 +4,7 @@ import { clearMessageCache, MESSAGES_PATH } from '../../lib/i18n';
 import { axeViolations } from '../../test-support/axe';
 import { FetchStub, json, text } from '../../test-support/fetch-stub';
 import { cleanupFixtures, fixture } from '../../test-support/fixture';
+import { UNICODE_QUERY, UNICODE_QUERY_ENCODED } from '../../test-support/unicode';
 import { createNavigation, navigation, portletUrl } from './navigation';
 import { PORTLET_LIST_PATH, SEARCH_PATH } from './search-api';
 import './up-search';
@@ -205,6 +206,17 @@ describe('up-search-launcher', () => {
         );
 
         expect(assign).toHaveBeenCalledWith('/uPortal/p/find/max?query=x');
+    });
+
+    it('sends a Unicode query encoded once', async () => {
+        const launcher = await renderLauncher();
+
+        await userEvent.fill(input(boxOf(launcher)), UNICODE_QUERY);
+        await userEvent.click(
+            page.elementLocator(launcher).getByRole('button', { name: 'Search' }),
+        );
+
+        expect(assign).toHaveBeenCalledWith(`/uPortal/p/search/max?query=${UNICODE_QUERY_ENCODED}`);
     });
 
     it('does not search for a blank query', async () => {
@@ -726,5 +738,20 @@ describe('navigation', () => {
                 location: { ...view.location, href: 'https://x.org/' },
             }).query(),
         ).toBeNull();
+    });
+
+    it('reads and writes a Unicode query intact', () => {
+        const view = {
+            location: {
+                href: `https://portal.example.edu/uPortal/p/search/max?query=${UNICODE_QUERY_ENCODED}`,
+                assign: vi.fn(),
+            },
+            history: { state: null, replaceState: vi.fn() },
+        };
+        const nav = createNavigation(view);
+
+        expect(nav.query()).toBe(UNICODE_QUERY);
+        nav.replaceQuery(UNICODE_QUERY);
+        expect(view.history.replaceState).toHaveBeenCalledWith(null, '', view.location.href);
     });
 });

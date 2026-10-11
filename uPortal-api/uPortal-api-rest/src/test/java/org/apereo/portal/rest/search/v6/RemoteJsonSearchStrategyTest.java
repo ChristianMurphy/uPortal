@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -150,6 +151,24 @@ public class RemoteJsonSearchStrategyTest {
 
         assertEquals("key=k1&q=tea+%26+cake%2F%C3%BC", exchange.query);
         assertEquals(Collections.singletonList("/search"), requests);
+    }
+
+    @Test
+    public void sendsAUnicodeQueryEncodedOnceAndReadsUnicodeResults() {
+        final String query = SearchServiceTest.UNICODE_QUERY;
+        exchange.body =
+                "{\"items\": [{\"title\": \""
+                        + query
+                        + "\", \"link\": \"https://example.edu/z\", \"snippet\": \"\u674e\"}]}";
+
+        final List<?> results = strategy().search(query, userRequest());
+
+        // Encoded once as UTF-8: decoding once gives the query back, and no %25 (an encoded %)
+        final String sent = exchange.query.substring(exchange.query.indexOf("&q=") + 3);
+        assertFalse(sent, sent.contains("%25"));
+        assertEquals(query, URLDecoder.decode(sent, StandardCharsets.UTF_8));
+        assertEquals(query, ((Map<?, ?>) results.get(0)).get("title"));
+        assertEquals("\u674e", ((Map<?, ?>) results.get(0)).get("description"));
     }
 
     @Test

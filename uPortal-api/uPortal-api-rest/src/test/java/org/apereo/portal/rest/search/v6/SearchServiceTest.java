@@ -244,6 +244,33 @@ public class SearchServiceTest {
         assertTrue(web.isFailed());
     }
 
+    /** Accented letters, a non-Latin script and a four-byte character (MOD-D50). */
+    static final String UNICODE_QUERY = "Zo\u00eb \u00d1and\u00fa \u674e\u5c0f\u9f8d \ud83d\ude00";
+
+    @Test
+    public void passesAnyUnicodeQueryToTheStrategiesIntact() {
+        final SearchResults results = service.search(" " + UNICODE_QUERY + " ", null, request);
+
+        assertEquals(UNICODE_QUERY, results.getQuery());
+        assertEquals(Collections.singletonList(UNICODE_QUERY), people.queries);
+        assertEquals(Collections.singletonList(UNICODE_QUERY), portlets.queries);
+    }
+
+    @Test
+    public void countsTheLimitInCharactersNotUtf16Units() {
+        // An emoji is one character but two UTF-16 units: 199 letters and an emoji are 200
+        // characters (201 units), within the limit; 200 letters and an emoji are not
+        final String emoji = "\ud83d\ude00";
+        service.search("a".repeat(199) + emoji, null, request);
+        try {
+            service.search("a".repeat(200) + emoji, null, request);
+            fail("Searched for 201 characters");
+        } catch (SearchException e) {
+            assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+        }
+        assertEquals(1, people.queries.size());
+    }
+
     @Test
     public void refusesBlankAndOverlongQueries() {
         // The limit is 200 characters, the maxlength of the components' search field. A literal,

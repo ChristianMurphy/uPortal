@@ -27,6 +27,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -114,6 +117,31 @@ public class SearchResultsRESTControllerTest {
                                                 + "\"attributes\":{"
                                                 + "\"name\":[\"Daily Business Cartoon\"],"
                                                 + "\"score\":[\"4.0\"]}}]}]}",
+                                        true));
+    }
+
+    @Test
+    public void readsAUnicodeQueryEncodedOnceAndAnswersItIntact() throws Exception {
+        final String query = SearchServiceTest.UNICODE_QUERY;
+        when(service.search(eq(query), isNull(), any(HttpServletRequest.class)))
+                .thenReturn(new SearchResults(query, Collections.emptyList()));
+
+        // The browser's encoding: UTF-8, percent-encoded once
+        final java.net.URI uri =
+                new java.net.URI(
+                        "/uPortal"
+                                + URI
+                                + "?q="
+                                + URLEncoder.encode(query, StandardCharsets.UTF_8));
+        mockMvc.perform(api(get(uri)))
+                .andExpect(status().isOk())
+                .andExpect(
+                        content()
+                                .json(
+                                        new ObjectMapper()
+                                                .writeValueAsString(
+                                                        new SearchResults(
+                                                                query, Collections.emptyList())),
                                         true));
     }
 
