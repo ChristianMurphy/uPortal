@@ -143,6 +143,22 @@ Jobs of `CI`:
   browser cache hit (`playwright-Linux-1.64.0`), but `Install Playwright browsers` still takes 11 s to
   28 s because `--with-deps` installs the system libraries.
 
+### Runs on the integration branch
+
+The landings ran as full pushes of `ccr-43ba0785-hzlrj5`, so these runs are not comparable with the
+light pushes above. They are the after side for the comparison with batch 1's full runs.
+
+| Repository and commit | Workflow | Run | Runner seconds | Jobs |
+| --- | --- | --- | --- | --- |
+| uPortal `399bccebc` | `CI` | 38170373669 | 3270 s | Linux Temurin 21 1202 s (Chromium 88 s, Build and Test 576 s, lint-js 37 s, SpotBugs 482 s), Linux 25 505 s, macOS 25 518 s, Windows 25 748 s, probe 265 s, commits 13 s, prose 19 s |
+| uPortal `399bccebc` | `DB integration` | 38170373753 | 1818 s | mariadb-12.3 343 s, sqlserver-2025 420 s, mysql-9.7 346 s, postgres-18 329 s, oracle-23 380 s |
+| uPortal `399bccebc` | `DB copy tool` | 38170373594 | 453 s | |
+| uPortal `399bccebc` | `Workflow lint` | 38170373585 | 20 s | |
+| uPortal `399bccebc` | Total | | 5561 s (92.7 min) | |
+
+In the `CI` run only the Linux Temurin 21 cell installs Chromium and runs the web component tests,
+lint-js and SpotBugs (item 2). The other three cells run Build and Test alone.
+
 ### The new output, as an agent reads it
 
 * **Annotations** (`gh api repos/ChristianMurphy/uPortal-start/check-runs/<job>/annotations`), job
