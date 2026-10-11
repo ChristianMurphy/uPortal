@@ -19,7 +19,10 @@ import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.concurrent.Callable;
@@ -37,12 +40,17 @@ import org.apereo.portal.utils.threading.ThrowingRunnable;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.springframework.aop.framework.Advised;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.SimpleTransactionStatus;
 
 /** */
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -631,5 +639,108 @@ public class JpaClusterLockDaoTest extends BasePortalJpaDaoTest {
                         clusterLockDao.releaseLock(mutexName);
                     }
                 });
+    }
+
+    /** A DAO of its own with the given abandoned-lock age, for the takeover tests. */
+    private IClusterLockDao daoWithAbandonedLockAge(long millis) throws Exception {
+        final IClusterLockDao dao =
+                (IClusterLockDao)
+                        beanFactory.createBean(
+                                JpaClusterLockDao.class,
+                                AutowireCapableBeanFactory.AUTOWIRE_NO,
+                                false);
+        // The bean is a proxy of the interface; the age is set on the DAO behind it
+        final JpaClusterLockDao target =
+                (JpaClusterLockDao) ((Advised) dao).getTargetSource().getTarget();
+        target.setAbandonedLockAge(org.joda.time.Duration.millis(millis));
+        return dao;
+    }
+
+    /**
+     * A lock its server stopped updating is taken over once it is older than the abandoned-lock
+     * age. Deterministic, unlike testAbandoned: the age is 1 ms and the lock is 50 ms old.
+     */
+    @Test
+    public void anAbandonedLockIsTakenOver() throws Exception {
+        final AtomicReference<String> server = new AtomicReference<>("ServerA");
+        reset(portalInfoProvider);
+        when(portalInfoProvider.getUniqueServerName()).thenAnswer(invocation -> server.get());
+        final IClusterLockDao dao = daoWithAbandonedLockAge(1);
+        final String mutexName = "anAbandonedLockIsTakenOver";
+        assertNotNull(execute(() -> dao.getLock(mutexName)));
+        TimeUnit.MILLISECONDS.sleep(50);
+
+        server.set("ServerB");
+        final ClusterMutex taken = execute(() -> dao.getLock(mutexName));
+        assertNotNull("ServerB takes over the abandoned lock", taken);
+        assertEquals("ServerB", taken.getServerId());
+        assertTrue(execute(() -> dao.getClusterMutex(mutexName)).isLocked());
+    }
+
+    /**
+     * A lock younger than the abandoned-lock age stays with its server, and its server's update
+     * moves its last update on. Deterministic, unlike testNotAbandoned: the age is one hour.
+     */
+    @Test
+    public void aLiveLockStaysWithItsServer() throws Exception {
+        final AtomicReference<String> server = new AtomicReference<>("ServerA");
+        reset(portalInfoProvider);
+        when(portalInfoProvider.getUniqueServerName()).thenAnswer(invocation -> server.get());
+        final IClusterLockDao dao = daoWithAbandonedLockAge(TimeUnit.HOURS.toMillis(1));
+        final String mutexName = "aLiveLockStaysWithItsServer";
+        final ClusterMutex locked = execute(() -> dao.getLock(mutexName));
+        assertNotNull(locked);
+
+        server.set("ServerB");
+        assertNull("the lock is not abandoned", execute(() -> dao.getLock(mutexName)));
+
+        // MySQL and MariaDB keep the times in whole seconds
+        TimeUnit.MILLISECONDS.sleep(1100);
+        server.set("ServerA");
+        execute(
+                new CallableWithoutResult() {
+                    @Override
+                    protected void callWithoutResult() {
+                        dao.updateLock(mutexName);
+                    }
+                });
+        final ClusterMutex updated = execute(() -> dao.getClusterMutex(mutexName));
+        assertTrue(updated.isLocked());
+        assertEquals("ServerA", updated.getServerId());
+        assertTrue(
+                updated.getLastUpdate() + " after " + locked.getLastUpdate(),
+                updated.getLastUpdate() > locked.getLastUpdate());
+        execute(
+                new CallableWithoutResult() {
+                    @Override
+                    protected void callWithoutResult() {
+                        dao.releaseLock(mutexName);
+                    }
+                });
+        assertFalse(execute(() -> dao.getClusterMutex(mutexName)).isLocked());
+    }
+
+    /**
+     * Every lock operation runs in a new READ COMMITTED transaction (MOD-I99): the optimistic
+     * update must see the latest committed row. HSQLDB reads committed rows anyway, so this checks
+     * the transaction the DAO asks for.
+     */
+    @Test
+    public void lockTransactionsAreNewAndReadCommitted() {
+        final PlatformTransactionManager transactions = mock(PlatformTransactionManager.class);
+        when(transactions.getTransaction(any(TransactionDefinition.class)))
+                .thenReturn(new SimpleTransactionStatus());
+        final JpaClusterLockDao dao = new JpaClusterLockDao();
+        dao.setPlatformTransactionManager(transactions);
+        assertEquals("result", dao.executeIgnoreRollback(status -> "result"));
+        final ArgumentCaptor<TransactionDefinition> definition =
+                ArgumentCaptor.forClass(TransactionDefinition.class);
+        verify(transactions).getTransaction(definition.capture());
+        assertEquals(
+                TransactionDefinition.ISOLATION_READ_COMMITTED,
+                definition.getValue().getIsolationLevel());
+        assertEquals(
+                TransactionDefinition.PROPAGATION_REQUIRES_NEW,
+                definition.getValue().getPropagationBehavior());
     }
 }
