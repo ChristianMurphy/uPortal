@@ -34,6 +34,7 @@ import org.apereo.portal.dbmigrate.plan.MigrationPlan;
 import org.apereo.portal.dbmigrate.plan.Planner;
 import org.apereo.portal.dbmigrate.plan.SchemaProfile;
 import org.apereo.portal.dbmigrate.plan.TableMapping;
+import org.apereo.portal.dbmigrate.plan.TargetCodePageChecks;
 import org.apereo.portal.dbmigrate.plan.TargetConstraintChecks;
 import org.apereo.portal.dbmigrate.report.MigrationReport;
 import org.apereo.portal.dbmigrate.rules.RuleSet;
@@ -263,6 +264,8 @@ public final class DbMigrate {
         if (options.mode() != MigrationOptions.Mode.VERIFY_ONLY) {
             // A target constraint the source rows violate fails here, not half-way through
             TargetConstraintChecks.check(plan, s);
+            // So does text the target's character set can't hold (MOD-I202)
+            TargetCodePageChecks.check(plan, s, t);
         }
     }
 

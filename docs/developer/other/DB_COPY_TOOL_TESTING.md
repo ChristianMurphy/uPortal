@@ -101,6 +101,7 @@ source:
 | A generator set below the copied ids | `--verify-only` exits 1 and names the generator |
 | A missing target table (MOD-I92), an unexpected source column, a target NOT NULL column nothing fills | exit 2, nothing written |
 | A target NOT NULL, length, unique key or foreign key the source rows violate | exit 2, nothing written |
+| An emoji in a source title, for a target column in windows-1252 (`VARCHAR` on SQL Server's default collation, a MySQL/MariaDB `latin1` column) or in MySQL/MariaDB `utf8mb3` (MOD-I202) | exit 2, nothing written, the column and the row's key named |
 
 Before a lost-target fault, the test stops the copy at a known row. A
 second session inserts one of the source's keys (`COUNTER_15000`) into the
