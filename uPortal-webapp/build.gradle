@@ -304,6 +304,55 @@ war {
 }
 
 
+/*
+ * Every Spring jar in WEB-INF/lib comes from the Spring 5.3 bloc at the versions in
+ * gradle.properties (P4-1). Third-party jars (cernunnos, json-lib-ext-spring, Pluto 2.1's POMs,
+ * portlet-jdbc-util, portlet-ws-util) declare Spring 2.0 to 4.3; a module that nothing newer
+ * requests would otherwise keep that old version.
+ */
+def checkWarSpringJars = tasks.register('checkWarSpringJars') {
+    description = 'Fails if WEB-INF/lib holds a Spring jar outside the versions in gradle.properties.'
+    group = 'verification'
+    def warFile = tasks.named('war').flatMap { it.archiveFile }
+    inputs.file(warFile)
+    def expected = [
+            // Spring Framework
+            (~/spring-(aop|aspects|beans|context|context-indexer|context-support|core|expression|instrument|jcl|jdbc|jms|messaging|orm|oxm|test|tx|web|webflux|webmvc|websocket)/): springVersion,
+            (~/spring-security-[a-z0-9-]+/)                 : springSecurityVersion,
+            (~/spring-(webflow|binding|js|js-resources|faces)/): springWebflowVersion,
+            (~/spring-session-[a-z-]+/)                     : springSessionVersion,
+            (~/spring-ldap-[a-z-]+/)                        : springLdapVersion,
+            (~/spring-(ws-[a-z-]+|xml)/)                    : springWsVersion,
+            (~/spring-data-(commons|keyvalue|redis)/)       : springDataRedisVersion,
+            // Spring Plugin is not part of Spring Framework; springfox 2.9.2 picks its version
+            (~/spring-plugin-(core|metadata)/)              : null,
+    ]
+    doLast {
+        def problems = []
+        zipTree(warFile.get().asFile).matching { include 'WEB-INF/lib/spring-*.jar' }.visit { entry ->
+            if (entry.directory) {
+                return
+            }
+            def matcher = entry.name =~ /^(spring(?:-[a-z][a-z0-9]*)*)-(\d.*)\.jar$/
+            if (!matcher.matches()) {
+                problems << "${entry.name}: not a recognised Spring jar name"
+                return
+            }
+            def (artifact, version) = [matcher.group(1), matcher.group(2)]
+            def rule = expected.find { pattern, v -> artifact ==~ pattern }
+            if (rule == null) {
+                problems << "${entry.name}: not part of the Spring 5.3 bloc this build expects"
+            } else if (rule.value != null && version != rule.value) {
+                problems << "${entry.name}: expected version ${rule.value}"
+            }
+        }
+        if (!problems.isEmpty()) {
+            throw new GradleException('Unexpected Spring jars in the WAR:\n  ' + problems.sort().join('\n  '))
+        }
+    }
+}
+tasks.named('check') { dependsOn checkWarSpringJars }
+
 // Publish the WAR in place of the disabled jar, with war packaging. The POM dependencies
 // still come from components.java (configured in the root build.gradle), as they did
 // with the legacy `maven` plugin.
