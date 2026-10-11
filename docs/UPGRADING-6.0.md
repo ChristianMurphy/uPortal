@@ -284,6 +284,36 @@ else:
 The `UserLocale` portlet and its `locale-selector` flow will be removed in a later release.
 `UserLocaleHelper` stays, because the REST API and the Translator portlet use it.
 
+## Session Timeout is a web component
+
+The Session Timeout channel (`session-timeout`) was the SessionTimeout portlet. It is now a **Web
+Component** channel that renders `<up-session-timeout>`. The element reads the session's timeout
+from `GET /api/v6-0/session` and keeps the session with `POST /api/v6-0/session/keep-alive`. Users
+see the same warning with the same text and buttons, 30 seconds plus `dialogDisplaySeconds`
+before the session expires. One thing looks different:
+when the keep-alive fails, "Error resetting your session!" appears inside the warning instead of
+in a browser alert. Tabs that still run the portlet and tabs that run the component share the
+logout time, so they postpone each other's warning while a portal is being upgraded.
+
+To convert an existing portal, import uPortal-start's Web Component portlet type (if the
+Favorites conversion has not imported it already), then its
+`data/base/portlet-definition/session-timeout.portlet-definition.xml`. The import updates the
+channel by fname and keeps its ID and layout placements. A definition with another fname is
+converted by the same changes: the type becomes `Web Component` with the `WebComponent`
+framework portlet, and three parameters are added:
+
+* `webComponent.tagName` and `webComponent.moduleUrl`, both `up-session-timeout`;
+* `webComponent.preferenceAttributes`, one mapping per line: `enabled=enabled`,
+  `dialog-display-seconds=dialogDisplaySeconds` and `logout-url=logoutURLFragment`.
+
+The `enabled`, `dialogDisplaySeconds` and `logoutURLFragment` preferences keep their meaning and
+defaults (`true`, 60 and `/Logout`). `logoutURLFragment` must be a path in the portal: a value
+that starts with `//` or names another host falls back to `/Logout`. `resetSessionURLFragment` is
+no longer read, because the keep-alive is the REST API. A portal that pointed it at its own URL
+should check that `POST /api/v6-0/session/keep-alive` reaches uPortal. The SessionTimeout portlet,
+`SessionTimeoutViewController` and `scripts/session-timeout.js` stay in this release for
+definitions that are not converted yet, and will be removed later.
+
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
 Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
