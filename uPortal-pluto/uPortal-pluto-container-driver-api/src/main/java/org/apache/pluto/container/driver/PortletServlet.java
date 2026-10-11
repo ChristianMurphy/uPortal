@@ -14,11 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/*
+ * Changed by uPortal (see uPortal-pluto/README.md): a request that arrives before the portlet has
+ * registered no longer takes the portlet out of service until Tomcat restarts (MOD-I350).
+ */
 package org.apache.pluto.container.driver;
 
 import java.io.IOException;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.portlet.ActionRequest;
 import javax.portlet.ActionResponse;
@@ -102,7 +108,9 @@ public class PortletServlet extends HttpServlet
     /**
      * The portlet instance wrapped by this servlet.
      */
-    private Portlet portlet;
+    // uPortal: volatile, because dispatch() reads it without the lock. It is set only once the
+    // portlet is initialised, and after the fields that dispatch() uses with it (MOD-I350).
+    private volatile Portlet portlet;
 
     /**
      * The internal portlet context instance.
@@ -126,7 +134,25 @@ public class PortletServlet extends HttpServlet
     private PortletContextService contextService;
 
     private boolean started = false;
-    Timer   startTimer;
+    // uPortal: volatile, because awaitRegistration() reads it without the lock (MOD-I350)
+    volatile Timer   startTimer;
+
+    // uPortal (MOD-I350): Apache Pluto tried to register every 10 seconds, so a portlet could stay
+    // unregistered for up to 10 seconds after the portal's container services had started.
+    static final long REGISTRATION_PERIOD_MILLIS = 1000;
+
+    // uPortal (MOD-I350): how long a request that comes before the registration waits for it.
+    // A field, so that the tests can shorten it.
+    long registrationWaitMillis = 10000;
+
+    // uPortal (MOD-I350): how long Tomcat holds the servlet unavailable when that wait runs out
+    static final int UNAVAILABLE_SECONDS = 1;
+
+    // uPortal (MOD-I350): a field, so that a registration task can be added after init()
+    private transient ClassLoader paClassLoader;
+
+    // uPortal (MOD-I350): counted down when the registration is over (startTimer is then null)
+    private transient CountDownLatch registrationOver;
 
     // HttpServlet Impl --------------------------------------------------------
 
@@ -153,9 +179,17 @@ public class PortletServlet extends HttpServlet
         started = false;
 
         startTimer = new Timer(true);
+        paClassLoader = Thread.currentThread().getContextClassLoader();
+        registrationOver = new CountDownLatch(1);
+        startTimer.schedule(registrationTask(), 1, REGISTRATION_PERIOD_MILLIS);
+    }
+
+    // uPortal: the timer task of init(), moved here so that awaitRegistration() can add one
+    // (MOD-I350)
+    private TimerTask registrationTask()
+    {
         final ServletContext servletContext = getServletContext();
-        final ClassLoader paClassLoader = Thread.currentThread().getContextClassLoader();
-        startTimer.schedule(new TimerTask()
+        return new TimerTask()
         {
             public void run()
             {
@@ -167,11 +201,48 @@ public class PortletServlet extends HttpServlet
                         {
                             startTimer.cancel();
                             startTimer = null;
+                            registrationOver.countDown();
                         }
                     }
                 }
             }
-        }, 1, 10000);
+        };
+    }
+
+    /**
+     * uPortal (MOD-I350): has the start timer try to register the portlet now, and waits for the
+     * registration up to {@link #registrationWaitMillis}. The attempt runs on the timer thread, so
+     * an interrupted request (uPortal interrupts a portlet render that times out) can't make the
+     * portlet's initialisation fail, and the request doesn't wait for the lock the attempt holds.
+     *
+     * @return false while the registration is still to come, true once it is over (the portlet
+     *         is then in service, unless it failed to start)
+     */
+    private boolean awaitRegistration()
+    {
+        Timer timer = startTimer;
+        if (timer != null)
+        {
+            try
+            {
+                timer.schedule(registrationTask(), 0);
+            }
+            catch (IllegalStateException e)
+            {
+                // The timer has stopped: the registration is over, or an attempt threw and no
+                // registration will come
+                return true;
+            }
+        }
+        try
+        {
+            return registrationOver.await(registrationWaitMillis, TimeUnit.MILLISECONDS);
+        }
+        catch (InterruptedException e)
+        {
+            Thread.currentThread().interrupt();
+            return false;
+        }
     }
 
     protected boolean attemptRegistration(ServletContext context, ClassLoader paClassLoader)
@@ -207,10 +278,12 @@ public class PortletServlet extends HttpServlet
             try
             {
                 Class<?> clazz = paClassLoader.loadClass((portletDD.getPortletClass()));
-                portlet = (Portlet) clazz.newInstance();
-                portlet.init(portletConfig);
-                initializeEventPortlet();
-                initializeResourceServingPortlet();
+                // uPortal: dispatch() sees the portlet only once it is initialised (MOD-I350)
+                Portlet newPortlet = (Portlet) clazz.newInstance();
+                newPortlet.init(portletConfig);
+                initializeEventPortlet(newPortlet);
+                initializeResourceServingPortlet(newPortlet);
+                portlet = newPortlet;
                 return true;
             }
             catch (Exception ex)
@@ -233,6 +306,8 @@ public class PortletServlet extends HttpServlet
             {
                 startTimer.cancel();
                 startTimer = null;
+                // uPortal: release the requests that wait in awaitRegistration() (MOD-I350)
+                registrationOver.countDown();
             }
             else if ( started && portletContext != null)
             {
@@ -297,7 +372,21 @@ public class PortletServlet extends HttpServlet
             {
         if (portlet == null)
         {
-            throw new javax.servlet.UnavailableException("Portlet "+portletName+" unavailable");
+            // uPortal (MOD-I350): Apache Pluto threw the one-argument UnavailableException here,
+            // which Tomcat takes as permanent. A request that came before the start timer had
+            // registered the portlet took the portlet out of service until Tomcat restarted. Now
+            // the request has the registration done at once, and if it can't wait for it, Tomcat
+            // holds the servlet unavailable for UNAVAILABLE_SECONDS only.
+            if (!awaitRegistration())
+            {
+                throw new javax.servlet.UnavailableException("Portlet "+portletName+" unavailable",
+                        UNAVAILABLE_SECONDS);
+            }
+            if (portlet == null)
+            {
+                // The portlet failed to start; attemptRegistration() logged why
+                throw new javax.servlet.UnavailableException("Portlet "+portletName+" unavailable");
+            }
         }
 
         // Retrieve attributes from the servlet request.
@@ -443,7 +532,7 @@ public class PortletServlet extends HttpServlet
         }
     }
 
-    private void initializeEventPortlet()
+    private void initializeEventPortlet(Portlet portlet)
     {
         if (portlet instanceof EventPortlet)
         {
@@ -455,7 +544,7 @@ public class PortletServlet extends HttpServlet
         }
     }
 
-    private void initializeResourceServingPortlet()
+    private void initializeResourceServingPortlet(Portlet portlet)
     {
         if (portlet instanceof ResourceServingPortlet)
         {
