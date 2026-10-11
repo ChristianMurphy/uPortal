@@ -246,11 +246,10 @@ public class SearchServiceTest {
 
     @Test
     public void refusesBlankAndOverlongQueries() {
-        final StringBuilder longest = new StringBuilder();
-        for (int i = 0; i < SearchService.MAX_QUERY_LENGTH; i++) {
-            longest.append('a');
-        }
-        service.search(longest.toString(), null, request);
+        // The limit is 200 characters, the maxlength of the components' search field. A literal,
+        // so that changing the constant fails this test.
+        final String longest = "a".repeat(200);
+        service.search(longest, null, request);
 
         for (String query : Arrays.asList(null, "", "   ", longest + "a")) {
             try {
