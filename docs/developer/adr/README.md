@@ -59,3 +59,4 @@ numbers. That log stays with the prototype branch and isn't part of uPortal.
 | [0006](0006-upgrade-hibernate-in-steps-with-the-schema-frozen.md) | Upgrade Hibernate in steps with the 5.17 schema frozen | proposed | 2026-10-10 |
 | [0007](0007-replace-joda-time-with-java-time.md) | Replace Joda-Time with java.time | proposed | 2026-10-10 |
 | [0008](0008-move-to-an-improved-6-0-schema-with-a-copy-tool.md) | Move to an improved 6.0 schema with a cross-vendor copy tool | proposed | 2026-10-10 |
+| [0009](0009-run-on-current-database-servers-with-a-measured-index-set.md) | Run 6.0 on current database servers, with an index set measured under load | proposed | 2026-10-10 |
