@@ -16,7 +16,7 @@ Branches: `ccr-43ba0785-hzlrj5-pluto` in uPortal and in uPortal-start.
 | --- | --- |
 | `49e81c5` `build: import apache pluto 2.1.0-M3 and portlet api 2.1.0 sources` | The six `-sources` jars, unchanged, in `uPortal-pluto/*/src/main/{java,resources}`. Upstream files only (330 files). |
 | `0b31bcd` `build: build the in-tree apache pluto modules` | Six subprojects, README, NOTICE, `verify-import.sh`, SpotBugs baselines, root NOTICE credit, STATIC_ANALYSIS note. |
-| `97463b0` `build: build uportal against the in-tree pluto and portlet api` | 24 build scripts switch from the Maven Central artifacts to the projects. `plutoVersion` and `portletApiDependency` are removed. |
+| `97463b0` `build: build uportal against the in-tree pluto and portlet api` | 24 build scripts switch from the Maven Central artifacts to the projects. `plutoVersion` and `portletApiDependency` are removed (the merge `a6fac28` brings `plutoVersion` back for `d205646`). |
 | `a27321a` | Merge of the integration branch (one docs commit). |
 | `e10520b` `fix(build): fill in pluto's container info as its maven build did` | Fills in the placeholders of `pluto-configuration.properties` that Pluto's Maven build filtered (F6), with `PlutoContainerInfoTest`. Squash into `0b31bcd` when replaying upstream. |
 | `b5905bf`, `d2b7d13`, and later | `docs:` this note and `compare-classes.py`. |
@@ -229,7 +229,7 @@ Why each check fails, from the result pages ("got … expected …"):
 | --- | --- | --- | --- |
 | `checkPortalInfo` | got `uPortal/5.17.10-SNAPSHOT`, expected `uPortal/5.0.0-SNAPSHOT` | uPortal-start's `overlays/pluto-testsuite/.../expectedResults.properties` is stale | test-suite data |
 | `checkContextMajorVersion` | got `2`, expected `1` | the same file expects Portlet 1.0 (`expected.version.major = 1`); the WAR's own file says 2 | test-suite data |
-| `checkContextServerInfo` | got `Pluto/${pluto.version}`, expected `Pluto/2.1.0-M3` | uPortal has its own `uPortal-webapp/src/main/resources/org/apache/pluto/driver/container/pluto-configuration.properties` (it overrides the jar's, and adds the `javax.portlet.renderHeaders` runtime option); its `${pluto.version}` is never filled in | uPortal bug (cosmetic) |
+| `checkContextServerInfo` | got `Pluto/${pluto.version}`, expected `Pluto/2.1.0-M3` | uPortal has its own `uPortal-webapp/src/main/resources/org/apache/pluto/driver/container/pluto-configuration.properties` (it overrides the jar's, and adds the `javax.portlet.renderHeaders` runtime option). Its `${pluto.version}` was never filled in. Fixed on the integration branch by `d205646` | uPortal bug (cosmetic), fixed |
 | `checkGetNoValuePreference` (×2) | got `{}`, expected `{Default}` | a preference declared with no value returns no values instead of the default the portlet passes (PLT.14.1) | uPortal deviation from JSR-286 (preferences code) |
 | `checkPreferenceValidator` | "Illegal value not caught by validator" | `PortletPreferences.store()` doesn't run the portlet's `PreferencesValidator` (PLT.14.4) | uPortal deviation from JSR-286 |
 | `checkEnumerateAttributes` | got 6 attribute names with the test's prefix, expected 5 | the suite finds its `check*` methods by reflection, in an order that can change at each JVM start. When `checkSetAttribute` runs first, its `BOGUS_KEY` attribute is still set and gets counted. It passed in 1 of 5 restarts of one portal, with the same jars | test-suite order dependence |
@@ -245,9 +245,9 @@ to the jars (Apache's jar and the in-tree one each give either result,
 depending on the JVM start). The spec accepted either result for that one
 check (uPortal-start `f0cfc1a`) until it was dropped.
 
-The test-suite and config issues each take a one-line fix (the overlay's
-`expectedResults.properties`, and `${pluto.version}` → `2.1.0-M3` in
-uPortal's file). The end-to-end tests workstream's spec, which the coordinator
+The stale values in the overlay's `expectedResults.properties` take a
+one-line fix each, and `d205646` on the integration branch fills in
+`${pluto.version}` in uPortal's file from `plutoVersion`. The end-to-end tests workstream's spec, which the coordinator
 kept, fixes several of these checks. The preference deviations are real uPortal bugs that need their own
 issues.
 
@@ -286,7 +286,9 @@ issues.
   now compares resources too.
 * **F7 (uPortal's own Pluto config):** uPortal's override has an unfilled
   `${pluto.version}`, so portlets see `Pluto/${pluto.version}` as the server
-  info on 5.17 today (`checkContextServerInfo`).
+  info on 5.17 (`checkContextServerInfo`). `d205646` on the integration branch
+  fixes it, so this branch keeps `plutoVersion` in `gradle.properties` for
+  that filter.
 
 ## Proposed LOG entries
 
@@ -312,9 +314,9 @@ issues.
   a preference declared without a value returns `{}` instead of the default
   (PLT.14.1), and `store()` doesn't run the `PreferencesValidator`
   (PLT.14.4).
-* **MOD-I?: stale Pluto test-suite expectations and server info** (F7): the
-  overlay's `expectedResults.properties` and uPortal's
-  `pluto-configuration.properties` account for 3 of the 8 failing checks.
+* **MOD-I?: stale Pluto test-suite expectations**: the overlay's
+  `expectedResults.properties` accounts for 2 of the 8 failing checks (the
+  third, F7, is fixed by `d205646`).
 
 ## What's left
 
