@@ -1718,9 +1718,161 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
      This also stops "Create a User" from overwriting an existing account (MOD-I195).
   2. Self-Edit Account asks for the current password before a change.
   3. Forgot Password gives the same answer for known and unknown user names.
-  4. Password reset links expire (default one hour, as a property), and the page says when the
-     email couldn't be sent.
+  4. Password reset links expire (default one hour, as a property).
+* **Resolved conflict (coordinator, 2026-10-11):** fixes 3 and 4 first asked for the page to say
+  when the email couldn't be sent. For an unknown user name nothing is sent, so a "could not be
+  sent" page would show that an account exists. Known and unknown user names get the same neutral page ("if that
+  user name has a local account with an email address, reset instructions were sent; contact the
+  help desk if nothing arrives"), and a failed send is logged at ERROR for administrators,
+  without the token.
 * **Found by:** the Self-Edit Account characterisation specs.
+
+### MOD-D46: Self-Edit Account and Reset My Layout are web components
+
+* **Decision (project owner, 2026-10-11):** both become REST APIs plus web components, which
+  changes MOD-D19's default mapping for these two (it listed them as Thymeleaf full-page flows).
+* **Condition.** Self-Edit Account's password fields work with browser password managers. They
+  carry `autocomplete` hints (`username`, `current-password`, `new-password`), and a browser
+  test checks that the fields can be found, since shadow DOM can hide fields from autofill.
+* **Why:** both conversions were built and tested before the mapping was checked. The API is
+  CSRF-protected, no log line contains a password, and a Thymeleaf page would have to wait for
+  Spring 5.3. Forgot Password and the reset-password flow keep MOD-D19's mapping.
+
+### MOD-D47: hide the Tomcat version and fix the existing accessibility violations
+
+* **Decision (project owner, 2026-10-11):** Tomcat's error pages and headers stop showing the
+  server version. The accessibility violations in the axe baseline (`tests/a11y/baseline.ts`
+  in uPortal-start) are fixed, starting with the Respondr skin, and the baseline only shrinks.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`.
+
+### MOD-D48: fix how uPortal holds database connections before changing pool defaults
+
+* **Decision (project owner, 2026-10-11):** the pool defaults stay as they are for now. First,
+  uPortal stops taking a connection per portlet render to read a cached portlet definition,
+  and stops holding the request's connection while the page waits for its portlets. The
+  budget (MOD-I190) is then set from new measurements.
+* **Why:** with 5.x defaults, 16 users reach about 127 PostgreSQL connections, more than the
+  default limit of 100. A pool of 60 avoids errors, but most of its connections are idle.
+
+### MOD-D49: text inputs accept any Unicode text
+
+* **Decision (project owner, 2026-10-11):** the portal has international users, so a field where
+  people type text accepts any Unicode text, sent as UTF-8. That covers names, titles,
+  descriptions, search terms, email addresses, passwords and tenant names. A field limits its
+  characters only when its value is an identifier that the portal puts in URLs or keys, such as
+  fnames, tenant fnames and event types. Its error message then lists the characters it allows.
+* **Tests:** each new API and component sends a value with accented letters, a non-Latin script
+  and a character outside the Basic Multilingual Plane (four bytes in UTF-8), and reads it back.
+  The persistence goldens do the same on all six vendors.
+* **Storage:** SQL Server follows MOD-D44. A MySQL or MariaDB column must use `utf8mb4` to hold
+  four-byte characters, and any change it needs joins the 6.0 schema step (MOD-D11).
+* **Work:** `ccr-43ba0785-hzlrj5-utf8-inputs` (audit, MOD-I233); each conversion tests its own
+  fields.
+
+### MOD-D50: web components come in English, Spanish and French
+
+* **Decision (project owner, 2026-10-11):** each message a web component uses has English,
+  Spanish and French text (`Messages.properties`, `Messages_es.properties`,
+  `Messages_fr.properties`) in the commit that adds it. A check fails the build when a
+  component's key is missing from one of the three. The other bundles (de, ja, lv, mk, sv) show
+  English for new keys until someone translates them, as today.
+* **Format:** messages go through `MessageFormat` (`alwaysUseMessageFormat`), so an apostrophe
+  is written twice (`l''élément`) and placeholders stay `{0}`, `{1}`.
+* **Tests:** a Playwright test renders each component for a user whose locale is Spanish and
+  one whose locale is French, and finds a translated text.
+* **Work:** `ccr-43ba0785-hzlrj5-i18n` (MOD-I231, MOD-I232, the check); each open conversion
+  adds its own translations.
+
+### MOD-D51: web components work in any language a site adds
+
+* **Decision (project owner, 2026-10-11):** beyond English, Spanish and French (MOD-D50), a site
+  can run the components in other languages, such as German, Polish, Arabic or Chinese. It adds
+  a message bundle and lists the locale in `portal_locales`, with no code changes. So the
+  components:
+  1. pick plural forms by the language's rules (`Intl.PluralRules`). Polish needs three forms
+     and Arabic six. A message key has one entry per form (`.one`, `.few`, `.many`, `.other`
+     and so on), and a missing form falls back to `.other`;
+  2. format numbers and dates in the user's locale (`Intl.NumberFormat`,
+     `Intl.DateTimeFormat`), so Arabic digits and German separators appear where those locales
+     use them;
+  3. set `lang` and `dir` on the element from the locale, use CSS logical properties only, and
+     mirror icons that point left or right, so Arabic reads right to left;
+  4. ignore keys while an input method is composing text (`isComposing`), so pressing Enter to
+     choose a Chinese or Japanese character doesn't submit a form;
+  5. wrap long words, such as German compounds, instead of clipping them;
+  6. fall back from region to language to English (`zh-TW`, then `zh`, then English), and
+     accept script subtags (`zh-Hant`).
+* **Tests:** two pseudo-locales built from `Messages.properties` at test time: one with
+  accented letters and text 40% longer, one right to left. They find English text written into
+  the code, clipped text and layouts that don't mirror. Unit tests check the Polish and Arabic
+  plural forms, and a Playwright test runs a component with test bundles for `pl`, `ar` and
+  `zh-TW`.
+* **Languages in the release (project owner, 2026-10-11):** the 6.0 release has English,
+  Spanish and French text for the components. A site can add other languages. The tests use
+  test bundles for them. The release doesn't contain translations that nobody has reviewed.
+* **Theme:** the Respondr theme around the components has no right-to-left layout (MOD-I234).
+  The owner chose to make it right to left after the accessibility fixes (MOD-D47), which
+  change the same skin files.
+* **Work:** `ccr-43ba0785-hzlrj5-i18n` builds the shared code in `lib/i18n.ts` and updates the
+  landed components. Each later conversion uses that code.
+
+### MOD-D52: pages and components fit standard screen sizes
+
+* **Request (project owner, 2026-10-11):** check that the layout fits on standard screen sizes:
+  nothing spills out of its box or gets cut off, nothing collapses, and nothing wraps where it
+  shouldn't.
+* **Sizes:** widths of 320 (the WCAG reflow minimum, a 1280-pixel screen at 400% zoom), 390
+  (phone), 768 (tablet), 1024, 1366 (the most common laptop) and 1920 pixels.
+* **Checks,** measured from element boxes in the browser rather than compared screenshots:
+  1. The page never scrolls sideways.
+  2. No text or control is cut off. A box that hides overflow shows all of its content, unless
+     it scrolls on purpose, or it ends in an ellipsis and the full text is available to screen
+     readers and on hover.
+  3. An element doesn't spill over its neighbors, and controls don't overlap.
+  4. Buttons, tabs, menu items, table headers, labels and badges stay on one line from 768 pixels
+     up. The tab bar fits on one row from 1024 pixels up, unless it turns into a menu by design.
+  5. A region, portlet or component with content keeps a usable size instead of collapsing, and
+     columns stack instead of getting narrower than 240 pixels. Images keep their proportions.
+  6. With the WCAG text spacing applied (line height 1.5, letter spacing 0.12em, word spacing
+     0.16em), nothing is cut off.
+* **Where:** each page of the quickstart users (guest, student, staff, faculty, admin), the
+  login page, each web component maximized, and the main admin pages, in Chromium at all six
+  widths. WebKit and Firefox run at 390 and 1366 pixels. Each web component also runs at
+  container widths of 280, 400, 800 and 1200 pixels in its own browser tests, since a portlet
+  column can be narrow. Once the -i18n pseudo-locales land, the checks also run with the
+  longer text and right to left.
+* **Existing problems:** recorded in a baseline that only shrinks, like the axe baseline
+  (MOD-D47). A new problem fails the build.
+* **Work:** `ccr-43ba0785-hzlrj5-hardening`, before the accessibility fixes, so those fixes and
+  the right-to-left theme (MOD-I234) are measured against it. The checks run inside the
+  existing Playwright jobs, not new ones.
+
+### MOD-D53: faster landing with the same checks
+
+* **Measured (2026-10-11, 11:55 UTC):** of 24 pending workflow runs, 22 were waiting for a runner
+  or running, one for close to two hours. A branch needs about 40 jobs before it is merged, and
+  about 20 runner slots serve both repositories. Pushes cancelled running checks: one branch
+  started 32 runs. Cloud sessions couldn't run Gradle, so each compile check went through the
+  queue or the coordinator.
+* **Decision (project owner, 2026-10-11):** the runner pool stays as it is, and:
+  1. Cloud sessions may run Gradle. `.claude/settings.json` in both repositories allows
+     `./gradlew`. The init script that points Gradle at a Maven mirror is kept outside the
+     repositories. A session
+     compiles and tests its change before it pushes.
+  2. A session pushes when a step has passed locally, not after every commit, since each push
+     cancels its branch's running checks.
+  3. Before it is merged, a branch runs the checks for what it changes: the light profile on push,
+     plus the six-vendor database workflows when it changes persistence, SQL, the schema or
+     the copy tool. Branches are then merged in batches of up to four, and the full matrix runs once
+     on the result. If that run fails, the coordinator finds the branch that broke it and
+     reverts its commits with revert commits. The other branches stay.
+  4. A rule the owner adds for every component goes into one follow-up branch that applies it
+     to every component, which also keeps the wording consistent. Branches that pass are
+     merged without it. A security or data-loss rule still goes into each branch before it is
+     merged.
+* **Unchanged:** seeded faults, characterisation specs, zero schema drift until the 6.0 schema
+  step, no re-runs for flakes, and a full matrix on the integration branch after each batch.
+  This refines MOD-D32's landing steps.
 
 ## Issues
 
@@ -1910,6 +2062,11 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I201 | Copy tool | **Found by the migration-equivalence nightly set** (run 38120962016, job 114422262436). 6.0 on SQL Server can't hold text outside windows-1252: the build under test creates `varchar` columns on the default collation. A 5.17 site on another database with emoji or CJK in group names, portlet titles, layout names or user attributes can't move to 6.0 on SQL Server. The copy from MariaDB 10.6 wrote all 2,185 rows, and verification refused 14 tables (same row counts, other hashes): `news_definition`, `news_role`, `up_dlm_evaluator`, `up_group`, `up_pags_group`, `up_pags_test`, `up_permission`, `up_permission_owner`, `up_permission_activity`, `up_layout_struct`, `up_portlet_def`, `up_portlet_pref`, `up_portlet_pref_values`, `up_person_attr_values`. The copy failed, so nothing was lost without notice. The plan reported 0 warnings. | Open, schema decision with the project owner: `nvarchar` through Hibernate's nationalized strings, or a UTF-8 collation with lengths sized in characters. The nightly copy into SQL Server fails until that decision is made. MOD-I202 makes the plan refuse such a copy before it starts. |
 | MOD-I202 | Copy tool | The plan doesn't compare the target's text encoding with the source's text. A copy into a code-page column (SQL Server's default collation, MOD-I201) of text it can't hold copies every row, and only verification refuses the tables afterwards. | In progress on `ccr-43ba0785-hzlrj5-copy-codepage-warning`. The plan reads the collation of each target text column. For a source value with characters outside the target's code page, it reports a plan error with the table, the column and the row's key. |
 | MOD-I230 | Persistence | **Found by the background-preference conversion.** When one user saves portlet-entity preferences from two sessions at once, Hibernate refuses one save, and a stale cached `PortletPreferenceImpl` can remain. The user's next sign-in then fails with `EntityNotFoundException` until Tomcat restarts. It is the existing `PortletEntityPreferencesAPIImpl` store, which the portlets use too. Seen when two Playwright workers changed the student's background at once. | **Open.** Write a test that saves the same user's entity preferences from two sessions at once and then signs in, and show the failure. Then fix the cache handling (evict on a failed save, or retry). A refused save must not leave a stale entity in the cache. Until then a user can be locked out by saving preferences in two tabs. |
+| MOD-I231 | Web components | Favorites added 11 messages and Popular Portlets 12 with English text only, so Spanish and French users see those texts in English. | **Open.** Translate them on `ccr-43ba0785-hzlrj5-i18n`. The MOD-D50 check stops it from happening again. |
+| MOD-I232 | i18n | uPortal reads `Messages*.properties` as ISO-8859-1, since `ReloadableResourceBundleMessageSource` has no `defaultEncoding`. Most bundles use `\u` escapes, but `Messages_fr.properties` has one line in raw UTF-8 (`this.portlet.locked`), which French users see as `Ce portlet ne peut Ãªtre dÃ©placÃ©`. Also in 5.x. | **Open.** Read message bundles as UTF-8 after checking that each one is valid UTF-8, and test the French line. Existing `\u` escapes keep working. |
+| MOD-I233 | Tenants | Tenant names must match `^[\w ]{5,32}$`. Java's `\w` matches only ASCII, so a name such as "Université Laval" is refused. | **Open.** Accept letters, combining marks, digits and spaces in any script (MOD-D49). Tenant fnames stay `[a-z_0-9]`, since they go in URLs. |
+| MOD-I234 | Theme | Respondr has no right-to-left layout. The page has no `dir` attribute, and its stylesheets use left and right. An Arabic user would see right-to-left components on a left-to-right page. Also in 5.x. | **Open, decided (project owner, 2026-10-11).** Make Respondr right to left (`dir` from the locale and mirrored stylesheets) after the accessibility fixes (MOD-D47), on `ccr-43ba0785-hzlrj5-hardening`. |
+| MOD-I235 | Web components | `formatMessage` in `lib/i18n.ts` turns numbers into text with `String()`, so counts and positions ignore the locale's digits and separators. Messages have no plural forms. | **Open.** Fix on `ccr-43ba0785-hzlrj5-i18n` (MOD-D51). |
 
 ## Open questions
 
