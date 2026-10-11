@@ -15,7 +15,7 @@ commit body.
 | --- | --- | --- | --- |
 | MOD-I142 portlet search | pushed; light CI | `3e7e375` | |
 | MOD-I191 order tie-breakers | pushed; light CI | `98f0524` | |
-| MOD-I141 timestamps in UTC | half done: mappings and UTC storage committed; the upgrade conversion waits on the coordinator | see `git log` | |
+| MOD-I141 timestamps in UTC | done locally; uPortal-start part waits for access | see `git log` | |
 | MOD-I140 analytics repeated hour | design note sent (option B recommended), waiting for the decision | | |
 | G-index R4 | not started, needs uPortal-start access and the 6.0 schema-change ruling | | |
 
@@ -137,7 +137,48 @@ and one with the whole fix. The UTC golden is the reference.
 Public API: the getters and setters keep their `Date` and `Timestamp` types. `PortletList`'s JSON
 getters build a `Timestamp` from the `Instant`, so the REST output doesn't change.
 
-Waiting on the coordinator (sent 2026-10-11): whether `LOCK_END` joins the list (it moves with
-the property either way), the copy tool's 6.0 profile and `--source-zone`, and the in-place
-upgrade path.
+Decisions (coordinator, 2026-10-11): `LOCK_END` joins the list. `JvmZoneLocalTimeType` is
+approved. The global property beats per-column converters: a `java.sql.Timestamp` built from a
+local time in the JVM zone's spring gap moves by an hour. 6.0 has no in-place upgrade path
+(MOD-D11), so there is no in-place command.
 
+### Copy tool
+
+- `--target-profile 6.0` is a new profile with the 5.17 tables and generators (the build writes
+  the same `generators.tsv` into both profile directories until the 6.0 schema step).
+- `profiles/6.0/from-5.17.rules` applies to a 5.17 to 6.0 copy only. It converts the seven
+  columns with `local-time-to-utc zone=${source-zone}`, so a later 6.0 to 6.0 copy never converts
+  twice.
+- `--source-zone ZONE` gives the zone. Without it, a 5.17 to 6.0 copy whose source holds a value
+  in one of those columns stops with exit 2 before writing anything and names each column. With
+  it, a copy into a profile that doesn't convert stops the same way.
+- The default target profile stays 5.17, because uPortal-start's G-migrate and equivalence jobs
+  call the tool without `--source-zone`.
+- Tests: `LocalTimeToUtcTransformTest` (table test of the transform) and
+  `HsqldbLocalTimeConversionTest`, end to end on HSQLDB in a New York JVM. Its five cases are the
+  conversion with the repeated hour, the refusal without the zone, an empty source that needs no
+  zone, an unchanged 5.17 copy, and the refusal of a zone without the 6.0 profile.
+- Seeded fault: without the `UP_MUTEX.LOCK_END` line in `from-5.17.rules`, the conversion test
+  fails with `expected:<2026-11-01T07:00> but was:<2026-11-01T02:00>`.
+
+### Follow-ups
+
+- **Waiting for uPortal-start access:** pass `--source-zone` in G-migrate and the equivalence
+  jobs, then switch the tool's default target profile to 6.0 in a uPortal commit that lands
+  together with that harness change.
+- **6.0 schema step (with Hibernate 7):** `dataInit` and the copy tool write a marker (a row in
+  `UP_VERSIONS`), and a 6.0 portal refuses to start on a database without the marker whose
+  converted columns hold values. The message gives the copy command. There is no override
+  property, since starting would read wrong times.
+
+### Proposed LOG text
+
+MOD-I141 resolution column:
+
+> **Fixed (2026-10-11, persistence-fixes branch).** The columns listed above, and
+> `ClusterMutex.lockEnd` (`UP_MUTEX.LOCK_END`, found by the round trip), are `Instant` with
+> `hibernate.jdbc.time_zone=UTC`. `TimeDimensionImpl.time` binds with the JVM zone's calendar
+> (`JvmZoneLocalTimeType`). The time dimension stores what it stored before. The copy tool's
+> `--target-profile 6.0` converts 5.17's values with `--source-zone`. A value in the repeated
+> autumn hour takes the earlier offset (`UPGRADING-6.0.md`). The marker and start refusal belong
+> to the 6.0 schema step.
