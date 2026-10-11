@@ -20,6 +20,9 @@
 @use 'bootstrap/scss/helpers/theme-colors';
 @use 'bootstrap/scss/helpers/visually-hidden';
 @use 'bootstrap/scss/helpers/focus-ring';
+@use 'bootstrap/scss/content/tables';
+@use 'bootstrap/scss/forms/labels';
+@use 'bootstrap/scss/forms/form-control';
 
 // Accessibility fixes. In light mode Bootstrap 6.0.0-alpha.1 falls below the 4.5:1 contrast that
 // WCAG 2.2 AA asks of text: links (3.6:1), white on solid primary and danger buttons (3.6:1 and
