@@ -13,7 +13,7 @@ These override any instinct to "be helpful by doing more."
 
 ## Tech stack
 
-- **Java 11** bytecode and platform API (`javac --release 11`), so the portal runs on Java 11+; **built and tested on JDK 21 and 25** (CI matrix: Temurin/Zulu/Corretto × JDK 21/25 on Linux, Temurin 25 on Windows/macOS)
+- **Java 11** bytecode and platform API (`javac --release 11`), so the portal runs on Java 11+; **built and tested on JDK 21 and 25** (CI matrix: Temurin × JDK 21/25 on Linux and Temurin 25 on Windows/macOS; the nightly run adds Zulu and Corretto × JDK 21/25 on Linux)
 - **Gradle 9.8** (wrapper; needs JDK 21+ to build) multi-project build (~45 subprojects), Groovy DSL — all dependency versions in `gradle.properties`
 - **Spring 4.3.30** (XML + annotation DI, no Spring Boot), **Hibernate 4.3.11** with JPA
 - **Portlet API 2.1** (JSR-286); **Soffit** REST alternative
