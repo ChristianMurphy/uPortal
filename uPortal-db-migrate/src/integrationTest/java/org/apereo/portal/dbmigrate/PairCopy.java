@@ -366,10 +366,54 @@ final class PairCopy {
                                     + ", expected "
                                     + show(want)
                                     + ", target "
-                                    + show(t.get(c)));
+                                    + show(t.get(c))
+                                    + firstDifference(want, t.get(c)));
                 }
             }
         }
+    }
+
+    /** '' or an empty byte array, which Oracle stores as NULL. */
+    static boolean isEmpty(Object v) {
+        return "".equals(v) || (v instanceof byte[] && ((byte[]) v).length == 0);
+    }
+
+    /** Where two long strings or byte arrays first differ, for a failure message. */
+    static String firstDifference(Object want, Object got) {
+        if (want instanceof String && got instanceof String) {
+            String a = (String) want;
+            String b = (String) got;
+            int i = 0;
+            while (i < a.length() && i < b.length() && a.charAt(i) == b.charAt(i)) {
+                i++;
+            }
+            int from = Math.max(0, i - 4);
+            return "; first difference at unit "
+                    + i
+                    + ": expected "
+                    + units(a, from, i + 6)
+                    + ", target "
+                    + units(b, from, i + 6);
+        }
+        if (want instanceof byte[] && got instanceof byte[]) {
+            byte[] a = (byte[]) want;
+            byte[] b = (byte[]) got;
+            int i = 0;
+            while (i < a.length && i < b.length && a[i] == b[i]) {
+                i++;
+            }
+            return "; first difference at byte " + i;
+        }
+        return "";
+    }
+
+    /** The UTF-16 units of s from 'from' to 'to', as hex. */
+    private static String units(String s, int from, int to) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int k = from; k < Math.min(to, s.length()); k++) {
+            sb.append(String.format(Locale.ROOT, k == from ? "%04X" : " %04X", (int) s.charAt(k)));
+        }
+        return sb.append(']').toString();
     }
 
     /** Dates and timestamps as the servers print them, so no driver conversion is involved. */
