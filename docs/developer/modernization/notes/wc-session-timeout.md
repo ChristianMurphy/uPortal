@@ -34,11 +34,19 @@ Topic branch `ccr-43ba0785-hzlrj5-wc-session-timeout` in uPortal and uPortal-sta
 | 4. Channel definition | Done: uPortal-start `97e95e9`, Web Component definition, `UP_PORTLET_DEF_PARAM` delta +2 to +5 |
 | 5. Spec against the component, seeded faults | Done: uPortal-start `7764e92`. The 9 characterisation tests pass unchanged against the component, and 4 component tests and a guest-with-session API test were added |
 | 6. UPGRADING-6.0 | Done: "Session Timeout is a web component" |
+| Equivalence reference | uPortal-start `3e544bc`: the Migration equivalence reference holds the converted `session-timeout` definition (run 38130202417 on `a154519` failed without it) |
 
 Local runs on the last commits: the session API and session timeout specs, `favorites.spec.ts`
 and `web-component-channel.spec.ts`, 29 of 29; `:uPortal-webcomponents:check` with 385 tests;
 the HSQLDB harness passed all four drift checks and found both intended changes (`UP_PORTLET_DEF_PARAM`
 403 to 408).
+
+## Owner decisions
+
+On 2026-10-11 the owner accepted the visible changes: the error shown in the dialog,
+`resetSessionURLFragment` no longer read, logout URLs limited to portal paths, and 401 for
+guests. UPGRADING-6.0 now tells sites that pointed the logout URL at another site to set
+`logout.redirect` instead.
 
 ## Judgement calls not approved by the owner
 
