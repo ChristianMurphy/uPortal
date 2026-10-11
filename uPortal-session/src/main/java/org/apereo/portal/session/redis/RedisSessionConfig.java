@@ -18,6 +18,7 @@ import static org.apereo.portal.session.PortalSessionConstants.REDIS_CLUSTER_MOD
 import static org.apereo.portal.session.PortalSessionConstants.REDIS_SENTINEL_MODE;
 import static org.apereo.portal.session.PortalSessionConstants.REDIS_STANDALONE_MODE;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,9 +26,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
+import org.springframework.data.redis.connection.RedisConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisSentinelConfiguration;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisHttpSession;
 
 @Configuration
@@ -67,31 +72,37 @@ public class RedisSessionConfig {
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        JedisConnectionFactory result;
+        final RedisConfiguration configuration;
         if (REDIS_CLUSTER_MODE.equalsIgnoreCase(this.redisMode)) {
-            result = this.createBaseClusterConnectionFactory();
+            configuration = this.createClusterConfiguration();
         } else if (REDIS_SENTINEL_MODE.equalsIgnoreCase(this.redisMode)) {
-            result = this.createBaseSentinelConnectionFactory();
+            configuration = this.createSentinelConfiguration();
         } else if (REDIS_STANDALONE_MODE.equalsIgnoreCase(this.redisMode)) {
-            result = this.createBaseStandaloneConnectionFactory();
+            configuration = this.createStandaloneConfiguration();
         } else {
             throw new IllegalArgumentException(
                     "Invalid value for org.apereo.portal.session.redis.mode: " + this.redisMode);
         }
-        this.setAdditionalProperties(result);
-        return result;
+        final LettuceClientConfiguration.LettuceClientConfigurationBuilder clientConfiguration =
+                LettuceClientConfiguration.builder();
+        if (this.redisTimeout != null) {
+            clientConfiguration.commandTimeout(Duration.ofMillis(this.redisTimeout));
+        }
+        return new LettuceConnectionFactory(configuration, clientConfiguration.build());
     }
 
-    private JedisConnectionFactory createBaseClusterConnectionFactory() {
+    private RedisClusterConfiguration createClusterConfiguration() {
         List<String> nodesList = Arrays.asList(this.redisClusterNodes.split(",", -1));
         RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(nodesList);
         if (this.redisClusterMaxRedirects != null) {
             clusterConfig.setMaxRedirects(this.redisClusterMaxRedirects);
         }
-        return new JedisConnectionFactory(clusterConfig);
+        // A Redis cluster has only database 0
+        clusterConfig.setPassword(this.password());
+        return clusterConfig;
     }
 
-    private JedisConnectionFactory createBaseSentinelConnectionFactory() {
+    private RedisSentinelConfiguration createSentinelConfiguration() {
         RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration();
         sentinelConfig.master(this.redisSentinelMaster);
         String[] nodesArray = this.redisSentinelNodes.split(",", -1);
@@ -99,29 +110,29 @@ public class RedisSessionConfig {
             String[] hostAndPort = node.split(":", -1);
             sentinelConfig.sentinel(hostAndPort[0], Integer.parseInt(hostAndPort[1]));
         }
-        return new JedisConnectionFactory(sentinelConfig);
+        if (this.redisDatabase != null) {
+            sentinelConfig.setDatabase(this.redisDatabase);
+        }
+        sentinelConfig.setPassword(this.password());
+        return sentinelConfig;
     }
 
-    private JedisConnectionFactory createBaseStandaloneConnectionFactory() {
-        final JedisConnectionFactory result = new JedisConnectionFactory();
+    private RedisStandaloneConfiguration createStandaloneConfiguration() {
+        final RedisStandaloneConfiguration standaloneConfig = new RedisStandaloneConfiguration();
         if (this.redisHost != null) {
-            result.setHostName(this.redisHost);
+            standaloneConfig.setHostName(this.redisHost);
         }
         if (this.redisPort != null) {
-            result.setPort(this.redisPort);
+            standaloneConfig.setPort(this.redisPort);
         }
-        return result;
+        if (this.redisDatabase != null) {
+            standaloneConfig.setDatabase(this.redisDatabase);
+        }
+        standaloneConfig.setPassword(this.password());
+        return standaloneConfig;
     }
 
-    private void setAdditionalProperties(JedisConnectionFactory factory) {
-        if (this.redisDatabase != null) {
-            factory.setDatabase(this.redisDatabase);
-        }
-        if (this.redisPassword != null) {
-            factory.setPassword(this.redisPassword);
-        }
-        if (this.redisTimeout != null) {
-            factory.setTimeout(this.redisTimeout);
-        }
+    private RedisPassword password() {
+        return RedisPassword.of(this.redisPassword);
     }
 }
