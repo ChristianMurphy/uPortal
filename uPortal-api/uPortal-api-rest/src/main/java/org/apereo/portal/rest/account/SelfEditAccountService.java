@@ -251,7 +251,9 @@ public class SelfEditAccountService {
     }
 
     private String label(String key, Locale locale) {
-        return messageSource.getMessage(key, null, key, locale);
+        // Spring 5.3 marks the lookup @Nullable; with the key as its default it doesn't return null
+        final String label = messageSource.getMessage(key, null, key, locale);
+        return label != null ? label : key;
     }
 
     private static @Nullable String firstValue(@Nullable StringListAttribute attribute) {
