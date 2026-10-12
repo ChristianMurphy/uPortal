@@ -294,8 +294,8 @@ The coordinator answered the ranked list on 2026-10-11.
 
 The item 2 diagnosis logs two timing lines in `ChannelListController` (uPortal) and adds `%D` to
 Tomcat's access log pattern in the HSQLDB Playwright job (uPortal-start, CI only). A script prints
-the times, by user, in the last lines of both Playwright jobs and as a notice. Both are removed
-once the cause is known.
+the times, by user, in the last lines of both Playwright jobs and as a notice. Push 3 removed
+both again.
 
 ### CI runs
 
@@ -351,12 +351,24 @@ Push 2: uPortal-start `1d4b5ef57`, the same uPortal `258e144b4`.
 Push 3: uPortal `3984b4341` and uPortal-start `6de510bd3` remove the diagnosis again (two
 reverts in uPortal-start, one in uPortal). Its `Integration` run 38192910869 is run 3 for item 1.
 
+* Item 1, run 3 of 3 (HSQLDB job 114632211945): all 94 tests of `portlet-modes.spec.ts` passed
+  with no retry, 471 s of test time on two workers. Of the 424 tests, 420 passed on their first
+  run, none was flaky, and the 4 that failed are the known locale tests. The PostgreSQL 18 job was
+  still in the queue when this note was written.
+* Item 3: the `Build uPortal` jobs of Migration equivalence, Integration and G-index started within
+  two minutes of one another on the new uPortal commit, before any of them had uploaded, so all
+  three built (2 min 53 s, 3 min 26 s and 4 min 04 s). HTTP replay's build started later and reused
+  G-index's (run 38192910854) in 20 s.
+* uPortal's `CI` (38191023945), `DB integration` (38191023970) and `DB copy tool` (38191023955)
+  passed, and so did uPortal-start's `CI` (38192910499), `Migration equivalence` (38192910879) and
+  `Workflow lint` (38192910897).
+
 ## Proposed LOG rows (MOD-I340 to MOD-I349)
 
 | ID | Area | Finding | Resolution |
 | --- | --- | --- | --- |
 | MOD-I340 | Portal | On CI runners with HSQLDB, `/api/portletList` took over 3 s on 100 renders of staff and guest in job 114546465364, and the HSQLDB Playwright step took 285 s longer in 9 of 20 runs. Locally it takes 0.2 to 1.3 s. Respondr asks for the whole registry on every page an authenticated user opens, so production pays for it too. | Diagnosed on the test-speed branch (item 2): in run 38186680684 the server handled its 1,432 requests within 1.4 s, while the 40 stuck requests didn't complete in the browser before the next page. Paused by the owner. Approved fix for later: load the type-ahead list on the first focus of the search field, after `-wc-search` is merged. |
-| MOD-I341 | Tests | `portlet-modes.spec.ts` ran its 94 tests on one worker, 581.5 s of the 786 s HSQLDB suite in job 114546465364. | Parallel mode for its `describe` (item 1). |
+| MOD-I341 | Tests | `portlet-modes.spec.ts` ran its 94 tests on one worker, 581.5 s of the 786 s HSQLDB suite in job 114546465364. | Parallel mode for its `describe` (item 1). Its 94 tests passed on their first run in the HSQLDB job of each of the three `Integration` runs. |
 | MOD-I342 | CI | Up to four uPortal-start workflows build the same uPortal commit on each push, 4.2 minutes each. | Item 3, with the uPortal key's Gradle cache dropped. |
 | MOD-I343 | Build | `portalInit` built the uPortal overlay last, so its 89 s chain ended the task at 175 s. | The other overlays' tasks run after the uPortal overlay's, and each overlay's tasks after its clean (item 4). |
 | MOD-I344 | Build | `tomcatStart` waited Ant's default 3 minutes in every uPortal-start `CI` cell, where uPortal isn't deployed, and then logged that uPortal was live. | It waits for any answer, then logs the status of `/uPortal` (item 6). |
