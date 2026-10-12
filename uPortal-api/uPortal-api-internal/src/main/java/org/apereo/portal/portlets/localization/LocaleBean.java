@@ -16,6 +16,7 @@ package org.apereo.portal.portlets.localization;
 
 import java.io.Serializable;
 import java.util.Locale;
+import java.util.MissingResourceException;
 
 /**
  * LocaleBean wraps a java.util.Locale instance and provides simple getters for the display
@@ -89,5 +90,29 @@ public class LocaleBean implements Serializable {
 
     public Locale getLocale() {
         return this.locale;
+    }
+
+    /**
+     * The language's three-letter code (ISO 639-2), or "" when Java has none, as for a language a
+     * site adds that Java doesn't know.
+     */
+    public String getIso3Language() {
+        try {
+            return this.locale.getISO3Language();
+        } catch (MissingResourceException e) {
+            return "";
+        }
+    }
+
+    /**
+     * The country's three-letter code (ISO 3166-1), or "" when Java has none, as for a test region
+     * such as the XB of the ar-XB pseudo-locale or a numeric region such as 419.
+     */
+    public String getIso3Country() {
+        try {
+            return this.locale.getISO3Country();
+        } catch (MissingResourceException e) {
+            return "";
+        }
     }
 }
