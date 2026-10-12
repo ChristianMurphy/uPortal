@@ -165,8 +165,8 @@
                             <tr>
                             	<td>${ fn:escapeXml(locale.displayName )}</td>
                             	<td>${ fn:escapeXml(locale.locale )}</td>
-                            	<td>${ fn:escapeXml(locale.displayLanguage )} (${ fn:escapeXml(locale.locale.language )}, ${ fn:escapeXml(locale.locale.ISO3Language )})</td>
-                            	<td>${ fn:escapeXml(locale.displayCountry )} (${ fn:escapeXml(locale.locale.country )}, ${ fn:escapeXml(locale.locale.ISO3Country )})</td>
+                            	<td>${ fn:escapeXml(locale.displayLanguage )} (${ fn:escapeXml(locale.locale.language )}, ${ fn:escapeXml(locale.iso3Language )})</td>
+                            	<td>${ fn:escapeXml(locale.displayCountry )} (${ fn:escapeXml(locale.locale.country )}, ${ fn:escapeXml(locale.iso3Country )})</td>
                             	<td>${ fn:escapeXml(not empty local.locale.variant ? locale.displayVariant + ' (' + locale.locale.variant + ')' : '' )}</td>
                             </tr>
                         </c:forEach>
