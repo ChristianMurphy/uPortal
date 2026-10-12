@@ -98,6 +98,9 @@ allprojects {
     configurations.configureEach {
         exclude group: 'commons-logging', module: 'commons-logging'
         exclude group: 'commons-logging', module: 'commons-logging-api'
+        // Spring 5's own commons-logging API; jcl-over-slf4j is the one provider of
+        // org.apache.commons.logging, so the two jars can't both land in the WAR
+        exclude group: 'org.springframework', module: 'spring-jcl'
         exclude group: 'log4j', module: 'log4j'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-core'
         exclude group: 'org.hamcrest', module: 'hamcrest-core'
@@ -434,10 +437,6 @@ ${entries.collect { '    ' + it }.join('\n')}
         logger.lifecycle("Wrote ${entries.size()} SpotBugs baseline entries to ${out}")
     }
 }
-
-/*======== Spring 5.3 compile probe ========*/
-// `./gradlew spring53Probe` measures what plan step P4-1 still has to change (WS6).
-apply from: 'gradle/spring53-probe.gradle'
 
 /*======== Child Projects ========*/
 subprojects {

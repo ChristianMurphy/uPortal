@@ -3,6 +3,8 @@ description = "Apereo uPortal Session"
 dependencies {
     implementation "org.springframework:spring-web:${springVersion}"
     implementation "org.springframework.session:spring-session-data-redis:${springSessionVersion}"
+    implementation "org.springframework.data:spring-data-redis:${springDataRedisVersion}"
+    implementation "io.lettuce:lettuce-core:${lettuceVersion}"
 
     compileOnly "${servletApiDependency}"
 

@@ -30,7 +30,7 @@ Linux with Temurin 21 is in every set. It alone also runs:
 
 ## Jobs that run on every push
 
-`Commit messages`, `Prose (Vale)` and the `Spring 5.3 compile probe` each run once on Linux.
+`Commit messages` and `Prose (Vale)` each run once on Linux.
 
 ## On your machine
 

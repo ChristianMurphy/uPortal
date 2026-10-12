@@ -80,10 +80,20 @@
     <pbcast.STABLE desired_avg_gossip="50000"
                    max_bytes="4M"
     />
-    <pbcast.GMS print_local_addr="true" join_timeout="1000" max_join_attempts="4" />
+    <!-- A node that gives up on its JOIN forms a cluster of its own and drops the other nodes'
+         messages, cache invalidations included, until MERGE3 merges the two. The coordinator
+         answers a JOIN only once it has the new node's address, and in a two-node test
+         (uPortal-start tests/cluster) the answer came after the fourth attempt had timed out.
+         A late answer is accepted at the next attempt. A node restarting alone after a crash
+         reads its old coordinator row in JGROUPSPING and spends join_timeout x
+         max_join_attempts on JOINs to that dead address before it starts on its own. -->
+    <pbcast.GMS print_local_addr="true" join_timeout="1000" max_join_attempts="8" />
     <MFC max_credits="2M"
          min_threshold="0.4"
     />
     <FRAG2 frag_size="60K" />
     <pbcast.STATE_TRANSFER />
+    <!-- Reports each MergeView, when the two sides of a split join again, to
+         org.apereo.portal.utils.cache.MergeViewCacheClearer, which empties the caches -->
+    <org.apereo.portal.utils.cache.MergeViewNotifier />
 </config>
