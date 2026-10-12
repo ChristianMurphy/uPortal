@@ -158,6 +158,29 @@ uPortal-start installs Tomcat 9.0 instead of 8.5, and these answers look differe
   `charset=ISO-8859-1`, although their bodies were UTF-8. A client that decodes by the declared
   charset now reads non-ASCII characters correctly.
 
+## Pluto's shared jars come from uPortal
+
+uPortal now builds Apache Pluto 2.1.0-M3 from its own copy of the sources (`uPortal-pluto`) and
+fixes it there. uPortal-start's `tomcatConfig` (which `tomcatInstall` runs) puts uPortal's build of
+three Pluto jars in Tomcat's `shared/lib`: `uPortal-pluto-container-api`,
+`uPortal-pluto-container-driver-api` and `uPortal-pluto-taglib`, with uPortal's version. They
+replace Apache's `pluto-container-api`, `pluto-container-driver-api` and `pluto-taglib` 2.1.0-M3.
+The portlet API jar is unchanged.
+
+The first fix is in the driver API's `PortletServlet` (MOD-I350). Each portlet registers with the
+portal from a timer once the portal has started. A request for a portlet that hadn't registered
+yet took that portlet out of service until Tomcat restarted, so a page rendered just after a
+restart could break Simple Content or another portlet until the next restart. Now such a request
+has the portlet registered at once and waits up to 10 seconds for that, after which Tomcat refuses
+the portlet for one second only.
+
+A site that fills `shared/lib` itself, such as in its own container image, replaces the three
+Apache jars with uPortal's (`org.jasig.portal:uPortal-pluto-*` in Maven Central, the same version
+as uPortal) to get the fix. Keep only one of each pair, because Apache's and uPortal's jars hold the
+same classes. `tomcatConfig` removes the Pluto jars an earlier run put in `shared/lib` before it
+copies the new ones. `-PsharedPluto=apache` keeps Apache's jars, and uPortal-start uses them by
+default with a released uPortal 5.17, which doesn't publish uPortal's.
+
 ## Fixes made after uPortal 5.17.9
 
 * The portal's analytics script (`scripts/portal-analytics.js`) no longer stops Bootstrap drop-down
