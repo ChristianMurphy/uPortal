@@ -32,8 +32,6 @@ import org.apereo.portal.jpa.OpenEntityManager;
 import org.apereo.portal.portlet.dao.IPortletDefinitionDao;
 import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletDefinitionId;
-import org.apereo.portal.spring.tx.DialectAwareTransactional;
-import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,8 +203,6 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public IPortletDefinition getPortletDefinition(IPortletDefinitionId portletDefinitionId) {
         Validate.notNull(portletDefinitionId, "portletDefinitionId can not be null");
@@ -218,8 +214,6 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public IPortletDefinition getPortletDefinition(String portletDefinitionIdString) {
         Validate.notNull(portletDefinitionIdString, "portletDefinitionIdString can not be null");
@@ -238,8 +232,6 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public IPortletDefinition getPortletDefinitionByFname(String fname) {
         final NaturalIdQuery<PortletDefinitionImpl> query =
@@ -249,8 +241,6 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public IPortletDefinition getPortletDefinitionByName(String name) {
         final TypedQuery<PortletDefinitionImpl> query =
@@ -262,8 +252,6 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public List<IPortletDefinition> searchForPortlets(String term, SearchMatch match) {
         final CriteriaQuery<PortletDefinitionImpl> criteriaQuery;
@@ -319,8 +307,6 @@ public class JpaPortletDefinitionDao extends BasePortalJpaDao
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public List<IPortletDefinition> getPortletDefinitions() {
         final TypedQuery<PortletDefinitionImpl> query =

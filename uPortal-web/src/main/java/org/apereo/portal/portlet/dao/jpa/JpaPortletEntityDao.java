@@ -35,8 +35,6 @@ import org.apereo.portal.portlet.om.IPortletDefinition;
 import org.apereo.portal.portlet.om.IPortletDefinitionId;
 import org.apereo.portal.portlet.om.IPortletEntity;
 import org.apereo.portal.portlet.om.IPortletEntityId;
-import org.apereo.portal.spring.tx.DialectAwareTransactional;
-import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -155,8 +153,6 @@ public class JpaPortletEntityDao extends BasePortalJpaDao implements IPortletEnt
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public IPortletEntity getPortletEntity(IPortletEntityId portletEntityId) {
         Validate.notNull(portletEntityId, "portletEntityId can not be null");
@@ -182,8 +178,6 @@ public class JpaPortletEntityDao extends BasePortalJpaDao implements IPortletEnt
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public IPortletEntity getPortletEntity(String layoutNodeId, int userId) {
         Validate.notNull(layoutNodeId, "portletEntity can not be null");
@@ -202,8 +196,6 @@ public class JpaPortletEntityDao extends BasePortalJpaDao implements IPortletEnt
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public Set<IPortletEntity> getPortletEntities(IPortletDefinitionId portletDefinitionId) {
         Validate.notNull(portletDefinitionId, "portletEntity can not be null");
@@ -221,8 +213,6 @@ public class JpaPortletEntityDao extends BasePortalJpaDao implements IPortletEnt
     }
 
     @Override
-    @DialectAwareTransactional(value = PostgreSQL81Dialect.class, exclude = false)
-    @PortalTransactionalReadOnly
     @OpenEntityManager(unitName = PERSISTENCE_UNIT_NAME)
     public Set<IPortletEntity> getPortletEntitiesForUser(int userId) {
         final TypedQuery<PortletEntityImpl> query =
