@@ -41,6 +41,27 @@
           depends-on="systemPropertySetter, authDao"
           p:shared="true"
           p:configLocation="classpath:/properties/${org.apereo.portal.ehcache.filename:ehcache.xml}" />
+    <!--
+     | After a split heals, JGroups installs a MergeView (reported by MergeViewNotifier in
+     | jgroups.xml), and each node empties its caches: invalidations sent while the nodes were split
+     | never reached them.
+     +-->
+    <bean id="mergeViewCacheClearer" class="org.apereo.portal.utils.cache.MergeViewCacheClearer"
+          p:cacheManager-ref="ehCacheManager"
+          p:enabled="${org.apereo.portal.cache.clearCachesOnMerge:true}">
+        <!-- Left as they are on a merge: the only copy of something, or needed by other caches -->
+        <property name="excludedCacheNames">
+            <set>
+                <!-- Lock objects that serialize the creation of a user -->
+                <value>org.apereo.portal.RDBMUserIdentityStore.userLockCache</value>
+                <!-- CAS proxy-granting tickets, when this storage is used -->
+                <value>org.jasig.cas.client.proxy.EhcacheBackedProxyGrantingTicketStorageImpl.cache</value>
+                <!-- Hibernate's table update times must outlive the query results they validate -->
+                <value>org.hibernate.cache.spi.UpdateTimestampsCache</value>
+                <value>AggrEvents.org.hibernate.cache.spi.UpdateTimestampsCache</value>
+            </set>
+        </property>
+    </bean>
     <bean id="cacheManagerExpiredElementEvictor" class="org.apereo.portal.utils.cache.ExpiredElementEvictor">
         <property name="cacheManager" ref="cacheManager"></property>
     </bean>

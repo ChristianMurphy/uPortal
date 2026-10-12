@@ -630,6 +630,64 @@ uPortal's defaults in `security.properties` are unchanged: they still point the 
 URLs at `${cas.protocol.server.context}`, so a portal not built from uPortal-start keeps its CAS
 settings.
 
+## Clusters: permission changes and portal events
+
+**Permission changes take effect at once, on every node.** uPortal 5 cached each permission
+decision on the node that made it, in `AuthorizationImpl.PRINCIPAL_HAS_PERMISSION` (180 s) and
+`AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT` (300 s), and kept it after a grant or a
+revocation. A revoked permission was still granted for up to 5 minutes to sessions that had
+already used it. uPortal 6.0 clears both caches whenever a permission is added, removed or
+updated. `ehcache.xml` now replicates their removals over JGroups, and the other nodes clear
+theirs too. A portal with its own `ehcache.xml` needs the JGroups replicator on both caches,
+with `replicatePuts=false, replicateUpdates=false, replicateRemovals=true` (see uPortal's
+copy). Each permission change now costs a round of fresh permission checks, on every
+node.
+
+**Portal events are written from the start.** A node used to queue its portal events in memory
+for the first 120 s after it started, with its other scheduled tasks. Another node's aggregator
+had passed their time by then, so they were never aggregated, and every restart in a running
+cluster lost the statistics of its first minutes. The queue is now flushed from the start, on
+its own scheduler. The new setting
+`org.apereo.portal.events.handlers.db.PortalEventDaoQueuingEventHandler.flushInitialDelay`
+(default `PT0S`) sets when the first flush runs. Keep it well under
+`org.apereo.portal.events.aggr.PortalRawEventsAggregatorImpl.aggregationDelay` (default `PT30S`).
+
+**A starting node keeps trying to join the cluster.** In uPortal 5 a node that started next to a
+running one sent its JGroups JOIN 4 times and waited 1 s for each answer. The running node can
+answer only once it has the new node's address, which took a little over 4 s in a two-node test.
+In 6 of 20 starts the new node gave up and formed a cluster of its own. Until JGroups merged the
+two, 48 s or more later, it dropped the other node's cache invalidations, and what it cached in
+that time kept its old value until it expired (6 hours for portlet definitions). `jgroups.xml`
+now tries 8 times (`<pbcast.GMS join_timeout="1000" max_join_attempts="8">`), and the new node
+joined in all of 20 starts. A portal with its own `jgroups.xml` should make the same change.
+
+The cost falls on a portal with one server that restarts after a crash. Its old row in
+`JGROUPSPING` still names it the coordinator, so it sends JOINs to that dead address before it
+starts on its own: about 8.6 s with the new setting, 4.3 s before. A clean shutdown removes the
+row, and the restarted server then starts at once.
+
+**Caches are emptied when a split heals.** Servers split by the network, or by a server that
+failed to join, drop each other's cache invalidations. JGroups doesn't resend them when the two
+sides merge again, and in uPortal 5 an entry read during the split kept its old value until it
+expired. In 6.0 the JGroups stack in `jgroups.xml` ends with a protocol that reports each
+MergeView, and `MergeViewCacheClearer` then empties the caches and logs one INFO line with the
+view and the number of caches. It leaves alone the caches that store the only copy of something,
+such as lock objects and CAS tickets (`excludedCacheNames` in `cacheContext.xml`). The servers read the entries again from
+the database, which costs a short burst of load right after the heal. A plain view change, such as
+a server joining or leaving, clears nothing.
+
+A portal with its own `jgroups.xml` must add this line as the last protocol, after
+`pbcast.STATE_TRANSFER`:
+
+```xml
+<org.apereo.portal.utils.cache.MergeViewNotifier />
+```
+
+Without it, the servers don't empty their caches after a heal, and an entry read during a split
+keeps its old value until it expires (6 hours for portlet definitions), as in uPortal 5. At start
+uPortal logs at INFO when no JGroups stack has the protocol. The setting
+`org.apereo.portal.cache.clearCachesOnMerge` (default `true`) switches the clear off.
+
 ## Deep links and failed logins with local login
 
 The new setting `login.refUrlEncoder` (in `security.properties`) says how uPortal sends a guest
@@ -758,3 +816,36 @@ now set `width: 100%`. The layout checks at standard screen sizes (uPortal-start
 A portlet in the pre-content region that floats its content, such as the quickstart's feedback
 link, now has the height of that content instead of 0. Skins that copy Respondr's
 `navigation.scss`, `header.scss` or `regions.scss` need the same changes.
+
+## Entity keys (typeAndIdHash) spell out every character
+
+`typeAndIdHash`, the key that `/api/entities.json`, `/api/entities/{type}/{id}.json` and
+`/api/permissions/principals.json` return for each group and person, keeps the letters A to Z and
+a to z and the digits as they are. It now writes every other character, `_` included, as `_`, the
+character's code point in hexadecimal, and `_`. 5.x wrote each of them as `__`:
+
+| Group or person | 5.x | 6.0 |
+| --- | --- | --- |
+| group `pags.Authenticated Users` | `group_pags__Authenticated__Users` | `group_pags_2e_Authenticated_20_Users` |
+| person `admin-lo` | `person_admin__lo` | `person_admin_2d_lo` |
+
+In 5.x different ids could get the same key: `pags.Café` and `pags.Cafè` both became
+`group_pags__Caf__`, and `a.b` and `a_b` collided too. The Portlet Manager puts this key in the
+`name` of each principal's permission checkboxes, so choosing BROWSE for one of those groups also
+chose it for the other (MOD-I274).
+
+The key isn't stored. A script or skin that builds a key itself from a group or person id, or
+that compares keys it saved from 5.x, must use the new form. Code that only passes on the key the
+API returned keeps working.
+
+## Size the database's connection limit
+
+uPortal's three pools (`PortalDb`, `RawEventsDb`, `AggrEventsDb`) can each open 100 connections,
+and the bundled portlets open their own pools on top. Under load they need more than PostgreSQL's
+default `max_connections` of 100: with 16 people using a portal at once they opened 127. The web
+application that asks last then fails with "too many clients". Each page keeps a connection open
+while its portlets render, and each portlet render takes another.
+
+Set PostgreSQL's `max_connections` to at least 150, or size it from your own peak. uPortal-start
+`docs/connection-budget.md` lists every pool, the measurements, and how to read your peak from the
+pools' JMX beans (`uPortal:section=DataSource,name=PortalDb`) or from `pg_stat_activity`.
