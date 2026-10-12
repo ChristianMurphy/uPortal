@@ -85,7 +85,7 @@ public class EmailPasswordResetNotificationImpl implements IPasswordResetNotific
 
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             String email = (String) account.getAttributeValue(ILocalAccountPerson.ATTR_MAIL);
             String subject = messageSource.getMessage(subjectMessageKey, new Object[] {}, locale);
             String body = formatBody(resetUrl, account, locale);

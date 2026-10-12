@@ -14,6 +14,8 @@
  */
 package org.apereo.portal.security.provider;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.io.Serializable;
 import java.util.Enumeration;
 import java.util.Vector;
@@ -265,7 +267,7 @@ public abstract class ChainingSecurityContext implements ISecurityContext {
         @Override
         public void setCredentials(String credentials) {
             if (this.credentialstring == null && credentials != null)
-                setCredentials(credentials.getBytes());
+                setCredentials(credentials.getBytes(UTF_8));
         }
     }
 

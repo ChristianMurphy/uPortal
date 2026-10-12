@@ -180,6 +180,12 @@ public class DaoQueryGoldenTest {
             {"trailing", "Trailing Space ", "Trailing Space ", "p"},
             {"bang", "Bang!Portlet", "100xyDone", "p"},
             {"bracket", "Sel[x]ect", "Brackets [x]", "p"},
+            {
+                "ecole",
+                "\u00c9cole de Musique",
+                "\u03a3\u03bf\u03c6\u03af\u03b1 \u03a0\u03cd\u03bb\u03b7",
+                "p"
+            },
         };
         final List<IPortletDefinition> saved = new ArrayList<>();
         for (final String[] d : definitions) {
@@ -250,9 +256,16 @@ public class DaoQueryGoldenTest {
                             + "\", true)",
                     () -> definitionDao.searchForPortlets(term, true));
         }
-        for (final String term : Arrays.asList("Calendar", "calendar", "Campus Weather")) {
+        for (final String term :
+                Arrays.asList(
+                        "Calendar",
+                        "calendar",
+                        "Campus Weather",
+                        "\u03a3\u03bf\u03c6\u03af\u03b1 \u03a0\u03cd\u03bb\u03b7")) {
             check(
-                    "portletDefinitionDao.searchForPortlets(\"" + term + "\", false)",
+                    "portletDefinitionDao.searchForPortlets(\""
+                            + GoldenRenderer.escape(term)
+                            + "\", false)",
                     () -> definitionDao.searchForPortlets(term, false));
         }
         // The partial searches ignore case and find %, _ and the escape character ! literally
@@ -274,6 +287,12 @@ public class DaoQueryGoldenTest {
             {"[x]", SearchMatch.CONTAINS},
             {"sel[", SearchMatch.STARTS_WITH},
             {"x]", SearchMatch.ENDS_WITH},
+            // Accented and Greek terms (MOD-D49): case folds in any script, accents count
+            {"\u00e9cole", SearchMatch.CONTAINS},
+            {"\u00c9COLE", SearchMatch.CONTAINS},
+            {"ecole", SearchMatch.CONTAINS},
+            {"\u03c3\u03bf\u03c6\u03af\u03b1", SearchMatch.CONTAINS},
+            {"\u03a0\u038e\u039b\u0397", SearchMatch.CONTAINS},
         };
         for (final Object[] search : searches) {
             final String term = (String) search[0];

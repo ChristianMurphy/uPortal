@@ -23,8 +23,18 @@ public class FunctionalNameType
         extends AbstractSingleColumnUserType<String, String, FunctionalNameColumnMapper> {
     private static final long serialVersionUID = 1L;
 
-    public static final Pattern INVALID_CHARS_PATTERN = Pattern.compile("[^\\w-]");
-    public static final Pattern VALID_FNAME_PATTERN = Pattern.compile("^[\\w-]+$");
+    /**
+     * The characters of an fname, the one rule for fname columns, the import schema
+     * (common-types-4.0.xsd) and the URL parser (MOD-I271)
+     */
+    public static final String FNAME_CHARACTERS = "A-Za-z0-9_-";
+
+    /** An fname, for use inside a larger regular expression */
+    public static final String FNAME_REGEX = "[" + FNAME_CHARACTERS + "]+";
+
+    public static final Pattern INVALID_CHARS_PATTERN =
+            Pattern.compile("[^" + FNAME_CHARACTERS + "]");
+    public static final Pattern VALID_FNAME_PATTERN = Pattern.compile("^" + FNAME_REGEX + "$");
 
     public static void validate(String fname) {
         if (!isValid(fname)) {

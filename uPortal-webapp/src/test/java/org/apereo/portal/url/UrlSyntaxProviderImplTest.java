@@ -1282,6 +1282,23 @@ public class UrlSyntaxProviderImplTest {
                                 "/uPortal/f/welcome/p/uportal-links.u32l1n12/max/render.uP"));
     }
 
+    /** An fname with - is parsed whole (MOD-I271): uportal-news and uportal-links differ */
+    @Test
+    public void testDoesRequestPathReferToSpecificAndDifferentContentVsCanonicalPathDashedFname() {
+        assertTrue(
+                "paths to two fnames with the same part before - should not be equal",
+                this.urlSyntaxProvider
+                        .doesRequestPathReferToSpecificAndDifferentContentVsCanonicalPath(
+                                "/uPortal/p/uportal-news/max",
+                                "/uPortal/f/welcome/p/uportal-links.u32l1n12/max/render.uP"));
+        assertTrue(
+                "paths to two folders with the same part before - should not be equal",
+                this.urlSyntaxProvider
+                        .doesRequestPathReferToSpecificAndDifferentContentVsCanonicalPath(
+                                "/uPortal/f/welcome-back/p/uportal-links/max",
+                                "/uPortal/f/welcome-home/p/uportal-links.u32l1n12/max/render.uP"));
+    }
+
     // Verifies ignores the state and url type.  Assumption is canonical path would have been
     // properly derived
     // from 1st path string so don't need to concern ourselves with the defaulting mechanism being
