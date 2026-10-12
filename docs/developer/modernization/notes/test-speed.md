@@ -3,8 +3,9 @@
 Branch `ccr-43ba0785-hzlrj5-test-speed` in uPortal and uPortal-start (MOD-I340 to MOD-I349). The
 goal is fewer runner minutes and less wall time for the test runs of both repositories, with every
 check that runs today still running. This note gives the phase 1 triage: what each part of the
-runs costs now, and a ranked list of speed-ups. I haven't pushed anything yet. Phase 2 starts
-with the items the coordinator approves.
+runs costs now, and a ranked list of speed-ups. Phase 2 built items 1, 3, 4, 6, 7, 8, 9c and 11,
+with their evidence below. The owner then paused the work: item 2 stops at the diagnosis, and
+nothing new starts.
 
 The account's runners are the limit. Jobs wait 30 to 120 minutes in the queue, 3 to 10 times their
 run time. So the measure that counts is runner minutes, the sum of the job times of a run.
@@ -274,7 +275,7 @@ The coordinator answered the ranked list on 2026-10-11.
 | 1, 4, 6, 11 | Approved, one push, one commit each. That push's `Integration` run is the first of three runs for item 1. If `portlet-modes.spec.ts` fails or passes only on a retry in any of the three, item 1 is reverted. |
 | 3 | Approved, with option c of item 9 (drop the uPortal key's Gradle cache once the build is reused). |
 | 7, 8 | Approved as a CI comparison, numbers before keeping them. |
-| 2 | Approved as a diagnosis first, with timing on the server. The fix is proposed with numbers before it is built. |
+| 2 | Approved as a diagnosis first, with timing on the server. The coordinator then approved loading the type-ahead list on the first focus of the search field, after `-wc-search` is merged, and the owner paused the work before that. The diagnosis steps were removed again. |
 | 5 | Rejected by the owner. The `DB harness` jobs stay as they are. |
 | 9a | Rejected. The basic provider of `setup-gradle` ignores `gradle-home-cache-excludes`: at the pinned commit `3f5f9ad`, `getCachePaths()` in `cache-service-basic.ts` always saves `~/.gradle/caches` and `~/.gradle/wrapper`. Deleting the directories before the save would fit about one more branch, and each restoring job would rebuild them on every run. |
 | 9b, 10 | Deferred. 9b waits for a timing of the WAR download in one CI job. |
@@ -326,16 +327,40 @@ branch's own runs of the same base.
 * HTTP replay failed on the same guest page bodies as the integration branch's run 38182106791
   (the accessibility changes). G-index failed on the known `up_person_attr` audit finding.
 
+Push 2: uPortal-start `1d4b5ef57`, the same uPortal `258e144b4`.
+
+* Item 3, first push: the `Build uPortal` job of G-index (run 38186680625) ran first, found no
+  earlier build and built in 192 s without a Gradle cache (9c). It uploaded
+  `uportal-m2-258e144b4...` in 7 s, and the job took 3 min 40 s. Integration's build started before
+  that upload and built too (3 min 07 s). Migration equivalence (38186680707) and HTTP replay
+  (38186680688) reused it, in 23 s and 31 s. The download took 6 s and the commit check passed. A
+  notice names the run that built it. A push whose uPortal commit was built before saves all four
+  builds.
+* Item 1, run 2 of 3 (`Integration` 38186680684): all 94 tests of `portlet-modes.spec.ts` passed
+  with no retry on HSQLDB and on PostgreSQL 18. Both jobs had the 4 known locale failures and one
+  flaky test, `user-locale.spec.ts:82` (`page.goto: net::ERR_ABORTED`), which signs in as student,
+  a user that `portlet-modes.spec.ts` doesn't use. The same flake shows on other branches (runs
+  38185390122 and 38186238954).
+* Item 2: the notes added to the spec show that at each of the 40 renders that waited, no other
+  request to the portal was open, and that no `/api/portletList` request finished after more than
+  3 s. The stuck requests didn't complete before the next page replaced them, while the server
+  handled all 1,432 requests it received within 1.4 s. So the browser's queue of six connections
+  isn't the cause, and the cause is still open. The work stops here, as the owner asked.
+* Workflow lint (38186680643) ran the new table test with the other two and passed.
+
+Push 3: uPortal `3984b4341` and uPortal-start `6de510bd3` remove the diagnosis again (two
+reverts in uPortal-start, one in uPortal). Its `Integration` run 38192910869 is run 3 for item 1.
+
 ## Proposed LOG rows (MOD-I340 to MOD-I349)
 
 | ID | Area | Finding | Resolution |
 | --- | --- | --- | --- |
-| MOD-I340 | Portal | On CI runners with HSQLDB, `/api/portletList` took over 3 s on 100 renders of staff and guest in job 114546465364, and the HSQLDB Playwright step took 285 s longer in 9 of 20 runs. Locally it takes 0.2 to 1.3 s. Respondr asks for the whole registry on every page an authenticated user opens, so production pays for it too. | Diagnosis on the test-speed branch (item 2). |
+| MOD-I340 | Portal | On CI runners with HSQLDB, `/api/portletList` took over 3 s on 100 renders of staff and guest in job 114546465364, and the HSQLDB Playwright step took 285 s longer in 9 of 20 runs. Locally it takes 0.2 to 1.3 s. Respondr asks for the whole registry on every page an authenticated user opens, so production pays for it too. | Diagnosed on the test-speed branch (item 2): in run 38186680684 the server handled its 1,432 requests within 1.4 s, while the 40 stuck requests didn't complete in the browser before the next page. Paused by the owner. Approved fix for later: load the type-ahead list on the first focus of the search field, after `-wc-search` is merged. |
 | MOD-I341 | Tests | `portlet-modes.spec.ts` ran its 94 tests on one worker, 581.5 s of the 786 s HSQLDB suite in job 114546465364. | Parallel mode for its `describe` (item 1). |
 | MOD-I342 | CI | Up to four uPortal-start workflows build the same uPortal commit on each push, 4.2 minutes each. | Item 3, with the uPortal key's Gradle cache dropped. |
 | MOD-I343 | Build | `portalInit` built the uPortal overlay last, so its 89 s chain ended the task at 175 s. | The other overlays' tasks run after the uPortal overlay's, and each overlay's tasks after its clean (item 4). |
 | MOD-I344 | Build | `tomcatStart` waited Ant's default 3 minutes in every uPortal-start `CI` cell, where uPortal isn't deployed, and then logged that uPortal was live. | It waits for any answer, then logs the status of `/uPortal` (item 6). |
 | MOD-I345 | Tests | `announcements.spec.ts` slept 2 s for TinyMCE and `visual-resource-server.spec.ts` 3 s for the news feed request. | `expect.poll` and `waitForPortalRequestsToSettle` (item 11). |
-| MOD-I346 | CI | uPortal's build cell ran SpotBugs in a second Gradle call after the build, 482 s after 555 s. | One Gradle call with `--continue` (item 7), kept only if CI shows the gain. |
-| MOD-I347 | CI | uPortal's build cell ran with `--no-parallel`. | Parallel mode (item 8), kept only if CI shows the gain. |
+| MOD-I346 | CI | uPortal's build cell ran SpotBugs in a second Gradle call after the build, 482 s after 555 s. | One Gradle call with `--continue` (item 7). The cell went from 1197 s to 666 s with items 7 and 8 together, with the same tests and SpotBugs tasks. |
+| MOD-I347 | CI | uPortal's build cell ran with `--no-parallel`. | Parallel mode (item 8), kept with item 7. |
 | MOD-I348 | CI | A uPortal-start branch's Gradle cache entries take about 1.7 GB of the 10 GB limit, so about 6 of some 20 active branches fit. | 9a rejected (provider), 9c with item 3, 9b deferred. |
