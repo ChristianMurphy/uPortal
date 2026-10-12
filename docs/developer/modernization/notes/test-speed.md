@@ -298,7 +298,33 @@ once the cause is known.
 
 ### CI runs
 
-Pending.
+Push 1: uPortal `258e144b4`, uPortal-start `d24a4db3d`. The comparison runs are the integration
+branch's own runs of the same base.
+
+| Item | Run before | Run after | Before | After |
+| --- | --- | --- | --- | --- |
+| 7 and 8 | uPortal `CI` 38182407548 (`a6f81aa63`) | uPortal `CI` 38182923258 | Linux Temurin 21 cell 1197 s (the build step 588 s and the SpotBugs step 469 s) | 666 s (one build and SpotBugs step 564 s) |
+| 6 | uPortal-start `CI` 38182411747 | uPortal-start `CI` 38186680604 and 38183012186 | Linux cell 425 s, Start Tomcat 182 s (Windows 185 s, macOS 183 s) | 259 s, Start Tomcat 4 s |
+| 1 | `Integration` 38182106791, HSQLDB job 114597007592 | `Integration` 38183012207, HSQLDB job 114600814462 | 370 tests in 703 s, `portlet-modes.spec.ts` 6.0 min on one worker | 424 tests in 791 s, every file under Playwright's slow-file limit, every test passed on its first run except the 4 below |
+
+* Items 7 and 8: both logs list the same 36 test modules with the same counts (1655 executed, 79
+  skipped) and the same 69 `spotbugsMain` tasks. A topic push runs only this cell, so the two
+  items show together there. The coordinator kept both.
+* Item 1, run 1 of 3: all 94 tests of `portlet-modes.spec.ts` passed with no retry. The runs
+  don't compare in time. The newer base adds 54 tests (`layout/pages.spec.ts`, 30 tests in 188 s),
+  and in both runs 4 tests of `web-components-locale.spec.ts` time out three times each, which
+  adds 366 s of worker time and 12 worker restarts (the i18n session is fixing that spec). The
+  reports in the artifacts give 1,250 s and 1,454 s of test time.
+* Item 2: the HSQLDB job's access log (`%D`) and the handler's log lines show 1,417 calls with a
+  median of 21 ms, a 90th percentile of 307 ms and a maximum of 875 ms, on an AMD EPYC 9V74
+  runner. The report still has 36 renders with `/api/portletList` in flight after 3 s (40 in the
+  integration branch's run). The wait comes before Tomcat processes the request, most likely in
+  the browser's queue of six connections per host (Tomcat's `maxThreads` is 1200). On
+  `-wc-search`, `<up-search-box>` starts loading the list as soon as it starts. The coordinator
+  approved loading it on the first focus of the search field, in `up-search-box.machine.ts`, after
+  `-wc-search` is merged.
+* HTTP replay failed on the same guest page bodies as the integration branch's run 38182106791
+  (the accessibility changes). G-index failed on the known `up_person_attr` audit finding.
 
 ## Proposed LOG rows (MOD-I340 to MOD-I349)
 
