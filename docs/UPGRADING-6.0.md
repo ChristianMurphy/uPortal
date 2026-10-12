@@ -871,3 +871,24 @@ now set `width: 100%`. The layout checks at standard screen sizes (uPortal-start
 A portlet in the pre-content region that floats its content, such as the quickstart's feedback
 link, now has the height of that content instead of 0. Skins that copy Respondr's
 `navigation.scss`, `header.scss` or `regions.scss` need the same changes.
+
+## Entity keys (typeAndIdHash) spell out every character
+
+`typeAndIdHash`, the key that `/api/entities.json`, `/api/entities/{type}/{id}.json` and
+`/api/permissions/principals.json` return for each group and person, keeps the letters A to Z and
+a to z and the digits as they are. It now writes every other character, `_` included, as `_`, the
+character's code point in hexadecimal, and `_`. 5.x wrote each of them as `__`:
+
+| Group or person | 5.x | 6.0 |
+| --- | --- | --- |
+| group `pags.Authenticated Users` | `group_pags__Authenticated__Users` | `group_pags_2e_Authenticated_20_Users` |
+| person `admin-lo` | `person_admin__lo` | `person_admin_2d_lo` |
+
+In 5.x different ids could get the same key: `pags.Café` and `pags.Cafè` both became
+`group_pags__Caf__`, and `a.b` and `a_b` collided too. The Portlet Manager puts this key in the
+`name` of each principal's permission checkboxes, so choosing BROWSE for one of those groups also
+chose it for the other (MOD-I274).
+
+The key isn't stored. A script or skin that builds a key itself from a group or person id, or
+that compares keys it saved from 5.x, must use the new form. Code that only passes on the key the
+API returned keeps working.
