@@ -12,7 +12,8 @@ LOG numbers come from the hardening block (MOD-I250 to MOD-I259). This branch us
 | `dir` from the user's locale (`USER_DIR`) | committed (uPortal `eecc3d94`) |
 | Mirrored skin (`defaultSkin-rtl.css`), icons, UPGRADING-6.0 | committed (uPortal `2934bff8`) |
 | Playwright spec in the ar-XB pseudo-locale | committed in uPortal-start (`tests/ux/i18n/rtl-theme.spec.ts`) |
-| axe in right to left | waits for uPortal-start's `-test-suites`, which adds `@axe-core/playwright` |
+| axe in right to left | committed in uPortal-start (`eedf209`), after merging the integration branch |
+| The ar-XB test locale on CI's portals (`-PtestPortalLocales`) | committed in uPortal-start (`d493253`, `6402b5a`) |
 
 ## How it works
 
@@ -33,16 +34,25 @@ LOG numbers come from the hardening block (MOD-I250 to MOD-I259). This branch us
 ## Test
 
 uPortal-start `tests/ux/i18n/rtl-theme.spec.ts`, as a guest, whose locale lasts for the browser
-session only. The test chooses the locale in `user-locales-selector` by giving one of its choices
-the test locale's code. The flow takes any code. ar-XB is the right-to-left pseudo-locale of
-MOD-D51. It has no messages, and the text is the English text. The spec checks, in en-US and in ar-XB:
+session only. ar-XB is the right-to-left pseudo-locale of MOD-D51. The locale API
+(`PUT /api/v6-0/locale`) takes only the locales in `portal_locales`, and the release offers none
+written right to left, so uPortal-start's `-PtestPortalLocales=ar_XB` appends ar_XB to
+`portal_locales` in portal.home. The coordinator chose this over adding Arabic to the
+quickstart or loosening the API. CI's jobs that run `tests/ux` set it. Without it the ar-XB tests
+skip and say how to deploy the locale. `user-locale.spec.ts` and `user-locale-component.spec.ts`
+count the release's 8 locales plus the offered pseudo-locales. It has no messages, and the text is the English text. The spec checks, in en-US and in ar-XB:
 
 * `lang` and `dir` on `<html>`, and the one skin stylesheet linked;
 * that the logo, the first column and a portlet title start on the right in ar-XB only (by the
   centre of their content: a title spans the whole title bar in both directions);
 * that the sign-in icon is mirrored in ar-XB only;
 * that Popular Portlets has `dir="rtl"` and its first column on the right in ar-XB only;
-* at the six MOD-D52 widths, that the ar-XB page has no layout problem that the en-US page lacks.
+* at the six MOD-D52 widths, that the ar-XB page has no layout problem that the en-US page lacks;
+* that axe (WCAG 2.1 A and AA) doesn't find a violation on the ar-XB page that the en-US page
+  lacks.
+  With links in running text left without an underline in `defaultSkin-rtl.css` only, it fails
+  on seven `link-in-text-block` violations. axe can't judge colour contrast on this page (the
+  theme's background image makes it "incomplete"), so a contrast fault doesn't show.
 
 Local run: 10 passed. Seeded faults, each in the deployed copy of `defaultSkin-rtl.css` with a
 Tomcat restart, because `pageCachingFilter` keeps CSS in memory:
@@ -81,8 +91,7 @@ time. Its four dependencies were already in the root `package-lock.json`, which 
 
 ## Next step
 
-Check the push runs of both branches. When `-test-suites` is merged, add an axe check of
-the ar-XB guest page to the spec.
+Check the push runs of both branches.
 
 ## Proposed LOG rows (MOD-I253)
 
