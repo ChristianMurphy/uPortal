@@ -152,10 +152,9 @@ public class PortletListRESTController {
             // attacks
             try {
                 if (!StringUtils.isEmpty(input.getOwnerUsername()))
-                    InputValidator.validateAsWordCharacters(
-                            input.getOwnerUsername(), "ownerUsername");
+                    InputValidator.validateAsUserName(input.getOwnerUsername(), "ownerUsername");
                 if (!StringUtils.isEmpty(input.getName()))
-                    InputValidator.validateAsWordCharacters(input.getName(), "name");
+                    InputValidator.validateAsText(input.getName(), "name");
             } catch (IllegalArgumentException iae) {
                 log.warn("IllegalArgumentException thrown - {}", iae.getMessage(), iae);
                 return prepareResponse(
@@ -293,9 +292,9 @@ public class PortletListRESTController {
             if (!StringUtils.isEmpty(portletListUuid))
                 InputValidator.validateAsWordCharacters(portletListUuid, "Portlet List UUID");
             if (!StringUtils.isEmpty(input.getOwnerUsername()))
-                InputValidator.validateAsWordCharacters(input.getOwnerUsername(), "ownerUsername");
+                InputValidator.validateAsUserName(input.getOwnerUsername(), "ownerUsername");
             if (!StringUtils.isEmpty(input.getName()))
-                InputValidator.validateAsWordCharacters(input.getName(), "name");
+                InputValidator.validateAsText(input.getName(), "name");
         } catch (IllegalArgumentException iae) {
             log.warn("IllegalArgumentException thrown - {}", iae.getMessage(), iae);
             return prepareResponse(

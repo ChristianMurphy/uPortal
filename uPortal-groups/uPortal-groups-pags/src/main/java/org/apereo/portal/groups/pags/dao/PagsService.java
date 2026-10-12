@@ -50,11 +50,19 @@ public final class PagsService {
     @Autowired private PagsGroupService pagsGroupService;
     @Autowired private LocalGroupService localGroupService;
 
-    private static final String GROUP_NAME_VALIDATOR_REGEX = "^[\\w ]{5,500}$"; // 5-500 characters
+    /**
+     * Group names are text in any script (MOD-D49), 5 to 500 code points. A name is also the key in
+     * the PAGS REST paths, where Tomcat refuses an encoded / or \, so those two are left out, with
+     * control characters.
+     */
+    private static final String GROUP_NAME_VALIDATOR_REGEX = "^[^\\p{Cc}/\\\\]{5,500}$";
+
     private static final Pattern GROUP_NAME_VALIDATOR_PATTERN =
             Pattern.compile(GROUP_NAME_VALIDATOR_REGEX);
-    private static final String GROUP_DESC_VALIDATOR_REGEX =
-            "^[\\w ,\\.\\(\\)]{0,500}$"; // 0-500 characters
+
+    /** Descriptions are text in any script, up to 500 code points, without control characters */
+    private static final String GROUP_DESC_VALIDATOR_REGEX = "^[^\\p{Cc}]{0,500}$";
+
     private static final Pattern GROUP_DESC_VALIDATOR_PATTERN =
             Pattern.compile(GROUP_DESC_VALIDATOR_REGEX);
 
@@ -124,21 +132,8 @@ public final class PagsService {
         }
 
         // VALIDATION STEP:  The group name & description are allowable
-        if (StringUtils.isBlank(groupName)) {
-            throw new IllegalArgumentException("Specified groupName is blank:  " + groupName);
-        }
-        if (!GROUP_NAME_VALIDATOR_PATTERN.matcher(groupName).matches()) {
-            throw new IllegalArgumentException(
-                    "Specified groupName is too long, too short, or contains invalid characters:  "
-                            + groupName);
-        }
-        if (!StringUtils.isBlank(description)) { // Blank description is allowable
-            if (!GROUP_DESC_VALIDATOR_PATTERN.matcher(description).matches()) {
-                throw new IllegalArgumentException(
-                        "Specified description is too long or contains invalid characters:  "
-                                + description);
-            }
-        }
+        checkGroupName(groupName);
+        checkDescription(description);
 
         // VALIDATION STEP:  We don't have a group by that name already
         EntityIdentifier[] people =
@@ -232,5 +227,27 @@ public final class PagsService {
             logger.error("More than one PAGS group with name {} found.", name);
         }
         return pagsGroups.isEmpty() ? null : pagsGroups.iterator().next();
+    }
+
+    /** Throws IllegalArgumentException unless {@code groupName} is an allowed group name */
+    static void checkGroupName(String groupName) {
+        if (StringUtils.isBlank(groupName)) {
+            throw new IllegalArgumentException("Specified groupName is blank:  " + groupName);
+        }
+        if (!GROUP_NAME_VALIDATOR_PATTERN.matcher(groupName).matches()) {
+            throw new IllegalArgumentException(
+                    "Specified groupName is too long, too short, or contains invalid characters:  "
+                            + groupName);
+        }
+    }
+
+    /** Throws IllegalArgumentException unless {@code description} is blank or allowed */
+    static void checkDescription(String description) {
+        if (!StringUtils.isBlank(description) // Blank description is allowable
+                && !GROUP_DESC_VALIDATOR_PATTERN.matcher(description).matches()) {
+            throw new IllegalArgumentException(
+                    "Specified description is too long or contains invalid characters:  "
+                            + description);
+        }
     }
 }

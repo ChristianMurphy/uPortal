@@ -275,6 +275,13 @@
        ========================================================================== */
   #region-pre-content {
     margin-top: 8px;
+
+    /* A portlet here may float its content (the quickstart's feedback link does); contain it */
+    .up-portlet-wrapper::after {
+      content: "";
+      display: table;
+      clear: both;
+    }
   }
 
   /* ==========================================================================

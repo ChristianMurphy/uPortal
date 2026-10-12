@@ -32,6 +32,7 @@ import javax.xml.xpath.XPathExpression;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.IUserPreferencesManager;
+import org.apereo.portal.dao.usertype.FunctionalNameType;
 import org.apereo.portal.layout.IUserLayout;
 import org.apereo.portal.layout.IUserLayoutManager;
 import org.apereo.portal.portlet.PortletUtils;
@@ -1506,9 +1507,9 @@ public class UrlSyntaxProviderImpl implements IUrlSyntaxProvider {
     private static final class ContentTuple {
 
         private static final Pattern FOLDER_PARSING_PATTERN =
-                Pattern.compile(".*/f/([a-zA-Z0-9_]+)[\\./]?.*");
+                Pattern.compile(".*/f/(" + FunctionalNameType.FNAME_REGEX + ")[\\./]?.*");
         private static final Pattern PORTLET_PARSING_PATTERN =
-                Pattern.compile(".*/p/([a-zA-Z0-9_]+)[\\./]?.*");
+                Pattern.compile(".*/p/(" + FunctionalNameType.FNAME_REGEX + ")[\\./]?.*");
 
         private final String folder;
         private final String portlet;

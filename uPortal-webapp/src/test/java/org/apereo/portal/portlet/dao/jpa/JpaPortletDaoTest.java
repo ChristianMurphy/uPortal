@@ -287,6 +287,13 @@ public class JpaPortletDaoTest extends BasePortalJpaDaoTest {
             {SearchMethod.STARTS_WITH, "!", ""},
             {SearchMethod.DISCRETE, "Calendar", "calendar"},
             {SearchMethod.DISCRETE, "calendar", ""},
+            // The _CI methods, which the entity selector uses (MOD-I203)
+            {SearchMethod.DISCRETE_CI, "calendar", "calendar"},
+            {SearchMethod.DISCRETE_CI, "CAMPUS WEATHER", "weather"},
+            {SearchMethod.DISCRETE_CI, "calend", ""},
+            {SearchMethod.CONTAINS_CI, "aMPU", "calendar weather"},
+            {SearchMethod.STARTS_WITH_CI, "CAL", "calendar"},
+            {SearchMethod.ENDS_WITH_CI, "%_done", "percent"},
         };
         for (final Object[] c : cases) {
             final List<String> found =

@@ -16,6 +16,7 @@ package org.apereo.portal.tenants;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
@@ -66,6 +67,63 @@ public class TenantServiceTest {
         when(tenantDao.getTenantByFName("Tenant1")).thenReturn(tenant);
         when(tenantDao.getTenantByName("Tenant1 Tenant1")).thenReturn(tenant);
         when(tenantDao.getAllTenants()).thenReturn(tenants);
+    }
+
+    /**
+     * Tenant names are text: letters, combining marks, digits and spaces in any script, 5 to 32
+     * characters counted as code points (MOD-I233, MOD-D49).
+     */
+    @Test
+    public void tenantNamesAcceptLettersOfAnyScript() {
+        for (final String name :
+                new String[] {
+                    "Universit\u00e9 Laval",
+                    "Universite\u0301 Laval", // the accent as a combining mark
+                    "\u5317\u6d77\u9053\u5927\u5b66",
+                    "\u041c\u0413\u0423 \u0438\u043c\u0435\u043d\u0438 1755",
+                    "\u062c\u0627\u0645\u0639\u0629 \u0627\u0644\u0642\u0627\u0647\u0631\u0629",
+                    "\u00c9cole 42",
+                    "Tenant Name 1",
+                    // five letters outside the Basic Multilingual Plane: ten UTF-16 chars
+                    "\ud840\udc00\ud840\udc01\ud840\udc02\ud840\udc03\ud840\udc04",
+                    new String(new char[32]).replace('\0', '\u00e9'),
+                }) {
+            tenantService.validateName(name);
+        }
+    }
+
+    @Test
+    public void tenantNamesRefuseOtherCharactersAndLengths() {
+        for (final String name :
+                new String[] {
+                    "abcd",
+                    new String(new char[33]).replace('\0', '\u00e9'),
+                    "Bad/Name",
+                    "Tenant <b>",
+                    "Tenant\tName",
+                    "Smile \ud83d\ude00\ud83d\ude00",
+                }) {
+            try {
+                tenantService.validateName(name);
+                fail("Accepted the tenant name \"" + name + "\"");
+            } catch (IllegalStateException expected) {
+                // refused
+            }
+        }
+    }
+
+    @Test
+    public void tenantFnamesStayLowerCaseAsciiIdentifiers() {
+        tenantService.validateFname("universite_laval");
+        for (final String fname :
+                new String[] {"universit\u00e9_laval", "Upper_Case", "a b c d e"}) {
+            try {
+                tenantService.validateFname(fname);
+                fail("Accepted the tenant fname \"" + fname + "\"");
+            } catch (IllegalStateException expected) {
+                // refused
+            }
+        }
     }
 
     @Test

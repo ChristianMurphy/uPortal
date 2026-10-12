@@ -51,6 +51,14 @@ final class QueryVendorDifferences {
     private static final Set<DatabaseVendor> CASE_INSENSITIVE =
             EnumSet.of(DatabaseVendor.MYSQL, DatabaseVendor.MARIADB, DatabaseVendor.SQLSERVER);
 
+    /**
+     * The default collations of MySQL and MariaDB also ignore accents (_ai_), so "ecole" finds
+     * "\u00c9cole". SQL Server's SQL_Latin1_General_CP1_CI_AS and the other databases compare
+     * accents.
+     */
+    private static final Set<DatabaseVendor> ACCENT_INSENSITIVE =
+            EnumSet.of(DatabaseVendor.MYSQL, DatabaseVendor.MARIADB);
+
     private static final String SEPARATOR = " -> ";
     private static final String ELEMENT = "   ";
     private static final Pattern QUOTED = Pattern.compile("\"([^\"]*)\"");
@@ -115,6 +123,13 @@ final class QueryVendorDifferences {
                     "pagsGroupDefinitionDao.getPersonAttributesGroupDefinitionByName(\"students\")",
                     "pagsGroupDefinitionDao.getPersonAttributesGroupDefinitionByName(\"Students\")");
         }
+        if (ACCENT_INSENSITIVE.contains(vendor)) {
+            sameAs(
+                    differences,
+                    golden,
+                    "portletDefinitionDao.searchForPortlets(\"ecole\", CONTAINS)",
+                    "portletDefinitionDao.searchForPortlets(\"\\u00e9cole\", CONTAINS)");
+        }
         switch (vendor) {
             case MYSQL:
             case MARIADB:
@@ -133,6 +148,17 @@ final class QueryVendorDifferences {
                 differences.put(
                         "portletDefinitionDao.getPortletDefinitionByName(unicode)",
                         Arrays.asList("null"));
+                // The varchar title holds the Greek letters as "?", so no Greek term finds it
+                for (final String label :
+                        Arrays.asList(
+                                "portletDefinitionDao.searchForPortlets(\"\\u03a3\\u03bf\\u03c6"
+                                        + "\\u03af\\u03b1 \\u03a0\\u03cd\\u03bb\\u03b7\", false)",
+                                "portletDefinitionDao.searchForPortlets(\"\\u03c3\\u03bf\\u03c6"
+                                        + "\\u03af\\u03b1\", CONTAINS)",
+                                "portletDefinitionDao.searchForPortlets(\"\\u03a0\\u038e\\u039b"
+                                        + "\\u0397\", CONTAINS)")) {
+                    differences.put(label, Arrays.asList("ArrayList of 0"));
+                }
                 break;
             default:
                 break;

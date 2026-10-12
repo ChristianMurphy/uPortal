@@ -3,5 +3,10 @@ description = "Apereo uPortal Groups Local"
 dependencies {
     implementation project(':uPortal-groups:uPortal-groups-core')
 
+    // IPortletDefinitionRegistry's signatures use these, so mocking it needs them (MOD-I203)
+    testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
+    testImplementation "${servletApiDependency}"
+
     // compile "commons-io:commons-io:${commonsIoVersion}"
 }
