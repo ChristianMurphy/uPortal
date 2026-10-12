@@ -86,6 +86,14 @@ Local portal on ports 8380/8305/9187, uPortal 5.17.10-SNAPSHOT, HSQLDB.
 One local run is left out: a start whose wait ran while the table test's wrong-path fault was in
 the working tree. It timed out and named all 13 webapps.
 
+### CI evidence
+
+| Piece | Head | Runs |
+| --- | --- | --- |
+| 1a | uPortal-start `e1b41fb9c` (landed as `8946c0a64`) | CI 38186707123, Workflow lint 38186707217 and Migration equivalence 38186707099 green. Integration 38186707117: harness, G-migrate and CAS green. Playwright hsqldb and postgres-18 each failed only the 4 `web-components-locale.spec.ts:165` tests that fail on the integration branch too (420 passed). The wait logged "All 13 portlet webapps have registered" 3 s (HSQLDB) and 5 s (PostgreSQL) after the first answer. HTTP replay 38186707129: 5 unexplained exchanges, the entity key escapes that integration `62559d980` registers after 1a's base |
+| 1b | uPortal `57c71b597` (`18ece654f` after a merge of the integration branch), uPortal-start `cc35b026a` | uPortal CI 38188704512, DB integration 38188704511 and DB copy tool 38188704541 green. uPortal-start CI 38192421247 and Migration equivalence 38192421260 green. Integration 38192421230 built uPortal `57c71b597`: harness, G-migrate and CAS green, Playwright only the 4 locale tests. Manual HTTP replay 38192452052: 0 unexplained exchanges, security cells and logins. It failed only the registry check for the entity keys section, which uPortal's integration branch added after `57c71b597`'s base |
+| MOD-I351 | uPortal-start `664c3eeb5` (landed as `c562f35bb`) | CI 38188560329, Migration equivalence 38188560225 and G-index 38188560286 green. Integration 38188560340: harness (zero drift), G-migrate and CAS green, Playwright only the 4 locale tests. The full suite on PostgreSQL logged "hibernate_sequence: moved from 6 past the highest id 14 (NEWS_DEFINITION)" |
+
 ## MOD-I351: the shared `hibernate_sequence`
 
 ### Cause
