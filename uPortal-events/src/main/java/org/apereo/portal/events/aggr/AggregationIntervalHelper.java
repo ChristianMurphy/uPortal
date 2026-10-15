@@ -14,12 +14,12 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.ZonedDateTime;
 import java.util.List;
-import org.joda.time.DateTime;
 
 /**
  * Calculates the correct {@link AggregationIntervalInfo} that contains the spcified {@link
- * DateTime} for the specified {@link AggregationInterval}.
+ * ZonedDateTime} for the specified {@link AggregationInterval}.
  */
 public interface AggregationIntervalHelper {
     /**
@@ -28,7 +28,7 @@ public interface AggregationIntervalHelper {
      * @return Information about the calculated interval, null if the specified interval is not
      *     currently supported
      */
-    AggregationIntervalInfo getIntervalInfo(AggregationInterval interval, DateTime date);
+    AggregationIntervalInfo getIntervalInfo(AggregationInterval interval, ZonedDateTime date);
 
     /**
      * Get the number of intervals between
@@ -38,26 +38,27 @@ public interface AggregationIntervalHelper {
      * @param end
      * @return
      */
-    int intervalsBetween(AggregationInterval interval, DateTime start, DateTime end);
+    int intervalsBetween(AggregationInterval interval, ZonedDateTime start, ZonedDateTime end);
 
     /**
-     * @see #getIntervalStartDateTimesBetween(AggregationInterval, DateTime, DateTime, int)
+     * @see #getIntervalStartDateTimesBetween(AggregationInterval, ZonedDateTime, ZonedDateTime,
+     *     int)
      */
-    List<DateTime> getIntervalStartDateTimesBetween(
-            AggregationInterval interval, DateTime start, DateTime end);
+    List<ZonedDateTime> getIntervalStartDateTimesBetween(
+            AggregationInterval interval, ZonedDateTime start, ZonedDateTime end);
 
     /**
-     * Get list of {@link DateTime}s for the start of every interval between the start and end
+     * Get list of {@link ZonedDateTime}s for the start of every interval between the start and end
      *
      * @param interval The interval to get times for
      * @param start The start of the range (inclusive)
      * @param end The end of the range (exclusive)
-     * @param maxTimes Maximum number of DateTime objects to return. If this limit is hit an
+     * @param maxTimes Maximum number of ZonedDateTime objects to return. If this limit is hit an
      *     exception is thrown. -1 disables limit checks
-     * @return List of DateTime objects in chronological order
+     * @return List of ZonedDateTime objects in chronological order
      */
-    List<DateTime> getIntervalStartDateTimesBetween(
-            AggregationInterval interval, DateTime start, DateTime end, int maxTimes);
+    List<ZonedDateTime> getIntervalStartDateTimesBetween(
+            AggregationInterval interval, ZonedDateTime start, ZonedDateTime end, int maxTimes);
 
     //    /**
     //     * Fill in any missing timepoints in a list of data with zero-value aggregation

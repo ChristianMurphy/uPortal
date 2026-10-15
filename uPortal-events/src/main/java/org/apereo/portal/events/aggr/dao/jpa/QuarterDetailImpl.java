@@ -15,25 +15,26 @@
 package org.apereo.portal.events.aggr.dao.jpa;
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import org.apache.commons.lang.Validate;
+import org.apereo.portal.dao.usertype.MonthDayColumnConverter;
 import org.apereo.portal.events.aggr.EventDateTimeUtils;
 import org.apereo.portal.events.aggr.QuarterDetail;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.NaturalId;
-import org.hibernate.annotations.Type;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
-import org.joda.time.MonthDay;
-import org.joda.time.ReadableInstant;
 
 /** */
 @Entity
@@ -56,12 +57,12 @@ public class QuarterDetailImpl implements QuarterDetail, Serializable {
 
     @NaturalId
     @Column(name = "QUARTER_START", nullable = false)
-    @Type(type = "monthDay")
+    @Convert(converter = MonthDayColumnConverter.class)
     private final MonthDay start;
 
     @NaturalId
     @Column(name = "QUARTER_END", nullable = false)
-    @Type(type = "monthDay")
+    @Convert(converter = MonthDayColumnConverter.class)
     private final MonthDay end;
 
     @NaturalId
@@ -79,7 +80,7 @@ public class QuarterDetailImpl implements QuarterDetail, Serializable {
     public QuarterDetailImpl(MonthDay start, MonthDay end, int quarterId) {
         Validate.notNull(start);
         Validate.notNull(end);
-        if (start.isEqual(end)) {
+        if (start.equals(end)) {
             throw new IllegalArgumentException("start cannot equal end");
         }
         this.id = -1;
@@ -99,8 +100,8 @@ public class QuarterDetailImpl implements QuarterDetail, Serializable {
     }
 
     @Override
-    public DateMidnight getStartDateMidnight(ReadableInstant instant) {
-        final MonthDay instantMonthDay = new MonthDay(instant);
+    public LocalDate getStartDate(ZonedDateTime instant) {
+        final MonthDay instantMonthDay = MonthDay.from(instant);
 
         // If the quarter wraps a year boundary AND
         //   the instant MonthDay is before the start AND
@@ -109,15 +110,15 @@ public class QuarterDetailImpl implements QuarterDetail, Serializable {
         if (this.end.isBefore(this.start)
                 && instantMonthDay.isBefore(this.start)
                 && this.end.isAfter(instantMonthDay)) {
-            return this.start.toDateTime(new DateTime(instant).minusYears(1)).toDateMidnight();
+            return this.start.atYear(instant.getYear() - 1);
         }
 
-        return this.start.toDateTime(instant).toDateMidnight();
+        return this.start.atYear(instant.getYear());
     }
 
     @Override
-    public DateMidnight getEndDateMidnight(ReadableInstant instant) {
-        final MonthDay instantMonthDay = new MonthDay(instant);
+    public LocalDate getEndDate(ZonedDateTime instant) {
+        final MonthDay instantMonthDay = MonthDay.from(instant);
 
         // If the quarter wraps a year boundary AND
         //   the end is NOT after the instant MonthDay AND
@@ -126,10 +127,10 @@ public class QuarterDetailImpl implements QuarterDetail, Serializable {
         if (this.end.isBefore(this.start)
                 && !this.end.isAfter(instantMonthDay)
                 && !instantMonthDay.isBefore(this.start)) {
-            return this.end.toDateTime(new DateTime(instant).plusYears(1)).toDateMidnight();
+            return this.end.atYear(instant.getYear() + 1);
         }
 
-        return this.end.toDateTime(instant).toDateMidnight();
+        return this.end.atYear(instant.getYear());
     }
 
     @Override
@@ -138,11 +139,12 @@ public class QuarterDetailImpl implements QuarterDetail, Serializable {
     }
 
     @Override
-    public int compareTo(ReadableInstant instant) {
-        final DateMidnight startDateTime = this.getStartDateMidnight(instant);
-        final DateMidnight endDateTime = this.getEndDateMidnight(instant);
-
-        return EventDateTimeUtils.compareTo(startDateTime, endDateTime, instant);
+    public int compareTo(ZonedDateTime instant) {
+        final ZoneId zone = instant.getZone();
+        return EventDateTimeUtils.compareTo(
+                this.getStartDate(instant).atStartOfDay(zone).toInstant(),
+                this.getEndDate(instant).atStartOfDay(zone).toInstant(),
+                instant.toInstant());
     }
 
     @Override

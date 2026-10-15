@@ -14,18 +14,18 @@
  */
 package org.apereo.portal.events.aggr.action;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.BaseAggregationDao;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
-import org.joda.time.DateTime;
 
 public interface SearchRequestAggregationDao<T extends SearchRequestAggregation>
         extends BaseAggregationDao<T, SearchRequestAggregationKey> {
 
     public List<SearchRequestAggregationImpl> getAggregations(
-            DateTime start,
-            DateTime end,
+            ZonedDateTime start,
+            ZonedDateTime end,
             AggregationInterval interval,
             AggregatedGroupMapping aggregatedGroupMapping,
             AggregatedGroupMapping... aggregatedGroupMappings);

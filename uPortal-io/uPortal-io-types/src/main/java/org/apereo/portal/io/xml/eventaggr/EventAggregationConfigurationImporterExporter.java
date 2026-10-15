@@ -17,11 +17,19 @@ package org.apereo.portal.io.xml.eventaggr;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 import org.apereo.portal.events.aggr.AcademicTermDetail;
 import org.apereo.portal.events.aggr.AggregatedGroupConfig;
 import org.apereo.portal.events.aggr.AggregatedIntervalConfig;
@@ -40,8 +48,6 @@ import org.apereo.portal.io.xml.IPortalDataType;
 import org.apereo.portal.io.xml.PortalDataKey;
 import org.apereo.portal.utils.EnumNameComparator;
 import org.apereo.portal.utils.SafeFilenameUtils;
-import org.joda.time.DateMidnight;
-import org.joda.time.MonthDay;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -214,12 +220,32 @@ public class EventAggregationConfigurationImporterExporter
                             @Override
                             public AcademicTermDetail apply(ExternalTermDetail externalTermDetail) {
                                 return new AcademicTermDetailImpl(
-                                        new DateMidnight(externalTermDetail.getStart()),
-                                        new DateMidnight(externalTermDetail.getEnd()),
+                                        startOfDay(externalTermDetail.getStart()),
+                                        startOfDay(externalTermDetail.getEnd()),
                                         externalTermDetail.getName());
                             }
                         });
         this.aggregationManagementDao.setAcademicTermDetails(academicTerms);
+    }
+
+    /** The start of the calendar's day in the calendar's zone, as Joda-Time's DateMidnight was */
+    private static ZonedDateTime startOfDay(Calendar calendar) {
+        final ZoneId zone = calendar.getTimeZone().toZoneId();
+        return Instant.ofEpochMilli(calendar.getTimeInMillis())
+                .atZone(zone)
+                .toLocalDate()
+                .atStartOfDay(zone);
+    }
+
+    /**
+     * The start of the day in the JVM's zone, as Joda-Time's DateMidnight.toGregorianCalendar()
+     * built it, so the exported xs:date keeps its text
+     */
+    private static Calendar toCalendar(LocalDate date) {
+        final ZoneId zone = ZoneId.systemDefault();
+        final GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone(zone));
+        calendar.setTimeInMillis(date.atStartOfDay(zone).toInstant().toEpochMilli());
+        return calendar;
     }
 
     protected List<QuarterDetail> convertQuarterDetail(
@@ -350,8 +376,8 @@ public class EventAggregationConfigurationImporterExporter
                 this.aggregationManagementDao.getAcademicTermDetails()) {
             final ExternalTermDetail externalTermDetail = new ExternalTermDetail();
             externalTermDetail.setName(academicTermDetail.getTermName());
-            externalTermDetail.setStart(academicTermDetail.getStart().toGregorianCalendar());
-            externalTermDetail.setEnd(academicTermDetail.getEnd().toGregorianCalendar());
+            externalTermDetail.setStart(toCalendar(academicTermDetail.getStart()));
+            externalTermDetail.setEnd(toCalendar(academicTermDetail.getEnd()));
             externalTermDetails.add(externalTermDetail);
         }
         Collections.sort(externalTermDetails, ExternalTermDetailComparator.INSTANCE);

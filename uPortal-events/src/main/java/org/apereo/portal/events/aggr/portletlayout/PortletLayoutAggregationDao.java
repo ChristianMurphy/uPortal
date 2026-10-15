@@ -14,11 +14,11 @@
  */
 package org.apereo.portal.events.aggr.portletlayout;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.BaseAggregationDao;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
-import org.joda.time.DateTime;
 
 /** DAO used to query information about portlet layout aggregates */
 public interface PortletLayoutAggregationDao<T extends PortletLayoutAggregation>
@@ -34,8 +34,8 @@ public interface PortletLayoutAggregationDao<T extends PortletLayoutAggregation>
      * @return
      */
     List<T> getAggregationsForAllPortlets(
-            DateTime start,
-            DateTime end,
+            ZonedDateTime start,
+            ZonedDateTime end,
             AggregationInterval interval,
             AggregatedGroupMapping aggregatedGroupMapping,
             AggregatedGroupMapping... aggregatedGroupMappings);

@@ -23,6 +23,8 @@ import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
 import java.util.Collection;
@@ -52,14 +54,12 @@ import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.BaseRawEventsJpaDao.RawEventsTransactional;
 import org.apereo.portal.spring.context.ApplicationEventFilter;
 import org.apereo.portal.utils.cache.CacheKey;
-import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.hibernate.Cache;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.type.CollectionType;
 import org.hibernate.type.Type;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.framework.AopProxyUtils;
@@ -311,19 +311,19 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
             return new EventProcessingResult(0, null, null, true);
         }
 
-        final DateTime lastAggregatedDate =
-                JodaTimeConversions.toDateTime(eventAggregatorStatus.getLastEventDate());
+        final ZonedDateTime lastAggregatedDate =
+                inJvmZone(eventAggregatorStatus.getLastEventDate());
 
         // If lastCleanUnclosedDate is null use the oldest date dimension as there can be
         // no aggregations that exist before it
-        final DateTime lastCleanUnclosedDate;
+        final ZonedDateTime lastCleanUnclosedDate;
         if (cleanUnclosedStatus.getLastEventDate() == null) {
             final DateDimension oldestDateDimension =
                     this.dateDimensionDao.getOldestDateDimension();
-            lastCleanUnclosedDate = oldestDateDimension.getDate().toDateTime();
-        } else {
             lastCleanUnclosedDate =
-                    JodaTimeConversions.toDateTime(cleanUnclosedStatus.getLastEventDate());
+                    oldestDateDimension.getDate().atStartOfDay(ZoneId.systemDefault());
+        } else {
+            lastCleanUnclosedDate = inJvmZone(cleanUnclosedStatus.getLastEventDate());
         }
 
         if (!(lastCleanUnclosedDate.isBefore(lastAggregatedDate))) {
@@ -331,10 +331,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                     "No events aggregated since last unclosed aggregation cleaning, skipping clean: {}",
                     lastAggregatedDate);
             return new EventProcessingResult(
-                    0,
-                    JodaTimeConversions.toInstant(lastCleanUnclosedDate),
-                    JodaTimeConversions.toInstant(lastAggregatedDate),
-                    true);
+                    0, toInstant(lastCleanUnclosedDate), toInstant(lastAggregatedDate), true);
         }
 
         // Switch to flush on commit to avoid flushes during queries
@@ -345,7 +342,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         // Track the number of closed aggregations and the last date of a cleaned interval
         int closedAggregations = 0;
         int cleanedIntervals = 0;
-        DateTime cleanUnclosedEnd;
+        ZonedDateTime cleanUnclosedEnd;
 
         final Thread currentThread = Thread.currentThread();
         final String currentName = currentThread.getName();
@@ -359,8 +356,8 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
             final Map<AggregationInterval, AggregationIntervalInfo> previousIntervals =
                     new HashMap<AggregationInterval, AggregationIntervalInfo>();
 
-            // A DateTime within the next interval to close aggregations in
-            DateTime nextIntervalDate = lastCleanUnclosedDate;
+            // A ZonedDateTime within the next interval to close aggregations in
+            ZonedDateTime nextIntervalDate = lastCleanUnclosedDate;
             do {
                 // Reset our goal of catching up to the last aggregated event on every iteration
                 cleanUnclosedEnd = lastAggregatedDate;
@@ -388,8 +385,8 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                         continue;
                     }
 
-                    final DateTime start = nextIntervalToClean.getStart();
-                    final DateTime end = nextIntervalToClean.getEnd();
+                    final ZonedDateTime start = nextIntervalToClean.getStart();
+                    final ZonedDateTime end = nextIntervalToClean.getEnd();
                     if (!end.isBefore(lastAggregatedDate)) {
                         logger.debug(
                                 "{} interval between {} and {} is still active, ignoring",
@@ -451,14 +448,14 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         }
 
         // Update the status object and store it
-        cleanUnclosedStatus.setLastEventDate(JodaTimeConversions.toInstant(cleanUnclosedEnd));
+        cleanUnclosedStatus.setLastEventDate(toInstant(cleanUnclosedEnd));
         cleanUnclosedStatus.setLastEnd(Instant.now().truncatedTo(ChronoUnit.MILLIS));
         eventAggregationManagementDao.updateEventAggregatorStatus(cleanUnclosedStatus);
 
         return new EventProcessingResult(
                 closedAggregations,
-                JodaTimeConversions.toInstant(lastCleanUnclosedDate),
-                JodaTimeConversions.toInstant(lastAggregatedDate),
+                toInstant(lastCleanUnclosedDate),
+                toInstant(lastAggregatedDate),
                 !cleanUnclosedEnd.isBefore(lastAggregatedDate));
     }
 
@@ -533,11 +530,9 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         eventAggregatorStatus.setServerName(serverName);
 
         // Calculate date range for aggregation
-        DateTime lastAggregated =
-                JodaTimeConversions.toDateTime(eventAggregatorStatus.getLastEventDate());
+        ZonedDateTime lastAggregated = inJvmZone(eventAggregatorStatus.getLastEventDate());
         if (lastAggregated == null) {
-            lastAggregated =
-                    JodaTimeConversions.toDateTime(portalEventDao.getOldestPortalEventTimestamp());
+            lastAggregated = inJvmZone(portalEventDao.getOldestPortalEventTimestamp());
 
             // No portal events to aggregate, skip aggregation
             if (lastAggregated == null) {
@@ -552,14 +547,12 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
             AggregationIntervalInfo oldestMinuteInterval =
                     this.intervalHelper.getIntervalInfo(AggregationInterval.MINUTE, lastAggregated);
             cleanUnclosedStatus.setLastEventDate(
-                    JodaTimeConversions.toInstant(oldestMinuteInterval.getStart().minusMinutes(1)));
+                    toInstant(oldestMinuteInterval.getStart().minusMinutes(1)));
             eventAggregationManagementDao.updateEventAggregatorStatus(cleanUnclosedStatus);
         }
 
-        final DateTime newestEventTime =
-                JodaTimeConversions.minus(DateTime.now(), this.aggregationDelay)
-                        .secondOfMinute()
-                        .roundFloorCopy();
+        final ZonedDateTime newestEventTime =
+                ZonedDateTime.now().minus(this.aggregationDelay).truncatedTo(ChronoUnit.SECONDS);
 
         final Thread currentThread = Thread.currentThread();
         final String currentName = currentThread.getName();
@@ -580,14 +573,14 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
 
             complete =
                     portalEventDao.aggregatePortalEvents(
-                            JodaTimeConversions.toInstant(lastAggregated),
-                            JodaTimeConversions.toInstant(newestEventTime),
+                            toInstant(lastAggregated),
+                            toInstant(newestEventTime),
                             this.eventAggregationBatchSize,
                             new AggregateEventsHandler(
                                     events, lastEventDate, eventAggregatorStatus));
 
             eventAggregatorStatus.setLastEventDate(
-                    JodaTimeConversions.toInstant((DateTime) lastEventDate.getValue()));
+                    toInstant((ZonedDateTime) lastEventDate.getValue()));
             eventAggregatorStatus.setLastEnd(Instant.now().truncatedTo(ChronoUnit.MILLIS));
         } finally {
             currentThread.setName(currentName);
@@ -602,7 +595,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                                 || events.intValue() < this.eventAggregationBatchSize);
         return new EventProcessingResult(
                 events.intValue(),
-                JodaTimeConversions.toInstant(lastAggregated),
+                toInstant(lastAggregated),
                 eventAggregatorStatus.getLastEventDate(),
                 complete);
     }
@@ -731,7 +724,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                         "uPortal is shutting down, throwing an exeption to stop aggregation");
             }
 
-            final DateTime eventDate = event.getTimestampAsDate();
+            final ZonedDateTime eventDate = event.getTimestampAsDate();
             this.lastEventDate.setValue(eventDate);
 
             // If no interval data yet populate it.
@@ -783,10 +776,10 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
             return true;
         }
 
-        private void initializeIntervalInfo(final DateTime eventDate) {
-            final DateTime intervalDate;
-            final DateTime lastEventDate =
-                    JodaTimeConversions.toDateTime(this.eventAggregatorStatus.getLastEventDate());
+        private void initializeIntervalInfo(final ZonedDateTime eventDate) {
+            final ZonedDateTime intervalDate;
+            final ZonedDateTime lastEventDate =
+                    inJvmZone(this.eventAggregatorStatus.getLastEventDate());
             if (lastEventDate != null) {
                 // If there was a previously aggregated event use that date to make sure an interval
                 // is not missed
@@ -974,5 +967,14 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
             }
             return config;
         }
+    }
+
+    /** Jadira read the stored dates in the JVM's zone, and the interval arithmetic depends on it */
+    private static ZonedDateTime inJvmZone(Instant instant) {
+        return instant == null ? null : instant.atZone(ZoneId.systemDefault());
+    }
+
+    private static Instant toInstant(ZonedDateTime dateTime) {
+        return dateTime == null ? null : dateTime.toInstant();
     }
 }

@@ -14,8 +14,8 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.ZonedDateTime;
 import java.util.Collection;
-import org.joda.time.DateTime;
 
 /**
  * Extension of the {@link BaseAggregationDao} that provides create/update operations
@@ -30,12 +30,12 @@ public interface BaseAggregationPrivateDao<
     /**
      * Aggregations that have not been closed for an interval and occur in the date range
      *
-     * @param start the start {@link DateTime} of the range, inclusive
-     * @param end the end {@link DateTime} of the range, exclusive
+     * @param start the start {@link ZonedDateTime} of the range, inclusive
+     * @param end the end {@link ZonedDateTime} of the range, exclusive
      * @param interval the interval to get aggregations for
      */
     Collection<T> getUnclosedAggregations(
-            DateTime start, DateTime end, AggregationInterval interval);
+            ZonedDateTime start, ZonedDateTime end, AggregationInterval interval);
 
     /** Create a new aggregation for the specified key */
     T createAggregation(K key);

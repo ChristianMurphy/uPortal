@@ -17,12 +17,13 @@ package org.apereo.portal.events.aggr.dao.jpa;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableList;
+import java.time.MonthDay;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Iterator;
 import java.util.List;
 import org.apereo.portal.events.aggr.EventDateTimeUtils;
 import org.apereo.portal.events.aggr.QuarterDetail;
-import org.joda.time.DateTime;
-import org.joda.time.MonthDay;
 import org.junit.Test;
 
 /** */
@@ -49,25 +50,83 @@ public class QuarterDetailsImplTest {
     public void testCompareToInstant() {
         List<QuarterDetail> quarters = createStandardQuarters();
 
-        verifyCompareToInstant(new DateTime(2012, 1, 1, 0, 0), quarters, 0, 1, 1, 1);
-        verifyCompareToInstant(new DateTime(2012, 2, 29, 15, 48), quarters, 0, 1, 1, 1);
-        verifyCompareToInstant(new DateTime(2012, 4, 29, 15, 48), quarters, -1, 0, 1, 1);
-        verifyCompareToInstant(new DateTime(2012, 8, 29, 15, 48), quarters, -1, -1, 0, 1);
         verifyCompareToInstant(
-                new DateTime(2012, 12, 31, 23, 59, 59, 999), quarters, -1, -1, -1, 0);
+                ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                0,
+                1,
+                1,
+                1);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 2, 29, 15, 48, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                0,
+                1,
+                1,
+                1);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 4, 29, 15, 48, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                -1,
+                0,
+                1,
+                1);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 8, 29, 15, 48, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                -1,
+                -1,
+                0,
+                1);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 12, 31, 23, 59, 59, 999, ZoneId.systemDefault()),
+                quarters,
+                -1,
+                -1,
+                -1,
+                0);
 
         quarters = createOffsetQuarters();
 
-        verifyCompareToInstant(new DateTime(2012, 1, 1, 0, 0), quarters, 1, 1, 0, 1);
-        verifyCompareToInstant(new DateTime(2012, 2, 29, 15, 48), quarters, 1, 1, 1, 0);
-        verifyCompareToInstant(new DateTime(2012, 4, 29, 15, 48), quarters, 1, 1, 1, 0);
-        verifyCompareToInstant(new DateTime(2012, 8, 29, 15, 48), quarters, -1, 0, 1, -1);
         verifyCompareToInstant(
-                new DateTime(2012, 12, 31, 23, 59, 59, 999), quarters, -1, -1, 0, -1);
+                ZonedDateTime.of(2012, 1, 1, 0, 0, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                1,
+                1,
+                0,
+                1);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 2, 29, 15, 48, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                1,
+                1,
+                1,
+                0);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 4, 29, 15, 48, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                1,
+                1,
+                1,
+                0);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 8, 29, 15, 48, 0, 0, ZoneId.systemDefault()),
+                quarters,
+                -1,
+                0,
+                1,
+                -1);
+        verifyCompareToInstant(
+                ZonedDateTime.of(2012, 12, 31, 23, 59, 59, 999, ZoneId.systemDefault()),
+                quarters,
+                -1,
+                -1,
+                0,
+                -1);
     }
 
     protected void verifyCompareToInstant(
-            DateTime dt, List<QuarterDetail> quarters, int... contains) {
+            ZonedDateTime dt, List<QuarterDetail> quarters, int... contains) {
         final Iterator<QuarterDetail> itr = quarters.iterator();
         for (int q = 0; q < 4; q++) {
             final QuarterDetail quarter = itr.next();
@@ -97,9 +156,9 @@ public class QuarterDetailsImplTest {
 
     protected List<QuarterDetail> createOffsetQuarters() {
         return ImmutableList.<QuarterDetail>of(
-                new QuarterDetailImpl(new MonthDay(5, 1), new MonthDay(8, 1), 0),
-                new QuarterDetailImpl(new MonthDay(8, 1), new MonthDay(11, 1), 1),
-                new QuarterDetailImpl(new MonthDay(11, 1), new MonthDay(2, 1), 2),
-                new QuarterDetailImpl(new MonthDay(2, 1), new MonthDay(5, 1), 3));
+                new QuarterDetailImpl(MonthDay.of(5, 1), MonthDay.of(8, 1), 0),
+                new QuarterDetailImpl(MonthDay.of(8, 1), MonthDay.of(11, 1), 1),
+                new QuarterDetailImpl(MonthDay.of(11, 1), MonthDay.of(2, 1), 2),
+                new QuarterDetailImpl(MonthDay.of(2, 1), MonthDay.of(5, 1), 3));
     }
 }

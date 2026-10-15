@@ -14,7 +14,7 @@
  */
 package org.apereo.portal.events.aggr;
 
-import org.joda.time.ReadableInstant;
+import java.time.ZonedDateTime;
 
 /** Describes a basic date range with an inclusive start and and exclusive end */
 public interface DateRange<DT> {
@@ -30,7 +30,7 @@ public interface DateRange<DT> {
     DT getEnd();
 
     /**
-     * @see EventDateTimeUtils#compareTo(ReadableInstant, ReadableInstant, ReadableInstant)
+     * @see EventDateTimeUtils#compareTo(java.time.Instant, java.time.Instant, java.time.Instant)
      */
-    int compareTo(ReadableInstant instant);
+    int compareTo(ZonedDateTime instant);
 }

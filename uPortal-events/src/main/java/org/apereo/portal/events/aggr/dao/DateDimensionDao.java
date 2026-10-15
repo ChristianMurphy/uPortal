@@ -14,9 +14,9 @@
  */
 package org.apereo.portal.events.aggr.dao;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.apereo.portal.events.aggr.DateDimension;
-import org.joda.time.DateMidnight;
 
 /** DAO for creation/lookup of date dimensions */
 public interface DateDimensionDao {
@@ -36,7 +36,7 @@ public interface DateDimensionDao {
      *
      * @return The created dimension
      */
-    DateDimension createDateDimension(DateMidnight cal, int quarter, String term);
+    DateDimension createDateDimension(LocalDate cal, int quarter, String term);
 
     /** Store an updated DateDimension */
     void updateDateDimension(DateDimension dateDimension);
@@ -51,7 +51,7 @@ public interface DateDimensionDao {
      * @param end End date (exclusive)
      * @return A list of the date dimensions that exist between the specified start and end
      */
-    List<DateDimension> getDateDimensionsBetween(DateMidnight start, DateMidnight end);
+    List<DateDimension> getDateDimensionsBetween(LocalDate start, LocalDate end);
 
     /**
      * @return {@link DateDimension}s that do not have terms
@@ -64,5 +64,5 @@ public interface DateDimensionDao {
     DateDimension getDateDimensionById(long id);
 
     /** Get the {@link DateDimension} for the specified year, month and day. */
-    DateDimension getDateDimensionByDate(DateMidnight date);
+    DateDimension getDateDimensionByDate(LocalDate date);
 }

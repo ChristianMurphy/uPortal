@@ -17,11 +17,12 @@ package org.apereo.portal.events.aggr.dao.jpa;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apereo.portal.events.aggr.EventDateTimeUtils;
-import org.joda.time.DateMidnight;
 import org.junit.Test;
 
 /** */
@@ -30,29 +31,37 @@ public class EventDateTimeUtilsTest {
     public void testFindAcademicTerms() {
         final AcademicTermDetailImpl spring2012 =
                 new AcademicTermDetailImpl(
-                        new DateMidnight(2012, 1, 1), new DateMidnight(2012, 6, 1), "Spring 2012");
+                        LocalDate.of(2012, 1, 1), LocalDate.of(2012, 6, 1), "Spring 2012");
         final AcademicTermDetailImpl summer2012 =
                 new AcademicTermDetailImpl(
-                        new DateMidnight(2012, 6, 1), new DateMidnight(2012, 9, 1), "Summer 2012");
+                        LocalDate.of(2012, 6, 1), LocalDate.of(2012, 9, 1), "Summer 2012");
         final AcademicTermDetailImpl fall2012 =
                 new AcademicTermDetailImpl(
-                        new DateMidnight(2012, 9, 1), new DateMidnight(2013, 1, 1), "Fall 2012");
+                        LocalDate.of(2012, 9, 1), LocalDate.of(2013, 1, 1), "Fall 2012");
 
         List<AcademicTermDetailImpl> terms = Arrays.asList(spring2012, summer2012, fall2012);
 
         AcademicTermDetailImpl result;
         Collections.sort(terms);
 
-        result = EventDateTimeUtils.findDateRangeSorted(new DateMidnight(2011, 3, 1), terms);
+        result =
+                EventDateTimeUtils.findDateRangeSorted(
+                        LocalDate.of(2011, 3, 1).atStartOfDay(ZoneId.systemDefault()), terms);
         assertNull(result);
 
-        result = EventDateTimeUtils.findDateRangeSorted(new DateMidnight(2012, 3, 1), terms);
+        result =
+                EventDateTimeUtils.findDateRangeSorted(
+                        LocalDate.of(2012, 3, 1).atStartOfDay(ZoneId.systemDefault()), terms);
         assertEquals(spring2012, result);
 
-        result = EventDateTimeUtils.findDateRangeSorted(new DateMidnight(2012, 7, 1), terms);
+        result =
+                EventDateTimeUtils.findDateRangeSorted(
+                        LocalDate.of(2012, 7, 1).atStartOfDay(ZoneId.systemDefault()), terms);
         assertEquals(summer2012, result);
 
-        result = EventDateTimeUtils.findDateRangeSorted(new DateMidnight(2012, 12, 31), terms);
+        result =
+                EventDateTimeUtils.findDateRangeSorted(
+                        LocalDate.of(2012, 12, 31).atStartOfDay(ZoneId.systemDefault()), terms);
         assertEquals(fall2012, result);
     }
 }

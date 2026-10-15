@@ -19,6 +19,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Function;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -43,10 +48,6 @@ import org.apereo.portal.groups.ICompositeGroupService;
 import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.test.BaseAggrEventsJpaDaoTest;
 import org.apereo.portal.utils.Tuple;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.LocalTime;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -99,8 +100,9 @@ public abstract class JpaBaseAggregationDaoTest<
         when(entityGroupB.getName()).thenReturn("Group B");
         when(compositeGroupService.findGroup("local.1")).thenReturn(entityGroupB);
 
-        final DateTime instant =
-                new DateTime(1326734644000l, DateTimeZone.UTC); // just a random time
+        final ZonedDateTime instant =
+                java.time.Instant.ofEpochMilli(1326734644000L)
+                        .atZone(ZoneOffset.UTC); // just a random time
 
         // Create required date and time dimensions
         populateDateTimeDimensions(instant.minusHours(2), instant.plusHours(2), null);
@@ -351,9 +353,11 @@ public abstract class JpaBaseAggregationDaoTest<
         final MutableInt aggrs = new MutableInt();
 
         // Create 2 days of login aggregates ... every 5 minutes
-        final DateTime start =
-                new DateTime(1326734644000l, DateTimeZone.UTC).minuteOfDay().roundFloorCopy();
-        final DateTime end = start.plusDays(2);
+        final ZonedDateTime start =
+                java.time.Instant.ofEpochMilli(1326734644000L)
+                        .atZone(ZoneOffset.UTC)
+                        .truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        final ZonedDateTime end = start.plusDays(2);
         final AggregationInterval interval = AggregationInterval.FIVE_MINUTE;
 
         final MutableObject startObj = new MutableObject();
@@ -379,8 +383,11 @@ public abstract class JpaBaseAggregationDaoTest<
                                             Tuple<DateDimension, TimeDimension> input) {
                                         final TimeDimension td = input.second;
                                         final DateDimension dd = input.first;
-                                        final DateTime instant =
-                                                td.getTime().toDateTime(dd.getDate());
+                                        final ZonedDateTime instant =
+                                                ZonedDateTime.of(
+                                                        dd.getDate(),
+                                                        td.getTime(),
+                                                        ZoneId.systemDefault());
 
                                         if (startObj.getValue() == null) {
                                             startObj.setValue(instant);
@@ -436,8 +443,9 @@ public abstract class JpaBaseAggregationDaoTest<
                         final AggregatedGroupMapping groupB =
                                 aggregatedGroupLookupDao.getGroupMapping("local.1");
 
-                        final DateTime queryStart = start.toDateMidnight().toDateTime();
-                        final DateTime queryEnd = queryStart.plusDays(1).minusSeconds(1);
+                        final ZonedDateTime queryStart =
+                                start.truncatedTo(java.time.temporal.ChronoUnit.DAYS);
+                        final ZonedDateTime queryEnd = queryStart.plusDays(1).minusSeconds(1);
 
                         final List<T> baseAggregations =
                                 getAggregationDao()
@@ -461,9 +469,9 @@ public abstract class JpaBaseAggregationDaoTest<
                         final AggregatedGroupMapping groupB =
                                 aggregatedGroupLookupDao.getGroupMapping("local.1");
 
-                        final DateTime queryStart =
-                                start.toDateMidnight().minusDays(1).toDateTime();
-                        final DateTime queryEnd = queryStart.plusDays(2).minusSeconds(1);
+                        final ZonedDateTime queryStart =
+                                start.truncatedTo(java.time.temporal.ChronoUnit.DAYS).minusDays(1);
+                        final ZonedDateTime queryEnd = queryStart.plusDays(2).minusSeconds(1);
 
                         final List<T> baseAggregations =
                                 getAggregationDao()
@@ -654,9 +662,11 @@ public abstract class JpaBaseAggregationDaoTest<
         final MutableInt aggrs = new MutableInt();
 
         // Create 10 minutes of aggregations
-        final DateTime start =
-                new DateTime(1326734644000l, DateTimeZone.UTC).minuteOfDay().roundFloorCopy();
-        final DateTime end = start.plusMinutes(10);
+        final ZonedDateTime start =
+                java.time.Instant.ofEpochMilli(1326734644000L)
+                        .atZone(ZoneOffset.UTC)
+                        .truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        final ZonedDateTime end = start.plusMinutes(10);
         final AggregationInterval interval = AggregationInterval.FIVE_MINUTE;
 
         final MutableObject startObj = new MutableObject();
@@ -680,8 +690,11 @@ public abstract class JpaBaseAggregationDaoTest<
                                             Tuple<DateDimension, TimeDimension> input) {
                                         final TimeDimension td = input.second;
                                         final DateDimension dd = input.first;
-                                        final DateTime instant =
-                                                td.getTime().toDateTime(dd.getDate());
+                                        final ZonedDateTime instant =
+                                                ZonedDateTime.of(
+                                                        dd.getDate(),
+                                                        td.getTime(),
+                                                        ZoneId.systemDefault());
 
                                         if (startObj.getValue() == null) {
                                             startObj.setValue(instant);
@@ -736,7 +749,7 @@ public abstract class JpaBaseAggregationDaoTest<
                         assertEquals(2, aggregations.size());
 
                         for (final T baseAggregationImpl : aggregations) {
-                            final DateTime instant = baseAggregationImpl.getDateTime();
+                            final ZonedDateTime instant = baseAggregationImpl.getDateTime();
                             final AggregationIntervalInfo intervalInfo =
                                     aggregationIntervalHelper.getIntervalInfo(interval, instant);
                             updateAggregation(intervalInfo, baseAggregationImpl, r);
@@ -762,9 +775,11 @@ public abstract class JpaBaseAggregationDaoTest<
         final MutableInt aggrs = new MutableInt();
 
         // Create 10 minutes of aggregations
-        final DateTime start =
-                new DateTime(1326734644000l, DateTimeZone.UTC).minuteOfDay().roundFloorCopy();
-        final DateTime end = start.plusMinutes(10);
+        final ZonedDateTime start =
+                java.time.Instant.ofEpochMilli(1326734644000L)
+                        .atZone(ZoneOffset.UTC)
+                        .truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
+        final ZonedDateTime end = start.plusMinutes(10);
         final AggregationInterval interval = AggregationInterval.FIVE_MINUTE;
 
         final MutableObject startObj = new MutableObject();
@@ -790,8 +805,11 @@ public abstract class JpaBaseAggregationDaoTest<
                                             Tuple<DateDimension, TimeDimension> input) {
                                         final TimeDimension td = input.second;
                                         final DateDimension dd = input.first;
-                                        final DateTime instant =
-                                                td.getTime().toDateTime(dd.getDate());
+                                        final ZonedDateTime instant =
+                                                ZonedDateTime.of(
+                                                        dd.getDate(),
+                                                        td.getTime(),
+                                                        ZoneId.systemDefault());
 
                                         if (startObj.getValue() == null) {
                                             startObj.setValue(instant);
@@ -875,8 +893,8 @@ public abstract class JpaBaseAggregationDaoTest<
 
     /** Populate date & time dimensions in an interval range executing a callback for each pair */
     public final <RT> List<RT> populateDateTimeDimensions(
-            final DateTime start,
-            final DateTime end,
+            final ZonedDateTime start,
+            final ZonedDateTime end,
             final Function<Tuple<DateDimension, TimeDimension>, RT> newDimensionHandler) {
 
         return this.executeInTransaction(
@@ -886,10 +904,11 @@ public abstract class JpaBaseAggregationDaoTest<
                         final List<RT> results = new LinkedList<RT>();
                         final SortedMap<LocalTime, TimeDimension> times =
                                 new TreeMap<LocalTime, TimeDimension>();
-                        final SortedMap<DateMidnight, DateDimension> dates =
-                                new TreeMap<DateMidnight, DateDimension>();
+                        final SortedMap<LocalDate, DateDimension> dates =
+                                new TreeMap<LocalDate, DateDimension>();
 
-                        DateTime nextDateTime = start.minuteOfDay().roundFloorCopy();
+                        ZonedDateTime nextDateTime =
+                                start.truncatedTo(java.time.temporal.ChronoUnit.MINUTES);
                         while (nextDateTime.isBefore(end)) {
 
                             // get/create TimeDimension
@@ -901,7 +920,7 @@ public abstract class JpaBaseAggregationDaoTest<
                             }
 
                             // get/create DateDimension
-                            final DateMidnight dateMidnight = nextDateTime.toDateMidnight();
+                            final LocalDate dateMidnight = nextDateTime.toLocalDate();
                             DateDimension dd = dates.get(dateMidnight);
                             if (dd == null) {
                                 dd = dateDimensionDao.createDateDimension(dateMidnight, 0, null);

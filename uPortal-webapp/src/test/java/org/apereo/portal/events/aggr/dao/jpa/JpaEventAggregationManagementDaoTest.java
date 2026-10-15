@@ -21,6 +21,8 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,8 +41,6 @@ import org.apereo.portal.events.aggr.login.LoginPortalEventAggregator;
 import org.apereo.portal.groups.ICompositeGroupService;
 import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.test.BaseAggrEventsJpaDaoTest;
-import org.joda.time.DateMidnight;
-import org.joda.time.MonthDay;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -230,13 +230,13 @@ public class JpaEventAggregationManagementDaoTest extends BaseAggrEventsJpaDaoTe
                         eventAggregationManagementDao.setQuarterDetails(
                                 Arrays.<QuarterDetail>asList(
                                         new QuarterDetailImpl(
-                                                new MonthDay(5, 1), new MonthDay(8, 1), 0),
+                                                MonthDay.of(5, 1), MonthDay.of(8, 1), 0),
                                         new QuarterDetailImpl(
-                                                new MonthDay(8, 1), new MonthDay(11, 1), 1),
+                                                MonthDay.of(8, 1), MonthDay.of(11, 1), 1),
                                         new QuarterDetailImpl(
-                                                new MonthDay(11, 1), new MonthDay(2, 1), 2),
+                                                MonthDay.of(11, 1), MonthDay.of(2, 1), 2),
                                         new QuarterDetailImpl(
-                                                new MonthDay(2, 1), new MonthDay(5, 1), 3)));
+                                                MonthDay.of(2, 1), MonthDay.of(5, 1), 3)));
                     }
                 });
     }
@@ -256,18 +256,18 @@ public class JpaEventAggregationManagementDaoTest extends BaseAggrEventsJpaDaoTe
 
                         academicTermDetails.add(
                                 new AcademicTermDetailImpl(
-                                        new DateMidnight(2012, 1, 1),
-                                        new DateMidnight(2012, 6, 1),
+                                        LocalDate.of(2012, 1, 1),
+                                        LocalDate.of(2012, 6, 1),
                                         "Spring 2012"));
                         academicTermDetails.add(
                                 new AcademicTermDetailImpl(
-                                        new DateMidnight(2012, 6, 1),
-                                        new DateMidnight(2012, 9, 1),
+                                        LocalDate.of(2012, 6, 1),
+                                        LocalDate.of(2012, 9, 1),
                                         "Summer 2012"));
                         academicTermDetails.add(
                                 new AcademicTermDetailImpl(
-                                        new DateMidnight(2012, 9, 1),
-                                        new DateMidnight(2013, 1, 1),
+                                        LocalDate.of(2012, 9, 1),
+                                        LocalDate.of(2013, 1, 1),
                                         "Fall 2012"));
 
                         eventAggregationManagementDao.setAcademicTermDetails(academicTermDetails);
@@ -285,8 +285,8 @@ public class JpaEventAggregationManagementDaoTest extends BaseAggrEventsJpaDaoTe
 
                             academicTermDetail.add(
                                     new AcademicTermDetailImpl(
-                                            new DateMidnight(2012, 1, 1),
-                                            new DateMidnight(2013, 6, 1),
+                                            LocalDate.of(2012, 1, 1),
+                                            LocalDate.of(2013, 6, 1),
                                             "Spring 2013"));
 
                             try {

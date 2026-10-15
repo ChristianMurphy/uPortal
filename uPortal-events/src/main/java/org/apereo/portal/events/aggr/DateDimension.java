@@ -15,8 +15,9 @@
 package org.apereo.portal.events.aggr;
 
 import java.io.Serializable;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTimeFieldType;
+import java.time.LocalDate;
+import java.time.temporal.ChronoField;
+import java.time.temporal.IsoFields;
 
 /** Describes a dimension in time (hours). Each object represents one minute in a 24 period */
 public interface DateDimension extends Serializable {
@@ -28,11 +29,11 @@ public interface DateDimension extends Serializable {
     /**
      * @return The fully built date for this date dimension
      */
-    DateMidnight getDate();
+    LocalDate getDate();
 
     /**
      * @return The year the day exists in
-     * @see DateTimeFieldType#year()
+     * @see ChronoField#YEAR
      */
     int getYear();
 
@@ -47,13 +48,13 @@ public interface DateDimension extends Serializable {
      * Will only return values between 0 and 11 inclusive
      *
      * @return The month of the year the day exists in
-     * @see DateTimeFieldType#monthOfYear()
+     * @see ChronoField#MONTH_OF_YEAR
      */
     int getMonth();
 
     /**
-     * @return The week of the year the day exists in
-     * @see DateTimeFieldType#weekOfWeekyear()
+     * @return The ISO week-based year times 100 plus the ISO week of that year
+     * @see IsoFields#WEEK_OF_WEEK_BASED_YEAR
      */
     int getWeek();
 
@@ -61,7 +62,7 @@ public interface DateDimension extends Serializable {
      * Will only return values between 0 and 31 inclusive
      *
      * @return Day in the month
-     * @see DateTimeFieldType#dayOfMonth()
+     * @see ChronoField#DAY_OF_MONTH
      */
     int getDay();
 

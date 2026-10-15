@@ -14,8 +14,13 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.Period;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAmount;
 import java.util.List;
 import org.apereo.portal.concurrency.locking.IClusterLockService;
@@ -24,10 +29,6 @@ import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
-import org.apereo.portal.utils.time.JodaTimeConversions;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
-import org.joda.time.LocalTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -154,8 +155,8 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
             return;
         }
 
-        LocalTime nextTime = new LocalTime(0, 0);
-        final LocalTime lastTime = new LocalTime(23, 59);
+        LocalTime nextTime = LocalTime.of(0, 0);
+        final LocalTime lastTime = LocalTime.of(23, 59);
 
         for (final TimeDimension timeDimension : timeDimensions) {
             LocalTime dimensionTime = timeDimension.getTime();
@@ -188,47 +189,43 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
     }
 
     final void doPopulateDateDimensions() {
-        final DateTime now = getNow();
+        final ZonedDateTime now = getNow();
 
         final AggregationIntervalInfo startIntervalInfo;
-        final DateTime oldestPortalEventTimestamp =
-                JodaTimeConversions.toDateTime(this.portalEventDao.getOldestPortalEventTimestamp());
+        final ZonedDateTime oldestPortalEventTimestamp =
+                inJvmZone(this.portalEventDao.getOldestPortalEventTimestamp());
         if (oldestPortalEventTimestamp == null || now.isBefore(oldestPortalEventTimestamp)) {
             startIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
-                            AggregationInterval.YEAR,
-                            JodaTimeConversions.minus(now, this.dimensionBuffer));
+                            AggregationInterval.YEAR, now.minus(this.dimensionBuffer));
         } else {
             startIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            JodaTimeConversions.minus(
-                                    oldestPortalEventTimestamp, this.dimensionBuffer));
+                            oldestPortalEventTimestamp.minus(this.dimensionBuffer));
         }
 
         final AggregationIntervalInfo endIntervalInfo;
-        final DateTime newestPortalEventTimestamp =
-                JodaTimeConversions.toDateTime(this.portalEventDao.getNewestPortalEventTimestamp());
+        final ZonedDateTime newestPortalEventTimestamp =
+                inJvmZone(this.portalEventDao.getNewestPortalEventTimestamp());
         if (newestPortalEventTimestamp == null || now.isAfter(newestPortalEventTimestamp)) {
             endIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
-                            AggregationInterval.YEAR,
-                            JodaTimeConversions.plus(now, this.dimensionBuffer));
+                            AggregationInterval.YEAR, now.plus(this.dimensionBuffer));
         } else {
             endIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
                             AggregationInterval.YEAR,
-                            JodaTimeConversions.plus(
-                                    newestPortalEventTimestamp, this.dimensionBuffer));
+                            newestPortalEventTimestamp.plus(this.dimensionBuffer));
         }
 
-        final DateMidnight start = startIntervalInfo.getStart().toDateMidnight();
-        final DateMidnight end = endIntervalInfo.getEnd().toDateMidnight();
+        final LocalDate start = startIntervalInfo.getStart().toLocalDate();
+        final LocalDate end = endIntervalInfo.getEnd().toLocalDate();
 
         doPopulateDateDimensions(start, end);
     }
 
-    final void doPopulateDateDimensions(final DateMidnight start, final DateMidnight end) {
+    final void doPopulateDateDimensions(final LocalDate start, final LocalDate end) {
         logger.info("Populating DateDimensions between {} and {}", start, end);
 
         final List<QuarterDetail> quartersDetails =
@@ -239,9 +236,9 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
         final List<DateDimension> dateDimensions =
                 this.dateDimensionDao.getDateDimensionsBetween(start, end);
 
-        DateMidnight nextDate = start;
+        LocalDate nextDate = start;
         for (final DateDimension dateDimension : dateDimensions) {
-            DateMidnight dimensionDate = dateDimension.getDate();
+            LocalDate dimensionDate = dateDimension.getDate();
             if (nextDate.isBefore(dimensionDate)) {
                 do {
                     checkShutdown();
@@ -275,7 +272,7 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
                 this.eventAggregationManagementDao.getAcademicTermDetails();
 
         for (final DateDimension dateDimension : dateDimensions) {
-            final DateMidnight date = dateDimension.getDate();
+            final ZonedDateTime date = dateDimension.getDate().atStartOfDay(ZoneId.systemDefault());
             final AcademicTermDetail termDetail =
                     EventDateTimeUtils.findDateRangeSorted(date, academicTermDetails);
             if (termDetail != null) {
@@ -286,20 +283,26 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
     }
 
     /** Exists to make this class testable */
-    DateTime getNow() {
-        return DateTime.now();
+    ZonedDateTime getNow() {
+        return ZonedDateTime.now();
+    }
+
+    /** Jadira read the event timestamps in the JVM's zone */
+    private static ZonedDateTime inJvmZone(Instant instant) {
+        return instant == null ? null : instant.atZone(ZoneId.systemDefault());
     }
 
     /** Creates a date dimension, handling the quarter and term lookup logic */
     protected void createDateDimension(
             List<QuarterDetail> quartersDetails,
             List<AcademicTermDetail> academicTermDetails,
-            DateMidnight date) {
+            LocalDate date) {
 
+        final ZonedDateTime startOfDay = date.atStartOfDay(ZoneId.systemDefault());
         final QuarterDetail quarterDetail =
-                EventDateTimeUtils.findDateRangeSorted(date, quartersDetails);
+                EventDateTimeUtils.findDateRangeSorted(startOfDay, quartersDetails);
         final AcademicTermDetail termDetail =
-                EventDateTimeUtils.findDateRangeSorted(date, academicTermDetails);
+                EventDateTimeUtils.findDateRangeSorted(startOfDay, academicTermDetails);
         this.dateDimensionDao.createDateDimension(
                 date,
                 quarterDetail.getQuarterId(),

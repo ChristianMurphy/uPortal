@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ import org.apereo.portal.events.PortalEvent;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.events.aggr.session.EventSession;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao.AggrEventsTransactional;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -180,12 +180,12 @@ public abstract class BaseIntervalAwarePortalEventAggregator<
     @AggrEventsTransactional
     @Override
     public int cleanUnclosedAggregations(
-            DateTime start, DateTime end, AggregationInterval interval) {
+            ZonedDateTime start, ZonedDateTime end, AggregationInterval interval) {
         final BaseAggregationPrivateDao<T, K> aggregationDao = this.getAggregationDao();
         final Collection<T> unclosedAggregations =
                 aggregationDao.getUnclosedAggregations(start, end, interval);
         for (final T aggregation : unclosedAggregations) {
-            final DateTime eventDate = aggregation.getDateTime();
+            final ZonedDateTime eventDate = aggregation.getDateTime();
             final AggregationIntervalInfo unclosedIntervalInfo =
                     this.aggregationIntervalHelper.getIntervalInfo(interval, eventDate);
             aggregation.intervalComplete(unclosedIntervalInfo.getTotalDuration());

@@ -25,16 +25,17 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Period;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import org.apereo.portal.events.aggr.dao.DateDimensionDao;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
-import org.joda.time.LocalTime;
-import org.joda.time.Period;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,8 +51,9 @@ public class PortalEventDimensionPopulatorImplTest {
     private PortalEventDimensionPopulatorImpl portalEventDimensionPopulator =
             new PortalEventDimensionPopulatorImpl() {
                 @Override
-                DateTime getNow() {
-                    return new DateTime(1325881376117l);
+                ZonedDateTime getNow() {
+                    return java.time.Instant.ofEpochMilli(1325881376117L)
+                            .atZone(ZoneId.systemDefault());
                 }
             };
 
@@ -65,10 +67,12 @@ public class PortalEventDimensionPopulatorImplTest {
         final TimeDimension td = mock(TimeDimension.class);
 
         when(td.getTime())
-                .thenReturn(time.minuteOfHour().roundFloorCopy()); // truncate at minute level
-        when(td.getHour()).thenReturn(time.getHourOfDay());
-        when(td.getMinute()).thenReturn(time.getMinuteOfHour());
-        when(td.getFiveMinuteIncrement()).thenReturn(time.getMinuteOfHour() / 5);
+                .thenReturn(
+                        time.truncatedTo(
+                                java.time.temporal.ChronoUnit.MINUTES)); // truncate at minute level
+        when(td.getHour()).thenReturn(time.getHour());
+        when(td.getMinute()).thenReturn(time.getMinute());
+        when(td.getFiveMinuteIncrement()).thenReturn(time.getMinute() / 5);
 
         return td;
     }
@@ -91,20 +95,20 @@ public class PortalEventDimensionPopulatorImplTest {
         final Builder<Object> existingTimeDimensionBuilder = ImmutableList.builder();
 
         TimeDimension td = mock(TimeDimension.class);
-        when(td.getTime()).thenReturn(new LocalTime(0, 1));
+        when(td.getTime()).thenReturn(LocalTime.of(0, 1));
         existingTimeDimensionBuilder.add(td);
 
         final List<TimeDimension> existingTimeDimensions =
                 ImmutableList.of(
-                        createMockTimeDimension(new LocalTime(0, 1)),
-                        createMockTimeDimension(new LocalTime(0, 2)),
-                        createMockTimeDimension(new LocalTime(0, 3)),
-                        createMockTimeDimension(new LocalTime(0, 4)),
-                        createMockTimeDimension(new LocalTime(0, 7)),
-                        createMockTimeDimension(new LocalTime(0, 8)),
-                        createMockTimeDimension(new LocalTime(0, 9)),
-                        createMockTimeDimension(new LocalTime(1, 23)),
-                        createMockTimeDimension(new LocalTime(23, 58)));
+                        createMockTimeDimension(LocalTime.of(0, 1)),
+                        createMockTimeDimension(LocalTime.of(0, 2)),
+                        createMockTimeDimension(LocalTime.of(0, 3)),
+                        createMockTimeDimension(LocalTime.of(0, 4)),
+                        createMockTimeDimension(LocalTime.of(0, 7)),
+                        createMockTimeDimension(LocalTime.of(0, 8)),
+                        createMockTimeDimension(LocalTime.of(0, 9)),
+                        createMockTimeDimension(LocalTime.of(1, 23)),
+                        createMockTimeDimension(LocalTime.of(23, 58)));
 
         when(timeDimensionDao.getTimeDimensions()).thenReturn(existingTimeDimensions);
 
@@ -118,26 +122,28 @@ public class PortalEventDimensionPopulatorImplTest {
 
     @Test
     public void populateDefaultDateDimensions() {
-        final DateTime now = new DateTime(1325881376117l);
-        final Period dimensionBuffer = Period.days(30);
-        final DateTime oldestPortalEvent = now.minusDays(30);
-        final DateTime newestPortalEvent = now;
-        final DateTime dimensionStart = oldestPortalEvent.minus(dimensionBuffer);
-        final DateTime dimensionEnd = newestPortalEvent.plus(dimensionBuffer);
+        final ZonedDateTime now =
+                java.time.Instant.ofEpochMilli(1325881376117L).atZone(ZoneId.systemDefault());
+        final Period dimensionBuffer = Period.ofDays(30);
+        final ZonedDateTime oldestPortalEvent = now.minusDays(30);
+        final ZonedDateTime newestPortalEvent = now;
+        final ZonedDateTime dimensionStart = oldestPortalEvent.minus(dimensionBuffer);
+        final ZonedDateTime dimensionEnd = newestPortalEvent.plus(dimensionBuffer);
 
-        when(dateDimensionDao.getDateDimensionsBetween(
-                        any(DateMidnight.class), any(DateMidnight.class)))
+        when(dateDimensionDao.getDateDimensionsBetween(any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(Collections.<DateDimension>emptyList());
         when(portalEventDao.getOldestPortalEventTimestamp())
-                .thenReturn(java.time.Instant.ofEpochMilli(oldestPortalEvent.getMillis()));
+                .thenReturn(oldestPortalEvent.toInstant());
         when(portalEventDao.getOldestPortalEventTimestamp())
-                .thenReturn(java.time.Instant.ofEpochMilli(oldestPortalEvent.getMillis()));
+                .thenReturn(oldestPortalEvent.toInstant());
 
         final AggregationIntervalInfo startIntervalInfo = mock(AggregationIntervalInfo.class);
-        when(startIntervalInfo.getStart()).thenReturn(dimensionStart.year().roundFloorCopy());
+        when(startIntervalInfo.getStart())
+                .thenReturn(AggregationInterval.YEAR.determineStart(dimensionStart));
 
         final AggregationIntervalInfo endIntervalInfo = mock(AggregationIntervalInfo.class);
-        when(endIntervalInfo.getEnd()).thenReturn(dimensionStart.year().roundCeilingCopy());
+        when(endIntervalInfo.getEnd())
+                .thenReturn(AggregationInterval.YEAR.determineEnd(dimensionStart));
 
         when(aggregationIntervalHelper.getIntervalInfo(AggregationInterval.YEAR, dimensionStart))
                 .thenReturn(startIntervalInfo);
@@ -153,10 +159,10 @@ public class PortalEventDimensionPopulatorImplTest {
         portalEventDimensionPopulator.doPopulateDateDimensions();
 
         verify(dateDimensionDao)
-                .getDateDimensionsBetween(any(DateMidnight.class), any(DateMidnight.class));
+                .getDateDimensionsBetween(any(LocalDate.class), any(LocalDate.class));
 
         verify(dateDimensionDao, times(365))
-                .createDateDimension(ArgumentMatchers.<DateMidnight>any(), anyInt(), anyString());
+                .createDateDimension(ArgumentMatchers.<LocalDate>any(), anyInt(), anyString());
         verifyNoMoreInteractions(timeDimensionDao, dateDimensionDao);
     }
 }

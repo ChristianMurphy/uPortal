@@ -15,8 +15,8 @@
 package org.apereo.portal.events.aggr;
 
 import java.io.Serializable;
+import java.time.LocalTime;
 import java.util.Calendar;
-import org.joda.time.LocalTime;
 
 /** Describes a dimension in time (hours). Each object represents one minute in a 24 period */
 public interface TimeDimension extends Serializable {

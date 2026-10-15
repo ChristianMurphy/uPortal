@@ -23,6 +23,8 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +39,6 @@ import org.apereo.portal.events.aggr.login.LoginAggregationDiscriminatorImpl;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.web.view.ReportTableCsvView;
 import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,9 +54,10 @@ import org.springframework.web.servlet.view.json.MappingJackson2JsonView;
  */
 public class LoginTotalsStatisticsControllerTest {
 
-    private static final DateTime DAY1 = new DateTime(2026, 10, 1, 0, 0, DateTimeZone.UTC);
-    private static final DateTime DAY2 = DAY1.plusDays(1);
-    private static final DateTime DAY3 = DAY1.plusDays(2);
+    private static final ZonedDateTime DAY1 =
+            ZonedDateTime.of(2026, 10, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    private static final ZonedDateTime DAY2 = DAY1.plusDays(1);
+    private static final ZonedDateTime DAY3 = DAY1.plusDays(2);
 
     private LoginTotalsStatisticsController controller;
     private LoginReportForm form;
@@ -118,10 +120,10 @@ public class LoginTotalsStatisticsControllerTest {
     }
 
     private static LoginAggregation aggregation(
-            AggregatedGroupMapping group, DateTime dateTime, int unique, int total) {
+            AggregatedGroupMapping group, ZonedDateTime dateTime, int unique, int total) {
         final LoginAggregation aggregation = mock(LoginAggregation.class, RETURNS_DEEP_STUBS);
         when(aggregation.getDateTime()).thenReturn(dateTime);
-        when(aggregation.getDateDimension().getDate()).thenReturn(dateTime.toDateMidnight());
+        when(aggregation.getDateDimension().getDate()).thenReturn(dateTime.toLocalDate());
         when(aggregation.getTimeDimension().getTime()).thenReturn(dateTime.toLocalTime());
         when(aggregation.getAggregationDiscriminator())
                 .thenReturn(new LoginAggregationDiscriminatorImpl(group));

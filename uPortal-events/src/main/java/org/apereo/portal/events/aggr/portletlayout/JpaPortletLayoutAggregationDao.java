@@ -16,6 +16,8 @@ package org.apereo.portal.events.aggr.portletlayout;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,8 +42,6 @@ import org.apereo.portal.events.aggr.dao.jpa.TimeDimensionImpl_;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMapping;
 import org.apereo.portal.events.aggr.portlets.AggregatedPortletMappingImpl;
-import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
 import org.springframework.stereotype.Repository;
 
 /** DAO for Portlet Layout Aggregations */
@@ -148,8 +148,8 @@ public class JpaPortletLayoutAggregationDao
 
     @Override
     public final List<PortletLayoutAggregationImpl> getAggregationsForAllPortlets(
-            DateTime start,
-            DateTime end,
+            ZonedDateTime start,
+            ZonedDateTime end,
             AggregationInterval interval,
             AggregatedGroupMapping aggregatedGroupMapping,
             AggregatedGroupMapping... aggregatedGroupMappings) {

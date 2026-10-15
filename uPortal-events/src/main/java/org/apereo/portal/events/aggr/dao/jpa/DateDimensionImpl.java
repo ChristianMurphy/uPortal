@@ -15,9 +15,14 @@
 package org.apereo.portal.events.aggr.dao.jpa;
 
 import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.IsoFields;
 import java.util.Collection;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -27,15 +32,13 @@ import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.apereo.portal.dao.usertype.LocalDateColumnConverter;
 import org.apereo.portal.events.aggr.DateDimension;
 import org.apereo.portal.events.aggr.login.LoginAggregationImpl;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
-import org.hibernate.annotations.Type;
-import org.joda.time.DateMidnight;
-import org.joda.time.LocalDate;
 
 /** */
 @Entity
@@ -58,6 +61,8 @@ import org.joda.time.LocalDate;
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class DateDimensionImpl implements DateDimension, Serializable {
     private static final long serialVersionUID = 1L;
+    private static final DateTimeFormatter TO_STRING_FORMAT =
+            DateTimeFormatter.ofPattern("uuuu-MM-dd xxx");
 
     @Id
     @GeneratedValue(generator = "UP_DATE_DIMENSION_GEN")
@@ -66,7 +71,7 @@ public class DateDimensionImpl implements DateDimension, Serializable {
 
     @NaturalId
     @Column(name = "DD_DATE", nullable = false, updatable = false)
-    @Type(type = "localDate")
+    @Convert(converter = LocalDateColumnConverter.class)
     private final LocalDate date;
 
     @Column(name = "DD_YEAR", nullable = false, updatable = false)
@@ -93,14 +98,12 @@ public class DateDimensionImpl implements DateDimension, Serializable {
     private Collection<LoginAggregationImpl> loginAggregations;
 
     @Transient private int hashCode = 0;
-    @Transient private DateMidnight dateMidnight;
 
     /** no-arg needed by hibernate */
     @SuppressWarnings("unused")
     private DateDimensionImpl() {
         this.id = -1;
         this.date = null;
-        this.dateMidnight = null;
         this.year = -1;
         this.month = -1;
         this.day = -1;
@@ -109,20 +112,20 @@ public class DateDimensionImpl implements DateDimension, Serializable {
         this.term = null;
     }
 
-    DateDimensionImpl(DateMidnight date, int quarter, String term) {
+    DateDimensionImpl(LocalDate date, int quarter, String term) {
         if (quarter < 0 || quarter > 3) {
             throw new IllegalArgumentException(
                     "Quarter must be between 0 and 3, it is: " + quarter);
         }
 
-        this.dateMidnight = date;
-
         this.id = -1;
-        this.date = this.dateMidnight.toLocalDate();
-        this.year = dateMidnight.getYear();
-        this.month = dateMidnight.getMonthOfYear();
-        this.day = dateMidnight.getDayOfMonth();
-        this.week = (dateMidnight.getWeekyear() * 100) + dateMidnight.getWeekOfWeekyear();
+        this.date = date;
+        this.year = date.getYear();
+        this.month = date.getMonthValue();
+        this.day = date.getDayOfMonth();
+        this.week =
+                (date.get(IsoFields.WEEK_BASED_YEAR) * 100)
+                        + date.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
         this.quarter = quarter;
         this.term = term;
     }
@@ -133,14 +136,8 @@ public class DateDimensionImpl implements DateDimension, Serializable {
     }
 
     @Override
-    public DateMidnight getDate() {
-        DateMidnight dm = this.dateMidnight;
-        if (dm == null) {
-            dm = this.date.toDateMidnight();
-            this.dateMidnight = dm;
-        }
-
-        return dm;
+    public LocalDate getDate() {
+        return this.date;
     }
 
     @Override
@@ -207,6 +204,7 @@ public class DateDimensionImpl implements DateDimension, Serializable {
 
     @Override
     public String toString() {
-        return getDate().toString("yyyy-MM-dd ZZ");
+        // The date and the JVM zone's offset at its start, as Joda-Time's DateMidnight printed it
+        return getDate().atStartOfDay(ZoneId.systemDefault()).format(TO_STRING_FORMAT);
     }
 }

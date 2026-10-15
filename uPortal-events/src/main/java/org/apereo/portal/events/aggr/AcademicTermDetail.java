@@ -14,11 +14,10 @@
  */
 package org.apereo.portal.events.aggr;
 
-import org.joda.time.DateMidnight;
+import java.time.LocalDate;
 
-/** Details about a term of the year */
-public interface AcademicTermDetail
-        extends DateRange<DateMidnight>, Comparable<AcademicTermDetail> {
+/** Details about a term of the year. Its dates are days in the JVM's zone. */
+public interface AcademicTermDetail extends DateRange<LocalDate>, Comparable<AcademicTermDetail> {
     /**
      * @return The name of the term, cannot be null
      */
@@ -28,10 +27,10 @@ public interface AcademicTermDetail
     void setTermName(String termName);
 
     /** Set the start of the term, inclusive */
-    void setStart(DateMidnight start);
+    void setStart(LocalDate start);
 
     /** Set the end of the term, exclusive */
-    void setEnd(DateMidnight end);
+    void setEnd(LocalDate end);
 
     /** Compare to another {@link AcademicTermDetail}, must sort by {@link #getStart()} */
     @Override

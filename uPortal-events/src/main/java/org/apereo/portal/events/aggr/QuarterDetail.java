@@ -14,9 +14,9 @@
  */
 package org.apereo.portal.events.aggr;
 
-import org.joda.time.DateMidnight;
-import org.joda.time.MonthDay;
-import org.joda.time.ReadableInstant;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.ZonedDateTime;
 
 /**
  * Details about a quarter of the year. The first quarter will have ID 0, the second ID 1, etc...
@@ -25,15 +25,15 @@ public interface QuarterDetail extends DateRange<MonthDay>, Comparable<QuarterDe
 
     /**
      * @return Start of the range, inclusive. Resolved into year/month/day based on the specified
-     *     instant
+     *     instant, in its zone
      */
-    DateMidnight getStartDateMidnight(ReadableInstant instant);
+    LocalDate getStartDate(ZonedDateTime instant);
 
     /**
      * @return End of the range, exclusive. Resolved into year/month/day based on the specified
-     *     instant
+     *     instant, in its zone
      */
-    DateMidnight getEndDateMidnight(ReadableInstant instant);
+    LocalDate getEndDate(ZonedDateTime instant);
 
     /**
      * @return The id of the quarter (0 - 3)

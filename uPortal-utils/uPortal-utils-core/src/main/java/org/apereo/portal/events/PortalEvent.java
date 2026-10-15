@@ -20,12 +20,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.utils.SerializableObject;
-import org.joda.time.DateTime;
 import org.springframework.context.ApplicationEvent;
 
 /**
@@ -50,7 +51,7 @@ public abstract class PortalEvent extends ApplicationEvent {
     private final String userName;
     @JsonIgnore private final HttpServletRequest portalRequest;
     @JsonIgnore private final IPerson person;
-    @JsonIgnore private DateTime timestampAsDate;
+    @JsonIgnore private ZonedDateTime timestampAsDate;
 
     PortalEvent() {
         super(UNKNOWN_SOURCE);
@@ -72,12 +73,12 @@ public abstract class PortalEvent extends ApplicationEvent {
     }
 
     /**
-     * @return Get the {@link #getTimestamp()} as a {@link Date}
+     * @return Get the {@link #getTimestamp()} as a date and time in the JVM's default zone
      */
-    public final DateTime getTimestampAsDate() {
-        DateTime d = this.timestampAsDate;
+    public final ZonedDateTime getTimestampAsDate() {
+        ZonedDateTime d = this.timestampAsDate;
         if (d == null) {
-            d = new DateTime(this.getTimestamp());
+            d = Instant.ofEpochMilli(this.getTimestamp()).atZone(ZoneId.systemDefault());
             this.timestampAsDate = d;
         }
 

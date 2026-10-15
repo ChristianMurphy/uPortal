@@ -41,7 +41,6 @@ import org.apereo.portal.services.GroupService;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
 import org.apereo.portal.url.IPortalRequestUtils;
-import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -129,10 +128,7 @@ public class PopularPortletsController {
                 aggregatedGroupLookupDao.getGroupMapping(everyone.getKey());
         final List<PortletLayoutAggregation> aggregations =
                 portletLayoutDao.getAggregationsForAllPortlets(
-                        JodaTimeConversions.toDateTime(begin),
-                        JodaTimeConversions.toDateTime(end),
-                        AGGREGATION_INTERVAL,
-                        group);
+                        begin, end, AGGREGATION_INTERVAL, group);
 
         final EntityIdentifier ei = user.getEntityIdentifier();
         final AuthorizationServiceFacade authService = AuthorizationServiceFacade.instance();

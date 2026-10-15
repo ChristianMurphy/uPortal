@@ -14,11 +14,11 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
-import org.joda.time.DateTime;
 
 /**
  * Base DAO APIs shared between all {@link BaseAggregation} implementation DAOs
@@ -29,21 +29,24 @@ public interface BaseAggregationDao<T extends BaseAggregation<K, ?>, K extends B
     /**
      * Aggregations in a date range for a specified interval and group(s) ordered by date/time
      *
-     * @param start the start {@link DateTime} of the range, inclusive
-     * @param end the end {@link DateTime} of the range, exclusive
+     * @param start the start {@link ZonedDateTime} of the range, inclusive
+     * @param end the end {@link ZonedDateTime} of the range, exclusive
      * @param key The {@link BaseAggregationKey#getDateDimension()} and {@link
      *     BaseAggregationKey#getTimeDimension()} fields on the key are ignored for this method
      * @param aggregatedGroupMappings Groups in addition to the group specified by {@link
      *     BaseAggregationKey#getAggregatedGroup()} to get aggregations for
      */
     List<T> getAggregations(
-            DateTime start, DateTime end, K key, AggregatedGroupMapping... aggregatedGroupMappings);
+            ZonedDateTime start,
+            ZonedDateTime end,
+            K key,
+            AggregatedGroupMapping... aggregatedGroupMappings);
 
     /**
      * Aggregations in a date range for a specified interval and group(s) ordered by date/time
      *
-     * @param start the start {@link DateTime} of the range, inclusive
-     * @param end the end {@link DateTime} of the range, exclusive
+     * @param start the start {@link ZonedDateTime} of the range, inclusive
+     * @param end the end {@link ZonedDateTime} of the range, exclusive
      * @param keys A set of BaseAggregationKeys to get aggregations for. The {@link
      *     BaseAggregationKey#getDateDimension()} and {@link BaseAggregationKey#getTimeDimension()}
      *     fields on the key are ignored for this method. The {@link
@@ -53,8 +56,8 @@ public interface BaseAggregationDao<T extends BaseAggregation<K, ?>, K extends B
      *     BaseAggregationKey#getAggregatedGroup()} to get aggregations for
      */
     List<T> getAggregations(
-            DateTime start,
-            DateTime end,
+            ZonedDateTime start,
+            ZonedDateTime end,
             Set<K> keys,
             AggregatedGroupMapping... aggregatedGroupMappings);
 

@@ -14,12 +14,12 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.ZonedDateTime;
 import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.FlushModeType;
 import org.apereo.portal.events.PortalEvent;
 import org.apereo.portal.events.aggr.session.EventSession;
-import org.joda.time.DateTime;
 
 /**
  * Defines a class that aggregates events. <br>
@@ -64,11 +64,12 @@ public interface IntervalAwarePortalEventAggregator<E extends PortalEvent>
     /**
      * Due to cases where an interval boundary might be missed this method should contain the logic
      * to clean up and close all aggregations for the specified interval exist before the specified
-     * DateTime
+     * ZonedDateTime
      *
      * @return the number of unclosed aggregations that were closed
-     * @see BaseAggregationPrivateDao#getUnclosedAggregations(DateTime, DateTime,
+     * @see BaseAggregationPrivateDao#getUnclosedAggregations(ZonedDateTime, ZonedDateTime,
      *     AggregationInterval)
      */
-    int cleanUnclosedAggregations(DateTime start, DateTime end, AggregationInterval interval);
+    int cleanUnclosedAggregations(
+            ZonedDateTime start, ZonedDateTime end, AggregationInterval interval);
 }

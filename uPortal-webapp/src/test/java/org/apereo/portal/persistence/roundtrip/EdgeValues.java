@@ -16,6 +16,9 @@ package org.apereo.portal.persistence.roundtrip;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.MonthDay;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -26,9 +29,6 @@ import java.util.TimeZone;
 import org.apereo.portal.test.golden.DatabaseVendor;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalTime;
-import org.joda.time.MonthDay;
 
 /**
  * Edge values for each {@link Variant}, chosen from what the mapping allows: string lengths come
@@ -280,17 +280,17 @@ final class EdgeValues {
     private LocalDate localDate(Slot slot, Variant variant, int seed) {
         switch (variant) {
             case MAX:
-                return new LocalDate(9999, 12, 31);
+                return LocalDate.of(9999, 12, 31);
             case MIN:
-                return new LocalDate(1970, 1, 1);
+                return LocalDate.of(1970, 1, 1);
             case UNICODE:
                 // The New York fall-back day
-                return new LocalDate(2026, 11, 1);
+                return LocalDate.of(2026, 11, 1);
             case NULLS:
                 // The New York spring-forward day
-                return slot.nullable ? null : new LocalDate(2026, 3, 8);
+                return slot.nullable ? null : LocalDate.of(2026, 3, 8);
             default:
-                return new LocalDate(2001, 1, 1).plusDays(seed);
+                return LocalDate.of(2001, 1, 1).plusDays(seed);
         }
     }
 
@@ -298,32 +298,32 @@ final class EdgeValues {
         switch (variant) {
             case MAX:
                 // Whole seconds: see VendorDifferences for the precision of TIME columns
-                return new LocalTime(23, 59, 59);
+                return LocalTime.of(23, 59, 59);
             case MIN:
                 return LocalTime.MIDNIGHT;
             case UNICODE:
                 // The repeated hour in New York in November
-                return new LocalTime(1, 30);
+                return LocalTime.of(1, 30);
             case NULLS:
                 // The skipped hour in New York in March
-                return slot.nullable ? null : new LocalTime(2, 30);
+                return slot.nullable ? null : LocalTime.of(2, 30);
             default:
-                return new LocalTime(10, 0).plusMinutes(seed % 600);
+                return LocalTime.of(10, 0).plusMinutes(seed % 600);
         }
     }
 
     private MonthDay monthDay(Slot slot, Variant variant, int seed) {
         switch (variant) {
             case MAX:
-                return new MonthDay(12, 31);
+                return MonthDay.of(12, 31);
             case MIN:
-                return new MonthDay(1, 1);
+                return MonthDay.of(1, 1);
             case UNICODE:
-                return new MonthDay(2, 29);
+                return MonthDay.of(2, 29);
             case NULLS:
-                return slot.nullable ? null : new MonthDay(11, 1);
+                return slot.nullable ? null : MonthDay.of(11, 1);
             default:
-                return new MonthDay(1 + seed % 12, 1 + seed % 28);
+                return MonthDay.of(1 + seed % 12, 1 + seed % 28);
         }
     }
 

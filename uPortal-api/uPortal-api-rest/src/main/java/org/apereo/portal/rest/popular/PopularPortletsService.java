@@ -33,7 +33,6 @@ import org.apereo.portal.security.IAuthorizationPrincipal;
 import org.apereo.portal.security.IAuthorizationService;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.services.GroupService;
-import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -78,11 +77,7 @@ public class PopularPortletsService {
         final AggregatedGroupMapping everyone =
                 aggregatedGroupLookupDao.getGroupMapping(everyoneGroupKey());
         final List<PortletLayoutAggregation> aggregations =
-                portletLayoutDao.getAggregationsForAllPortlets(
-                        JodaTimeConversions.toDateTime(begin),
-                        JodaTimeConversions.toDateTime(end),
-                        INTERVAL,
-                        everyone);
+                portletLayoutDao.getAggregationsForAllPortlets(begin, end, INTERVAL, everyone);
 
         final IAuthorizationPrincipal principal =
                 authorizationService.newPrincipal(user.getUserName(), IPerson.class);

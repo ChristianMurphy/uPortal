@@ -14,6 +14,11 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,9 +28,6 @@ import org.apereo.portal.events.aggr.dao.DateDimensionDao;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.events.aggr.dao.jpa.AcademicTermDetailImpl;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
-import org.joda.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -55,13 +57,14 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
     }
 
     @Override
-    public List<DateTime> getIntervalStartDateTimesBetween(
-            AggregationInterval interval, DateTime start, DateTime end) {
+    public List<ZonedDateTime> getIntervalStartDateTimesBetween(
+            AggregationInterval interval, ZonedDateTime start, ZonedDateTime end) {
         return getIntervalStartDateTimesBetween(interval, start, end, -1);
     }
 
     @Override
-    public int intervalsBetween(AggregationInterval interval, DateTime start, DateTime end) {
+    public int intervalsBetween(
+            AggregationInterval interval, ZonedDateTime start, ZonedDateTime end) {
         // For intervals that support native determination
         if (interval.isSupportsDetermination()) {
             return interval.determineIntervalsBetween(start, end);
@@ -79,7 +82,7 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
             // non-matching term
             int count = 0;
             for (final AcademicTermDetail academicTerm : terms) {
-                final DateMidnight termStart = academicTerm.getStart();
+                final ZonedDateTime termStart = startOfDay(academicTerm.getStart());
                 if (end.isAfter(termStart) && !start.isAfter(termStart)) {
                     count++;
                 } else if (count > 0) {
@@ -109,8 +112,8 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
     }
 
     @Override
-    public List<DateTime> getIntervalStartDateTimesBetween(
-            AggregationInterval interval, DateTime start, DateTime end, int maxTimes) {
+    public List<ZonedDateTime> getIntervalStartDateTimesBetween(
+            AggregationInterval interval, ZonedDateTime start, ZonedDateTime end, int maxTimes) {
         if (interval.isSupportsDetermination()) {
             // Get the interval count for the date-time field type and verify it is in the valid
             // range.
@@ -118,16 +121,16 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
             verifyIntervalCount(start, end, maxTimes, intervals);
 
             // Result list
-            final List<DateTime> result = new ArrayList<DateTime>(intervals);
+            final List<ZonedDateTime> result = new ArrayList<ZonedDateTime>(intervals);
 
             // Check if first interval in the range
-            DateTime intervalStart = interval.determineStart(start);
+            ZonedDateTime intervalStart = interval.determineStart(start);
             if (!intervalStart.isBefore(start)) {
                 result.add(intervalStart);
             }
 
             // Move one step forward in the range
-            DateTime intervalEnd = interval.determineEnd(intervalStart);
+            ZonedDateTime intervalEnd = interval.determineEnd(intervalStart);
             intervalStart = interval.determineStart(intervalEnd);
 
             // Step through the interval start/end values to build the full list
@@ -148,9 +151,9 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
 
             // Use all the terms that are in the range, breaking the loop on the first non-matching
             // term
-            final List<DateTime> result = new ArrayList<DateTime>(terms.size());
+            final List<ZonedDateTime> result = new ArrayList<ZonedDateTime>(terms.size());
             for (final AcademicTermDetail academicTerm : terms) {
-                final DateMidnight termStart = academicTerm.getStart();
+                final ZonedDateTime termStart = startOfDay(academicTerm.getStart());
                 if (end.isAfter(termStart) && !start.isAfter(termStart)) {
                     result.add(start);
                 } else if (!result.isEmpty()) {
@@ -166,7 +169,7 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
         // Fallback for any other interval type that needs explicit iteration
         AggregationIntervalInfo nextInterval = this.getIntervalInfo(interval, start);
 
-        final List<DateTime> result = new ArrayList<DateTime>();
+        final List<ZonedDateTime> result = new ArrayList<ZonedDateTime>();
         while (nextInterval.getStart().isBefore(end)) {
             // Needed to make sure we don't count a partial first interval
             if (!start.isAfter(nextInterval.getStart())) {
@@ -191,11 +194,12 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
     }
 
     @Override
-    public AggregationIntervalInfo getIntervalInfo(AggregationInterval interval, DateTime date) {
+    public AggregationIntervalInfo getIntervalInfo(
+            AggregationInterval interval, ZonedDateTime date) {
         // Chop off everything below the minutes (seconds, millis)
-        final DateTime instant = date.minuteOfHour().roundFloorCopy();
+        final ZonedDateTime instant = date.truncatedTo(ChronoUnit.MINUTES);
 
-        final DateTime start, end;
+        final ZonedDateTime start, end;
         switch (interval) {
             case CALENDAR_QUARTER:
                 {
@@ -203,8 +207,8 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
                             this.eventAggregationManagementDao.getQuartersDetails();
                     final QuarterDetail quarterDetail =
                             EventDateTimeUtils.findDateRangeSorted(instant, quartersDetails);
-                    start = quarterDetail.getStartDateMidnight(date).toDateTime();
-                    end = quarterDetail.getEndDateMidnight(date).toDateTime();
+                    start = quarterDetail.getStartDate(date).atStartOfDay(date.getZone());
+                    end = quarterDetail.getEndDate(date).atStartOfDay(date.getZone());
                     break;
                 }
             case ACADEMIC_TERM:
@@ -217,8 +221,8 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
                         return null;
                     }
 
-                    start = academicTermDetail.getStart().toDateTime();
-                    end = academicTermDetail.getEnd().toDateTime();
+                    start = startOfDay(academicTermDetail.getStart());
+                    end = startOfDay(academicTermDetail.getEnd());
 
                     break;
                 }
@@ -233,9 +237,9 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
         final TimeDimension startTimeDimension =
                 this.timeDimensionDao.getTimeDimensionByTime(startTime);
 
-        final DateMidnight startDateMidnight = start.toDateMidnight();
+        final LocalDate startDate = start.toLocalDate();
         final DateDimension startDateDimension =
-                this.dateDimensionDao.getDateDimensionByDate(startDateMidnight);
+                this.dateDimensionDao.getDateDimensionByDate(startDate);
 
         return new AggregationIntervalInfo(
                 interval, start, end, startDateDimension, startTimeDimension);
@@ -243,16 +247,17 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
 
     /**
      * Return a sorted list of AcademicTermDetail objects where the the first element of the list
-     * where the first element is the first term that starts after the specified start DateTime.
+     * where the first element is the first term that starts after the specified start
+     * ZonedDateTime.
      */
-    protected List<AcademicTermDetail> getAcademicTermsAfter(DateTime start) {
+    protected List<AcademicTermDetail> getAcademicTermsAfter(ZonedDateTime start) {
         final List<AcademicTermDetail> terms =
                 this.eventAggregationManagementDao.getAcademicTermDetails();
         final int index =
                 Collections.binarySearch(
                         terms,
                         new AcademicTermDetailImpl(
-                                start.toDateMidnight(), start.plusDays(1).toDateMidnight(), ""));
+                                start.toLocalDate(), start.plusDays(1).toLocalDate(), ""));
         if (index > 0) {
             return terms.subList(index, terms.size());
         } else if (index < 0) {
@@ -262,7 +267,7 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
     }
 
     protected void verifyIntervalCount(
-            DateTime start, DateTime end, int maxTimes, final int intervals) {
+            ZonedDateTime start, ZonedDateTime end, int maxTimes, final int intervals) {
         if (maxTimes > 0 && intervals > maxTimes) {
             throw new IllegalArgumentException(
                     "There are "
@@ -274,5 +279,10 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
                             + " which is more than the specified maximum of "
                             + maxTimes);
         }
+    }
+
+    /** The start of a term's day in the JVM's zone, the zone its dates are days in */
+    private static ZonedDateTime startOfDay(LocalDate date) {
+        return date.atStartOfDay(ZoneId.systemDefault());
     }
 }
