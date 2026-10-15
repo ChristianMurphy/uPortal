@@ -15,9 +15,9 @@
 package org.apereo.portal.events.handlers.db;
 
 import com.google.common.base.Function;
+import java.time.Instant;
 import org.apereo.portal.concurrency.FunctionWithoutResult;
 import org.apereo.portal.events.PortalEvent;
-import org.joda.time.DateTime;
 
 /** Persists, retrieves and deletes portal events from a persistent store */
 public interface IPortalEventDao {
@@ -40,8 +40,8 @@ public interface IPortalEventDao {
      * @param handler Function which will be called for each event.
      */
     void getPortalEvents(
-            DateTime startTime,
-            DateTime endTime,
+            Instant startTime,
+            Instant endTime,
             int maxEvents,
             FunctionWithoutResult<PortalEvent> handler);
 
@@ -49,11 +49,11 @@ public interface IPortalEventDao {
      * @see #getPortalEvents(DateTime, DateTime, int, FunctionWithoutResult)
      */
     void getPortalEvents(
-            DateTime startTime, DateTime endTime, FunctionWithoutResult<PortalEvent> handler);
+            Instant startTime, Instant endTime, FunctionWithoutResult<PortalEvent> handler);
 
     void getAnalyticsEvents(
-            DateTime startTime,
-            DateTime endTime,
+            Instant startTime,
+            Instant endTime,
             int maxEvents,
             String eventType,
             String userId,
@@ -74,21 +74,21 @@ public interface IPortalEventDao {
      *     any event to signal processing should be stopped
      */
     boolean aggregatePortalEvents(
-            DateTime startTime,
-            DateTime endTime,
+            Instant startTime,
+            Instant endTime,
             int maxEvents,
             Function<PortalEvent, Boolean> handler);
 
     /**
      * @return The timestamp of the oldest event in the persitent store
      */
-    DateTime getOldestPortalEventTimestamp();
+    Instant getOldestPortalEventTimestamp();
 
     /**
      * @return The timestamp of the most recent event in the persitent store
      */
-    DateTime getNewestPortalEventTimestamp();
+    Instant getNewestPortalEventTimestamp();
 
     /** Delete events with timestamps from before the specified date (exclusive) */
-    int deletePortalEventsBefore(DateTime endTime);
+    int deletePortalEventsBefore(Instant endTime);
 }

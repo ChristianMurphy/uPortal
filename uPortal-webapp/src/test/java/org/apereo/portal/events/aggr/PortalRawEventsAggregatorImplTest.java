@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Function;
+import java.time.Instant;
 import javax.persistence.EntityManager;
 import org.apereo.portal.IPortalInfoProvider;
 import org.apereo.portal.concurrency.locking.IClusterLockService;
@@ -31,7 +32,6 @@ import org.apereo.portal.events.aggr.session.EventSession;
 import org.apereo.portal.events.aggr.session.EventSessionDao;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.security.IPerson;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -83,10 +83,11 @@ public class PortalRawEventsAggregatorImplTest {
                         ProcessingType.AGGREGATION, true))
                 .thenReturn(eventAggregatorStatus);
         when(portalInfoProvider.getUniqueServerName()).thenReturn("serverName_abcd");
-        when(eventAggregatorStatus.getLastEventDate()).thenReturn(new DateTime(1325881376117l));
+        when(eventAggregatorStatus.getLastEventDate())
+                .thenReturn(Instant.ofEpochMilli(1325881376117l));
         when(portalEventDao.aggregatePortalEvents(
-                        any(DateTime.class),
-                        any(DateTime.class),
+                        any(Instant.class),
+                        any(Instant.class),
                         (int) any(Integer.TYPE),
                         (Function<PortalEvent, Boolean>) any(Function.class)))
                 .then(
@@ -124,10 +125,11 @@ public class PortalRawEventsAggregatorImplTest {
                         ProcessingType.AGGREGATION, true))
                 .thenReturn(eventAggregatorStatus);
         when(portalInfoProvider.getUniqueServerName()).thenReturn("serverName_abcd");
-        when(eventAggregatorStatus.getLastEventDate()).thenReturn(new DateTime(1325881376117l));
+        when(eventAggregatorStatus.getLastEventDate())
+                .thenReturn(Instant.ofEpochMilli(1325881376117l));
         when(portalEventDao.aggregatePortalEvents(
-                        any(DateTime.class),
-                        any(DateTime.class),
+                        any(Instant.class),
+                        any(Instant.class),
                         (int) any(Integer.TYPE),
                         (Function<PortalEvent, Boolean>) any(Function.class)))
                 .then(
@@ -165,10 +167,11 @@ public class PortalRawEventsAggregatorImplTest {
                         ProcessingType.AGGREGATION, true))
                 .thenReturn(eventAggregatorStatus);
         when(portalInfoProvider.getUniqueServerName()).thenReturn("serverName_abcd");
-        when(eventAggregatorStatus.getLastEventDate()).thenReturn(new DateTime(1325881376117l));
+        when(eventAggregatorStatus.getLastEventDate())
+                .thenReturn(Instant.ofEpochMilli(1325881376117l));
         when(portalEventDao.aggregatePortalEvents(
-                        any(DateTime.class),
-                        any(DateTime.class),
+                        any(Instant.class),
+                        any(Instant.class),
                         (int) any(Integer.TYPE),
                         (Function<PortalEvent, Boolean>) any(Function.class)))
                 .then(

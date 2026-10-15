@@ -128,8 +128,10 @@ public class PortalEventDimensionPopulatorImplTest {
         when(dateDimensionDao.getDateDimensionsBetween(
                         any(DateMidnight.class), any(DateMidnight.class)))
                 .thenReturn(Collections.<DateDimension>emptyList());
-        when(portalEventDao.getOldestPortalEventTimestamp()).thenReturn(oldestPortalEvent);
-        when(portalEventDao.getOldestPortalEventTimestamp()).thenReturn(oldestPortalEvent);
+        when(portalEventDao.getOldestPortalEventTimestamp())
+                .thenReturn(java.time.Instant.ofEpochMilli(oldestPortalEvent.getMillis()));
+        when(portalEventDao.getOldestPortalEventTimestamp())
+                .thenReturn(java.time.Instant.ofEpochMilli(oldestPortalEvent.getMillis()));
 
         final AggregationIntervalInfo startIntervalInfo = mock(AggregationIntervalInfo.class);
         when(startIntervalInfo.getStart()).thenReturn(dimensionStart.year().roundFloorCopy());

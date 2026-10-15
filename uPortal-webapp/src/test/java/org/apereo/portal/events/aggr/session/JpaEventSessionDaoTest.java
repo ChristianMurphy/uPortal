@@ -20,6 +20,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
 import javax.naming.CompositeName;
 import org.apereo.portal.concurrency.CallableWithoutResult;
@@ -30,7 +32,6 @@ import org.apereo.portal.groups.ICompositeGroupService;
 import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.test.BaseAggrEventsJpaDaoTest;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +67,7 @@ public class JpaEventSessionDaoTest extends BaseAggrEventsJpaDaoTest {
                 new CallableWithoutResult() {
                     @Override
                     protected void callWithoutResult() {
-                        DateTime timeStamp = null;
+                        Instant timeStamp = null;
                         for (int i = 0; i <= 100; i++) {
                             String sessionId =
                                     UUID.randomUUID()
@@ -94,9 +95,10 @@ public class JpaEventSessionDaoTest extends BaseAggrEventsJpaDaoTest {
                             final Set<AggregatedGroupMapping> groupMappings =
                                     eventSession.getGroupMappings();
                             assertEquals(2, groupMappings.size());
-                            timeStamp = loginEvent.getTimestampAsDate();
+                            timeStamp = Instant.ofEpochMilli(loginEvent.getTimestamp());
                         }
-                        eventSessionDao.purgeEventSessionsBefore(timeStamp.plusYears(1));
+                        eventSessionDao.purgeEventSessionsBefore(
+                                timeStamp.atZone(ZoneId.systemDefault()).plusYears(1).toInstant());
                     }
                 });
     }

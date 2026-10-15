@@ -14,8 +14,8 @@
  */
 package org.apereo.portal.events.aggr;
 
-import org.joda.time.DateTime;
-import org.joda.time.Seconds;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 /**
  * Captures the results of an event processing operation, includes the number of objects processed,
@@ -23,12 +23,12 @@ import org.joda.time.Seconds;
  */
 public final class EventProcessingResult {
     private final int processed;
-    private final DateTime start;
-    private final DateTime end;
+    private final Instant start;
+    private final Instant end;
     private final boolean complete;
     private final double creationRate;
 
-    protected EventProcessingResult(int processed, DateTime start, DateTime end, boolean complete) {
+    protected EventProcessingResult(int processed, Instant start, Instant end, boolean complete) {
         this.processed = processed;
         this.start = start;
         this.end = end;
@@ -37,8 +37,7 @@ public final class EventProcessingResult {
         if (start == null || end == null) {
             creationRate = 0;
         } else {
-            creationRate =
-                    (double) processed / Math.abs(Seconds.secondsBetween(start, end).getSeconds());
+            creationRate = (double) processed / Math.abs(ChronoUnit.SECONDS.between(start, end));
         }
     }
 
@@ -50,11 +49,11 @@ public final class EventProcessingResult {
         return processed;
     }
 
-    public DateTime getStart() {
+    public Instant getStart() {
         return start;
     }
 
-    public DateTime getEnd() {
+    public Instant getEnd() {
         return end;
     }
 

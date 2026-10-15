@@ -22,6 +22,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -39,7 +41,6 @@ import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.mock.portlet.om.MockPortletWindowId;
 import org.apereo.portal.security.SystemPerson;
 import org.apereo.portal.test.BaseRawEventsJpaDaoTest;
-import org.joda.time.DateTime;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,8 +57,8 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
     @Ignore // Breaks on move to Gradle
     @Test
     public void testStoreSingleEvents() throws Exception {
-        final DateTime startDate = DateTime.now().minusDays(1);
-        final DateTime endDate = DateTime.now().plusDays(1);
+        final Instant startDate = Instant.now().minus(1, ChronoUnit.DAYS);
+        final Instant endDate = Instant.now().plus(1, ChronoUnit.DAYS);
 
         final List<PortalEvent> originalEvents = generateEvents();
 
@@ -82,8 +83,8 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
     @Ignore // Breaks on move to Gradle
     @Test
     public void testStoreBatchEvents() throws Exception {
-        final DateTime startDate = DateTime.now().minusDays(1);
-        final DateTime endDate = DateTime.now().plusDays(1);
+        final Instant startDate = Instant.now().minus(1, ChronoUnit.DAYS);
+        final Instant endDate = Instant.now().plus(1, ChronoUnit.DAYS);
 
         final List<PortalEvent> originalEvents = generateEvents();
 
@@ -91,11 +92,11 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
                 new CallableWithoutResult() {
                     @Override
                     protected void callWithoutResult() {
-                        final DateTime oldestPortalEventTimestamp =
+                        final Instant oldestPortalEventTimestamp =
                                 portalEventDao.getOldestPortalEventTimestamp();
                         assertNull(oldestPortalEventTimestamp);
 
-                        final DateTime newestPortalEventTimestamp =
+                        final Instant newestPortalEventTimestamp =
                                 portalEventDao.getNewestPortalEventTimestamp();
                         assertNull(newestPortalEventTimestamp);
                     }
@@ -114,7 +115,7 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
                 new Comparator<PortalEvent>() {
                     @Override
                     public int compare(PortalEvent o1, PortalEvent o2) {
-                        return o1.getTimestampAsDate().compareTo(o2.getTimestampAsDate());
+                        return Long.compare(o1.getTimestamp(), o2.getTimestamp());
                     }
                 });
 
@@ -122,23 +123,20 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
                 new CallableWithoutResult() {
                     @Override
                     protected void callWithoutResult() {
-                        final DateTime oldestPortalEventTimestamp =
+                        final Instant oldestPortalEventTimestamp =
                                 portalEventDao.getOldestPortalEventTimestamp();
-                        final DateTime newestPortalEventTimestamp =
+                        final Instant newestPortalEventTimestamp =
                                 portalEventDao.getNewestPortalEventTimestamp();
 
                         assertNotNull(oldestPortalEventTimestamp);
                         assertNotNull(newestPortalEventTimestamp);
 
                         assertEquals(
-                                originalEvents.get(0).getTimestampAsDate().getMillis(),
-                                oldestPortalEventTimestamp.getMillis());
+                                originalEvents.get(0).getTimestamp(),
+                                oldestPortalEventTimestamp.toEpochMilli());
                         assertEquals(
-                                originalEvents
-                                        .get(originalEvents.size() - 1)
-                                        .getTimestampAsDate()
-                                        .getMillis(),
-                                newestPortalEventTimestamp.getMillis());
+                                originalEvents.get(originalEvents.size() - 1).getTimestamp(),
+                                newestPortalEventTimestamp.toEpochMilli());
                     }
                 });
 
@@ -152,8 +150,8 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
 
     protected void verifyGetEvents(
             final List<PortalEvent> originalEvents,
-            final DateTime startDate,
-            final DateTime endDate) {
+            final Instant startDate,
+            final Instant endDate) {
         execute(
                 new CallableWithoutResult() {
                     @Override
@@ -185,8 +183,8 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
 
     protected void verifyAggregateEvents(
             final List<PortalEvent> originalEvents,
-            final DateTime startDate,
-            final DateTime endDate) {
+            final Instant startDate,
+            final Instant endDate) {
         execute(
                 new CallableWithoutResult() {
                     @Override
@@ -194,8 +192,8 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
                         // Get all events
                         final List<PortalEvent> portalEvents = new LinkedList<PortalEvent>();
 
-                        final AtomicReference<DateTime> nextStart =
-                                new AtomicReference<DateTime>(startDate);
+                        final AtomicReference<Instant> nextStart =
+                                new AtomicReference<Instant>(startDate);
 
                         // aggregate all events, 5 at a time.
                         final int loadSize = 10;
@@ -210,7 +208,8 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
                                         @Override
                                         public Boolean apply(PortalEvent input) {
                                             portalEvents.add(input);
-                                            nextStart.set(input.getTimestampAsDate());
+                                            nextStart.set(
+                                                    Instant.ofEpochMilli(input.getTimestamp()));
                                             return Boolean.TRUE;
                                         }
                                     });
@@ -231,8 +230,8 @@ public class JpaPortalEventStoreTest extends BaseRawEventsJpaDaoTest {
 
     protected void deleteEvents(
             final List<PortalEvent> originalEvents,
-            final DateTime startDate,
-            final DateTime endDate) {
+            final Instant startDate,
+            final Instant endDate) {
         execute(
                 new CallableWithoutResult() {
                     @Override
