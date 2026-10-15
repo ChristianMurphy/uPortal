@@ -24,7 +24,7 @@ import javax.persistence.Converter;
 
 /**
  * Stores a {@link LocalTime} in a {@code TIME} column as the same time of day, whatever the JVM's
- * zone, the way {@link JvmZoneLocalTimeType} did.
+ * zone, as 5.17 stored it: the JVM's local time of day.
  *
  * <p>Hibernate binds and reads {@code TIME} with the calendar of {@code hibernate.jdbc.time_zone},
  * which uPortal sets to UTC. So the JDBC value is the time of day on 1970-01-01 in UTC. {@link

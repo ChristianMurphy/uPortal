@@ -21,25 +21,28 @@ import static org.junit.Assert.fail;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
 
 public class PortletReleaseNotesTest {
-
-    /** The pattern MarketplacePortletDefinition parsed with Joda-Time. */
-    private static final DateTimeFormatter JODA_FORMAT =
-            DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     @Test
     public void jsonHasEpochMillisWhicheverModulesAreRegistered() throws Exception {
         final PortletReleaseNotes notes = new PortletReleaseNotes();
         notes.setReleaseDate(LocalDateTime.of(2014, 1, 2, 3, 4, 5));
         notes.setInitialReleaseDate(LocalDateTime.of(2013, 7, 1, 0, 0, 0));
-        final long releaseMillis = new DateTime(2014, 1, 2, 3, 4, 5).getMillis();
-        final long initialMillis = new DateTime(2013, 7, 1, 0, 0, 0).getMillis();
+        // The local date and time in the JVM's zone, as Joda-Time's DateTime gave them
+        final long releaseMillis =
+                LocalDateTime.of(2014, 1, 2, 3, 4, 5)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli();
+        final long initialMillis =
+                LocalDateTime.of(2013, 7, 1, 0, 0, 0)
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli();
 
         for (final ObjectMapper mapper :
                 new ObjectMapper[] {
@@ -59,31 +62,25 @@ public class PortletReleaseNotesTest {
         assertTrue(json.get("initialReleaseDate").isNull());
     }
 
+    /** What Joda-Time 2.14.3's yyyy-MM-dd HH:mm:ss pattern parsed each text to */
     @Test
     public void parsesTheValuesJodaParsed() {
-        for (final String text :
-                new String[] {
-                    "2014-01-02 03:04:05",
-                    "2014-1-2 3:4:5",
-                    "14-01-02 03:04:05",
-                    "2016-02-29 23:59:59"
-                }) {
-            final DateTime joda = JODA_FORMAT.parseDateTime(text);
-            final LocalDateTime expected =
-                    LocalDateTime.of(
-                            joda.getYear(),
-                            joda.getMonthOfYear(),
-                            joda.getDayOfMonth(),
-                            joda.getHourOfDay(),
-                            joda.getMinuteOfHour(),
-                            joda.getSecondOfMinute());
+        final Object[][] parsed = {
+            {"2014-01-02 03:04:05", LocalDateTime.of(2014, 1, 2, 3, 4, 5)},
+            {"2014-1-2 3:4:5", LocalDateTime.of(2014, 1, 2, 3, 4, 5)},
+            {"14-01-02 03:04:05", LocalDateTime.of(14, 1, 2, 3, 4, 5)},
+            {"2016-02-29 23:59:59", LocalDateTime.of(2016, 2, 29, 23, 59, 59)}
+        };
+        for (final Object[] value : parsed) {
+            final String text = (String) value[0];
             assertEquals(
                     text,
-                    expected,
+                    value[1],
                     LocalDateTime.parse(text, MarketplacePortletDefinition.releaseDateFormatter));
         }
     }
 
+    /** Texts Joda-Time 2.14.3's yyyy-MM-dd HH:mm:ss pattern rejected */
     @Test
     public void rejectsTheValuesJodaRejected() {
         for (final String text :
@@ -95,12 +92,6 @@ public class PortletReleaseNotesTest {
                     "2014-01-02 03:04:05 PM",
                     "2014-01-02 24:00:00"
                 }) {
-            try {
-                JODA_FORMAT.parseDateTime(text);
-                fail("Joda accepted '" + text + "'");
-            } catch (IllegalArgumentException e) {
-                // expected
-            }
             try {
                 LocalDateTime.parse(text, MarketplacePortletDefinition.releaseDateFormatter);
                 fail("Accepted '" + text + "'");

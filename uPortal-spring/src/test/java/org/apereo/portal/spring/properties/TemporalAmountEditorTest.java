@@ -18,79 +18,59 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.Period;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 public class TemporalAmountEditorTest {
 
-    /** Values the Joda-Time ReadablePeriodEditor accepted, including those in portal.properties. */
-    private static final String[] JODA_VALUES = {
-        "PT30S",
-        "PT1H",
-        "P1D",
-        "P30D",
-        "P1W",
-        "P1W2D",
-        "P1M",
-        "P1Y",
-        "P1DT12H",
-        "P2DT1H30M",
-        "PT1.5S",
-        "PT90M",
-        "p1d",
-        "pt30s",
-        "P-1D"
-    };
-
-    private static final String[] ZONES = {"UTC", "America/New_York", "Europe/London"};
-
     /**
-     * Instants around midnight and the 2026 DST transitions, chosen so that no result lands in an
-     * hour that a DST change repeats or skips.
+     * What Joda-Time's DateTime.minus and plus gave for each value the ReadablePeriodEditor
+     * accepted, including those in portal.properties, in UTC, New York and London, around midnight
+     * and the 2026 DST changes (none of the results lands in a repeated or skipped hour). Recorded
+     * with Joda-Time 2.14.3 before it was removed.
      */
-    private static final String[] INSTANTS = {
-        "2026-01-15T12:00:00Z",
-        "2026-03-08T06:30:00Z", // 01:30 New York, just before spring forward
-        "2026-03-08T08:00:00Z", // 04:00 New York, after spring forward
-        "2026-03-29T00:30:00Z", // London, just before spring forward
-        "2026-11-01T04:30:00Z", // 00:30 New York, before fall back
-        "2026-11-01T07:30:00Z", // 02:30 New York, after fall back
-        "2026-12-31T23:59:59Z",
-        "2028-02-29T10:00:00Z"
-    };
+    private static final String JODA_RESULTS = "joda-period-results.txt";
 
     @Test
-    public void addsAndSubtractsLikeJodaPeriods() {
+    public void addsAndSubtractsLikeJodaPeriods() throws IOException {
         final TemporalAmountEditor editor = new TemporalAmountEditor();
-        for (final String text : JODA_VALUES) {
-            editor.setAsText(text);
-            final TemporalAmount amount = (TemporalAmount) editor.getValue();
-            final org.joda.time.Period jodaPeriod = org.joda.time.Period.parse(text);
-            for (final String zone : ZONES) {
-                for (final String instant : INSTANTS) {
-                    final ZonedDateTime javaTime =
-                            ZonedDateTime.parse(instant).withZoneSameInstant(ZoneId.of(zone));
-                    final DateTime jodaTime =
-                            new DateTime(instant).withZone(DateTimeZone.forID(zone));
-                    final String context = text + " " + zone + " " + instant;
-                    assertEquals(
-                            "minus " + context,
-                            jodaTime.minus(jodaPeriod).getMillis(),
-                            javaTime.minus(amount).toInstant().toEpochMilli());
-                    assertEquals(
-                            "plus " + context,
-                            jodaTime.plus(jodaPeriod).getMillis(),
-                            javaTime.plus(amount).toInstant().toEpochMilli());
+        int checked = 0;
+        try (BufferedReader reader =
+                new BufferedReader(
+                        new InputStreamReader(
+                                getClass().getResourceAsStream(JODA_RESULTS),
+                                StandardCharsets.UTF_8))) {
+            for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+                if (line.startsWith("#")) {
+                    continue;
                 }
+                final String[] fields = line.split(" ");
+                editor.setAsText(fields[0]);
+                final TemporalAmount amount = (TemporalAmount) editor.getValue();
+                final ZonedDateTime javaTime =
+                        Instant.parse(fields[2]).atZone(ZoneId.of(fields[1]));
+                assertEquals(
+                        "minus " + line,
+                        Instant.parse(fields[3]),
+                        javaTime.minus(amount).toInstant());
+                assertEquals(
+                        "plus " + line,
+                        Instant.parse(fields[4]),
+                        javaTime.plus(amount).toInstant());
+                checked++;
             }
         }
+        assertEquals(15 * 3 * 8, checked);
     }
 
     @Test

@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 import org.apereo.portal.test.golden.DatabaseVendor;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 /**
  * Edge values for each {@link Variant}, chosen from what the mapping allows: string lengths come
@@ -137,10 +135,6 @@ final class EdgeValues {
         }
         if (type.isEnum()) {
             return enumValue(slot, variant, seed);
-        }
-        if (type == DateTime.class) {
-            final Instant instant = instant(slot, variant, seed);
-            return instant == null ? null : new DateTime(instant.toEpochMilli());
         }
         if (type == Date.class) {
             final Instant instant = instant(slot, variant, seed);
@@ -369,7 +363,7 @@ final class EdgeValues {
 
     /** The default zone's id, for messages */
     static String zone() {
-        return DateTimeZone.getDefault().getID();
+        return java.util.TimeZone.getDefault().getID();
     }
 
     /** Thrown for a value type the builder has no edge values for */

@@ -23,30 +23,31 @@ import org.junit.Test;
 public class DurationEditorTest {
 
     /**
-     * Values the Joda-Time ReadableDurationEditor accepted, including those in portal.properties.
+     * Values the Joda-Time ReadableDurationEditor accepted, including those in portal.properties,
+     * with the milliseconds Joda-Time 2.14 parsed them to.
      */
-    private static final String[] JODA_VALUES = {
-        "PT0.100S",
-        "PT1S",
-        "PT30S",
-        "PT60S",
-        "PT120S",
-        "PT3600S",
-        "pt30s",
-        "PT-5S",
-        "PT1.5S",
-        "PT1.25S",
-        "PT5.S",
-        "PT0.0001S"
+    private static final Object[][] JODA_VALUES = {
+        {"PT0.100S", 100L},
+        {"PT1S", 1000L},
+        {"PT30S", 30000L},
+        {"PT60S", 60000L},
+        {"PT120S", 120000L},
+        {"PT3600S", 3600000L},
+        {"pt30s", 30000L},
+        {"PT-5S", -5000L},
+        {"PT1.5S", 1500L},
+        {"PT1.25S", 1250L},
+        {"PT5.S", 5000L},
+        {"PT0.0001S", 0L}
     };
 
     @Test
     public void acceptsEveryJodaValueWithTheSameMillis() {
         final DurationEditor editor = new DurationEditor();
-        for (final String text : JODA_VALUES) {
+        for (final Object[] value : JODA_VALUES) {
+            final String text = (String) value[0];
             editor.setAsText(text);
-            final long expected = org.joda.time.Duration.parse(text).getMillis();
-            assertEquals(text, expected, ((Duration) editor.getValue()).toMillis());
+            assertEquals(text, value[1], ((Duration) editor.getValue()).toMillis());
         }
     }
 
