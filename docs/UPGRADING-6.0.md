@@ -617,9 +617,10 @@ change. An `ignoredEvents` filter in `eventHandlerContext.xml` that drops
 
 ## Joda-Time replaced by `java.time` (outside the database mappings)
 
-Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This step converts the
-code that does not map database columns; the JPA entities and the event-aggregation code built
-on them follow with the Hibernate upgrade.
+Spring 6 dropped its Joda-Time support, so uPortal moves to `java.time`. This section covers the
+code that does not map database columns. The JPA entities and the event aggregation API are in
+[Joda-Time removed from the database mappings and the event aggregation
+API](#joda-time-removed-from-the-database-mappings-and-the-event-aggregation-api).
 
 ### Settings in `portal.properties`
 
@@ -665,6 +666,71 @@ The Joda-Time JSP tag library (`joda-time-jsptags`) is no longer in the web appl
 `WEB-INF/jsp/include.jsp` no longer declares the `joda` prefix. If a JSP in your overlay uses
 `<joda:format>` or another `joda:` tag, format the value another way, such as with
 `fn:substring` on a `java.time` value's ISO text, or by formatting it in the controller.
+
+## Joda-Time removed from the database mappings and the event aggregation API
+
+uPortal 6.0 no longer contains Joda-Time, Jadira's Joda-Time types or `jackson-datatype-joda`.
+The event, event aggregation and cookie entities map `java.time` types, and the event
+aggregation API uses `java.time` throughout.
+
+### Stored values
+
+The columns and their values stay the same, on every database and in every JVM time zone:
+
+* Timestamps (raw and analytics events, event sessions, aggregation status, academic terms,
+  portal and portlet cookies) are `Instant` fields and hold UTC clock time, as Jadira stored
+  them.
+* `UP_DATE_DIMENSION.DD_DATE` holds the date and `UP_TIME_DIMENSION.TD_TIME` the JVM's local time
+  of day, through `LocalDateColumnConverter` and `LocalTimeColumnConverter` in
+  `org.apereo.portal.dao.usertype`. The time converter relies on `hibernate.jdbc.time_zone=UTC`,
+  which uPortal's `hibernate.properties` sets. Don't remove that setting.
+* The quarter columns hold `--MM-dd` text, through `MonthDayColumnConverter`.
+
+### Hibernate types
+
+`global.hbm.xml` no longer defines the `dateTime`, `dateTimeTZ`, `localDate`, `localTime` and
+`monthDay` types, and `org.apereo.portal.dao.usertype.JvmZoneLocalTimeType` is gone. If an entity
+in your overlay maps a Joda-Time field with `@Type(type = "dateTime")` or one of the others, change
+the field to `java.time.Instant`, `LocalDate`, `LocalTime` or `MonthDay`, and use the converters
+above for the last three. Jadira's `usertype.spi` stays in uPortal-core for the `fname` type,
+which doesn't use Joda-Time.
+
+### Java API changes
+
+A Joda-Time `DateTime` that marks a point in time is now an `Instant`. One that has calendar
+meaning, such as an aggregation interval's start, is now a `ZonedDateTime` in the JVM's default
+zone, the zone Jadira read the columns in. A `DateMidnight` is now a `LocalDate`, and Joda-Time's
+`LocalTime` and `MonthDay` are now `java.time`'s.
+
+| Class | Change |
+| --- | --- |
+| `IPortalEventDao` | Takes and returns `Instant` |
+| `IEventAggregatorStatus` | `getLastStart`, `getLastEnd`, `getLastEventDate` and their setters use `Instant` |
+| `EventSession`, `EventSessionDao` | `recordAccess` and `purgeEventSessionsBefore` take `Instant` |
+| `EventProcessingResult` | `getStart` and `getEnd` return `Instant` |
+| `PortalEvent` | `getTimestampAsDate` returns a `ZonedDateTime` in the JVM's zone |
+| `AggregationInterval` | `determineStart`, `determineEnd` and `determineIntervalsBetween` use `ZonedDateTime`. `getUnit()` returns a `ChronoUnit` and replaces `getDateTimeFieldType()` |
+| `AggregationIntervalHelper`, `AggregationIntervalInfo` | Take and return `ZonedDateTime` |
+| `BaseAggregation`, `BaseAggregationDao`, `BaseAggregationPrivateDao` | `getDateTime` returns `ZonedDateTime`, and the range queries take it |
+| `IntervalAwarePortalEventAggregator` | `cleanUnclosedAggregations` takes `ZonedDateTime` |
+| `SearchRequestAggregationDao`, `PortletLayoutAggregationDao` | The range queries take `ZonedDateTime` |
+| `DateDimension`, `DateDimensionDao` | `getDate` returns `LocalDate`, and the lookups take it |
+| `TimeDimension`, `TimeDimensionDao` | Use `java.time.LocalTime` |
+| `QuarterDetail` | `getStart` and `getEnd` return `java.time.MonthDay`. `getStartDate(ZonedDateTime)` and `getEndDate(ZonedDateTime)` replace `getStartDateMidnight` and `getEndDateMidnight` |
+| `AcademicTermDetail` | `getStart`, `getEnd` and their setters use `LocalDate` |
+| `DateRange` | `compareTo` takes a `ZonedDateTime` |
+| `EventDateTimeUtils` | `compareTo` takes `Instant`s, and `findDateRange` and `findDateRangeSorted` take a `ZonedDateTime` |
+| `IPortalCookie`, `IPortletCookie` | Created and expiry dates are `Instant` |
+| `BaseReportForm` (statistics portlet) | `start` and `end` are `LocalDate` |
+| `CustomDateMidnightEditor` | Replaced by `CustomLocalDateEditor`. Its `REPORT_DATE_FORMAT` parses the reports' `M/d/yyyy` dates as before |
+| `JodaTimeConversions` | Removed |
+
+### Event aggregation files
+
+The import and export of `event-aggregation` data files work as before. A term's `start` and
+`end` are read in the zone the file gives, and written as the JVM zone's midnight. A quarter's
+`start` and `end` are read as `--MM-dd`, also with one-digit fields, or as a full ISO date of
+which the month and day are used. uPortal exports `--MM-dd`.
 
 ## spring-modules-cache is gone; the user attribute cache uses Spring's cache API
 
@@ -784,8 +850,9 @@ If you customized any of the following, adapt it before you upgrade:
   beans get the dialect and a `SchemaTool` from `HibernateConfiguration`; `getConfiguration()` is
   gone.
 * **Custom dialects or `UserType`s.** User types now receive a
-  `SharedSessionContractImplementor`. uPortal uses Jadira Usertype 6.0.1.GA; its Joda-Time types
-  store values exactly as Jadira 3.2.0.GA did.
+  `SharedSessionContractImplementor`. uPortal no longer has Joda-Time types: see
+  [Joda-Time removed from the database mappings and the event aggregation
+  API](#joda-time-removed-from-the-database-mappings-and-the-event-aggregation-api).
 * **`@Type` on a `Map` element collection.** Hibernate 4.3 applied it to the map keys as well as
   the values. Hibernate 5 applies it to the values only. uPortal's own maps declare `@MapKeyType`
   so that existing rows are read and written as before. An entity of your own that relies on
