@@ -27,4 +27,9 @@ dependencies {
     compileOnly project(':uPortal-pluto:uPortal-pluto-container-api')
     compileOnly project(':uPortal-pluto:uPortal-pluto-portlet-api')
     compileOnly "${servletApiDependency}"
+
+    // JavaTimeColumnStorageTest stores through Hibernate into an in-memory database
+    testImplementation "org.hsqldb:hsqldb:${hsqldbVersion}"
+    // Hibernate's mapping binder loads JAXB, which the JDK no longer has
+    testRuntimeOnly "javax.xml.bind:jaxb-api:${jaxbApiVersion}"
 }
