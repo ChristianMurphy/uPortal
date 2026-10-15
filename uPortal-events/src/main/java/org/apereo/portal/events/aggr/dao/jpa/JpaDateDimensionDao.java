@@ -15,6 +15,7 @@
 package org.apereo.portal.events.aggr.dao.jpa;
 
 import com.google.common.base.Function;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.EntityManager;
@@ -29,8 +30,6 @@ import org.apereo.portal.events.aggr.DateDimension;
 import org.apereo.portal.events.aggr.dao.DateDimensionDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.OpenEntityManager;
-import org.joda.time.DateMidnight;
-import org.joda.time.LocalDate;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.stereotype.Repository;
 
@@ -187,7 +186,7 @@ public class JpaDateDimensionDao extends BaseAggrEventsJpaDao implements DateDim
 
     @Override
     @AggrEventsTransactional
-    public DateDimension createDateDimension(DateMidnight date, int quarter, String term) {
+    public DateDimension createDateDimension(LocalDate date, int quarter, String term) {
         final DateDimension dateDimension = new DateDimensionImpl(date, quarter, term);
 
         this.getEntityManager().persist(dateDimension);
@@ -212,12 +211,12 @@ public class JpaDateDimensionDao extends BaseAggrEventsJpaDao implements DateDim
     }
 
     @Override
-    public List<DateDimension> getDateDimensionsBetween(DateMidnight start, DateMidnight end) {
+    public List<DateDimension> getDateDimensionsBetween(LocalDate start, LocalDate end) {
         final TypedQuery<DateDimensionImpl> query =
                 this.createCachedQuery(this.findAllDateDimensionsBetweenQuery);
         query.setFlushMode(FlushModeType.COMMIT);
-        query.setParameter(this.dateTimeParameter, start.toLocalDate());
-        query.setParameter(this.endDateTimeParameter, end.toLocalDate());
+        query.setParameter(this.dateTimeParameter, start);
+        query.setParameter(this.endDateTimeParameter, end);
 
         final List<DateDimensionImpl> portletDefinitions = query.getResultList();
         return new ArrayList<DateDimension>(portletDefinitions);
@@ -247,10 +246,10 @@ public class JpaDateDimensionDao extends BaseAggrEventsJpaDao implements DateDim
 
     @OpenEntityManager(unitName = BaseAggrEventsJpaDao.PERSISTENCE_UNIT_NAME)
     @Override
-    public DateDimension getDateDimensionByDate(DateMidnight date) {
+    public DateDimension getDateDimensionByDate(LocalDate date) {
         final NaturalIdQuery<DateDimensionImpl> query =
                 this.createNaturalIdQuery(DateDimensionImpl.class);
-        query.using(DateDimensionImpl_.date, date.toLocalDate());
+        query.using(DateDimensionImpl_.date, date);
         return query.load();
     }
 }

@@ -15,9 +15,13 @@
 package org.apereo.portal.events.aggr.dao.jpa;
 
 import java.io.Serializable;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -27,6 +31,7 @@ import javax.persistence.OneToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+import org.apereo.portal.dao.usertype.LocalTimeColumnConverter;
 import org.apereo.portal.events.aggr.TimeDimension;
 import org.apereo.portal.events.aggr.login.LoginAggregationImpl;
 import org.hibernate.annotations.Cache;
@@ -34,8 +39,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
-import org.hibernate.annotations.Type;
-import org.joda.time.LocalTime;
 
 /** */
 @Entity
@@ -56,6 +59,8 @@ import org.joda.time.LocalTime;
 @Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
 public final class TimeDimensionImpl implements TimeDimension, Serializable {
     private static final long serialVersionUID = 1L;
+    private static final DateTimeFormatter TO_STRING_FORMAT =
+            DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     @Id
     @GeneratedValue(generator = "UP_TIME_DIMENSION_GEN")
@@ -64,7 +69,7 @@ public final class TimeDimensionImpl implements TimeDimension, Serializable {
 
     @NaturalId
     @Column(name = "TD_TIME", nullable = false)
-    @Type(type = "localTime")
+    @Convert(converter = LocalTimeColumnConverter.class)
     private final LocalTime time;
 
     @Column(name = "TD_HOUR", nullable = false)
@@ -95,9 +100,9 @@ public final class TimeDimensionImpl implements TimeDimension, Serializable {
 
     TimeDimensionImpl(LocalTime time) {
         this.id = -1;
-        this.time = time.minuteOfHour().roundFloorCopy(); // truncate at minute level
-        this.hour = this.time.getHourOfDay();
-        this.minute = this.time.getMinuteOfHour();
+        this.time = time.truncatedTo(ChronoUnit.MINUTES);
+        this.hour = this.time.getHour();
+        this.minute = this.time.getMinute();
         this.fiveMinuteIncrement = this.minute / 5;
     }
 
@@ -152,6 +157,7 @@ public final class TimeDimensionImpl implements TimeDimension, Serializable {
 
     @Override
     public String toString() {
-        return time.toString();
+        // As Joda-Time's LocalTime printed it
+        return time.format(TO_STRING_FORMAT);
     }
 }

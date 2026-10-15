@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,7 +40,6 @@ import org.apereo.portal.portlet.om.IPortletDefinitionId;
 import org.apereo.portal.security.IAuthorizationPrincipal;
 import org.apereo.portal.security.IAuthorizationService;
 import org.apereo.portal.security.IPerson;
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -70,8 +70,8 @@ public class PopularPortletsServiceTest {
 
         aggregations = new ArrayList<>();
         when(portletLayoutDao.getAggregationsForAllPortlets(
-                        any(DateTime.class),
-                        any(DateTime.class),
+                        any(ZonedDateTime.class),
+                        any(ZonedDateTime.class),
                         eq(AggregationInterval.DAY),
                         eq(everyone)))
                 .thenReturn(aggregations);
@@ -186,13 +186,13 @@ public class PopularPortletsServiceTest {
         popular(7);
         final long after = System.currentTimeMillis();
 
-        final ArgumentCaptor<DateTime> start = ArgumentCaptor.forClass(DateTime.class);
-        final ArgumentCaptor<DateTime> end = ArgumentCaptor.forClass(DateTime.class);
+        final ArgumentCaptor<ZonedDateTime> start = ArgumentCaptor.forClass(ZonedDateTime.class);
+        final ArgumentCaptor<ZonedDateTime> end = ArgumentCaptor.forClass(ZonedDateTime.class);
         verify(portletLayoutDao)
                 .getAggregationsForAllPortlets(
                         start.capture(), end.capture(), eq(AggregationInterval.DAY), eq(everyone));
-        assertTrue(end.getValue().getMillis() >= before);
-        assertTrue(end.getValue().getMillis() <= after);
+        assertTrue(end.getValue().toInstant().toEpochMilli() >= before);
+        assertTrue(end.getValue().toInstant().toEpochMilli() <= after);
         assertEquals(end.getValue().minusDays(7), start.getValue());
     }
 }

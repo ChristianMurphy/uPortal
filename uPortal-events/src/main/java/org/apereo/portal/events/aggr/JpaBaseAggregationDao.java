@@ -18,6 +18,9 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
 import com.google.common.collect.Sets;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -45,9 +48,6 @@ import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMappingImpl;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.OpenEntityManager;
-import org.joda.time.DateTime;
-import org.joda.time.LocalDate;
-import org.joda.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
@@ -375,8 +375,8 @@ public abstract class JpaBaseAggregationDao<
 
     @Override
     public final List<T> getAggregations(
-            DateTime start,
-            DateTime end,
+            ZonedDateTime start,
+            ZonedDateTime end,
             K key,
             AggregatedGroupMapping... aggregatedGroupMappings) {
         Set<K> keys = new HashSet<K>();
@@ -386,8 +386,8 @@ public abstract class JpaBaseAggregationDao<
 
     @Override
     public final List<T> getAggregations(
-            DateTime start,
-            DateTime end,
+            ZonedDateTime start,
+            ZonedDateTime end,
             Set<K> keys,
             AggregatedGroupMapping... aggregatedGroupMappings) {
         if (!start.isBefore(end)) {
@@ -485,7 +485,7 @@ public abstract class JpaBaseAggregationDao<
 
     @Override
     public Collection<T> getUnclosedAggregations(
-            DateTime start, DateTime end, AggregationInterval interval) {
+            ZonedDateTime start, ZonedDateTime end, AggregationInterval interval) {
         if (!start.isBefore(end)) {
             throw new IllegalArgumentException("Start must be before End: " + start + " - " + end);
         }

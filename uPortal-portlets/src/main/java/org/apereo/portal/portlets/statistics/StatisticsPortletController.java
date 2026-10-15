@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.portlets.statistics;
 
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
@@ -90,7 +91,13 @@ public class StatisticsPortletController {
             @RequestParam("end") DateMidnight end) {
         final int intervalsBetween =
                 this.intervalHelper.intervalsBetween(
-                        interval, start.toDateTime(), end.plusDays(1).toDateTime().minusSeconds(1));
+                        interval,
+                        BaseStatisticsReportController.toLocalDate(start)
+                                .atStartOfDay(ZoneId.systemDefault()),
+                        BaseStatisticsReportController.toLocalDate(end)
+                                .plusDays(1)
+                                .atStartOfDay(ZoneId.systemDefault())
+                                .minusSeconds(1));
         return new ModelAndView("json", "intervalsBetween", intervalsBetween);
     }
 }

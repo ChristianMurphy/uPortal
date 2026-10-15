@@ -16,6 +16,11 @@ package org.apereo.portal.events.aggr.golden;
 
 import static org.junit.Assert.assertTrue;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,8 +75,6 @@ import org.apereo.portal.test.golden.GoldenRenderer;
 import org.apereo.portal.test.golden.JvmTimeZone;
 import org.apereo.portal.test.golden.PersistenceUnits;
 import org.apereo.portal.version.dao.VersionDao;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
 import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -256,12 +259,10 @@ public class AggregationGoldenTest {
         dao.setAcademicTermDetails(
                 Arrays.asList(
                         new AcademicTermDetailImpl(
-                                new DateMidnight(2025, 8, 25),
-                                new DateMidnight(2025, 12, 20),
-                                "Fall 2025"),
+                                LocalDate.of(2025, 8, 25), LocalDate.of(2025, 12, 20), "Fall 2025"),
                         new AcademicTermDetailImpl(
-                                new DateMidnight(2026, 1, 12),
-                                new DateMidnight(2026, 5, 9),
+                                LocalDate.of(2026, 1, 12),
+                                LocalDate.of(2026, 5, 9),
                                 "Spring 2026")));
     }
 
@@ -375,7 +376,7 @@ public class AggregationGoldenTest {
         final List<String> lines = new ArrayList<>();
         final AggregationIntervalHelper intervals = ctx.getBean(AggregationIntervalHelper.class);
         for (final java.time.Instant visit : burst.visits()) {
-            final DateTime at = new DateTime(visit.toEpochMilli());
+            final ZonedDateTime at = visit.atZone(ZoneId.systemDefault());
             for (final AggregationInterval interval : AggregationInterval.values()) {
                 final AggregationIntervalInfo info = intervals.getIntervalInfo(interval, at);
                 lines.add(
@@ -396,9 +397,9 @@ public class AggregationGoldenTest {
                                                 + info.getDurationTo(at)));
             }
         }
-        final DateTime first = new DateTime(burst.visits().get(0).toEpochMilli());
-        final DateTime last =
-                new DateTime(burst.visits().get(burst.visits().size() - 1).toEpochMilli());
+        final ZonedDateTime first = burst.visits().get(0).atZone(ZoneId.systemDefault());
+        final ZonedDateTime last =
+                burst.visits().get(burst.visits().size() - 1).atZone(ZoneId.systemDefault());
         lines.add(
                 prefix
                         + "intervalsBetween HOUR "
@@ -461,21 +462,21 @@ public class AggregationGoldenTest {
                 prefix
                         + "dateDimensionDao.getDateDimensionByDate "
                         + renderer.render(
-                                dateDimensions.getDateDimensionByDate(first.toDateMidnight())));
+                                dateDimensions.getDateDimensionByDate(first.toLocalDate())));
         lines.add(
                 prefix
                         + "dateDimensionDao.getDateDimensionsBetween "
                         + dateDimensions
                                 .getDateDimensionsBetween(
-                                        first.minusDays(1).toDateMidnight(),
-                                        last.plusDays(1).toDateMidnight())
+                                        first.minusDays(1).toLocalDate(),
+                                        last.plusDays(1).toLocalDate())
                                 .size());
         lines.add(
                 prefix
                         + "timeDimensionDao.getTimeDimensionByTime(01:30) "
                         + renderer.render(
                                 timeDimensions.getTimeDimensionByTime(
-                                        new org.joda.time.LocalTime(1, 30))));
+                                        java.time.LocalTime.of(1, 30))));
 
         final AggregatedGroupLookupDao groups = ctx.getBean(AggregatedGroupLookupDao.class);
         final AggregatedGroupMapping everyone = groups.getGroupMapping("local", "Everyone");
@@ -508,8 +509,8 @@ public class AggregationGoldenTest {
                 prefix
                         + "loginAggregationDao.getAggregatedGroupMappings() "
                         + renderAll(renderer, logins.getAggregatedGroupMappings()));
-        final DateTime start = first.minusDays(1);
-        final DateTime end = last.plusDays(1);
+        final ZonedDateTime start = first.minusDays(1);
+        final ZonedDateTime end = last.plusDays(1);
         // Everyone's logins per day: from the HOUR rows, and from the DAY row
         final Map<String, int[]> everyoneByDay = new TreeMap<>();
         for (final AggregationInterval interval :
@@ -529,11 +530,7 @@ public class AggregationGoldenTest {
                         && "Everyone".equals(aggregation.getAggregatedGroup().getGroupName())) {
                     everyoneByDay
                                     .computeIfAbsent(
-                                            aggregation
-                                                    .getDateDimension()
-                                                    .getDate()
-                                                    .toLocalDate()
-                                                    .toString(),
+                                            aggregation.getDateDimension().getDate().toString(),
                                             day -> new int[2])[
                                     interval == AggregationInterval.HOUR ? 0 : 1] +=
                             aggregation.getLoginCount();
@@ -582,9 +579,9 @@ public class AggregationGoldenTest {
         return lines;
     }
 
-    private static String render(List<DateTime> dateTimes) {
+    private static String render(List<ZonedDateTime> dateTimes) {
         final List<String> rendered = new ArrayList<>();
-        for (final DateTime dateTime : dateTimes) {
+        for (final ZonedDateTime dateTime : dateTimes) {
             rendered.add(GoldenRenderer.renderValue(dateTime));
         }
         return rendered.toString();
@@ -605,8 +602,8 @@ public class AggregationGoldenTest {
             rendered.add(
                     aggregation
                                     .getDateTime()
-                                    .withZone(org.joda.time.DateTimeZone.UTC)
-                                    .toString("MM-dd'T'HH:mm")
+                                    .withZoneSameInstant(ZoneOffset.UTC)
+                                    .format(DateTimeFormatter.ofPattern("MM-dd'T'HH:mm"))
                             + "="
                             + aggregation.getConcurrentUsers());
         }

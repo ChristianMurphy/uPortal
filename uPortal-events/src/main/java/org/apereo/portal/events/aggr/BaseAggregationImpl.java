@@ -14,6 +14,8 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import javax.persistence.Access;
 import javax.persistence.AccessType;
 import javax.persistence.Column;
@@ -29,7 +31,6 @@ import org.apereo.portal.events.aggr.dao.jpa.TimeDimensionImpl;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMappingImpl;
 import org.hibernate.annotations.NaturalId;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public abstract class BaseAggregationImpl<
     private int duration;
 
     @Transient private Boolean complete = null;
-    @Transient private DateTime dateTime = null;
+    @Transient private ZonedDateTime dateTime = null;
 
     protected BaseAggregationImpl() {
         this.timeDimension = null;
@@ -95,10 +96,15 @@ public abstract class BaseAggregationImpl<
     public abstract long getId();
 
     @Override
-    public DateTime getDateTime() {
-        DateTime dt = this.dateTime;
+    public ZonedDateTime getDateTime() {
+        ZonedDateTime dt = this.dateTime;
         if (dt == null) {
-            dt = this.timeDimension.getTime().toDateTime(this.dateDimension.getDate());
+            // The dimensions hold the JVM's local date and time
+            dt =
+                    ZonedDateTime.of(
+                            this.dateDimension.getDate(),
+                            this.timeDimension.getTime(),
+                            ZoneId.systemDefault());
             this.dateTime = dt;
         }
         return dt;

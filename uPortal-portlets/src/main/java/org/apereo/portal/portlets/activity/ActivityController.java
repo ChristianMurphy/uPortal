@@ -43,7 +43,6 @@ import org.apereo.portal.groups.IEntityGroup;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.services.GroupService;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
-import org.apereo.portal.utils.time.JodaTimeConversions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -179,10 +178,7 @@ public class ActivityController {
                     ConcurrentUserAggregationKey key =
                             new ConcurrentUserAggregationKeyImpl(interval, group);
                     final List<ConcurrentUserAggregation> aggregations =
-                            concurrentUserAggregationDao.getAggregations(
-                                    JodaTimeConversions.toDateTime(begin),
-                                    JodaTimeConversions.toDateTime(end),
-                                    key);
+                            concurrentUserAggregationDao.getAggregations(begin, end, key);
 
                     // NB:  We only care about the most recent entry (??)
                     if (aggregations.size() != 0) {
@@ -216,10 +212,7 @@ public class ActivityController {
 
                     final LoginAggregationKey key = new LoginAggregationKeyImpl(interval, group);
                     final List<LoginAggregation> aggregations =
-                            loginAggregationDao.getAggregations(
-                                    JodaTimeConversions.toDateTime(begin),
-                                    JodaTimeConversions.toDateTime(end),
-                                    key);
+                            loginAggregationDao.getAggregations(begin, end, key);
 
                     // NB:  We only care about the most recent entry (??)
                     if (aggregations.size() != 0) {
@@ -268,10 +261,7 @@ public class ActivityController {
                 aggregatedGroupLookupDao.getGroupMapping(everyone.getKey());
         List<SearchRequestAggregationImpl> aggregations =
                 searchRequestAggregationDao.getAggregations(
-                        JodaTimeConversions.toDateTime(begin),
-                        JodaTimeConversions.toDateTime(end),
-                        AggregationInterval.FIVE_MINUTE,
-                        group);
+                        begin, end, AggregationInterval.FIVE_MINUTE, group);
         Map<String, SearchInfo> resultBuilder = new HashMap<String, SearchInfo>();
         for (SearchRequestAggregationImpl aggregation : aggregations) {
             SearchInfo info = resultBuilder.get(aggregation.getSearchTerm());

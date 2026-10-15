@@ -15,9 +15,8 @@
 package org.apereo.portal.events.aggr;
 
 import java.io.Serializable;
-import org.joda.time.DateTime;
-import org.joda.time.Minutes;
-import org.joda.time.ReadableInstant;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import org.springframework.util.Assert;
 
 /**
@@ -28,8 +27,8 @@ public class AggregationIntervalInfo implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final AggregationInterval aggregationInterval;
-    private final DateTime start;
-    private final DateTime end;
+    private final ZonedDateTime start;
+    private final ZonedDateTime end;
     private final DateDimension dateDimension;
     private final TimeDimension timeDimension;
     private int duration = -1;
@@ -37,8 +36,8 @@ public class AggregationIntervalInfo implements Serializable {
 
     AggregationIntervalInfo(
             AggregationInterval aggregationInterval,
-            DateTime start,
-            DateTime end,
+            ZonedDateTime start,
+            ZonedDateTime end,
             DateDimension dateDimension,
             TimeDimension timeDimension) {
         Assert.notNull(aggregationInterval, "aggregationInterval can not be null");
@@ -66,20 +65,20 @@ public class AggregationIntervalInfo implements Serializable {
     /**
      * @return The first date in the interval, inclusive
      */
-    public DateTime getStart() {
+    public ZonedDateTime getStart() {
         return this.start;
     }
 
     /**
      * @return The last date in the interval, exclusive
      */
-    public DateTime getEnd() {
+    public ZonedDateTime getEnd() {
         return this.end;
     }
 
     /**
      * @return The date dimension that corresponds with the {@link #getStart()} value, null if no
-     *     date dimension exists yet for the start {@link DateTime}
+     *     date dimension exists yet for the start {@link ZonedDateTime}
      */
     public DateDimension getDateDimension() {
         return dateDimension;
@@ -87,7 +86,7 @@ public class AggregationIntervalInfo implements Serializable {
 
     /**
      * @return The time dimension that corresponds with the {@link #getStart()} value, null if no
-     *     time dimension exists yet for the start {@link DateTime}
+     *     time dimension exists yet for the start {@link ZonedDateTime}
      */
     public TimeDimension getTimeDimension() {
         return timeDimension;
@@ -99,7 +98,7 @@ public class AggregationIntervalInfo implements Serializable {
     public int getTotalDuration() {
         int d = this.duration;
         if (d < 0) {
-            d = Minutes.minutesBetween(this.start, this.end).getMinutes();
+            d = (int) ChronoUnit.MINUTES.between(this.start, this.end);
             d = Math.abs(d);
             this.duration = d;
         }
@@ -110,12 +109,12 @@ public class AggregationIntervalInfo implements Serializable {
      * @return Minutes between {@link #getStart()} and the end parameter, if the parameter is after
      *     {@link #getEnd()} then {@link #getEnd()} is used
      */
-    public int getDurationTo(ReadableInstant end) {
+    public int getDurationTo(ZonedDateTime end) {
         if (end.isAfter(this.end)) {
             return this.getTotalDuration();
         }
 
-        return Math.abs(Minutes.minutesBetween(this.start, end).getMinutes());
+        return Math.abs((int) ChronoUnit.MINUTES.between(this.start, end));
     }
 
     @Override
