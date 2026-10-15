@@ -202,13 +202,23 @@ public class DistributedLayoutManager implements IUserLayoutManager, Initializin
         return userLayout.getLayout();
     }
 
-    protected DistributedUserLayout getDistributedUserLayout() {
+    /*
+     * Synchronized: the requests of one session share the owner's PLF, and a reload merges into
+     * it in place (MOD-I363).
+     */
+    protected synchronized DistributedUserLayout getDistributedUserLayout() {
         DistributedUserLayout userLayout =
                 this.layoutCachingService.getCachedLayout(owner, profile);
         if (null == userLayout) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Load from store for " + owner.getUserName());
             }
+            /*
+             * The cache is shared by all sessions of the user, and a sign-in or another session's
+             * change evicts it. Read the PLF from the database again: the copy this session took
+             * earlier may be older than what another session saved, and the reload may save it.
+             */
+            this.owner.setAttribute(Constants.PLF, (List<Object>) null);
             userLayout = this.distributedLayoutStore.getUserLayout(this.owner, this.profile);
 
             final Document userLayoutDocument = userLayout.getLayout();
@@ -325,14 +335,16 @@ public class DistributedLayoutManager implements IUserLayoutManager, Initializin
 
     @Override
     public synchronized void saveUserLayout() throws PortalException {
-        Document uld = this.getUserLayoutDOM();
+        // The store saves the session's PLF. Looking the layout up here could reload it, after an
+        // eviction, from the database and drop the change this save is for.
+        final Document plf = (Document) this.owner.getAttribute(Constants.PLF);
 
-        if (uld == null) {
+        if (plf == null) {
             throw new PortalException(
                     "UserLayout has not been initialized for " + owner.getUserName() + ".");
         }
         try {
-            this.distributedLayoutStore.setUserLayout(this.owner, this.profile, uld, channelsAdded);
+            this.distributedLayoutStore.setUserLayout(this.owner, this.profile, plf, channelsAdded);
         } catch (Exception e) {
             throw new PortalException(
                     "Exception encountered while "
