@@ -27,6 +27,6 @@ public class ExternalQuarterDetailComparator
 
     @Override
     protected MonthDay getComparable(ExternalQuarterDetail o) {
-        return MonthDay.parse(o.getStart());
+        return EventAggregationConfigurationImporterExporter.parseMonthDay(o.getStart());
     }
 }
