@@ -55,9 +55,9 @@ const FAULTS: [Check, string, string, string][] = [
     ],
     [
         'spill',
-        'content wider than its box below the first screen of a page whose html hides overflow-x',
+        'content wider than its box below the fold of a box that scrolls',
         'div',
-        `<style>html { overflow-x: hidden }</style><div style="height: 2000px"></div><div style="width: 100px"><span style="display: inline-block; width: 150px">x</span></div>`,
+        `<div style="overflow-x: hidden; height: 300px"><div style="height: 2000px"></div><div style="width: 100px"><span style="display: inline-block; width: 150px">x</span></div></div>`,
     ],
     [
         'spill',
