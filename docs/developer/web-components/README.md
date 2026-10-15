@@ -751,7 +751,7 @@ UPGRADING-6.0).
 | `SearchPortletController` in REST mode, `jsp/Search/searchRest.jsp` | `<up-search>` (`src/components/up-search/up-search.ts`) |
 | The launcher view, `jsp/Search/searchLauncher.jsp` (`searchLaunchFname` preference) | `<up-search-launcher>`, `search-fname` attribute |
 | `/api/v5-0/portal/search` | `GET /api/v6-0/search` |
-| Portlet action, then a render with the `query` parameter | A link to `/p/search/max?query=...`; `<up-search>` reads `?query=` |
+| Portlet action, then a render with the `query` parameter | A link to `/p/search/max?query=...`, which the portal redirects to the render URL with `pP_query`; `<up-search>` reads `pP_query`, else `query` |
 | jQuery UI autocomplete over `/api/portletList` (`autosuggestHandler.js`) | `<up-search-box>`, shared by both elements: a search field with a listbox of suggestions |
 | Bootstrap 5 pills from `<template>`s | ARIA tabs (`tablist`, `tab`, `tabpanel`) with the arrow, Home and End keys |
 | Hardcoded "No Results Found" and tab names from the JSON keys | `search.no.results.found`, `search.results.people`, `search.results.portlets`; a provider's `label`; other types are named after the type |
@@ -775,8 +775,9 @@ The field stays a search box for assistive technology, as the portlet's did, wit
 and a live region that says how many there are. Escape closes the suggestions or cancels the
 pause before the browser clears the field.
 
-Page navigation (opening a URL, reading and updating `?query=`) goes through `navigation.ts`.
-The browser tests replace it and stay on the test page.
+Page navigation (opening a URL, reading and updating the query in the URL) goes through
+`navigation.ts`. The browser tests replace it and stay on the test page. Only a test
+against a started portal sees the redirect that turns `query` into `pP_query`.
 
 ## Conversion: Popular Portlets
 
