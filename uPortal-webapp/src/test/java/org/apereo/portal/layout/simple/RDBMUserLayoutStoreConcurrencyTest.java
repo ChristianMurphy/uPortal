@@ -16,6 +16,7 @@ package org.apereo.portal.layout.simple;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
@@ -168,6 +169,36 @@ public class RDBMUserLayoutStoreConcurrencyTest {
                 Integer.valueOf(1),
                 jdbcTemplate.queryForObject(
                         "SELECT COUNT(*) FROM UP_LAYOUT_STRUCT WHERE USER_ID=?",
+                        Integer.class,
+                        USER_ID));
+    }
+
+    /**
+     * A asks for the next structure id, B takes one while A is about to write, then A finishes.
+     * Both get an id, and the two ids differ.
+     */
+    @Test
+    public void testStructIdTakenBetweenReadAndWrite() throws Exception {
+        final AtomicReference<String> idOfB = new AtomicReference<>();
+        final AtomicReference<String> idOfA = new AtomicReference<>();
+
+        final Throwable errorOfA =
+                runPausedAt(
+                        "UPDATE UP_USER SET NEXT_STRUCT_ID",
+                        () -> {
+                            idOfA.set(store.getNextStructId(person, "s"));
+                            return null;
+                        },
+                        () -> idOfB.set(store.getNextStructId(person, "s")));
+
+        if (errorOfA != null) {
+            throw new AssertionError("A failed instead of taking an id", errorOfA);
+        }
+        assertNotEquals("A and B got the same id", idOfB.get(), idOfA.get());
+        assertEquals(
+                Integer.valueOf(2),
+                jdbcTemplate.queryForObject(
+                        "SELECT NEXT_STRUCT_ID FROM UP_USER WHERE USER_ID=?",
                         Integer.class,
                         USER_ID));
     }
