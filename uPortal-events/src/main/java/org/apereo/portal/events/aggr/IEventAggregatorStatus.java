@@ -14,7 +14,7 @@
  */
 package org.apereo.portal.events.aggr;
 
-import org.joda.time.DateTime;
+import java.time.Instant;
 
 /** Bean that tracks the status of portal event aggregator work. */
 public interface IEventAggregatorStatus {
@@ -43,21 +43,21 @@ public interface IEventAggregatorStatus {
     /**
      * @return Processing start DateTime
      */
-    DateTime getLastStart();
+    Instant getLastStart();
 
-    void setLastStart(DateTime lastStart);
+    void setLastStart(Instant lastStart);
 
     /**
      * @return Processing complete DateTime
      */
-    DateTime getLastEnd();
+    Instant getLastEnd();
 
-    void setLastEnd(DateTime lastEnd);
+    void setLastEnd(Instant lastEnd);
 
     /**
      * @return Timestamp of the last event processed
      */
-    DateTime getLastEventDate();
+    Instant getLastEventDate();
 
-    void setLastEventDate(DateTime lastEventDateTime);
+    void setLastEventDate(Instant lastEventDateTime);
 }

@@ -14,15 +14,16 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.Instant;
 import java.time.Period;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
 import org.apereo.portal.IPortalInfoProvider;
 import org.apereo.portal.concurrency.locking.IClusterLockService;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao.AggrEventsTransactional;
-import org.apereo.portal.utils.time.JodaTimeConversions;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,7 +84,7 @@ public class PortalEventPurgerImpl implements PortalEventPurger {
         // Update status with current server name
         final String serverName = this.portalInfoProvider.getUniqueServerName();
         eventPurgerStatus.setServerName(serverName);
-        eventPurgerStatus.setLastStart(new DateTime());
+        eventPurgerStatus.setLastStart(Instant.now().truncatedTo(ChronoUnit.MILLIS));
 
         // Determine date of most recently aggregated data
         final IEventAggregatorStatus eventAggregatorStatus =
@@ -92,7 +93,7 @@ public class PortalEventPurgerImpl implements PortalEventPurger {
         if (eventAggregatorStatus == null || eventAggregatorStatus.getLastEventDate() == null) {
             // Nothing has been aggregated, skip purging
 
-            eventPurgerStatus.setLastEnd(new DateTime());
+            eventPurgerStatus.setLastEnd(Instant.now().truncatedTo(ChronoUnit.MILLIS));
             eventAggregationManagementDao.updateEventAggregatorStatus(eventPurgerStatus);
 
             return new EventProcessingResult(0, null, null, true);
@@ -100,18 +101,21 @@ public class PortalEventPurgerImpl implements PortalEventPurger {
         boolean complete = true;
 
         // Calculate purge end date from most recent aggregation minus the purge delay
-        final DateTime lastAggregated = eventAggregatorStatus.getLastEventDate();
-        DateTime purgeEnd = JodaTimeConversions.minus(lastAggregated, this.purgeDelay);
+        final Instant lastAggregated = eventAggregatorStatus.getLastEventDate();
+        // In the JVM's zone, as the Joda DateTime that Jadira read was: a period of days follows
+        // the calendar
+        Instant purgeEnd =
+                lastAggregated.atZone(ZoneId.systemDefault()).minus(this.purgeDelay).toInstant();
 
         // Determine the DateTime of the oldest event
-        DateTime oldestEventDate = eventPurgerStatus.getLastEventDate();
+        Instant oldestEventDate = eventPurgerStatus.getLastEventDate();
         if (oldestEventDate == null) {
             oldestEventDate = this.portalEventDao.getOldestPortalEventTimestamp();
         }
 
         // Make sure purgeEnd is no more than 1 hour after the oldest event date to limit delete
         // scope
-        final DateTime purgeEndLimit = oldestEventDate.plusHours(1);
+        final Instant purgeEndLimit = oldestEventDate.plus(1, ChronoUnit.HOURS);
         if (purgeEndLimit.isBefore(purgeEnd)) {
             purgeEnd = purgeEndLimit;
             complete = false;
@@ -131,12 +135,10 @@ public class PortalEventPurgerImpl implements PortalEventPurger {
         }
 
         // Update the status object and store it
-        purgeEnd =
-                purgeEnd.minusMillis(
-                        100); // decrement by 100ms since deletePortalEventsBefore uses lessThan and
-        // not lessThanEqualTo
+        // decrement by 100ms since deletePortalEventsBefore uses lessThan and not lessThanEqualTo
+        purgeEnd = purgeEnd.minusMillis(100);
         eventPurgerStatus.setLastEventDate(purgeEnd);
-        eventPurgerStatus.setLastEnd(new DateTime());
+        eventPurgerStatus.setLastEnd(Instant.now().truncatedTo(ChronoUnit.MILLIS));
         eventAggregationManagementDao.updateEventAggregatorStatus(eventPurgerStatus);
 
         return new EventProcessingResult(events, oldestEventDate, purgeEnd, complete);

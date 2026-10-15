@@ -15,10 +15,10 @@
 package org.apereo.portal.events.aggr.session;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Set;
 import org.apereo.portal.events.PortalEvent;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
-import org.joda.time.DateTime;
 
 /**
  * Defines data that is tracked across all events associated with the same {@link
@@ -26,7 +26,7 @@ import org.joda.time.DateTime;
  */
 public interface EventSession extends Serializable {
 
-    void recordAccess(DateTime eventDate);
+    void recordAccess(Instant eventDate);
 
     /**
      * @see PortalEvent#getEventSessionId()

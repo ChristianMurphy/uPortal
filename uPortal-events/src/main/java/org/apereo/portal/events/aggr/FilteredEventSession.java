@@ -16,10 +16,10 @@ package org.apereo.portal.events.aggr;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSet.Builder;
+import java.time.Instant;
 import java.util.Set;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
 import org.apereo.portal.events.aggr.session.EventSession;
-import org.joda.time.DateTime;
 
 /**
  * {@link EventSession} that provides a filtered view of another {@link EventSession} based on an
@@ -47,7 +47,7 @@ class FilteredEventSession implements EventSession {
     }
 
     @Override
-    public void recordAccess(DateTime eventDate) {
+    public void recordAccess(Instant eventDate) {
         parent.recordAccess(eventDate);
     }
 

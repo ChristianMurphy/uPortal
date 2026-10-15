@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.events.aggr.dao.jpa;
 
+import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -26,8 +27,6 @@ import javax.persistence.Version;
 import org.apereo.portal.events.aggr.IEventAggregatorStatus;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
-import org.hibernate.annotations.Type;
-import org.joda.time.DateTime;
 
 /** */
 @Entity
@@ -58,16 +57,13 @@ class EventAggregatorStatusImpl implements IEventAggregatorStatus {
     private String serverName;
 
     @Column(name = "LAST_START")
-    @Type(type = "dateTime")
-    private DateTime lastStart;
+    private Instant lastStart;
 
     @Column(name = "LAST_END")
-    @Type(type = "dateTime")
-    private DateTime lastEnd;
+    private Instant lastEnd;
 
     @Column(name = "LAST_EVENT_DATE")
-    @Type(type = "dateTime")
-    private DateTime lastEventDateTime;
+    private Instant lastEventDateTime;
 
     @SuppressWarnings("unused")
     private EventAggregatorStatusImpl() {
@@ -93,32 +89,32 @@ class EventAggregatorStatusImpl implements IEventAggregatorStatus {
     }
 
     @Override
-    public DateTime getLastStart() {
+    public Instant getLastStart() {
         return this.lastStart;
     }
 
     @Override
-    public void setLastStart(DateTime lastStart) {
+    public void setLastStart(Instant lastStart) {
         this.lastStart = lastStart;
     }
 
     @Override
-    public DateTime getLastEnd() {
+    public Instant getLastEnd() {
         return this.lastEnd;
     }
 
     @Override
-    public void setLastEnd(DateTime lastEnd) {
+    public void setLastEnd(Instant lastEnd) {
         this.lastEnd = lastEnd;
     }
 
     @Override
-    public DateTime getLastEventDate() {
+    public Instant getLastEventDate() {
         return this.lastEventDateTime;
     }
 
     @Override
-    public void setLastEventDate(DateTime lastEventDateTime) {
+    public void setLastEventDate(Instant lastEventDateTime) {
         this.lastEventDateTime = lastEventDateTime;
     }
 

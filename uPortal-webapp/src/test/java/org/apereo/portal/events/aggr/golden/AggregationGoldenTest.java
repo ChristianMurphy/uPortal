@@ -430,8 +430,8 @@ public class AggregationGoldenTest {
                 .execute(
                         status -> {
                             events.getPortalEvents(
-                                    first.minusMinutes(1),
-                                    first.plusMinutes(10),
+                                    burst.visits().get(0).minusSeconds(60),
+                                    burst.visits().get(0).plusSeconds(600),
                                     new org.apereo.portal.concurrency.FunctionWithoutResult<
                                             PortalEvent>() {
                                         @Override

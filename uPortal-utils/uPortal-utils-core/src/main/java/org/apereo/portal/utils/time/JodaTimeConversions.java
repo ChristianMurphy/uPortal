@@ -21,6 +21,7 @@ import java.time.temporal.TemporalAmount;
 import java.util.TimeZone;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Converts between Joda-Time and {@code java.time} where code that already uses {@code java.time}
@@ -43,6 +44,19 @@ public final class JodaTimeConversions {
         return new DateTime(
                 dateTime.toInstant().toEpochMilli(),
                 DateTimeZone.forTimeZone(TimeZone.getTimeZone(dateTime.getZone())));
+    }
+
+    /** Converts a Joda {@link DateTime} to its {@link Instant}; null stays null. */
+    public static @Nullable Instant toInstant(@Nullable DateTime dateTime) {
+        return dateTime == null ? null : Instant.ofEpochMilli(dateTime.getMillis());
+    }
+
+    /**
+     * Converts an {@link Instant} to a Joda {@link DateTime} in the JVM's default zone, the zone
+     * Jadira read {@code dateTime} columns in; null stays null.
+     */
+    public static @Nullable DateTime toDateTime(@Nullable Instant instant) {
+        return instant == null ? null : new DateTime(instant.toEpochMilli());
     }
 
     /**

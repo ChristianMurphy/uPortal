@@ -20,20 +20,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
+import java.util.TimeZone;
 import org.apereo.portal.concurrency.locking.IClusterLockService;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.session.EventSessionDao;
 import org.apereo.portal.spring.properties.TemporalAmountEditor;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.Period;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** The configured session duration is applied the way the Joda-Time period was. */
+/**
+ * The configured session duration is applied in the JVM's zone, the way the Joda-Time period was
+ * applied to the DateTime Jadira read. The expected instants are the ones Joda-Time computed.
+ */
 public class PortalEventSessionPurgerImplTest {
-    private static final DateTimeZone NEW_YORK = DateTimeZone.forID("America/New_York");
+    private TimeZone jvmZone;
 
     private final PortalEventSessionPurgerImpl purger = new PortalEventSessionPurgerImpl();
     private final EventSessionDao eventSessionDao = mock(EventSessionDao.class);
@@ -41,6 +44,8 @@ public class PortalEventSessionPurgerImplTest {
 
     @Before
     public void setUp() {
+        jvmZone = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
         final IClusterLockService clusterLockService = mock(IClusterLockService.class);
         when(clusterLockService.isLockOwner(any())).thenReturn(true);
         final IEventAggregationManagementDao managementDao =
@@ -53,31 +58,37 @@ public class PortalEventSessionPurgerImplTest {
         purger.setEventSessionDao(eventSessionDao);
     }
 
+    @After
+    public void tearDown() {
+        TimeZone.setDefault(jvmZone);
+    }
+
     @Test
     public void oneDayAcrossSpringForwardIsACalendarDay() {
         // Noon on the day of the 2026 spring-forward change: a calendar day back is 23 hours
-        assertPurgeDate("P1D", Period.days(1), new DateTime(2026, 3, 8, 12, 0, NEW_YORK));
+        assertPurgeDate("P1D", "2026-03-08T16:00:00Z", "2026-03-07T17:00:00Z");
     }
 
     @Test
     public void hoursAcrossFallBackAreElapsedTime() {
-        assertPurgeDate("PT24H", Period.hours(24), new DateTime(2026, 11, 1, 12, 0, NEW_YORK));
+        // Noon EST on the day of the fall-back change, 24 elapsed hours back
+        assertPurgeDate("PT24H", "2026-11-01T17:00:00Z", "2026-10-31T17:00:00Z");
     }
 
     @Test
     public void mixedPeriodMatchesJoda() {
-        assertPurgeDate(
-                "P1DT12H", Period.parse("P1DT12H"), new DateTime(2026, 3, 9, 6, 0, NEW_YORK));
+        // 06:00 EDT the day after spring-forward: a calendar day back, then 12 elapsed hours
+        assertPurgeDate("P1DT12H", "2026-03-09T10:00:00Z", "2026-03-07T22:00:00Z");
     }
 
-    private void assertPurgeDate(String configured, Period jodaPeriod, DateTime lastEventDate) {
-        when(aggregatorStatus.getLastEventDate()).thenReturn(lastEventDate);
+    private void assertPurgeDate(String configured, String lastEventDate, String expected) {
+        when(aggregatorStatus.getLastEventDate()).thenReturn(Instant.parse(lastEventDate));
         purger.setEventSessionDuration(TemporalAmountEditor.parse(configured));
 
         purger.doPurgeEventSessions();
 
-        final ArgumentCaptor<DateTime> purgeDate = ArgumentCaptor.forClass(DateTime.class);
+        final ArgumentCaptor<Instant> purgeDate = ArgumentCaptor.forClass(Instant.class);
         verify(eventSessionDao).purgeEventSessionsBefore(purgeDate.capture());
-        assertEquals(lastEventDate.minus(jodaPeriod), purgeDate.getValue());
+        assertEquals(Instant.parse(expected), purgeDate.getValue());
     }
 }
