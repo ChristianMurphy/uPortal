@@ -23,6 +23,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -38,8 +39,6 @@ import org.apereo.portal.events.aggr.login.LoginAggregationDao;
 import org.apereo.portal.events.aggr.login.LoginAggregationDiscriminatorImpl;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.web.view.ReportTableCsvView;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTimeZone;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -112,8 +111,8 @@ public class LoginTotalsStatisticsControllerTest {
 
         form = new LoginReportForm();
         form.setInterval(AggregationInterval.DAY);
-        form.setStart(new DateMidnight(2026, 10, 1, DateTimeZone.UTC));
-        form.setEnd(new DateMidnight(2026, 10, 3, DateTimeZone.UTC));
+        form.setStart(LocalDate.of(2026, 10, 1));
+        form.setEnd(LocalDate.of(2026, 10, 3));
         form.setGroups(Collections.singletonList(1L));
         form.setTotalLogins(true);
         form.setUniqueLogins(true);

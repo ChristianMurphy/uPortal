@@ -45,8 +45,8 @@ public interface PortalRawEventsAggregator {
      * Note that this method MUST be called while the current thread & JVM owns the {@link
      * #AGGREGATION_LOCK_NAME} cluster wide lock via the {@link IClusterLockService}
      *
-     * @see IPortalEventAggregator#cleanUnclosedAggregations(org.joda.time.DateTime,
-     *     org.joda.time.DateTime, AggregationInterval)
+     * @see IntervalAwarePortalEventAggregator#cleanUnclosedAggregations(java.time.ZonedDateTime,
+     *     java.time.ZonedDateTime, AggregationInterval)
      */
     EventProcessingResult doCloseAggregations();
 
