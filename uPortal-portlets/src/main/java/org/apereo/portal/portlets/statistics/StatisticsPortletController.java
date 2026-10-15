@@ -14,6 +14,7 @@
  */
 package org.apereo.portal.portlets.statistics;
 
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Set;
@@ -23,9 +24,6 @@ import org.apereo.portal.events.aggr.AggregationIntervalHelper;
 import org.apereo.portal.spring.web.portlet.ModelAndView;
 import org.apereo.portal.spring.web.portlet.bind.annotation.RenderMapping;
 import org.apereo.portal.spring.web.portlet.bind.annotation.ResourceMapping;
-import org.joda.time.DateMidnight;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,10 +61,9 @@ public class StatisticsPortletController {
 
     @InitBinder
     public void initBinder(WebDataBinder binder) {
-        final DateTimeFormatter formatter =
-                new DateTimeFormatterBuilder().appendPattern("M/d/yyyy").toFormatter();
         binder.registerCustomEditor(
-                DateMidnight.class, new CustomDateMidnightEditor(formatter, false));
+                LocalDate.class,
+                new CustomLocalDateEditor(CustomLocalDateEditor.REPORT_DATE_FORMAT, false));
     }
 
     @RenderMapping
@@ -87,17 +84,13 @@ public class StatisticsPortletController {
     @ResourceMapping("intervalCount")
     public ModelAndView getIntervalCount(
             @RequestParam("interval") AggregationInterval interval,
-            @RequestParam("start") DateMidnight start,
-            @RequestParam("end") DateMidnight end) {
+            @RequestParam("start") LocalDate start,
+            @RequestParam("end") LocalDate end) {
         final int intervalsBetween =
                 this.intervalHelper.intervalsBetween(
                         interval,
-                        BaseStatisticsReportController.toLocalDate(start)
-                                .atStartOfDay(ZoneId.systemDefault()),
-                        BaseStatisticsReportController.toLocalDate(end)
-                                .plusDays(1)
-                                .atStartOfDay(ZoneId.systemDefault())
-                                .minusSeconds(1));
+                        start.atStartOfDay(ZoneId.systemDefault()),
+                        end.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1));
         return new ModelAndView("json", "intervalsBetween", intervalsBetween);
     }
 }
