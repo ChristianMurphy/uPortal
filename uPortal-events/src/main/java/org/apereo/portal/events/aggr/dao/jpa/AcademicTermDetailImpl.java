@@ -80,10 +80,12 @@ public class AcademicTermDetailImpl implements AcademicTermDetail, Serializable 
 
     /** A term from the start of one day to the start of another, in the JVM's zone */
     public AcademicTermDetailImpl(LocalDate start, LocalDate end, String termName) {
-        this(
-                start == null ? null : start.atStartOfDay(ZoneId.systemDefault()),
-                end == null ? null : end.atStartOfDay(ZoneId.systemDefault()),
-                termName);
+        this(startOfDayInJvmZone(start), startOfDayInJvmZone(end), termName);
+    }
+
+    private static ZonedDateTime startOfDayInJvmZone(LocalDate date) {
+        Validate.notNull(date);
+        return date.atStartOfDay(ZoneId.systemDefault());
     }
 
     /**
