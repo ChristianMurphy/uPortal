@@ -77,10 +77,11 @@ public class DistributedLayoutManager implements IUserLayoutManager, Initializin
 
     private XmlUtilities xmlUtilities;
     private ILayoutCachingService layoutCachingService;
-    private IUserLayoutStore distributedLayoutStore;
+    // Volatile: set once by Spring, read by the synchronized reload and by unsynchronized methods
+    private volatile IUserLayoutStore distributedLayoutStore;
     private XPathOperations xpathOperations;
     private IPortalLayoutEventFactory portalEventFactory;
-    private IAuthorizationService authorizationService;
+    private volatile IAuthorizationService authorizationService;
     private IUserIdentityStore userIdentityStore;
 
     protected final IPerson owner;
