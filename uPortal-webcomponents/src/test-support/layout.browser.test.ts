@@ -55,6 +55,12 @@ const FAULTS: [Check, string, string, string][] = [
     ],
     [
         'spill',
+        'content wider than its box below the first screen of a page whose html hides overflow-x',
+        'div',
+        `<style>html { overflow-x: hidden }</style><div style="height: 2000px"></div><div style="width: 100px"><span style="display: inline-block; width: 150px">x</span></div>`,
+    ],
+    [
+        'spill',
         'overlapping buttons',
         'button',
         `<div style="position: relative; height: 40px"><button style="position: absolute; left: 0">One</button><button style="position: absolute; left: 10px">Two</button></div>`,
