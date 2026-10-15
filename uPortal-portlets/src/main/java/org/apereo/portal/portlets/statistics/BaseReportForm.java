@@ -14,10 +14,10 @@
  */
 package org.apereo.portal.portlets.statistics;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.apereo.portal.events.aggr.AggregationInterval;
-import org.joda.time.DateMidnight;
 
 public abstract class BaseReportForm {
     public enum OutputFormat {
@@ -27,8 +27,8 @@ public abstract class BaseReportForm {
     }
 
     private OutputFormat format = OutputFormat.json;
-    private DateMidnight start;
-    private DateMidnight end;
+    private LocalDate start;
+    private LocalDate end;
     private AggregationInterval interval;
     private List<Long> groups = new ArrayList<Long>();
 
@@ -40,19 +40,19 @@ public abstract class BaseReportForm {
         this.format = format;
     }
 
-    public final DateMidnight getStart() {
+    public final LocalDate getStart() {
         return start;
     }
 
-    public final void setStart(DateMidnight start) {
+    public final void setStart(LocalDate start) {
         this.start = start;
     }
 
-    public final DateMidnight getEnd() {
+    public final LocalDate getEnd() {
         return end;
     }
 
-    public final void setEnd(DateMidnight end) {
+    public final void setEnd(LocalDate end) {
         this.end = end;
     }
 

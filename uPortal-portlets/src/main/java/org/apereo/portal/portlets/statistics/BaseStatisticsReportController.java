@@ -49,9 +49,6 @@ import org.apereo.portal.web.report.ReportColumn;
 import org.apereo.portal.web.report.ReportTable;
 import org.apereo.portal.web.report.ReportValue;
 import org.apereo.portal.web.report.ReportValueType;
-import org.joda.time.DateMidnight;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -102,10 +99,9 @@ public abstract class BaseStatisticsReportController<
 
     @InitBinder
     public void initBinder(WebDataBinder binder) {
-        final DateTimeFormatter formatter =
-                new DateTimeFormatterBuilder().appendPattern("M/d/yyyy").toFormatter();
         binder.registerCustomEditor(
-                DateMidnight.class, new CustomDateMidnightEditor(formatter, false));
+                LocalDate.class,
+                new CustomLocalDateEditor(CustomLocalDateEditor.REPORT_DATE_FORMAT, false));
     }
 
     @ModelAttribute("maxIntervals")
@@ -200,9 +196,9 @@ public abstract class BaseStatisticsReportController<
         }
 
         // Set the report end date as today
-        final DateMidnight reportEnd;
+        final LocalDate reportEnd;
         if (report.getEnd() == null) {
-            reportEnd = new DateMidnight();
+            reportEnd = LocalDate.now();
             report.setEnd(reportEnd);
         } else {
             reportEnd = report.getEnd();
@@ -210,7 +206,7 @@ public abstract class BaseStatisticsReportController<
 
         // Determine the best start date based on the selected interval
         if (report.getStart() == null) {
-            final DateMidnight start;
+            final LocalDate start;
             switch (report.getInterval()) {
                 case MINUTE:
                     {
@@ -411,8 +407,8 @@ public abstract class BaseStatisticsReportController<
     protected final ReportTable buildAggregationReport(F form) {
         // Pull data out of form for per-group fetching
         final AggregationInterval interval = form.getInterval();
-        final LocalDate start = toLocalDate(form.getStart());
-        final LocalDate end = toLocalDate(form.getEnd());
+        final LocalDate start = form.getStart();
+        final LocalDate end = form.getEnd();
 
         final ZonedDateTime startDateTime = start.atStartOfDay(ZoneId.systemDefault());
         // Use a query end of the end date at 23:59:59
@@ -580,10 +576,5 @@ public abstract class BaseStatisticsReportController<
             groupMappings.add(discriminator.getAggregatedGroup());
         }
         return groupMappings.toArray(new AggregatedGroupMapping[0]);
-    }
-
-    /** The report form's day, until the form holds java.time dates */
-    static LocalDate toLocalDate(DateMidnight date) {
-        return LocalDate.of(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
     }
 }
