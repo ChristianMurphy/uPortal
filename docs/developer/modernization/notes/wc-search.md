@@ -1,7 +1,10 @@
 # Handoff: WS14 Search conversion (REST API and web components)
 
 Branches: `ccr-43ba0785-hzlrj5-wc-search` in uPortal and in uPortal-start, both from
-`ccr-43ba0785-hzlrj5`. Nothing is on the integration branch yet. The coordinator merges it. The
+`ccr-43ba0785-hzlrj5`. The coordinator merged the branch's commits into the integration branch.
+Landing batch 1 (`ccr-43ba0785-hzlrj5-batch-1`) adds the guide's prose rewording (`cb293d981`) and
+the guide's text on `pP_query`. That text was in the merge commit `1c1b39734b` only, and the
+integration branch doesn't take merge commits. The
 developer guide's section "The Search conversion" and UPGRADING-6.0's "Search is a web
 component" describe the result.
 
