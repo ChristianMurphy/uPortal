@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 import javax.persistence.FlushModeType;
 import javax.persistence.Query;
@@ -34,7 +35,6 @@ import org.apereo.portal.jpa.BaseRawEventsJpaDao;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,10 +55,10 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
     private String selectQuery;
     private String selectUnaggregatedQuery;
     private int flushPeriod = 1000;
-    private CriteriaQuery<DateTime> findNewestPersistentPortalEventTimestampQuery;
-    private CriteriaQuery<DateTime> findOldestPersistentPortalEventTimestampQuery;
-    private ParameterExpression<DateTime> startTimeParameter;
-    private ParameterExpression<DateTime> endTimeParameter;
+    private CriteriaQuery<Instant> findNewestPersistentPortalEventTimestampQuery;
+    private CriteriaQuery<Instant> findOldestPersistentPortalEventTimestampQuery;
+    private ParameterExpression<Instant> startTimeParameter;
+    private ParameterExpression<Instant> endTimeParameter;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -69,7 +69,7 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
 
     /**
      * Frequency that updated events should be flushed during a call to
-     * aggregatePortalEvents(DateTime, DateTime, int, FunctionWithoutResult), defaults to 1000.
+     * aggregatePortalEvents(Instant, Instant, int, FunctionWithoutResult), defaults to 1000.
      */
     @Value(
             "${org.apereo.portal.events.handlers.db.JpaPortalEventStore.aggregationFlushPeriod:1000}")
@@ -79,8 +79,8 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        this.startTimeParameter = this.createParameterExpression(DateTime.class, "startTime");
-        this.endTimeParameter = this.createParameterExpression(DateTime.class, "endTime");
+        this.startTimeParameter = this.createParameterExpression(Instant.class, "startTime");
+        this.endTimeParameter = this.createParameterExpression(Instant.class, "endTime");
 
         // The id is the last sort key (MOD-I191). Its name comes from the metamodel at run time,
         // because SpotBugs reads the generated PersistentPortalEvent_.id field as unwritten.
@@ -151,11 +151,11 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
 
         this.findNewestPersistentPortalEventTimestampQuery =
                 this.createCriteriaQuery(
-                        new Function<CriteriaBuilder, CriteriaQuery<DateTime>>() {
+                        new Function<CriteriaBuilder, CriteriaQuery<Instant>>() {
                             @Override
-                            public CriteriaQuery<DateTime> apply(CriteriaBuilder cb) {
-                                final CriteriaQuery<DateTime> criteriaQuery =
-                                        cb.createQuery(DateTime.class);
+                            public CriteriaQuery<Instant> apply(CriteriaBuilder cb) {
+                                final CriteriaQuery<Instant> criteriaQuery =
+                                        cb.createQuery(Instant.class);
                                 final Root<PersistentPortalEvent> eventRoot =
                                         criteriaQuery.from(PersistentPortalEvent.class);
 
@@ -170,11 +170,11 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
 
         this.findOldestPersistentPortalEventTimestampQuery =
                 this.createCriteriaQuery(
-                        new Function<CriteriaBuilder, CriteriaQuery<DateTime>>() {
+                        new Function<CriteriaBuilder, CriteriaQuery<Instant>>() {
                             @Override
-                            public CriteriaQuery<DateTime> apply(CriteriaBuilder cb) {
-                                final CriteriaQuery<DateTime> criteriaQuery =
-                                        cb.createQuery(DateTime.class);
+                            public CriteriaQuery<Instant> apply(CriteriaBuilder cb) {
+                                final CriteriaQuery<Instant> criteriaQuery =
+                                        cb.createQuery(Instant.class);
                                 final Root<PersistentPortalEvent> eventRoot =
                                         criteriaQuery.from(PersistentPortalEvent.class);
 
@@ -237,26 +237,26 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
     }
 
     @Override
-    public DateTime getOldestPortalEventTimestamp() {
-        final TypedQuery<DateTime> query =
+    public Instant getOldestPortalEventTimestamp() {
+        final TypedQuery<Instant> query =
                 this.createQuery(this.findOldestPersistentPortalEventTimestampQuery);
-        final List<DateTime> results = query.getResultList();
+        final List<Instant> results = query.getResultList();
         return DataAccessUtils.uniqueResult(results);
     }
 
     @Override
-    public DateTime getNewestPortalEventTimestamp() {
-        final TypedQuery<DateTime> query =
+    public Instant getNewestPortalEventTimestamp() {
+        final TypedQuery<Instant> query =
                 this.createQuery(this.findNewestPersistentPortalEventTimestampQuery);
-        final List<DateTime> results = query.getResultList();
+        final List<Instant> results = query.getResultList();
         return DataAccessUtils.uniqueResult(results);
     }
 
     @Override
     @RawEventsTransactional
     public boolean aggregatePortalEvents(
-            DateTime startTime,
-            DateTime endTime,
+            Instant startTime,
+            Instant endTime,
             int maxEvents,
             Function<PortalEvent, Boolean> handler) {
         final Session session = this.getEntityManager().unwrap(Session.class);
@@ -331,14 +331,14 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
 
     @Override
     public void getPortalEvents(
-            DateTime startTime, DateTime endTime, FunctionWithoutResult<PortalEvent> handler) {
+            Instant startTime, Instant endTime, FunctionWithoutResult<PortalEvent> handler) {
         this.getPortalEvents(startTime, endTime, -1, handler);
     }
 
     @Override
     public void getPortalEvents(
-            DateTime startTime,
-            DateTime endTime,
+            Instant startTime,
+            Instant endTime,
             int maxEvents,
             FunctionWithoutResult<PortalEvent> handler) {
         final Session session = this.getEntityManager().unwrap(Session.class);
@@ -365,8 +365,8 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
 
     @Override
     public void getAnalyticsEvents(
-            DateTime startTime,
-            DateTime endTime,
+            Instant startTime,
+            Instant endTime,
             int maxEvents,
             String eventType,
             String userId,
@@ -389,7 +389,7 @@ public class JpaPortalEventStore extends BaseRawEventsJpaDao implements IPortalE
 
     @Override
     @RawEventsTransactional
-    public int deletePortalEventsBefore(DateTime time) {
+    public int deletePortalEventsBefore(Instant time) {
         final Query query = this.getEntityManager().createQuery(this.deleteQuery);
         query.setParameter(this.endTimeParameter.getName(), time);
         return query.executeUpdate();

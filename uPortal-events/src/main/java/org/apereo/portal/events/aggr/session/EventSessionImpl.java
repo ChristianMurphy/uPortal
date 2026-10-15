@@ -15,6 +15,7 @@
 package org.apereo.portal.events.aggr.session;
 
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Set;
 import javax.persistence.Cacheable;
@@ -41,8 +42,6 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
-import org.hibernate.annotations.Type;
-import org.joda.time.DateTime;
 
 /** */
 @Entity
@@ -78,8 +77,7 @@ public class EventSessionImpl implements EventSession, Serializable {
     private final Set<AggregatedGroupMapping> groupMappings;
 
     @Column(name = "LAST_ACCESSED", nullable = false)
-    @Type(type = "dateTime")
-    private DateTime lastAccessed;
+    private Instant lastAccessed;
 
     @Transient private Set<AggregatedGroupMapping> unmodifiableGroupMappings;
 
@@ -91,7 +89,7 @@ public class EventSessionImpl implements EventSession, Serializable {
     }
 
     EventSessionImpl(
-            String eventSessionId, DateTime eventDate, Set<AggregatedGroupMapping> groupMappings) {
+            String eventSessionId, Instant eventDate, Set<AggregatedGroupMapping> groupMappings) {
         Validate.notNull(eventSessionId);
         Validate.notNull(groupMappings);
 
@@ -102,7 +100,7 @@ public class EventSessionImpl implements EventSession, Serializable {
     }
 
     @Override
-    public void recordAccess(DateTime eventDate) {
+    public void recordAccess(Instant eventDate) {
         this.lastAccessed = eventDate;
     }
 

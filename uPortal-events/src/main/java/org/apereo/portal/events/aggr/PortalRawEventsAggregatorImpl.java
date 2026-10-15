@@ -22,6 +22,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAmount;
 import java.util.Collection;
 import java.util.Collections;
@@ -294,7 +296,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         // Update status with current server name
         final String serverName = this.portalInfoProvider.getUniqueServerName();
         cleanUnclosedStatus.setServerName(serverName);
-        cleanUnclosedStatus.setLastStart(new DateTime());
+        cleanUnclosedStatus.setLastStart(Instant.now().truncatedTo(ChronoUnit.MILLIS));
 
         // Determine date of most recently aggregated data
         final IEventAggregatorStatus eventAggregatorStatus =
@@ -303,13 +305,14 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         if (eventAggregatorStatus == null || eventAggregatorStatus.getLastEventDate() == null) {
             // Nothing has been aggregated, skip unclosed cleanup
 
-            cleanUnclosedStatus.setLastEnd(new DateTime());
+            cleanUnclosedStatus.setLastEnd(Instant.now().truncatedTo(ChronoUnit.MILLIS));
             eventAggregationManagementDao.updateEventAggregatorStatus(cleanUnclosedStatus);
 
             return new EventProcessingResult(0, null, null, true);
         }
 
-        final DateTime lastAggregatedDate = eventAggregatorStatus.getLastEventDate();
+        final DateTime lastAggregatedDate =
+                JodaTimeConversions.toDateTime(eventAggregatorStatus.getLastEventDate());
 
         // If lastCleanUnclosedDate is null use the oldest date dimension as there can be
         // no aggregations that exist before it
@@ -319,14 +322,19 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                     this.dateDimensionDao.getOldestDateDimension();
             lastCleanUnclosedDate = oldestDateDimension.getDate().toDateTime();
         } else {
-            lastCleanUnclosedDate = cleanUnclosedStatus.getLastEventDate();
+            lastCleanUnclosedDate =
+                    JodaTimeConversions.toDateTime(cleanUnclosedStatus.getLastEventDate());
         }
 
         if (!(lastCleanUnclosedDate.isBefore(lastAggregatedDate))) {
             logger.debug(
                     "No events aggregated since last unclosed aggregation cleaning, skipping clean: {}",
                     lastAggregatedDate);
-            return new EventProcessingResult(0, lastCleanUnclosedDate, lastAggregatedDate, true);
+            return new EventProcessingResult(
+                    0,
+                    JodaTimeConversions.toInstant(lastCleanUnclosedDate),
+                    JodaTimeConversions.toInstant(lastAggregatedDate),
+                    true);
         }
 
         // Switch to flush on commit to avoid flushes during queries
@@ -443,14 +451,14 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         }
 
         // Update the status object and store it
-        cleanUnclosedStatus.setLastEventDate(cleanUnclosedEnd);
-        cleanUnclosedStatus.setLastEnd(new DateTime());
+        cleanUnclosedStatus.setLastEventDate(JodaTimeConversions.toInstant(cleanUnclosedEnd));
+        cleanUnclosedStatus.setLastEnd(Instant.now().truncatedTo(ChronoUnit.MILLIS));
         eventAggregationManagementDao.updateEventAggregatorStatus(cleanUnclosedStatus);
 
         return new EventProcessingResult(
                 closedAggregations,
-                lastCleanUnclosedDate,
-                lastAggregatedDate,
+                JodaTimeConversions.toInstant(lastCleanUnclosedDate),
+                JodaTimeConversions.toInstant(lastAggregatedDate),
                 !cleanUnclosedEnd.isBefore(lastAggregatedDate));
     }
 
@@ -525,9 +533,11 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
         eventAggregatorStatus.setServerName(serverName);
 
         // Calculate date range for aggregation
-        DateTime lastAggregated = eventAggregatorStatus.getLastEventDate();
+        DateTime lastAggregated =
+                JodaTimeConversions.toDateTime(eventAggregatorStatus.getLastEventDate());
         if (lastAggregated == null) {
-            lastAggregated = portalEventDao.getOldestPortalEventTimestamp();
+            lastAggregated =
+                    JodaTimeConversions.toDateTime(portalEventDao.getOldestPortalEventTimestamp());
 
             // No portal events to aggregate, skip aggregation
             if (lastAggregated == null) {
@@ -541,7 +551,8 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                             IEventAggregatorStatus.ProcessingType.CLEAN_UNCLOSED, true);
             AggregationIntervalInfo oldestMinuteInterval =
                     this.intervalHelper.getIntervalInfo(AggregationInterval.MINUTE, lastAggregated);
-            cleanUnclosedStatus.setLastEventDate(oldestMinuteInterval.getStart().minusMinutes(1));
+            cleanUnclosedStatus.setLastEventDate(
+                    JodaTimeConversions.toInstant(oldestMinuteInterval.getStart().minusMinutes(1)));
             eventAggregationManagementDao.updateEventAggregatorStatus(cleanUnclosedStatus);
         }
 
@@ -565,18 +576,19 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                     newestEventTime);
 
             // Do aggregation, capturing the start and end dates
-            eventAggregatorStatus.setLastStart(DateTime.now());
+            eventAggregatorStatus.setLastStart(Instant.now().truncatedTo(ChronoUnit.MILLIS));
 
             complete =
                     portalEventDao.aggregatePortalEvents(
-                            lastAggregated,
-                            newestEventTime,
+                            JodaTimeConversions.toInstant(lastAggregated),
+                            JodaTimeConversions.toInstant(newestEventTime),
                             this.eventAggregationBatchSize,
                             new AggregateEventsHandler(
                                     events, lastEventDate, eventAggregatorStatus));
 
-            eventAggregatorStatus.setLastEventDate((DateTime) lastEventDate.getValue());
-            eventAggregatorStatus.setLastEnd(DateTime.now());
+            eventAggregatorStatus.setLastEventDate(
+                    JodaTimeConversions.toInstant((DateTime) lastEventDate.getValue()));
+            eventAggregatorStatus.setLastEnd(Instant.now().truncatedTo(ChronoUnit.MILLIS));
         } finally {
             currentThread.setName(currentName);
         }
@@ -590,7 +602,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
                                 || events.intValue() < this.eventAggregationBatchSize);
         return new EventProcessingResult(
                 events.intValue(),
-                lastAggregated,
+                JodaTimeConversions.toInstant(lastAggregated),
                 eventAggregatorStatus.getLastEventDate(),
                 complete);
     }
@@ -773,7 +785,8 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
 
         private void initializeIntervalInfo(final DateTime eventDate) {
             final DateTime intervalDate;
-            final DateTime lastEventDate = this.eventAggregatorStatus.getLastEventDate();
+            final DateTime lastEventDate =
+                    JodaTimeConversions.toDateTime(this.eventAggregatorStatus.getLastEventDate());
             if (lastEventDate != null) {
                 // If there was a previously aggregated event use that date to make sure an interval
                 // is not missed
@@ -887,7 +900,7 @@ public class PortalRawEventsAggregatorImpl extends BaseAggrEventsJpaDao
             }
 
             // Record the session access
-            eventSession.recordAccess(item.getTimestampAsDate());
+            eventSession.recordAccess(Instant.ofEpochMilli(item.getTimestamp()));
             eventSessionDao.storeEventSession(eventSession);
 
             return eventSession;

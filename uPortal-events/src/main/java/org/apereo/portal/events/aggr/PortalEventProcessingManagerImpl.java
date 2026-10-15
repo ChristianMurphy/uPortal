@@ -17,6 +17,7 @@ package org.apereo.portal.events.aggr;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -34,7 +35,6 @@ import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.BaseRawEventsJpaDao;
 import org.apereo.portal.version.dao.VersionDao;
 import org.apereo.portal.version.om.Version;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -452,7 +452,7 @@ public class PortalEventProcessingManagerImpl
         final long runTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
         final double processRate = aggrResult.getProcessed() / (runTime / 1000d);
 
-        final DateTime startDate = aggrResult.getStart();
+        final Instant startDate = aggrResult.getStart();
         if (startDate != null) {
             final double creationRate = aggrResult.getCreationRate();
             final double processSpeedUp = processRate / creationRate;

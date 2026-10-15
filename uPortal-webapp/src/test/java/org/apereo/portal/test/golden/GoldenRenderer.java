@@ -19,6 +19,11 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -46,6 +51,10 @@ import org.joda.time.DateTimeZone;
  */
 public final class GoldenRenderer {
     private static final MathContext DOUBLE_PRECISION = new MathContext(9);
+    private static final DateTimeFormatter JODA_INSTANT =
+            DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
+    private static final DateTimeFormatter JODA_LOCAL_TIME =
+            DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     private final Metamodel metamodel;
     private final java.util.Set<String> masked;
@@ -199,6 +208,17 @@ public final class GoldenRenderer {
         }
         if (value instanceof DateTime) {
             return ((DateTime) value).withZone(DateTimeZone.UTC).toString();
+        }
+        // The goldens were recorded from Joda-Time values: an instant in UTC with milliseconds,
+        // and a time of day with seconds and milliseconds
+        if (value instanceof Instant) {
+            return JODA_INSTANT.format((Instant) value);
+        }
+        if (value instanceof ZonedDateTime) {
+            return JODA_INSTANT.format(((ZonedDateTime) value).toInstant());
+        }
+        if (value instanceof LocalTime) {
+            return JODA_LOCAL_TIME.format((LocalTime) value);
         }
         if (value instanceof Date) {
             return java.time.Instant.ofEpochMilli(((Date) value).getTime()).toString();

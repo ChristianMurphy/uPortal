@@ -192,7 +192,7 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
 
         final AggregationIntervalInfo startIntervalInfo;
         final DateTime oldestPortalEventTimestamp =
-                this.portalEventDao.getOldestPortalEventTimestamp();
+                JodaTimeConversions.toDateTime(this.portalEventDao.getOldestPortalEventTimestamp());
         if (oldestPortalEventTimestamp == null || now.isBefore(oldestPortalEventTimestamp)) {
             startIntervalInfo =
                     this.intervalHelper.getIntervalInfo(
@@ -208,7 +208,7 @@ public class PortalEventDimensionPopulatorImpl extends BaseAggrEventsJpaDao
 
         final AggregationIntervalInfo endIntervalInfo;
         final DateTime newestPortalEventTimestamp =
-                this.portalEventDao.getNewestPortalEventTimestamp();
+                JodaTimeConversions.toDateTime(this.portalEventDao.getNewestPortalEventTimestamp());
         if (newestPortalEventTimestamp == null || now.isAfter(newestPortalEventTimestamp)) {
             endIntervalInfo =
                     this.intervalHelper.getIntervalInfo(

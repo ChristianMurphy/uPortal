@@ -14,8 +14,8 @@
  */
 package org.apereo.portal.events.aggr.session;
 
+import java.time.Instant;
 import org.apereo.portal.events.PortalEvent;
-import org.joda.time.DateTime;
 
 /** Tracks event session data during aggregation. */
 public interface EventSessionDao {
@@ -38,5 +38,5 @@ public interface EventSessionDao {
     void deleteEventSession(String eventSessionId);
 
     /** Purge expired events, expired is defined by the implementation */
-    int purgeEventSessionsBefore(DateTime lastAggregatedEventDate);
+    int purgeEventSessionsBefore(Instant lastAggregatedEventDate);
 }

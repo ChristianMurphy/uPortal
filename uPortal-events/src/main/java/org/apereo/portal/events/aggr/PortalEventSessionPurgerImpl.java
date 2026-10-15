@@ -14,14 +14,14 @@
  */
 package org.apereo.portal.events.aggr;
 
+import java.time.Instant;
 import java.time.Period;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAmount;
 import org.apereo.portal.concurrency.locking.IClusterLockService;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.session.EventSessionDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao.AggrEventsTransactional;
-import org.apereo.portal.utils.time.JodaTimeConversions;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,9 +77,14 @@ public class PortalEventSessionPurgerImpl implements PortalEventSessionPurger {
             return new EventProcessingResult(0, null, null, true);
         }
 
-        final DateTime lastEventDate = eventAggregatorStatus.getLastEventDate();
-        final DateTime sessionPurgeDate =
-                JodaTimeConversions.minus(lastEventDate, eventSessionDuration);
+        final Instant lastEventDate = eventAggregatorStatus.getLastEventDate();
+        // In the JVM's zone, as the Joda DateTime that Jadira read was: a period of days follows
+        // the calendar
+        final Instant sessionPurgeDate =
+                lastEventDate
+                        .atZone(ZoneId.systemDefault())
+                        .minus(eventSessionDuration)
+                        .toInstant();
         final int purgeCount = eventSessionDao.purgeEventSessionsBefore(sessionPurgeDate);
 
         return new EventProcessingResult(purgeCount, null, sessionPurgeDate, true);

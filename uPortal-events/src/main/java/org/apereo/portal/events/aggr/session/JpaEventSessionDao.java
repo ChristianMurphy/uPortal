@@ -15,6 +15,7 @@
 package org.apereo.portal.events.aggr.session;
 
 import com.google.common.base.Function;
+import java.time.Instant;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,7 +37,6 @@ import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.cache.EntityManagerCache;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.utils.cache.CacheKey;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
@@ -52,7 +52,7 @@ public class JpaEventSessionDao extends BaseAggrEventsJpaDao implements EventSes
     private CriteriaQuery<EventSessionImpl> findExpiredEventSessionsQuery;
     private CriteriaQuery<Long> countExpiredEventSessionsQuery;
     private ParameterExpression<String> eventSessionIdParameter;
-    private ParameterExpression<DateTime> dateTimeParameter;
+    private ParameterExpression<Instant> dateTimeParameter;
 
     private AggregatedGroupLookupDao aggregatedGroupLookupDao;
     private ICompositeGroupService compositeGroupService;
@@ -83,7 +83,7 @@ public class JpaEventSessionDao extends BaseAggrEventsJpaDao implements EventSes
     public void afterPropertiesSet() throws Exception {
         this.eventSessionIdParameter =
                 this.createParameterExpression(String.class, "eventSessionId");
-        this.dateTimeParameter = this.createParameterExpression(DateTime.class, "dateTime");
+        this.dateTimeParameter = this.createParameterExpression(Instant.class, "dateTime");
 
         this.findExpiredEventSessionsQuery =
                 this.createCriteriaQuery(
@@ -161,7 +161,7 @@ public class JpaEventSessionDao extends BaseAggrEventsJpaDao implements EventSes
             // currently a member of
             final Set<AggregatedGroupMapping> groupMappings = this.getGroupsForEvent(event);
 
-            final DateTime eventDate = event.getTimestampAsDate();
+            final Instant eventDate = Instant.ofEpochMilli(event.getTimestamp());
             eventSession = new EventSessionImpl(eventSessionId, eventDate, groupMappings);
 
             this.getEntityManager().persist(eventSession);
@@ -180,7 +180,7 @@ public class JpaEventSessionDao extends BaseAggrEventsJpaDao implements EventSes
         query.executeUpdate();
     }
 
-    private void purgeEventList(int batchSize, DateTime lastAggregatedEventDate) {
+    private void purgeEventList(int batchSize, Instant lastAggregatedEventDate) {
         final TypedQuery<EventSessionImpl> query =
                 this.createQuery(this.findExpiredEventSessionsQuery);
         query.setParameter(this.dateTimeParameter, lastAggregatedEventDate);
@@ -193,7 +193,7 @@ public class JpaEventSessionDao extends BaseAggrEventsJpaDao implements EventSes
 
     @AggrEventsTransactional
     @Override
-    public int purgeEventSessionsBefore(DateTime lastAggregatedEventDate) {
+    public int purgeEventSessionsBefore(Instant lastAggregatedEventDate) {
         final TypedQuery<Long> countQuery = this.createQuery(this.countExpiredEventSessionsQuery);
         countQuery.setParameter(this.dateTimeParameter, lastAggregatedEventDate);
         final int totalRows = countQuery.getSingleResult().intValue();

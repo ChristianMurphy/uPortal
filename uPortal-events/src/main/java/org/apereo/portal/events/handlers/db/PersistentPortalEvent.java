@@ -15,6 +15,7 @@
 package org.apereo.portal.events.handlers.db;
 
 import java.io.Serializable;
+import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -27,7 +28,6 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import org.apereo.portal.events.PortalEvent;
 import org.hibernate.annotations.Type;
-import org.joda.time.DateTime;
 
 /** Persistent wrapper for storing portal events */
 @Entity
@@ -56,9 +56,8 @@ public class PersistentPortalEvent implements Serializable {
     private final long id;
 
     @Column(name = "TIMESTAMP", nullable = false, updatable = false)
-    @Type(type = "dateTime")
     @SuppressWarnings("unused")
-    private final DateTime timestamp;
+    private final Instant timestamp;
 
     @Column(name = "SERVER_ID", length = 200, nullable = false, updatable = false)
     @SuppressWarnings("unused")
@@ -102,7 +101,7 @@ public class PersistentPortalEvent implements Serializable {
     PersistentPortalEvent(PortalEvent portalEvent, String eventData) {
         this.id = -1;
         this.eventData = eventData;
-        this.timestamp = new DateTime(portalEvent.getTimestamp());
+        this.timestamp = Instant.ofEpochMilli(portalEvent.getTimestamp());
         this.serverId = portalEvent.getServerId();
         this.eventSessionId = portalEvent.getEventSessionId();
         this.userName = portalEvent.getUserName();
