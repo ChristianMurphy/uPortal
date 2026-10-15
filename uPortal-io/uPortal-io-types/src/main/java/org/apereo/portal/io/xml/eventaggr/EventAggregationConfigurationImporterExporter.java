@@ -22,6 +22,11 @@ import java.time.LocalDate;
 import java.time.MonthDay;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.SignStyle;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -53,6 +58,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 public class EventAggregationConfigurationImporterExporter
         extends AbstractJaxbDataHandler<ExternalEventAggregationConfiguration> {
+    private static final DateTimeFormatter LENIENT_MONTH_DAY =
+            new DateTimeFormatterBuilder()
+                    .appendLiteral("--")
+                    .appendValue(ChronoField.MONTH_OF_YEAR, 1, 2, SignStyle.NOT_NEGATIVE)
+                    .appendLiteral('-')
+                    .appendValue(ChronoField.DAY_OF_MONTH, 1, 2, SignStyle.NOT_NEGATIVE)
+                    .toFormatter();
 
     private static final String SINGLE_DATA_ID = "CONFIG";
 
@@ -248,14 +260,26 @@ public class EventAggregationConfigurationImporterExporter
         return calendar;
     }
 
+    /**
+     * A quarter's start or end: {@code --MM-dd} as exported, also with one-digit fields, or a full
+     * ISO date whose month and day are used. Joda-Time's MonthDay.parse accepted these.
+     */
+    static MonthDay parseMonthDay(String text) {
+        try {
+            return MonthDay.parse(text, LENIENT_MONTH_DAY);
+        } catch (DateTimeParseException e) {
+            return MonthDay.from(LocalDate.parse(text));
+        }
+    }
+
     protected List<QuarterDetail> convertQuarterDetail(
             List<ExternalQuarterDetail> externalQuarterDetails) {
         final List<QuarterDetail> quarterDetails = new ArrayList<QuarterDetail>(4);
         for (final ExternalQuarterDetail externalQuarterDetail : externalQuarterDetails) {
             quarterDetails.add(
                     new QuarterDetailImpl(
-                            MonthDay.parse(externalQuarterDetail.getStart()),
-                            MonthDay.parse(externalQuarterDetail.getEnd()),
+                            parseMonthDay(externalQuarterDetail.getStart()),
+                            parseMonthDay(externalQuarterDetail.getEnd()),
                             externalQuarterDetail.getId()));
         }
         return quarterDetails;
