@@ -158,7 +158,7 @@ function expectRendered(element: UpResetMyLayout, snapshot: Snapshot, moved: boo
         expect(alert?.textContent).toContain('Sign in again to reset your layout.');
         expect(buttons).toEqual([]);
     } else if (snapshot.matches({ ready: 'start' })) {
-        expect(content).toContain('NOTE: You must sign on again to see the changes.');
+        expect(content).toContain('NOTE: The default layout shows the next time a page loads.');
         expect(buttons).toEqual(['Reset Now']);
     } else if (snapshot.matches({ ready: 'done' })) {
         expect(root.querySelector('[role="status"]')?.textContent).toContain(
