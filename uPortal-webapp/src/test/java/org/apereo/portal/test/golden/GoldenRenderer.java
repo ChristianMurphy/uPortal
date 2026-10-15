@@ -38,8 +38,6 @@ import javax.persistence.metamodel.ManagedType;
 import javax.persistence.metamodel.Metamodel;
 import javax.persistence.metamodel.SingularAttribute;
 import org.hibernate.proxy.HibernateProxy;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 /**
  * Renders query results and entities as stable, vendor-neutral text for the goldens: basic
@@ -205,9 +203,6 @@ public final class GoldenRenderer {
         }
         if (value instanceof Double || value instanceof Float) {
             return renderDouble(((Number) value).doubleValue());
-        }
-        if (value instanceof DateTime) {
-            return ((DateTime) value).withZone(DateTimeZone.UTC).toString();
         }
         // The goldens were recorded from Joda-Time values: an instant in UTC with milliseconds,
         // and a time of day with seconds and milliseconds

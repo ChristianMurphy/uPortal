@@ -43,7 +43,6 @@ import javax.persistence.metamodel.SingularAttribute;
 import javax.persistence.metamodel.Type.PersistenceType;
 import org.apereo.portal.test.golden.DatabaseVendor;
 import org.apereo.portal.test.golden.GoldenRenderer;
-import org.joda.time.DateTime;
 
 /**
  * Compares an entity graph as built with the graph read back in a new persistence context,
@@ -497,11 +496,6 @@ final class EntityGraphComparator {
         if (expected == null || actual == null) {
             return expected == actual;
         }
-        if (expected instanceof DateTime && actual instanceof DateTime) {
-            final DateTime e = (DateTime) expected;
-            final DateTime a = (DateTime) actual;
-            return e.getMillis() == a.getMillis() && e.getZone().equals(a.getZone());
-        }
         if (expected instanceof Date && actual instanceof Date) {
             return ((Date) expected).getTime() == ((Date) actual).getTime();
         }
@@ -580,9 +574,6 @@ final class EntityGraphComparator {
         }
         if (value instanceof String) {
             return renderString((String) value);
-        }
-        if (value instanceof DateTime) {
-            return value.toString();
         }
         if (value instanceof java.time.Instant) {
             return value + "(Instant)";

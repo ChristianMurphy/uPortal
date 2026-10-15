@@ -15,7 +15,6 @@
 package org.apereo.portal.test;
 
 import java.util.TimeZone;
-import org.joda.time.DateTimeZone;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -24,36 +23,30 @@ import org.junit.BeforeClass;
  * BeforeClass} method and {@link #afterTest()} should be called in a {@link AfterClass} block
  */
 public final class TimeZoneTestUtils {
-    private final DateTimeZone testTimeZone;
+    private final TimeZone testTimeZone;
 
     private TimeZone defaultTimeZone;
-    private DateTimeZone defaultDateTimeZone;
     private String defaultUserTimezone;
 
     public TimeZoneTestUtils() {
-        this(DateTimeZone.UTC);
+        this(TimeZone.getTimeZone("UTC"));
     }
 
-    public TimeZoneTestUtils(DateTimeZone testTimeZone) {
+    public TimeZoneTestUtils(TimeZone testTimeZone) {
         this.testTimeZone = testTimeZone;
     }
 
     public void beforeTest() {
         defaultTimeZone = TimeZone.getDefault();
-        defaultDateTimeZone = DateTimeZone.getDefault();
         defaultUserTimezone = System.getProperty("user.timezone");
 
-        TimeZone.setDefault(testTimeZone.toTimeZone());
-        DateTimeZone.setDefault(testTimeZone);
+        TimeZone.setDefault(testTimeZone);
         System.setProperty("user.timezone", testTimeZone.getID());
     }
 
     public void afterTest() {
         if (defaultTimeZone != null) {
             TimeZone.setDefault(defaultTimeZone);
-        }
-        if (defaultDateTimeZone != null) {
-            DateTimeZone.setDefault(defaultDateTimeZone);
         }
         if (defaultUserTimezone != null) {
             System.setProperty("user.timezone", defaultUserTimezone);

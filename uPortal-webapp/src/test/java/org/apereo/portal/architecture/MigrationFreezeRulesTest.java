@@ -52,9 +52,10 @@ import org.junit.Test;
  * .github/scripts/check-freeze-store.py} fails when a rule records more uses than before, so new
  * code has to use the modern API instead.
  *
- * <p>Type names are given as strings, so the rules compile whichever Hibernate, Ehcache or Joda
- * version is on the classpath. The rules read the main classes of every uPortal module this module
- * depends on (they are on its test classpath as jars); test classes are not checked.
+ * <p>Type names are given as strings, so the rules compile whichever Hibernate or Ehcache version
+ * is on the classpath, and without Joda-Time. The rules read the main classes of every uPortal
+ * module this module depends on (they are on its test classpath as jars); test classes are not
+ * checked.
  */
 public class MigrationFreezeRulesTest {
 
@@ -117,16 +118,18 @@ public class MigrationFreezeRulesTest {
                         .noneMatch(n -> n.endsWith("MigrationFreezeRulesTest")));
     }
 
-    /** Joda-Time → java.time. */
+    /**
+     * Joda-Time → java.time is done (MOD-I5), so this rule is no longer frozen: any use of
+     * Joda-Time fails.
+     */
     @Test
-    public void noNewJodaTime() {
-        freeze(
-                        noClasses()
-                                .should()
-                                .dependOnClassesThat()
-                                .resideInAPackage("org.joda.time..")
-                                .as("no new org.joda.time usage")
-                                .because("Joda-Time is being replaced by java.time (MOD-D29)"))
+    public void noJodaTime() {
+        noClasses()
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("org.joda.time..")
+                .as("no org.joda.time usage")
+                .because("uPortal uses java.time; Joda-Time was removed in 6.0 (MOD-I5)")
                 .check(portalClasses);
     }
 

@@ -12,7 +12,6 @@ dependencies {
     api project(':uPortal-rendering')
 
     api "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
-    api "joda-time:joda-time:${jodaTimeVersion}"
 
     testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
     testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')

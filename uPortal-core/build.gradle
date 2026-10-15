@@ -3,7 +3,6 @@ description = "Apereo uPortal Core"
 dependencies {
     api 'javax.annotation:javax.annotation-api:1.3.2'
     api "commons-lang:commons-lang:${commonsLangVersion}"
-    api "joda-time:joda-time:${jodaTimeVersion}"
     api "org.apache.commons:commons-lang3:${commonsLang3Version}"
     api "org.hibernate:hibernate-core:${hibernateVersion}"
     // Hibernate up to 5.2.17 brought dom4j 1.6.1, which uPortal's XML code is written against;
@@ -12,10 +11,9 @@ dependencies {
     // Hibernate 5.2 builds its lazy-loading proxies with Javassist; the 3.22 it asks for cannot
     // define them on JDK 21 (NullPointerException in DefineClassHelper), 3.30 can
     runtimeOnly "org.javassist:javassist:${javassistVersion}"
-    api("org.jadira.usertype:usertype.core:${usertypeVersion}") {
-        exclude group: 'org.hibernate', module: 'hibernate-core'
-        exclude group: 'org.hibernate', module: 'hibernate-entitymanager'
-    }
+    // Only for FunctionalNameType (the fname typedef), which is built on Jadira's SPI and doesn't
+    // use Joda-Time. Jadira has no Hibernate 6 support: see the fname row in
+    // docs/developer/modernization/notes/java-time-jpa.md
     api "org.jadira.usertype:usertype.spi:${usertypeVersion}"
     implementation "org.slf4j:log4j-over-slf4j:${slf4jVersion}"
     implementation "org.slf4j:jcl-over-slf4j:${slf4jVersion}"

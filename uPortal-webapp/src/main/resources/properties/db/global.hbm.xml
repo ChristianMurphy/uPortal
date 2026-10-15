@@ -30,16 +30,5 @@
     <typedef name="qname" class="org.apereo.portal.dao.usertype.QNameType" />
     <typedef name="json" class="org.apereo.portal.dao.usertype.JacksonType" />
     <typedef name="stats_json" class="org.apereo.portal.dao.usertype.StatisticsJacksonType" />
-    
-    <!-- usertypes -->
-    <typedef name="dateTime" class="org.jadira.usertype.dateandtime.joda.PersistentDateTime" />
-    <typedef name="dateTimeTZ" class="org.jadira.usertype.dateandtime.joda.PersistentDateTimeWithZone" />
-    <typedef name="localDate" class="org.jadira.usertype.dateandtime.joda.PersistentLocalDate">
-         <param name="databaseZone">jvm</param>
-    </typedef>
-    <!-- Binds the time with the JVM zone's calendar, as before, instead of converting it to
-         hibernate.jdbc.time_zone, so the time dimension keeps its local times (MOD-I141) -->
-    <typedef name="localTime" class="org.apereo.portal.dao.usertype.JvmZoneLocalTimeType" />
-    <typedef name="monthDay" class="org.jadira.usertype.dateandtime.joda.PersistentMonthDayAsString" />
 </hibernate-mapping> 
 

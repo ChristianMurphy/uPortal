@@ -19,13 +19,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 import org.apereo.portal.test.TimeZoneTestUtils;
-import org.joda.time.DateTimeZone;
 
 /**
- * Runs code as if the JVM had been started with {@code -Duser.timezone=<zone>}: sets the JDK and
- * Joda-Time default zones and {@code user.timezone}, and restores them on {@link #close()}. Callers
- * create their Spring context (and so every JDBC connection) after this, because JDBC drivers read
- * the default zone when they connect.
+ * Runs code as if the JVM had been started with {@code -Duser.timezone=<zone>}: sets the JDK
+ * default zone and {@code user.timezone}, and restores them on {@link #close()}. Callers create
+ * their Spring context (and so every JDBC connection) after this, because JDBC drivers read the
+ * default zone when they connect.
  */
 public final class JvmTimeZone implements AutoCloseable {
     /**
@@ -43,7 +42,7 @@ public final class JvmTimeZone implements AutoCloseable {
 
     private JvmTimeZone(String id) {
         this.id = id;
-        this.timeZoneTestUtils = new TimeZoneTestUtils(DateTimeZone.forID(id));
+        this.timeZoneTestUtils = new TimeZoneTestUtils(TimeZone.getTimeZone(id));
         this.timeZoneTestUtils.beforeTest();
         if (!TimeZone.getDefault().getID().equals(id)) {
             throw new IllegalStateException("Could not set the JVM time zone to " + id);
