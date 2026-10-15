@@ -16,10 +16,10 @@ package org.apereo.portal.events.aggr;
 
 import static org.junit.Assert.assertEquals;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import org.apereo.portal.events.aggr.dao.DateDimensionDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -37,171 +37,172 @@ public class IntervalHelperImplTest {
 
     @Test
     public void testGetIntervalInfo() {
-        final DateTime instant = new DateTime(1325881376117l, DateTimeZone.UTC);
+        final ZonedDateTime instant =
+                java.time.Instant.ofEpochMilli(1325881376117l).atZone(ZoneOffset.UTC);
 
         assertEquals(2012, instant.getYear());
-        assertEquals(1, instant.getMonthOfYear());
+        assertEquals(1, instant.getMonthValue());
         assertEquals(6, instant.getDayOfMonth());
-        assertEquals(1, instant.getWeekOfWeekyear());
-        assertEquals(20, instant.getHourOfDay());
-        assertEquals(22, instant.getMinuteOfHour());
-        assertEquals(56, instant.getSecondOfMinute());
-        assertEquals(117, instant.getMillisOfSecond());
+        assertEquals(1, instant.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(20, instant.getHour());
+        assertEquals(22, instant.getMinute());
+        assertEquals(56, instant.getSecond());
+        assertEquals(117, instant.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
-        DateTime start, end;
+        ZonedDateTime start, end;
 
         // TEST YEAR
 
         start = AggregationInterval.YEAR.determineStart(instant);
         assertEquals(2012, start.getYear());
-        assertEquals(1, start.getMonthOfYear());
+        assertEquals(1, start.getMonthValue());
         assertEquals(1, start.getDayOfMonth());
-        assertEquals(52, start.getWeekOfWeekyear());
-        assertEquals(0, start.getHourOfDay());
-        assertEquals(0, start.getMinuteOfHour());
-        assertEquals(0, start.getSecondOfMinute());
-        assertEquals(0, start.getMillisOfSecond());
+        assertEquals(52, start.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, start.getHour());
+        assertEquals(0, start.getMinute());
+        assertEquals(0, start.getSecond());
+        assertEquals(0, start.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         end = AggregationInterval.YEAR.determineEnd(start);
         assertEquals(2013, end.getYear());
-        assertEquals(1, end.getMonthOfYear());
+        assertEquals(1, end.getMonthValue());
         assertEquals(1, end.getDayOfMonth());
-        assertEquals(1, end.getWeekOfWeekyear());
-        assertEquals(0, end.getHourOfDay());
-        assertEquals(0, end.getMinuteOfHour());
-        assertEquals(0, end.getSecondOfMinute());
-        assertEquals(0, end.getMillisOfSecond());
+        assertEquals(1, end.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, end.getHour());
+        assertEquals(0, end.getMinute());
+        assertEquals(0, end.getSecond());
+        assertEquals(0, end.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         // TEST MONTH
 
         start = AggregationInterval.MONTH.determineStart(instant);
         assertEquals(2012, start.getYear());
-        assertEquals(1, start.getMonthOfYear());
+        assertEquals(1, start.getMonthValue());
         assertEquals(1, start.getDayOfMonth());
-        assertEquals(52, start.getWeekOfWeekyear());
-        assertEquals(0, start.getHourOfDay());
-        assertEquals(0, start.getMinuteOfHour());
-        assertEquals(0, start.getSecondOfMinute());
-        assertEquals(0, start.getMillisOfSecond());
+        assertEquals(52, start.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, start.getHour());
+        assertEquals(0, start.getMinute());
+        assertEquals(0, start.getSecond());
+        assertEquals(0, start.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         end = AggregationInterval.MONTH.determineEnd(start);
         assertEquals(2012, end.getYear());
-        assertEquals(2, end.getMonthOfYear());
+        assertEquals(2, end.getMonthValue());
         assertEquals(1, end.getDayOfMonth());
-        assertEquals(5, end.getWeekOfWeekyear());
-        assertEquals(0, end.getHourOfDay());
-        assertEquals(0, end.getMinuteOfHour());
-        assertEquals(0, end.getSecondOfMinute());
-        assertEquals(0, end.getMillisOfSecond());
+        assertEquals(5, end.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, end.getHour());
+        assertEquals(0, end.getMinute());
+        assertEquals(0, end.getSecond());
+        assertEquals(0, end.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         // TEST WEEK
 
         start = AggregationInterval.WEEK.determineStart(instant);
         assertEquals(2012, start.getYear());
-        assertEquals(1, start.getMonthOfYear());
+        assertEquals(1, start.getMonthValue());
         assertEquals(2, start.getDayOfMonth());
-        assertEquals(1, start.getWeekOfWeekyear());
-        assertEquals(0, start.getHourOfDay());
-        assertEquals(0, start.getMinuteOfHour());
-        assertEquals(0, start.getSecondOfMinute());
-        assertEquals(0, start.getMillisOfSecond());
+        assertEquals(1, start.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, start.getHour());
+        assertEquals(0, start.getMinute());
+        assertEquals(0, start.getSecond());
+        assertEquals(0, start.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         end = AggregationInterval.WEEK.determineEnd(start);
         assertEquals(2012, end.getYear());
-        assertEquals(1, end.getMonthOfYear());
+        assertEquals(1, end.getMonthValue());
         assertEquals(9, end.getDayOfMonth());
-        assertEquals(2, end.getWeekOfWeekyear());
-        assertEquals(0, end.getHourOfDay());
-        assertEquals(0, end.getMinuteOfHour());
-        assertEquals(0, end.getSecondOfMinute());
-        assertEquals(0, end.getMillisOfSecond());
+        assertEquals(2, end.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, end.getHour());
+        assertEquals(0, end.getMinute());
+        assertEquals(0, end.getSecond());
+        assertEquals(0, end.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         // TEST DAY
 
         start = AggregationInterval.DAY.determineStart(instant);
         assertEquals(2012, start.getYear());
-        assertEquals(1, start.getMonthOfYear());
+        assertEquals(1, start.getMonthValue());
         assertEquals(6, start.getDayOfMonth());
-        assertEquals(1, start.getWeekOfWeekyear());
-        assertEquals(0, start.getHourOfDay());
-        assertEquals(0, start.getMinuteOfHour());
-        assertEquals(0, start.getSecondOfMinute());
-        assertEquals(0, start.getMillisOfSecond());
+        assertEquals(1, start.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, start.getHour());
+        assertEquals(0, start.getMinute());
+        assertEquals(0, start.getSecond());
+        assertEquals(0, start.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         end = AggregationInterval.DAY.determineEnd(start);
         assertEquals(2012, end.getYear());
-        assertEquals(1, end.getMonthOfYear());
+        assertEquals(1, end.getMonthValue());
         assertEquals(7, end.getDayOfMonth());
-        assertEquals(1, end.getWeekOfWeekyear());
-        assertEquals(0, end.getHourOfDay());
-        assertEquals(0, end.getMinuteOfHour());
-        assertEquals(0, end.getSecondOfMinute());
-        assertEquals(0, end.getMillisOfSecond());
+        assertEquals(1, end.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(0, end.getHour());
+        assertEquals(0, end.getMinute());
+        assertEquals(0, end.getSecond());
+        assertEquals(0, end.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         // TEST HOUR
 
         start = AggregationInterval.HOUR.determineStart(instant);
         assertEquals(2012, start.getYear());
-        assertEquals(1, start.getMonthOfYear());
+        assertEquals(1, start.getMonthValue());
         assertEquals(6, start.getDayOfMonth());
-        assertEquals(1, start.getWeekOfWeekyear());
-        assertEquals(20, start.getHourOfDay());
-        assertEquals(0, start.getMinuteOfHour());
-        assertEquals(0, start.getSecondOfMinute());
-        assertEquals(0, start.getMillisOfSecond());
+        assertEquals(1, start.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(20, start.getHour());
+        assertEquals(0, start.getMinute());
+        assertEquals(0, start.getSecond());
+        assertEquals(0, start.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         end = AggregationInterval.HOUR.determineEnd(start);
         assertEquals(2012, end.getYear());
-        assertEquals(1, end.getMonthOfYear());
+        assertEquals(1, end.getMonthValue());
         assertEquals(6, end.getDayOfMonth());
-        assertEquals(1, end.getWeekOfWeekyear());
-        assertEquals(21, end.getHourOfDay());
-        assertEquals(0, end.getMinuteOfHour());
-        assertEquals(0, end.getSecondOfMinute());
-        assertEquals(0, end.getMillisOfSecond());
+        assertEquals(1, end.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(21, end.getHour());
+        assertEquals(0, end.getMinute());
+        assertEquals(0, end.getSecond());
+        assertEquals(0, end.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         // TEST FIVE_MINUTE
 
         start = AggregationInterval.FIVE_MINUTE.determineStart(instant);
         assertEquals(2012, start.getYear());
-        assertEquals(1, start.getMonthOfYear());
+        assertEquals(1, start.getMonthValue());
         assertEquals(6, start.getDayOfMonth());
-        assertEquals(1, start.getWeekOfWeekyear());
-        assertEquals(20, start.getHourOfDay());
-        assertEquals(20, start.getMinuteOfHour());
-        assertEquals(0, start.getSecondOfMinute());
-        assertEquals(0, start.getMillisOfSecond());
+        assertEquals(1, start.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(20, start.getHour());
+        assertEquals(20, start.getMinute());
+        assertEquals(0, start.getSecond());
+        assertEquals(0, start.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         end = AggregationInterval.FIVE_MINUTE.determineEnd(start);
         assertEquals(2012, end.getYear());
-        assertEquals(1, end.getMonthOfYear());
+        assertEquals(1, end.getMonthValue());
         assertEquals(6, end.getDayOfMonth());
-        assertEquals(1, end.getWeekOfWeekyear());
-        assertEquals(20, end.getHourOfDay());
-        assertEquals(25, end.getMinuteOfHour());
-        assertEquals(0, end.getSecondOfMinute());
-        assertEquals(0, end.getMillisOfSecond());
+        assertEquals(1, end.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(20, end.getHour());
+        assertEquals(25, end.getMinute());
+        assertEquals(0, end.getSecond());
+        assertEquals(0, end.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         // TEST MINUTE
 
         start = AggregationInterval.MINUTE.determineStart(instant);
         assertEquals(2012, start.getYear());
-        assertEquals(1, start.getMonthOfYear());
+        assertEquals(1, start.getMonthValue());
         assertEquals(6, start.getDayOfMonth());
-        assertEquals(1, start.getWeekOfWeekyear());
-        assertEquals(20, start.getHourOfDay());
-        assertEquals(22, start.getMinuteOfHour());
-        assertEquals(0, start.getSecondOfMinute());
-        assertEquals(0, start.getMillisOfSecond());
+        assertEquals(1, start.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(20, start.getHour());
+        assertEquals(22, start.getMinute());
+        assertEquals(0, start.getSecond());
+        assertEquals(0, start.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
 
         end = AggregationInterval.MINUTE.determineEnd(start);
         assertEquals(2012, end.getYear());
-        assertEquals(1, end.getMonthOfYear());
+        assertEquals(1, end.getMonthValue());
         assertEquals(6, end.getDayOfMonth());
-        assertEquals(1, end.getWeekOfWeekyear());
-        assertEquals(20, end.getHourOfDay());
-        assertEquals(23, end.getMinuteOfHour());
-        assertEquals(0, end.getSecondOfMinute());
-        assertEquals(0, end.getMillisOfSecond());
+        assertEquals(1, end.get(java.time.temporal.IsoFields.WEEK_OF_WEEK_BASED_YEAR));
+        assertEquals(20, end.getHour());
+        assertEquals(23, end.getMinute());
+        assertEquals(0, end.getSecond());
+        assertEquals(0, end.get(java.time.temporal.ChronoField.MILLI_OF_SECOND));
     }
 }

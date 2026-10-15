@@ -15,18 +15,18 @@
 package org.apereo.portal.events.aggr;
 
 import java.io.Serializable;
+import java.time.ZonedDateTime;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
-import org.joda.time.DateTime;
 
 /** Base of all aggregations which includes time, date, interval, group, and duration */
 public interface BaseAggregation<
                 K extends BaseAggregationKey, D extends BaseGroupedAggregationDiscriminator>
         extends Serializable {
     /**
-     * @return The {@link DateTime} the aggregation is for, short cut for getting the same info from
-     *     {@link #getDateDimension()} and {@link #getTimeDimension()}
+     * @return The {@link ZonedDateTime} the aggregation is for, short cut for getting the same info
+     *     from {@link #getDateDimension()} and {@link #getTimeDimension()}
      */
-    DateTime getDateTime();
+    ZonedDateTime getDateTime();
 
     /**
      * @return The day the aggregation is for

@@ -18,14 +18,15 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import org.apereo.portal.events.aggr.dao.DateDimensionDao;
 import org.apereo.portal.events.aggr.dao.IEventAggregationManagementDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.events.aggr.dao.jpa.AcademicTermDetailImpl;
 import org.apereo.portal.events.aggr.groups.AggregatedGroupMapping;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -49,32 +50,22 @@ public class AggregationIntervalHelperImplTest {
         final List<AcademicTermDetail> terms =
                 ImmutableList.<AcademicTermDetail>of(
                         new AcademicTermDetailImpl(
-                                new DateMidnight(2012, 1, 12),
-                                new DateMidnight(2012, 4, 1),
-                                "spring 2"),
+                                LocalDate.of(2012, 1, 12), LocalDate.of(2012, 4, 1), "spring 2"),
                         new AcademicTermDetailImpl(
-                                new DateMidnight(2012, 4, 1),
-                                new DateMidnight(2012, 7, 1),
-                                "summer 2"),
+                                LocalDate.of(2012, 4, 1), LocalDate.of(2012, 7, 1), "summer 2"),
                         new AcademicTermDetailImpl(
-                                new DateMidnight(2012, 7, 1),
-                                new DateMidnight(2012, 12, 15),
-                                "fall 2"),
+                                LocalDate.of(2012, 7, 1), LocalDate.of(2012, 12, 15), "fall 2"),
                         new AcademicTermDetailImpl(
-                                new DateMidnight(2012, 12, 15),
-                                new DateMidnight(2013, 1, 14),
-                                "winter 2"),
+                                LocalDate.of(2012, 12, 15), LocalDate.of(2013, 1, 14), "winter 2"),
                         new AcademicTermDetailImpl(
-                                new DateMidnight(2015, 12, 15),
-                                new DateMidnight(2016, 1, 14),
-                                "winter 5"));
+                                LocalDate.of(2015, 12, 15), LocalDate.of(2016, 1, 14), "winter 5"));
         when(eventAggregationManagementDao.getAcademicTermDetails()).thenReturn(terms);
     }
 
     @Test
     public void testIntervalsBetween() {
-        DateTime start = new DateTime(2012, 2, 2, 2, 2, 2);
-        DateTime end = start.plusYears(2);
+        ZonedDateTime start = ZonedDateTime.of(2012, 2, 2, 2, 2, 2, 0, ZoneId.systemDefault());
+        ZonedDateTime end = start.plusYears(2);
 
         assertEquals(1052640, helper.intervalsBetween(AggregationInterval.MINUTE, start, end));
         assertEquals(210528, helper.intervalsBetween(AggregationInterval.FIVE_MINUTE, start, end));
@@ -89,8 +80,8 @@ public class AggregationIntervalHelperImplTest {
 
     @Test
     public void testIntervalsBetweens() {
-        DateTime start = new DateTime(2012, 2, 2, 2, 2, 2);
-        DateTime end = start.plusYears(2);
+        ZonedDateTime start = ZonedDateTime.of(2012, 2, 2, 2, 2, 2, 0, ZoneId.systemDefault());
+        ZonedDateTime end = start.plusYears(2);
 
         assertEquals(
                 1052640,

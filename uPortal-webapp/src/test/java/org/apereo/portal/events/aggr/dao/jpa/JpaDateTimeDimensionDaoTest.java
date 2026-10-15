@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import org.apereo.portal.concurrency.CallableWithoutResult;
@@ -25,7 +26,6 @@ import org.apereo.portal.events.aggr.DateDimension;
 import org.apereo.portal.events.aggr.dao.DateDimensionDao;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.test.BaseAggrEventsJpaDaoTest;
-import org.joda.time.DateMidnight;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +66,7 @@ public class JpaDateTimeDimensionDaoTest extends BaseAggrEventsJpaDaoTest {
                 new CallableWithoutResult() {
                     @Override
                     protected void callWithoutResult() {
-                        DateMidnight date = new DateMidnight(2012, 1, 1);
+                        LocalDate date = LocalDate.of(2012, 1, 1);
 
                         for (int i = 0; i < 7; i++) {
                             dateDimensionDao.createDateDimension(date, 0, null);
@@ -79,7 +79,7 @@ public class JpaDateTimeDimensionDaoTest extends BaseAggrEventsJpaDaoTest {
                 new CallableWithoutResult() {
                     @Override
                     protected void callWithoutResult() {
-                        DateMidnight date = new DateMidnight(2012, 1, 1);
+                        LocalDate date = LocalDate.of(2012, 1, 1);
                         final DateDimension dateDimension =
                                 dateDimensionDao.getDateDimensionByDate(date);
                         assertNotNull(dateDimension);
@@ -101,8 +101,8 @@ public class JpaDateTimeDimensionDaoTest extends BaseAggrEventsJpaDaoTest {
                 new CallableWithoutResult() {
                     @Override
                     protected void callWithoutResult() {
-                        final DateMidnight start = new DateMidnight(2012, 1, 2);
-                        final DateMidnight end = new DateMidnight(2012, 1, 6);
+                        final LocalDate start = LocalDate.of(2012, 1, 2);
+                        final LocalDate end = LocalDate.of(2012, 1, 6);
                         final List<DateDimension> dateDimensions =
                                 dateDimensionDao.getDateDimensionsBetween(start, end);
 

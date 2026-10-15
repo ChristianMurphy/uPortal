@@ -20,6 +20,8 @@ import com.google.common.collect.PeekingIterator;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -48,7 +50,6 @@ import org.apereo.portal.web.report.ReportTable;
 import org.apereo.portal.web.report.ReportValue;
 import org.apereo.portal.web.report.ReportValueType;
 import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.slf4j.Logger;
@@ -278,9 +279,9 @@ public abstract class BaseStatisticsReportController<
     protected abstract BaseAggregationDao<T, K> getBaseAggregationDao();
 
     /**
-     * Create a set of keys used to execute {@link BaseAggregationDao#getAggregations(DateTime,
-     * DateTime, Set, AggregatedGroupMapping...)}. Returns a set for those entities, such as Tab
-     * Render reports where the user can select one or more tabs to report on.
+     * Create a set of keys used to execute {@link BaseAggregationDao#getAggregations(ZonedDateTime,
+     * ZonedDateTime, Set, AggregatedGroupMapping...)}. Returns a set for those entities, such as
+     * Tab Render reports where the user can select one or more tabs to report on.
      *
      * @param groups The groups being queried for
      * @param form The original query form
@@ -410,15 +411,16 @@ public abstract class BaseStatisticsReportController<
     protected final ReportTable buildAggregationReport(F form) {
         // Pull data out of form for per-group fetching
         final AggregationInterval interval = form.getInterval();
-        final DateMidnight start = form.getStart();
-        final DateMidnight end = form.getEnd();
+        final LocalDate start = toLocalDate(form.getStart());
+        final LocalDate end = toLocalDate(form.getEnd());
 
-        final DateTime startDateTime = start.toDateTime();
+        final ZonedDateTime startDateTime = start.atStartOfDay(ZoneId.systemDefault());
         // Use a query end of the end date at 23:59:59
-        final DateTime endDateTime = end.plusDays(1).toDateTime().minusSeconds(1);
+        final ZonedDateTime endDateTime =
+                end.plusDays(1).atStartOfDay(ZoneId.systemDefault()).minusSeconds(1);
 
         // Get the list of DateTimes used on the X axis in the report
-        final List<DateTime> reportTimes =
+        final List<ZonedDateTime> reportTimes =
                 this.intervalHelper.getIntervalStartDateTimesBetween(
                         interval, startDateTime, endDateTime, maxIntervals);
 
@@ -429,7 +431,7 @@ public abstract class BaseStatisticsReportController<
         final ReportValueType dateTimeColumnType;
         if (interval.isHasTimePart()) {
             // If start/end are the same day just display the time
-            if (startDateTime.toDateMidnight().equals(endDateTime.toDateMidnight())) {
+            if (startDateTime.toLocalDate().equals(endDateTime.toLocalDate())) {
                 dateTimeColumnType = ReportValueType.TIMEOFDAY;
             }
             // interval has time data and start/end are on different days, show full date time
@@ -500,7 +502,7 @@ public abstract class BaseStatisticsReportController<
          * populate the data, filling in blank spots. The full list of interval DateTimes is used to create every row in the
          * query range. Then the iterator
          */
-        for (final DateTime rowTime : reportTimes) {
+        for (final ZonedDateTime rowTime : reportTimes) {
             // create the row
             final List<ReportValue> row = new ArrayList<>();
 
@@ -513,7 +515,7 @@ public abstract class BaseStatisticsReportController<
                                 ReportValue.date(
                                         LocalDate.of(
                                                 rowTime.getYear(),
-                                                rowTime.getMonthOfYear(),
+                                                rowTime.getMonthValue(),
                                                 rowTime.getDayOfMonth()));
                         break;
                     }
@@ -521,10 +523,7 @@ public abstract class BaseStatisticsReportController<
                     {
                         dateTimeValue =
                                 ReportValue.timeOfDay(
-                                        LocalTime.of(
-                                                rowTime.getHourOfDay(),
-                                                rowTime.getMinuteOfHour(),
-                                                0));
+                                        LocalTime.of(rowTime.getHour(), rowTime.getMinute(), 0));
                         break;
                     }
                 default:
@@ -533,10 +532,10 @@ public abstract class BaseStatisticsReportController<
                                 ReportValue.dateTime(
                                         LocalDateTime.of(
                                                 rowTime.getYear(),
-                                                rowTime.getMonthOfYear(),
+                                                rowTime.getMonthValue(),
                                                 rowTime.getDayOfMonth(),
-                                                rowTime.getHourOfDay(),
-                                                rowTime.getMinuteOfHour(),
+                                                rowTime.getHour(),
+                                                rowTime.getMinute(),
                                                 0));
                         break;
                     }
@@ -581,5 +580,10 @@ public abstract class BaseStatisticsReportController<
             groupMappings.add(discriminator.getAggregatedGroup());
         }
         return groupMappings.toArray(new AggregatedGroupMapping[0]);
+    }
+
+    /** The report form's day, until the form holds java.time dates */
+    static LocalDate toLocalDate(DateMidnight date) {
+        return LocalDate.of(date.getYear(), date.getMonthOfYear(), date.getDayOfMonth());
     }
 }

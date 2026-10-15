@@ -14,9 +14,9 @@
  */
 package org.apereo.portal.events.aggr.dao;
 
+import java.time.LocalTime;
 import java.util.List;
 import org.apereo.portal.events.aggr.TimeDimension;
-import org.joda.time.LocalTime;
 
 /** DAO for creation/lookup of time dimensions */
 public interface TimeDimensionDao {

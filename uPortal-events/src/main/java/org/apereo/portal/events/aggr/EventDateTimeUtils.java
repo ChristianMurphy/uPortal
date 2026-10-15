@@ -15,6 +15,9 @@
 package org.apereo.portal.events.aggr;
 
 import com.google.common.collect.ImmutableList;
+import java.time.Instant;
+import java.time.MonthDay;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,8 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.RandomAccess;
 import org.apereo.portal.events.aggr.dao.jpa.QuarterDetailImpl;
-import org.joda.time.MonthDay;
-import org.joda.time.ReadableInstant;
 
 /** Utilities for working with the various date/time data types involved in event aggregation */
 public final class EventDateTimeUtils {
@@ -40,8 +41,7 @@ public final class EventDateTimeUtils {
      *     1 if the range comes after the instant (instant < getStart())
      * @see Comparable#compareTo(Object)
      */
-    public static int compareTo(
-            ReadableInstant start, ReadableInstant end, ReadableInstant instant) {
+    public static int compareTo(Instant start, Instant end, Instant instant) {
         if (instant.isBefore(start)) {
             return 1;
         }
@@ -139,7 +139,7 @@ public final class EventDateTimeUtils {
      *     instant
      */
     public static <DR extends DateRange<DT>, DT> DR findDateRange(
-            ReadableInstant instant, Collection<DR> dateRanges) {
+            ZonedDateTime instant, Collection<DR> dateRanges) {
         if (dateRanges.isEmpty()) {
             return null;
         }
@@ -154,12 +154,12 @@ public final class EventDateTimeUtils {
     }
 
     /**
-     * Same function as {@link #findDateRange(ReadableInstant, Collection)} optimized for working on
-     * a pre-sorted List of date ranges by doing a binary search. The List must be sorted by {@link
+     * Same function as {@link #findDateRange(ZonedDateTime, Collection)} optimized for working on a
+     * pre-sorted List of date ranges by doing a binary search. The List must be sorted by {@link
      * DateRange#getStart()}
      */
     public static <DR extends DateRange<DT>, DT> DR findDateRangeSorted(
-            ReadableInstant instant, List<DR> dateRanges) {
+            ZonedDateTime instant, List<DR> dateRanges) {
         if (dateRanges.isEmpty()) {
             return null;
         }
@@ -191,9 +191,9 @@ public final class EventDateTimeUtils {
      */
     public static List<QuarterDetail> createStandardQuarters() {
         return ImmutableList.<QuarterDetail>of(
-                new QuarterDetailImpl(new MonthDay(1, 1), new MonthDay(4, 1), 0),
-                new QuarterDetailImpl(new MonthDay(4, 1), new MonthDay(7, 1), 1),
-                new QuarterDetailImpl(new MonthDay(7, 1), new MonthDay(10, 1), 2),
-                new QuarterDetailImpl(new MonthDay(10, 1), new MonthDay(1, 1), 3));
+                new QuarterDetailImpl(MonthDay.of(1, 1), MonthDay.of(4, 1), 0),
+                new QuarterDetailImpl(MonthDay.of(4, 1), MonthDay.of(7, 1), 1),
+                new QuarterDetailImpl(MonthDay.of(7, 1), MonthDay.of(10, 1), 2),
+                new QuarterDetailImpl(MonthDay.of(10, 1), MonthDay.of(1, 1), 3));
     }
 }

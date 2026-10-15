@@ -14,50 +14,31 @@
  */
 package org.apereo.portal.events.aggr;
 
-import org.joda.time.Chronology;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeFieldType;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DurationFieldType;
-import org.joda.time.ReadableInstant;
+import java.time.DayOfWeek;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 
 /**
  * Enumeration of all time intervals the event aggregation can handle. All of the example ranges are
- * inclusive on both ends
+ * inclusive on both ends.
+ *
+ * <p>The interval arithmetic works in the zone of the {@link ZonedDateTime} it is given, the way
+ * Joda-Time's did: a minute or an hour is elapsed time, and a day or longer follows the calendar.
  */
 public enum AggregationInterval {
-    /**
-     * 1 Minute
-     *
-     * @see DateTimeFieldType#minuteOfHour()
-     */
-    MINUTE(DateTimeFieldType.minuteOfHour(), true),
+    /** 1 Minute */
+    MINUTE(ChronoUnit.MINUTES, true),
     /** 5 Minutes (0-4,5-9,...,55-59) */
     FIVE_MINUTE(null, true),
-    /**
-     * 1 Hour
-     *
-     * @see DateTimeFieldType#hourOfDay()
-     */
-    HOUR(DateTimeFieldType.hourOfDay(), true),
-    /**
-     * 1 Day
-     *
-     * @see DateTimeFieldType#dayOfMonth()
-     */
-    DAY(DateTimeFieldType.dayOfMonth(), false),
-    /**
-     * 1 Week
-     *
-     * @see DateTimeFieldType#weekOfWeekyear()
-     */
-    WEEK(DateTimeFieldType.weekOfWeekyear(), false),
-    /**
-     * 1 Calendar month
-     *
-     * @see DateTimeFieldType#monthOfYear()
-     */
-    MONTH(DateTimeFieldType.monthOfYear(), false),
+    /** 1 Hour */
+    HOUR(ChronoUnit.HOURS, true),
+    /** 1 Day */
+    DAY(ChronoUnit.DAYS, false),
+    /** 1 ISO week, starting on Monday */
+    WEEK(ChronoUnit.WEEKS, false),
+    /** 1 Calendar month */
+    MONTH(ChronoUnit.MONTHS, false),
     /**
      * As defined by the deployer, divides the calendar into 4 sections. Default configuration is: 3
      * Calendar months (Jan 1 - Mar 31, Apr 1 - Jun 30, Jul 1 - Sep 30, Oct 1 - Dec 31)
@@ -65,21 +46,14 @@ public enum AggregationInterval {
     CALENDAR_QUARTER(null, false),
     /** As defined by the deployer, unusable unless term boundaries have been configured. */
     ACADEMIC_TERM(null, false),
-    /**
-     * 1 Year
-     *
-     * @see DateTimeFieldType#year()
-     */
-    YEAR(DateTimeFieldType.year(), false);
+    /** 1 Year */
+    YEAR(ChronoUnit.YEARS, false);
 
-    private final DateTimeFieldType dateTimeFieldType;
+    private final ChronoUnit unit;
     private final boolean hasTimePart;
 
-    /**
-     * @param dateTimeFieldType
-     */
-    private AggregationInterval(DateTimeFieldType dateTimeFieldType, boolean hasTimePart) {
-        this.dateTimeFieldType = dateTimeFieldType;
+    private AggregationInterval(ChronoUnit unit, boolean hasTimePart) {
+        this.unit = unit;
         this.hasTimePart = hasTimePart;
     }
 
@@ -91,19 +65,19 @@ public enum AggregationInterval {
     }
 
     /**
-     * @return the {@link DateTimeFieldType} for the {@link AggregationInterval}, null if there is
-     *     no mapping
+     * @return the {@link ChronoUnit} of one {@link AggregationInterval}, null if there is no
+     *     mapping
      */
-    public DateTimeFieldType getDateTimeFieldType() {
-        return this.dateTimeFieldType;
+    public ChronoUnit getUnit() {
+        return this.unit;
     }
 
     /**
-     * @return If the {@link #determineEnd(DateTime)} and {@link #determineStart(DateTime)} methods
-     *     work on this interval
+     * @return If the {@link #determineEnd(ZonedDateTime)} and {@link
+     *     #determineStart(ZonedDateTime)} methods work on this interval
      */
     public boolean isSupportsDetermination() {
-        return this.dateTimeFieldType != null || this == FIVE_MINUTE;
+        return this.unit != null || this == FIVE_MINUTE;
     }
 
     /**
@@ -113,7 +87,7 @@ public enum AggregationInterval {
      * @param end End, exclusive
      * @return Number of intervals between start and end
      */
-    public int determineIntervalsBetween(ReadableInstant start, ReadableInstant end) {
+    public int determineIntervalsBetween(ZonedDateTime start, ZonedDateTime end) {
         if (!this.isSupportsDetermination()) {
             throw new IllegalArgumentException(
                     "Cannot compute intervals between for "
@@ -122,80 +96,63 @@ public enum AggregationInterval {
                             + AggregationIntervalHelper.class);
         }
 
-        final DateTimeFieldType dtft;
-        final double ratio;
-        switch (this) {
-            case FIVE_MINUTE:
-                {
-                    dtft = MINUTE.getDateTimeFieldType();
-                    ratio = 5;
-                    break;
-                }
-            default:
-                {
-                    dtft = dateTimeFieldType;
-                    ratio = 1;
-                }
+        if (this == FIVE_MINUTE) {
+            return (int) Math.round(ChronoUnit.MINUTES.between(start, end) / 5d);
         }
-
-        final DurationFieldType durationType = dtft.getDurationType();
-        final Chronology chrono = DateTimeUtils.getInstantChronology(start);
-        return (int)
-                Math.round(
-                        durationType
-                                        .getField(chrono)
-                                        .getDifference(end.getMillis(), start.getMillis())
-                                / ratio);
+        return (int) this.unit.between(start, end);
     }
 
     /**
-     * Determine the starting DateTime (inclusive) of an interval based on an instant in time
+     * Determine the starting date and time (inclusive) of an interval based on an instant in time
      *
      * @param instant The instant in time to get the interval starting value for
      * @return The start of this interval in relation to the provided instant
      */
-    public DateTime determineStart(DateTime instant) {
-        if (this.dateTimeFieldType != null) {
-            return instant.property(this.dateTimeFieldType).roundFloorCopy();
+    public ZonedDateTime determineStart(ZonedDateTime instant) {
+        switch (this) {
+            case MINUTE:
+                return instant.truncatedTo(ChronoUnit.MINUTES);
+            case FIVE_MINUTE:
+                return instant.truncatedTo(ChronoUnit.HOURS)
+                        .plusMinutes((instant.getMinute() / 5) * 5);
+            case HOUR:
+                return instant.truncatedTo(ChronoUnit.HOURS);
+            case DAY:
+                return instant.toLocalDate().atStartOfDay(instant.getZone());
+            case WEEK:
+                return instant.toLocalDate()
+                        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                        .atStartOfDay(instant.getZone());
+            case MONTH:
+                return instant.toLocalDate().withDayOfMonth(1).atStartOfDay(instant.getZone());
+            case YEAR:
+                return instant.toLocalDate().withDayOfYear(1).atStartOfDay(instant.getZone());
+            default:
+                throw new IllegalArgumentException(
+                        "Cannot compute interval start time for "
+                                + this
+                                + " please use "
+                                + AggregationIntervalHelper.class);
         }
-
-        if (this == AggregationInterval.FIVE_MINUTE) {
-            return instant.hourOfDay()
-                    .roundFloorCopy()
-                    .plusMinutes((instant.getMinuteOfHour() / 5) * 5);
-        }
-
-        throw new IllegalArgumentException(
-                "Cannot compute interval start time for "
-                        + this
-                        + " please use "
-                        + AggregationIntervalHelper.class);
     }
 
     /**
-     * Determine the ending DateTime (exclusive) of an interval based on an instant in time
+     * Determine the ending date and time (exclusive) of an interval based on an instant in time
      *
      * @param instant The start of an instant
-     * @return
+     * @return The end of this interval in relation to the provided instant
      */
-    public DateTime determineEnd(DateTime instant) {
-        if (this.dateTimeFieldType != null) {
-            final DateTime start = instant.property(this.dateTimeFieldType).roundFloorCopy();
-            return start.property(this.dateTimeFieldType).addToCopy(1);
+    public ZonedDateTime determineEnd(ZonedDateTime instant) {
+        if (this == FIVE_MINUTE) {
+            return this.determineStart(instant).plusMinutes(5);
         }
-
-        if (this == AggregationInterval.FIVE_MINUTE) {
-            final DateTime start =
-                    instant.hourOfDay()
-                            .roundFloorCopy()
-                            .plusMinutes((instant.getMinuteOfHour() / 5) * 5);
-            return start.plusMinutes(5);
+        if (this.unit == null) {
+            throw new IllegalArgumentException(
+                    "Cannot compute interval end time for "
+                            + this
+                            + " please use "
+                            + AggregationIntervalHelper.class);
         }
-
-        throw new IllegalArgumentException(
-                "Cannot compute interval end time for "
-                        + this
-                        + " please use "
-                        + AggregationIntervalHelper.class);
+        return this.determineStart(instant).plus(1, this.unit);
     }
 }

@@ -15,6 +15,8 @@
 package org.apereo.portal.events.aggr.dao.jpa;
 
 import com.google.common.base.Function;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.TypedQuery;
@@ -25,7 +27,6 @@ import org.apereo.portal.events.aggr.TimeDimension;
 import org.apereo.portal.events.aggr.dao.TimeDimensionDao;
 import org.apereo.portal.jpa.BaseAggrEventsJpaDao;
 import org.apereo.portal.jpa.OpenEntityManager;
-import org.joda.time.LocalTime;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -85,7 +86,7 @@ public class JpaTimeDimensionDao extends BaseAggrEventsJpaDao implements TimeDim
     public TimeDimension getTimeDimensionByTime(LocalTime localTime) {
         final NaturalIdQuery<TimeDimensionImpl> query =
                 this.createNaturalIdQuery(TimeDimensionImpl.class);
-        query.using(TimeDimensionImpl_.time, localTime.minuteOfHour().roundFloorCopy());
+        query.using(TimeDimensionImpl_.time, localTime.truncatedTo(ChronoUnit.MINUTES));
         return query.load();
     }
 }

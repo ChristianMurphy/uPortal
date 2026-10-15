@@ -16,6 +16,10 @@ package org.apereo.portal.events.aggr.dao.jpa;
 
 import com.google.common.collect.ComparisonChain;
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -33,10 +37,6 @@ import org.apereo.portal.events.aggr.EventDateTimeUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.NaturalId;
-import org.hibernate.annotations.Type;
-import org.joda.time.DateMidnight;
-import org.joda.time.DateTime;
-import org.joda.time.ReadableInstant;
 
 /** */
 @Entity
@@ -58,19 +58,17 @@ public class AcademicTermDetailImpl implements AcademicTermDetail, Serializable 
 
     @NaturalId
     @Column(name = "TERM_START", nullable = false)
-    @Type(type = "dateTime")
-    private DateTime start;
+    private Instant start;
 
     @NaturalId
     @Column(name = "TERM_END", nullable = false)
-    @Type(type = "dateTime")
-    private DateTime end;
+    private Instant end;
 
     @Column(name = "TERM_NAME", nullable = false)
     private String termName;
 
-    @Transient private DateMidnight startDateMidnight;
-    @Transient private DateMidnight endDateMidnight;
+    @Transient private LocalDate startDate;
+    @Transient private LocalDate endDate;
 
     @SuppressWarnings("unused")
     private AcademicTermDetailImpl() {
@@ -80,16 +78,29 @@ public class AcademicTermDetailImpl implements AcademicTermDetail, Serializable 
         this.termName = null;
     }
 
-    public AcademicTermDetailImpl(DateMidnight start, DateMidnight end, String termName) {
+    /** A term from the start of one day to the start of another, in the JVM's zone */
+    public AcademicTermDetailImpl(LocalDate start, LocalDate end, String termName) {
+        this(
+                start == null ? null : start.atStartOfDay(ZoneId.systemDefault()),
+                end == null ? null : end.atStartOfDay(ZoneId.systemDefault()),
+                termName);
+    }
+
+    /**
+     * A term between two instants, normally the starts of two days. The import of an event
+     * aggregation file passes the days' starts in the zone the file gives, as Joda-Time's
+     * DateMidnight did.
+     */
+    public AcademicTermDetailImpl(ZonedDateTime start, ZonedDateTime end, String termName) {
         Validate.notNull(start);
         Validate.notNull(end);
         Validate.notNull(termName);
-        if (start.isEqual(end) || end.isBefore(start)) {
+        if (!start.isBefore(end)) {
             throw new IllegalArgumentException("end cannot be before or equal to start");
         }
         this.id = -1;
-        this.start = start.toDateTime();
-        this.end = end.toDateTime();
+        this.start = start.toInstant();
+        this.end = end.toInstant();
         this.termName = termName;
         this.init();
     }
@@ -98,8 +109,13 @@ public class AcademicTermDetailImpl implements AcademicTermDetail, Serializable 
     @PostUpdate
     @PostPersist
     void init() {
-        this.startDateMidnight = this.start.toDateMidnight();
-        this.endDateMidnight = this.end.toDateMidnight();
+        this.startDate = this.start.atZone(ZoneId.systemDefault()).toLocalDate();
+        this.endDate = this.end.atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    /** Midnight in the JVM's zone, the zone Jadira read the term dates in */
+    private static Instant startOfDay(LocalDate date) {
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
     }
 
     @Override
@@ -114,30 +130,30 @@ public class AcademicTermDetailImpl implements AcademicTermDetail, Serializable 
     }
 
     @Override
-    public DateMidnight getStart() {
-        return this.startDateMidnight;
+    public LocalDate getStart() {
+        return this.startDate;
     }
 
     @Override
-    public void setStart(DateMidnight start) {
-        this.startDateMidnight = start;
-        this.start = start.toDateTime();
+    public void setStart(LocalDate start) {
+        this.startDate = start;
+        this.start = startOfDay(start);
     }
 
     @Override
-    public DateMidnight getEnd() {
-        return this.endDateMidnight;
+    public LocalDate getEnd() {
+        return this.endDate;
     }
 
     @Override
-    public void setEnd(DateMidnight end) {
-        this.endDateMidnight = end;
-        this.end = end.toDateTime();
+    public void setEnd(LocalDate end) {
+        this.endDate = end;
+        this.end = startOfDay(end);
     }
 
     @Override
-    public int compareTo(ReadableInstant instant) {
-        return EventDateTimeUtils.compareTo(this.start, this.end, instant);
+    public int compareTo(ZonedDateTime instant) {
+        return EventDateTimeUtils.compareTo(this.start, this.end, instant.toInstant());
     }
 
     @Override
@@ -176,10 +192,10 @@ public class AcademicTermDetailImpl implements AcademicTermDetail, Serializable 
     public String toString() {
         return "AcademicTermDetailImpl [termName="
                 + this.termName
-                + ", startDateMidnight="
-                + this.startDateMidnight
-                + ", endDateMidnight="
-                + this.endDateMidnight
+                + ", startDate="
+                + this.startDate
+                + ", endDate="
+                + this.endDate
                 + "]";
     }
 }
