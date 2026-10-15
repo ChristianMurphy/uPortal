@@ -101,10 +101,10 @@ describe('up-reset-my-layout states', () => {
 
         expect(textOf(element)).toBe(
             'Use this portlet to reset your portal layout to the defaults. ' +
-                'NOTE: You must sign on again to see the changes. Reset Now',
+                'NOTE: The default layout shows the next time a page loads. Reset Now',
         );
         expect(shadow(element).querySelector('em')?.textContent).toBe(
-            'NOTE: You must sign on again to see the changes.',
+            'NOTE: The default layout shows the next time a page loads.',
         );
         await expect.element(button(element, 'Reset Now')).toBeVisible();
         expect(focused(element)).toBeNull();
