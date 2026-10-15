@@ -94,10 +94,10 @@ workstream set skips these jobs.
 to `query-budget.mjs`, which defaults to 8080. CI uses 8080. A local run on another port needs
 `PORTAL_BASE_URL`.
 
-## Proposed LOG rows (MOD-I? numbers to be set by the coordinator)
+## Proposed LOG rows (MOD-I370 to MOD-I372)
 
 | ID | Area | Finding | Status |
 | --- | --- | --- | --- |
-| MOD-I? | Tests | The RTL spec measured `#webSearchContainer`, which the search web components removed (uPortal-start b0b658e97). Both came in one batch (459446824). | **Fixed** on `-fix-tip`: the spec measures `<up-search-launcher>` |
-| MOD-I? | CI | Query budgets, Cluster and Load downloaded `uportal-maven-local` after 949f2cc95 renamed the artifact. af7c50676 changed only the browsers job. | **Fixed** on `-fix-tip` |
-| MOD-I? | Persistence | The 5.17 schema on SQL Server stores portlet-list names as `varchar`, so text outside windows-1252 becomes `?`. 967daa074 brought the check into CI. | **Tests adapted** on `-fix-tip`. Fixed by MOD-D44 in the 6.0 schema step |
+| MOD-I370 | Tests | The RTL spec measured `#webSearchContainer`, which the search web components removed (uPortal-start b0b658e97). Both came in one batch (459446824). | **Fixed** on `-fix-tip`: the spec measures `<up-search-launcher>` |
+| MOD-I371 | CI | Query budgets, Cluster and Load downloaded `uportal-maven-local` after 949f2cc95 renamed the artifact. af7c50676 changed only the browsers job. | **Fixed** on `-fix-tip` |
+| MOD-I372 | Persistence | The 5.17 schema on SQL Server stores portlet-list names as `varchar`, so text outside windows-1252 becomes `?`. 967daa074 brought the check into CI. | **Tests adapted** on `-fix-tip`. Fixed by MOD-D44 in the 6.0 schema step |
