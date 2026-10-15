@@ -30,6 +30,10 @@ Server's default collation, `varchar` columns keep only windows-1252, so emoji o
 group names, portlet titles, layout names or user attributes doesn't fit. The tool then stops
 and reports each such column, the number of rows and the key of one of them.
 
+A 6.0 portal on SQL Server still creates those `varchar` columns. Until they become `nvarchar`
+(MOD-D44), SQL Server changes text that people enter outside windows-1252. A portlet list named
+"Λίστα" is stored as "??sta", and each character that has no windows-1252 form becomes `?`.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
