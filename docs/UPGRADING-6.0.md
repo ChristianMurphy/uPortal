@@ -30,6 +30,14 @@ Server's default collation, `varchar` columns keep only windows-1252, so emoji o
 group names, portlet titles, layout names or user attributes doesn't fit. The tool then stops
 and reports each such column, the number of rows and the key of one of them.
 
+On MariaDB 11.6 and later, InnoDB's REPEATABLE READ refuses to update a row that another
+transaction changed after this one read it ("Record has changed since last read", error 1020).
+uPortal runs its layout saves, its counter blocks (`UP_SEQUENCE`) and its cluster locks under READ
+COMMITTED on every database. Layout saves of the same user that overlap no longer fail on
+MariaDB, and neither do servers that fetch a block of the same counter at the same moment. The
+later save replaces the earlier one, as on the other databases. Your database settings don't need
+to change.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
