@@ -36,10 +36,10 @@ uPortal-start under the same path, and a note your brief placed there stays ther
 * To take in newer commits from the integration branch, merge `origin/ccr-43ba0785-hzlrj5` into
   your topic branch. Don't rebase commits you have pushed.
 * The integration branch keeps a linear history (MOD-D32). The coordinator replays your
-  branch's own commits onto it and leaves your merge commits out. So a merge commit must only
-  combine the two sides. If resolving a conflict needs a real change, such as a version that one
-  side dropped, put it in an ordinary commit after the merge. A version setting was lost this
-  way once.
+  branch's own commits onto it and leaves your merge commits out. So a merge commit contains only
+  its conflict resolution. If resolving a conflict needs a real change, such as a version that
+  one side dropped, put it in an ordinary commit after the merge. A version setting and a docs
+  change (in merge commit 1c1b39734b) were lost this way.
 * Deleting a branch returns 403 from the git proxy. Leave the branch, and list it in your report
   for the owner to delete.
 * Don't start `CI.yml` or `integration.yml` by hand for the full matrix on your branch. Section 2
@@ -58,13 +58,25 @@ counted as the expected failure.
 | Change | Before you push | Runs to send with "ready to merge" |
 | --- | --- | --- |
 | Web component (uPortal API and component, uPortal-start specs and data) | Gradle tests of the changed modules, Vitest, and the characterisation spec, first on the portlet and then on the component | uPortal push runs. uPortal-start push runs on the branch with the same name (`Integration`, `CI`, and the equivalence and replay runs when they start) |
-| Test or script in uPortal-start only | `npx tsc`, lint, and the spec against a local portal | uPortal-start push runs. Check which uPortal commit they built (section 3) |
+| Test or script in uPortal-start only | `npm run lint` (tsc, type coverage and ESLint), and the spec against a local portal | uPortal-start push runs. Check which uPortal commit they built (section 3) |
 | Persistence, SQL or schema in uPortal | Gradle tests of the changed modules, with the persistence goldens on HSQLDB | uPortal push runs. A `db-integration.yml` run started by hand on the topic branch (push runs cover PostgreSQL 18 and MariaDB 12.3, and the manual run adds MySQL, SQL Server and Oracle). One uPortal-start `Integration` run on the branch with the same name, with that uPortal build |
 | Copy tool (`uPortal-db-migrate`) | the module's tests | uPortal push runs, and `db-migrate.yml` and `db-integration.yml` started by hand (the manual copy tool run adds the SQL Server and Oracle pairs and the mutation tests). A uPortal-start `Integration` run when G-migrate or `tests/db/migrate.sh` depends on the change |
 | CI workflow | zizmor (`--offline` here) and actionlint pass without findings | a run of the changed workflow on your topic branch in which the changed job ran. For a job that runs only nightly, a temporary push trigger, then a commit that restores the schedule |
 | Anything that changes what the portal sends: markup, JSON, headers or status codes, in uPortal or uPortal-start | Run the replay locally (`tests/replay`) against your uPortal and uPortal-start branches. Register every difference in `tests/replay/intended-differences.json` with `visible` and, if sites can notice it, the UPGRADING-6.0 heading. Seed one fault and show the replay reports it | A uPortal-start `HTTP replay` run in which "Replay against 5.17" ran and passed. On a topic push that job runs only when `tests/replay` changes, so a green run that skipped it isn't evidence. For a change made only in uPortal, push the entries on the uPortal-start branch of the same name |
 | Docs only | `vale.sh docs` on the changed files, and `npx remark -f --no-stdout <files>` in uPortal | none. A `[skip ci]` push doesn't start the commit message job. The Prose job of the next run checks every doc in scope |
 
+* For every Java change in uPortal, also run `./gradlew spotbugsMain` before you push. `build`
+  and `check` don't run SpotBugs (`runOnCheck = false`), and CI does. For every change to
+  uPortal-start's tests or scripts, also run `npm run lint`, which uPortal-start's CI runs too.
+* `TZ` is an input of every uPortal test task, so `TZ=Australia/Sydney ./gradlew <module>:test`
+  runs the tests again. A zone set any other way, such as `-Duser.timezone`, isn't an input: add
+  `--rerun` to the Gradle command, or Gradle reuses the result from the last zone.
+* A spec that accepts any Unicode text (MOD-D49) asks the database vendor on SQL Server until the
+  6.0 schema step (MOD-D44). The 5.17 schema stores `varchar` there, so text outside
+  windows-1252 becomes `?` (MOD-I372).
+* With each local Playwright result, record the browser revision (the `chromium-<n>` directory
+  that ran it) and the memory available when it ran. Chromium 1248 crashed on this machine when it
+  was near its memory limit, and CI didn't (MOD-I373).
 * The uPortal-start row for persistence is the newest rule (MOD-D53, "Lesson"). The six-vendor DB
   integration workflow runs uPortal's own tests, and they didn't load a layout through the query
   that lost its table alias (MOD-I224). The portal's PostgreSQL run in uPortal-start would have
@@ -158,6 +170,11 @@ Send the coordinator job IDs and the line with the cause. Don't paste whole logs
   minutes holds them back for 40 minutes. Run long builds and test suites in the background and
   check on them, so a message that changes your plan reaches you before the next step.
 * Before you start a step, read the messages that arrived. A decision there can change the step.
+* Before a long wait, such as a CI run or a long build, commit locally and write the next step
+  into your note. Agents have stopped at the session's usage limit. With a local commit and a next step, such a
+  stop doesn't lose any work.
+* Send your final report once, then end your turn. Don't send it again when a background wait
+  ends. The coordinator reads the remaining CI runs itself.
 
 ## 6. Shared files that conflict often
 
@@ -214,6 +231,8 @@ python3 .github/scripts/check-freeze-store.py "$(git merge-base origin/ccr-43ba0
   (MOD-D43), and lists each added entry as a warning. Use the merge base as `<base>`, because the
   integration branch tip may hold removals your branch hasn't merged yet. CI compares each push
   with the branch's previous head.
+* An ArchUnit refreeze rewrites line numbers in store files your change doesn't touch. Restore
+  those files (`git checkout HEAD -- <file>`) and commit only the entries for your change.
 * Fix a finding by rewriting. A suppression (`<!-- vale ai-tells.Rule = NO -->` and `= YES`) is
   allowed only around verbatim text, such as a quote, an error message or a product name, with a
   comment that gives the reason.
@@ -261,8 +280,16 @@ The rules that agents hit most often:
 * **The shared machine** (local agents). Memory and disk are tight. Run each portal session and
   each multi-container database test through the coordinator's `portal-slot.sh` (your brief gives
   the path), which allows two at a time. Run `disk-guard.sh` before big steps. When two portals
-  already run, use CI instead of a third. When you finish, remove your worktrees, build
-  outputs, containers and images. Never run `./gradlew --stop`, which stops other agents' daemons.
+  already run, use CI instead of a third. When you finish, run `tomcatStop` and then `hsqlStop`
+  (`tomcatStop` leaves HSQLDB running on 8887), and remove your worktrees, build outputs,
+  containers and images. Never run `./gradlew --stop`, which stops other agents' daemons.
+* **One-off builds** pass `--no-daemon`. A daemon left behind holds about 2.7 GB of the shared
+  memory.
+* **Preflight.** Before you start a portal, run `.github/scripts/preflight.sh <uPortal-start
+  checkout>` from uPortal. It checks the JDKs in both `.sdkmanrc` files, the Chromium revision
+  that the pinned Playwright version downloads, the portal's ports and at least 4 GB of available memory, and
+  reports whether the token may start `workflow_dispatch` runs. Don't start a portal while it
+  fails.
 * **Processes.** Stop only processes you started, by exact PID, after checking the command line.
   Never use `pkill -f` or `killall` with a pattern.
 * **TLS and the proxy.** Keep TLS verification on and keep `HTTPS_PROXY` set. For proxy
@@ -305,3 +332,41 @@ The rules that agents hit most often:
 * Write the cause in the commit body of the fix. Past causes were slow first logins on a portal
   that had just started, two specs logging in as the same user in parallel, and a wait for every
   XHR where requests ran long.
+
+## 11. Surveys and landings
+
+* Every survey of branches or runs starts with `git fetch` of both remotes, and its report states
+  the tip SHAs it used. A survey that read uPortal-start before a fetch reported about 20 unmerged
+  topics. After the fetch, a few commits were left.
+* Run `.github/scripts/tip-status.sh` (uPortal) at the start and the end of a coordinator session
+  and before every landing. It prints the latest run of every workflow a landing needs on both
+  integration tips and fails when the last finished one is red.
+* The coordinator merges only the fix for a red tip until the tip is green again. A test may count as a known flake only
+  through an owner-approved LOG row with an expiry date. Past that date, it is a failure again.
+  The G-migrate target suite was red on 20 Integration runs in a row, each time for a different
+  reason, while the branch kept moving.
+* Before the replay, the coordinator numbers the LOG rows in the topic's notes. Then
+  `.github/scripts/check-placeholders.sh <tip> <topic head>`, in each repository, must pass. It
+  fails on a `MOD-I?`, `MOD-D?`, `RUNS_PLACEHOLDER` or `START_SHA` that the topic adds to a
+  Markdown file.
+* Re-read the topic's note against the tip. A parallel fix may have overtaken it.
+* After the replay, diff the topic head against the replayed result (`git diff <topic head>
+  <replayed head>`) and explain each remaining hunk. A change made inside a merge commit shows up
+  here as a missing hunk.
+* A topic whose last commit carries `[skip ci]` can't be the landing head unchanged: reword that
+  commit in the replay. A push whose head has `[skip ci]` doesn't start any run.
+
+## 12. Briefs
+
+The coordinator's brief for a topic:
+
+* Quotes the output of `.github/scripts/preflight.sh` from the day it was written. Briefs gave a
+  wrong Chromium revision and said `workflow_dispatch` was available.
+* Lists each commit that the agent should bring over as present, missing or unknown. `git cherry
+  -v <tip> <topic head>` marks a commit already on the tip with `-`. A `+` commit is missing,
+  unless a diff of the topic head against the tip shows its change under another commit, and
+  then it is unknown. Earlier briefs called commits conflicts that were already on the tip.
+* Gives commit subjects that pass `check-commit-messages.sh`. Write them into a scratch commit
+  range, or check each one by hand against section 7, before sending the brief.
+* Asks the agent to list, in its report, what it added beyond the brief.
+* Asks for the final report once, at the end (section 5).
