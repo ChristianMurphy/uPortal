@@ -3,8 +3,9 @@
 # Layout writes that overlap, on MariaDB and everywhere (MOD-I360 to MOD-I364)
 
 Branch `ccr-43ba0785-hzlrj5-mariadb-layout-store` in uPortal and in uPortal-start, both from the
-integration branch. uPortal has the database fixes. uPortal-start has the spec isolation. The
-portal side of the reset flakes (MOD-I363) waits for the owner's choice of semantics.
+integration branch. uPortal has the database fixes and the layout reload fix. uPortal-start has
+the spec isolation. The owner chose option A for the reload (MOD-I363): serialize the reload per
+session and read the PLF from the database on a cache miss.
 
 ## What failed
 
@@ -62,12 +63,28 @@ The HSQLDB artifact shows two different failures, and neither is an empty stored
 * `counterStoreTransactionOperations` in `persistenceContext.xml` runs under READ COMMITTED (commit
   `fix(persistence): fetch counter blocks under read committed`). The test builds that bean from
   the production XML, so reverting the XML fails it.
+* `DistributedLayoutManager.getDistributedUserLayout` is synchronized and drops the session's PLF
+  on a cache miss. The store then reads it from the database again. `saveUserLayout` saves the
+  session's PLF without looking the layout up first, which after an eviction would have reloaded it
+  and dropped the change being saved (commit `fix(layout): reload a session's layout from the
+  database`). Sessions show another session's change at their next page load after a sign-in of
+  that user evicts the cache.
+* A reset purges the user's cache entries after its commit, as a sign-in does (commit
+  `fix(layout): show a reset in every session at its next page load`, the owner's option 2). Every
+  session of the user, the one that reset included, shows the default layout at its next page
+  load. Without the purge, another session that kept its cache entry saved its old copy at its
+  next edit and undid the reset: a local run of the reset spec next to the favorites spec hit
+  that in 1 of 3 rounds. The note under the channel's description says so in English, Spanish and
+  French (`reset.my.layout.note`). The German, Japanese, Latvian, Macedonian and Swedish bundles
+  still tell users to sign in again. A reload still saves the PLF it just read
+  when the merge changed it, so a save by another session between that read and that save is
+  still lost. Versioning (MOD-I364) would close that too.
 * uPortal-start: the Reset My Layout API spec's user tests sign in as the developer and run in
-  serial mode, and the UX spec's Reset My Layout describe runs in serial mode (commit
-  `test(e2e): keep the reset api spec off the student's layout`). The developer's layout isn't
-  changed by any other spec. The Spanish and French tests in the UX spec still sign in as the
-  developer and change only the locale, so until MOD-I363 is fixed their reloads could still save
-  an old copy.
+  serial mode (commit `test(e2e): keep the reset api spec off the student's layout`). The UX
+  spec's Reset My Layout describe runs in serial mode as `riley`, a new quickstart student whose
+  layout no other spec changes (commit `test(e2e): give the reset ux spec a student of its own`).
+  The developer's layout isn't changed by any other spec. The Spanish and French tests in the UX
+  spec still sign in as the developer and change only the locale.
 
 ## Tests
 
@@ -83,6 +100,18 @@ runs them.
 | `testLayoutSavedBetweenReadAndWrite` | fails on MariaDB 12.3 (1020 on UP_LAYOUT_PARAM). Passes on HSQLDB | passes on all six vendors |
 | `testStructIdTakenBetweenReadAndWrite` | fails on HSQLDB ("A and B got the same id. Actual: s1") and on MariaDB 12.3 (1020 on UP_USER) | passes on all six vendors |
 | `testBlockTakenBetweenReadAndWrite` | fails on MariaDB 12.3 (1020 on UP_SEQUENCE) | passes on all six vendors |
+
+`DistributedLayoutManagerReloadTest` (uPortal-layout-impl) runs `DistributedLayoutManager` on the
+real `LayoutCachingService` with a store that handles the PLF as `RDBMDistributedLayoutStore`
+does: it uses the person's copy if there is one, merges into it in place and saves it.
+
+| Test | Old code | Fixed code |
+| --- | --- | --- |
+| `testConcurrentReloadsInOneSession` | fails: `DOMException: NOT_FOUND_ERR` in the second reload | passes, three runs in a row |
+| `testTabAddedInAnotherSessionSurvivesAReload` | fails: expected `[Welcome, Reset test]` but was `[Welcome]` | passes |
+| `testResetHoldsAfterAnotherSessionReloads` | fails: expected `[Welcome]` but was `[Welcome, Reset test]` | passes |
+| `testSaveAfterAnEvictionKeepsTheChange` | passes (guards the new `saveUserLayout`) | passes |
+| `UserLayoutHelperImplTest` (uPortal-layout-core) | doesn't compile (no purge) | passes: the purge waits for the commit, and runs at once without a transaction |
 
 The six-vendor results are in "Evidence" below.
 
@@ -125,5 +154,5 @@ From a read-only review. None of them is fixed here.
 | MOD-I360 | Persistence | **Data loss on MariaDB 11.6+.** A layout save that overlaps another save of the same user fails with 1020 "Record has changed since last read in table 'up_layout_param'": `setUserLayout` reads, then deletes and inserts the user's rows, under REPEATABLE READ with `innodb_snapshot_isolation`. Parallel sign-ins of one user each save the merged layout. Found by uPortal-start run 38204127794, job 114669441841 (G-migrate to MariaDB 12.3). | **Fixed**: the layout store's transactions run under READ COMMITTED. `testLayoutSavedBetweenReadAndWrite` fails on the old code on MariaDB 12.3 and passes on all six vendors. Upstream candidate. |
 | MOD-I361 | Persistence | `RDBMUserLayoutStore.getNextStructId` read `NEXT_STRUCT_ID`, updated it where unchanged and ignored the update count, so two requests of one user could get the same structure id on every database (1020 on MariaDB 11.6+). | **Fixed**: increment first, then read. `testStructIdTakenBetweenReadAndWrite` fails on the old code on HSQLDB (`s1` twice) and MariaDB 12.3, and passes on all six vendors. Upstream candidate. |
 | MOD-I362 | Persistence | `HibernateStyleCounterStore`'s compare-and-set on `UP_SEQUENCE` fails with 1020 on MariaDB 11.6+ when two servers fetch a block of the same counter at once. The store's retry never runs. User and group creation in a cluster. | **Fixed**: `counterStoreTransactionOperations` runs under READ COMMITTED. `testBlockTakenBetweenReadAndWrite` builds the production bean, fails on the old definition on MariaDB 12.3 and passes on all six vendors. Upstream candidate. |
-| MOD-I363 | Layout | **Lost layout changes.** The layout cache is shared by all sessions of a user, and every sign-in evicts it. Each other session then reloads with the PLF copy it took at its own sign-in, merges into it in place (unsynchronized, so two requests of one session give `DOMException NOT_FOUND_ERR` and a 500) and saves that old copy when the merge changed it. A tab added in another session is deleted, and a reset is undone. All databases, not new in 6.0. Found by reset-my-layout:181 and :211 (runs 38204127794, 38672160727). | uPortal-start: the reset API spec signs in as the developer, and both reset describes run serially. Portal: **open, waiting for the owner** to choose between reloading the PLF from the database on a cache miss with a per-session lock (A), only the lock (B) or a per-session cache (C). |
-| MOD-I364 | Layout | An explicit layout edit (such as addTab) in a session whose PLF is older than another session's save still overwrites that save with a whole-layout copy. Users with two devices or windows can lose changes. | **Open.** Needs per-user layout versioning (a version on `UP_USER_LAYOUT`, checked when the layout is saved), so that an old copy is refused or merged. Not on this topic. |
+| MOD-I363 | Layout | **Lost layout changes.** The layout cache is shared by all sessions of a user, and every sign-in evicts it. Each other session then reloads with the PLF copy it took at its own sign-in, merges into it in place (unsynchronized, so two requests of one session give `DOMException NOT_FOUND_ERR` and a 500) and saves that old copy when the merge changed it. A tab added in another session is deleted, and a reset is undone. All databases, not new in 6.0. Found by reset-my-layout:181 and :211 (runs 38204127794, 38672160727). | **Fixed** (owner's options A and 2): `getDistributedUserLayout` is synchronized and reads the PLF from the database on a cache miss, `saveUserLayout` saves the session's PLF without a lookup, and a reset purges the user's cache entries after its commit. `DistributedLayoutManagerReloadTest` fails on the old code (NOT_FOUND_ERR, lost tab, undone reset). uPortal-start: the reset specs run serially, the API one as the developer and the UX one as the new student `riley`. Upstream candidate. |
+| MOD-I364 | Layout | An explicit layout edit (such as addTab) in a session whose PLF is older than another session's save still overwrites that save with a whole-layout copy, and so does a reload's save in the moment between its read and its write. Users with two devices or windows can lose changes. | **Open.** Needs per-user layout versioning (a version on `UP_USER_LAYOUT`, checked when the layout is saved), so that an old copy is refused or merged. Not on this topic. |
