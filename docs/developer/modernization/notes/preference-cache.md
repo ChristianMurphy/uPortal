@@ -46,24 +46,27 @@ through a query it is the `EntityNotFoundException`.
 
 ## The fix
 
-The collection now uses `READ_WRITE`. A save puts a lock in the region,
-and when the lock is released it records the time. A load that started
-before then may not put its list in the region, so step 3 does nothing,
-and the next load reads the database.
+The collection uses `READ_WRITE`. The fix for stale portlet definitions
+in the cache (`a59286925`, MOD-I204) made that change on the integration
+branch first. The integration branch took this branch's test and the
+comment on the mapping (`eb23c6891`, `0e7b08049`), and the mapping
+already matched. A save puts a lock in the region, and when the lock is
+released it records the time. A load that started before then may not
+put its list in the region. Step 3 does nothing, and the next load reads
+the database.
 
 Evicting the entry when a save is refused would not cover it. A session
 that only reads, such as a page render, can put the old list in the same
 way, and then no save follows to remove it. Retrying the refused save
 does not remove the entry either.
 
-The preference set and preference entities, and the preference values
-collection, keep `NONSTRICT_READ_WRITE`. The same order could leave an
-old version or old values in their regions. No test shows a failure from
-them yet, so they are not changed: `READ_WRITE` adds a lock entry and a
-timestamp check to every save and load of those regions, and nothing yet
-shows what that buys. To change them, a test would have to hold a load in
-the same way and then show a later session reading an old set version
-(every save refused) or an old preference value from the cache.
+The same MOD-I204 fix also moved the preference set entity and the
+preference values collection to `READ_WRITE`. The preference entity keeps
+`NONSTRICT_READ_WRITE`. The same order could leave an old preference in
+its region, and no test shows a failure from it yet. `READ_WRITE` adds a
+lock entry and a timestamp check to every save and load of the region. To
+change it, a test would have to hold a load in the same way and then show
+a later session reading an old preference from the cache.
 
 With JGroups replication (`ehcache.xml`) the region still replicates by
 invalidation. The lock entries count as updates, so other servers remove

@@ -138,9 +138,10 @@ Playwright 1.64.
 The coordinator landed uPortal `7769bf8` and uPortal-start `283b22d` as uPortal `5a7276803` and
 uPortal-start `ad9521267`. Evidence: uPortal CI 38130739840 (full matrix, green) and uPortal-start
 Integration 38130741635 (18 jobs, green). The MOD-D49 to MOD-D51 work above (`ee07cbf`, `0ea55db`
-and the uPortal-start es/fr spec) follows in a later batch with its own push run.
+and the uPortal-start es/fr spec `2886eb998`) is in landing batch 1, the branch
+`ccr-43ba0785-hzlrj5-batch-1` in both repositories. The coordinator pushes that branch and runs its
+push runs.
 
 ## Next step
 
-Run CI.yml by hand on the uPortal topic branch and integration.yml on the uPortal-start topic
-branch, then send the coordinator the run IDs and head SHAs.
+None on this branch. The batch's push runs are the landing evidence.
