@@ -146,6 +146,28 @@ From a read-only review. None of them is fixed here.
   `RDBMUserLayoutStoreConcurrencyTest` (2 tests) and `CounterStoreTest` (2 tests) pass with no
   failures, errors or skips on HSQLDB, PostgreSQL 18, MariaDB 12.3, MySQL 9.7, SQL Server 2025 and
   Oracle 23.
+* HSQLDB, the changed modules: uPortal-webapp 465 tests with the persistence goldens,
+  uPortal-api-rest 321, uPortal-layout-core 48, uPortal-layout-impl 12, uPortal-rdbm 3, and the
+  web components (`vpCheck`, `vpTest`: 1527 tests), all passing. `check` of uPortal-layout-impl,
+  uPortal-layout-core and uPortal-rdbm passes, SpotBugs included. CI run 38687851498 failed on
+  SpotBugs inconsistent synchronization, which the next commit fixes. Local runs before had
+  skipped `check`.
+* uPortal-start, a local HSQLDB portal on this branch's uPortal (5.17.10-SNAPSHOT), through
+  `portal-slot.sh`:
+  * DB harness on HSQLDB: zero drift, with riley's five intended changes found.
+  * Both reset specs, `--repeat-each=5 --workers=1`: 90 passed.
+  * The reset specs with favorites, background preference and portlet options, `--workers=4`,
+    five rounds: every reset test passed in every round. Favorites failed in 3 rounds.
+  * Favorites, background preference and portlet options only, five rounds each: on the
+    integration tip's uPortal, favorites failed in 3 rounds (`:272`, `:288`, `:314`). On this
+    branch, favorites failed in 1 round (`:314`) and everything else passed. A first run on this
+    branch timed out in background preference hooks while another agent's job held the other
+    slot, and it passed in the second run. So the favorites flake comes from favorites and
+    portlet options changing the student's favorites in parallel, before this branch.
+* uPortal-start runs on f818656bd (uPortal 3d72b8056e): CI 38689486345, HTTP replay 38689486358,
+  Migration equivalence 38689486422 and G-index 38689486473 passed. Integration 38689486418 failed
+  only on `layout/pages.spec.ts:98` at 320px, `rtl-theme.spec.ts:123` and the Cluster job's
+  artifact download. The batch-1 and layout-calendar branches fail the same way.
 
 ## Proposed LOG rows (MOD-I360 to MOD-I364)
 
