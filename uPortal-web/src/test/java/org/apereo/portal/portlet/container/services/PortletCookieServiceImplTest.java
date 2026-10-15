@@ -18,6 +18,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -30,7 +32,6 @@ import org.apereo.portal.portlet.om.IPortalCookie;
 import org.apereo.portal.portlet.om.IPortletCookie;
 import org.apereo.portal.portlet.om.IPortletWindowId;
 import org.easymock.EasyMock;
-import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,7 +80,7 @@ public class PortletCookieServiceImplTest {
         when(portletCookieServiceMock.convertToCookie(any(IPortalCookie.class), anyBoolean()))
                 .thenReturn(convertedCookie);
 
-        when(portletCookie.getExpires()).thenReturn(DateTime.now().plusHours(1));
+        when(portletCookie.getExpires()).thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
 
         Set<IPortletCookie> portletCookies =
                 new HashSet<>(Collections.singletonList(portletCookie));
@@ -90,7 +91,7 @@ public class PortletCookieServiceImplTest {
         when(portletCookieServiceMock.getSessionOnlyPortletCookieMap(request))
                 .thenReturn(sessionOnlyPortletCookieMap);
 
-        when(sessionOnlyCookie.getExpires()).thenReturn(DateTime.now().plusHours(1));
+        when(sessionOnlyCookie.getExpires()).thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
         when(sessionOnlyCookie.toCookie()).thenReturn(new Cookie("sessionCookie", "sessionValue"));
         when(sessionOnlyPortletCookieMap.values())
                 .thenReturn(Collections.singletonList(sessionOnlyCookie));
@@ -336,18 +337,18 @@ public class PortletCookieServiceImplTest {
     /** Mock {@link IPortalCookie} used in these tests. */
     class MockPortalCookie implements IPortalCookie {
 
-        private DateTime created = DateTime.now();
-        private DateTime expires = DateTime.now().plusHours(1);
+        private Instant created = Instant.now();
+        private Instant expires = Instant.now().plus(1, ChronoUnit.HOURS);
         private Set<IPortletCookie> portletCookies = new HashSet<IPortletCookie>();
         private String value;
 
         @Override
-        public DateTime getCreated() {
+        public Instant getCreated() {
             return this.created;
         }
 
         @Override
-        public DateTime getExpires() {
+        public Instant getExpires() {
             return this.expires;
         }
 
@@ -362,11 +363,11 @@ public class PortletCookieServiceImplTest {
         }
 
         @Override
-        public void setExpires(DateTime expires) {
+        public void setExpires(Instant expires) {
             this.expires = expires;
         }
 
-        public void setCreated(DateTime created) {
+        public void setCreated(Instant created) {
             this.created = created;
         }
 

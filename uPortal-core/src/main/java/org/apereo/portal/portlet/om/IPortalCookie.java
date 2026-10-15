@@ -14,8 +14,8 @@
  */
 package org.apereo.portal.portlet.om;
 
+import java.time.Instant;
 import java.util.Set;
-import org.joda.time.DateTime;
 
 /** Interface describing the parent cookie used to relate all Portlet Cookies to one HTTP Cookie. */
 public interface IPortalCookie {
@@ -28,19 +28,19 @@ public interface IPortalCookie {
     /**
      * @return the timestamp when this cookie was created
      */
-    DateTime getCreated();
+    Instant getCreated();
 
     /**
      * @return the timestamp when this cookie is due to expire
      */
-    DateTime getExpires();
+    Instant getExpires();
 
     /**
      * Update the expiration timestamp.
      *
      * @param expires
      */
-    void setExpires(DateTime expires);
+    void setExpires(Instant expires);
 
     /**
      * @return the set of {@link IPortletCookie}s linked to this instance

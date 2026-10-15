@@ -16,6 +16,8 @@ package org.apereo.portal.portlet.dao.jpa;
 
 import com.google.common.base.Function;
 import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -34,7 +36,6 @@ import org.apereo.portal.jpa.OpenEntityManager;
 import org.apereo.portal.portlet.dao.IPortletCookieDao;
 import org.apereo.portal.portlet.om.IPortalCookie;
 import org.apereo.portal.portlet.om.IPortletCookie;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -50,7 +51,7 @@ public class JpaPortletCookieDaoImpl extends BasePortalJpaDao implements IPortle
     private String deleteEmptyPortalCookieQueryString;
     private String deletePortletCookieQueryString;
     private CriteriaQuery<PortletCookieImpl> findExpiredByParentPortletCookiesQuery;
-    private ParameterExpression<DateTime> nowParameter;
+    private ParameterExpression<Instant> nowParameter;
 
     private static final int DEFAULT_EMPTY_MAX_AGE = (int) TimeUnit.DAYS.toSeconds(1);
     private int emptyCookieMaxAge = DEFAULT_EMPTY_MAX_AGE;
@@ -59,7 +60,7 @@ public class JpaPortletCookieDaoImpl extends BasePortalJpaDao implements IPortle
 
     @Override
     public void afterPropertiesSet() {
-        this.nowParameter = this.createParameterExpression(DateTime.class, "now");
+        this.nowParameter = this.createParameterExpression(Instant.class, "now");
 
         this.deletePortalCookieQueryString =
                 "DELETE FROM "
@@ -130,7 +131,7 @@ public class JpaPortletCookieDaoImpl extends BasePortalJpaDao implements IPortle
         } while (this.getPortalCookie(uniqueId) != null);
 
         // Calculate the expiration date for the cookie
-        final DateTime expiration = DateTime.now().plusSeconds(maxAge);
+        final Instant expiration = Instant.now().truncatedTo(ChronoUnit.MILLIS).plusSeconds(maxAge);
 
         // Create and persist
         final IPortalCookie portalCookie = new PortalCookieImpl(uniqueId, expiration);
@@ -153,7 +154,7 @@ public class JpaPortletCookieDaoImpl extends BasePortalJpaDao implements IPortle
     public IPortalCookie updatePortalCookieExpiration(IPortalCookie portalCookie, int maxAge) {
 
         // Calculate expiration date and update the portal cookie
-        final DateTime expiration = DateTime.now().plusSeconds(maxAge);
+        final Instant expiration = Instant.now().truncatedTo(ChronoUnit.MILLIS).plusSeconds(maxAge);
         portalCookie.setExpires(expiration);
 
         this.getEntityManager().persist(portalCookie);
@@ -164,7 +165,7 @@ public class JpaPortletCookieDaoImpl extends BasePortalJpaDao implements IPortle
     @Override
     @PortalTransactional
     public void purgeExpiredCookies(int maxAge) {
-        final DateTime now = DateTime.now();
+        final Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
         logger.debug("begin portlet cookie expiration");
 
@@ -206,7 +207,7 @@ public class JpaPortletCookieDaoImpl extends BasePortalJpaDao implements IPortle
                 entityManager.createQuery(this.deleteEmptyPortalCookieQueryString);
         // Add the maxAge to now and then subtract the emptyCookieMaxAge
         // For example (now + 1 year) - 1 day == the empty-cookie expiration date
-        final DateTime emptyExpiration = now.plusSeconds(maxAge).minusSeconds(emptyCookieMaxAge);
+        final Instant emptyExpiration = now.plusSeconds(maxAge).minusSeconds(emptyCookieMaxAge);
         deleteEmptyPortalCookieQuery.setParameter(this.nowParameter.getName(), emptyExpiration);
         final int deletedEmptyPortalCookies = deleteEmptyPortalCookieQuery.executeUpdate();
         logger.debug(

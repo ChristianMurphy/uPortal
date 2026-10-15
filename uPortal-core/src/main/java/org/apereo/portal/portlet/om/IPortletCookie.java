@@ -14,8 +14,8 @@
  */
 package org.apereo.portal.portlet.om;
 
+import java.time.Instant;
 import javax.servlet.http.Cookie;
-import org.joda.time.DateTime;
 
 /**
  * Internal interface for a JSR-286 Portlet cookie.
@@ -59,7 +59,7 @@ public interface IPortletCookie {
      * @see Cookie#getMaxAge()
      * @return the cookie max age (in minutes)
      */
-    DateTime getExpires();
+    Instant getExpires();
 
     /**
      * @see Cookie#getSecure()
@@ -111,7 +111,7 @@ public interface IPortletCookie {
      * @see Cookie#setMaxAge(int)
      * @param domain
      */
-    void setExpires(DateTime expires);
+    void setExpires(Instant expires);
 
     /**
      * Set the cookie secure flag.
