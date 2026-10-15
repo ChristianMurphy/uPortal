@@ -133,6 +133,23 @@ uportal.golden.record was set while running on postgresql". No golden file chang
 `TZ=<zone> ./gradlew test --rerun` ran all 38 test tasks (2271 tests) without failures in
 America/New_York, Australia/Sydney and UTC on the branch head.
 
+### CI (2026-10-15)
+
+* uPortal `ea15ba34f6`: DB integration 38683401799 and DB copy tool 38683401845 passed. CI
+  38683401816 failed on a SpotBugs finding in `AcademicTermDetailImpl` (null passed to the
+  `ZonedDateTime` constructor). `b6ebdf2c6e` fixes it: CI 38686266119, DB integration
+  38686266108 and DB copy tool 38686266105 passed. `spotbugsMain` passes locally on every
+  module.
+* uPortal-start `6448754326`, building uPortal `ea15ba34f6` (the `uPortal under test` notice of
+  the `Build uPortal` job): CI 38683411836, Migration equivalence 38683411873, HTTP replay
+  38683411806 and G-index 38683411851 passed. Integration 38683411805 failed on the known red
+  jobs only. The Playwright jobs on HSQLDB (116253776202) and PostgreSQL 18 (116253776217) each
+  had 8 failures, `pages.spec.ts:98` at 320 and 390 px and `rtl-theme.spec.ts:123`. Each also had
+  1 flaky test, `favorites.spec.ts:120` and `user-locale.spec.ts:121`.
+  `user-locale.spec.ts:121` also failed on batch-1 (Integration 38672648246). The cluster job
+  failed on the missing `uportal-maven-local` artifact. The Integration run predates
+  `b6ebdf2c6e`, which changes only the null check.
+
 ### ArchUnit freeze store
 
 | After commit | Joda-Time entries | Hibernate `Session` entries |
