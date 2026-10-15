@@ -38,6 +38,13 @@ MariaDB, and neither do servers that fetch a block of the same counter at the sa
 later save replaces the earlier one, as on the other databases. Your database settings don't need
 to change.
 
+A user's sessions show a layout reset at their next page load
+([Reset My Layout is a web component](#reset-my-layout-is-a-web-component)). They show a layout
+change made in another session at their next page load after any sign-in of that user, and no
+longer only at their own next sign-in. Before, such a session could save its older copy of the
+layout back, which undid a reset or removed the other session's change. A change made in a
+session that still shows the older layout still replaces the saved one.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
@@ -352,8 +359,10 @@ signed-in user's name from `GET /api/v6-0/layout/reset` and resets that user's l
 `POST /api/v6-0/layout/reset`. The request contains no user name or ID. The API resets only the
 layout of the session's user, and guests get 401. Users see the same steps and text. The first
 step explains the reset and offers Reset Now. The confirmation shows the user's name, with Reset
-Layout and Cancel. After the reset, the channel says Success and offers Continue. As before, the
-default layout shows from the user's next sign-in.
+Layout and Cancel. After the reset, the channel says Success and offers Continue. Every session
+of the user shows the default layout at its next page load, the page that reset included. The
+portlet showed it only from the user's next sign-in. The note under the description now says that
+the default layout shows the next time a page loads.
 
 Some things look different:
 
@@ -373,7 +382,8 @@ and `webComponent.moduleUrl`, both `up-reset-my-layout`. The ResetMyLayout portl
 and its flow will be removed in a later release.
 
 Administrators still reset other users' layouts in User Administration. That flow,
-`reset-user-layout`, is unchanged.
+`reset-user-layout`, is unchanged, except that the user's sessions also show the default layout
+at their next page load.
 
 ## Background Preference is a web component
 
