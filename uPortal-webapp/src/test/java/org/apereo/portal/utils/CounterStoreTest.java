@@ -15,7 +15,15 @@
 package org.apereo.portal.utils;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.sql.DataSource;
 import org.apereo.portal.ICounterStore;
 import org.junit.After;
 import org.junit.Before;
@@ -23,10 +31,16 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.expression.StandardBeanExpressionResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementSetter;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.jdbc.JdbcTestUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 /** */
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -41,6 +55,8 @@ public class CounterStoreTest {
     private ICounterStore counterStoreTwo;
 
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private DataSource dataSource;
+    @Autowired private ApplicationContext applicationContext;
 
     @Before
     public void onSetUp() throws Exception {
@@ -106,6 +122,90 @@ public class CounterStoreTest {
                                 "SELECT SEQUENCE_VALUE FROM UP_SEQUENCE WHERE SEQUENCE_NAME=?",
                                 Integer.class,
                                 "Test2"));
+    }
+
+    /**
+     * Two servers fetch a new block of the same counter at once: B reads the counter, A takes a
+     * block and commits, then B writes. B has to see that it lost the race and try again, as the
+     * store's compare-and-set expects. Under snapshot isolation the write of a row that changed
+     * after the transaction read it fails instead: MariaDB 11.6 and later do that by default under
+     * REPEATABLE READ ("Record has changed since last read in table 'UP_SEQUENCE'", MOD-I362). B
+     * uses the portal's own counterStoreTransactionOperations definition.
+     */
+    @Test
+    public void testBlockTakenBetweenReadAndWrite() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO UP_SEQUENCE (SEQUENCE_NAME, SEQUENCE_VALUE) VALUES ('Race', 1)");
+        final CountDownLatch read = new CountDownLatch(1);
+        final CountDownLatch resume = new CountDownLatch(1);
+        final AtomicReference<Thread> pausedThread = new AtomicReference<>();
+        final HibernateStyleCounterStore serverB = new HibernateStyleCounterStore();
+        serverB.setIncrementSize(3);
+        serverB.setInitialValue(1);
+        serverB.setTransactionOperations(portalCounterStoreTransactionOperations());
+        serverB.setJdbcOperations(
+                new JdbcTemplate(dataSource) {
+                    @Override
+                    public int update(String sql, PreparedStatementSetter pss) {
+                        if (sql.startsWith("UPDATE UP_SEQUENCE")
+                                && pausedThread.compareAndSet(Thread.currentThread(), null)) {
+                            read.countDown();
+                            try {
+                                if (!resume.await(30, TimeUnit.SECONDS)) {
+                                    throw new IllegalStateException("Not resumed");
+                                }
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                throw new IllegalStateException(e);
+                            }
+                        }
+                        return super.update(sql, pss);
+                    }
+                });
+
+        final AtomicInteger idOfB = new AtomicInteger();
+        final AtomicReference<Throwable> errorOfB = new AtomicReference<>();
+        final Thread threadB =
+                new Thread(
+                        () -> {
+                            try {
+                                idOfB.set(serverB.getNextId("Race"));
+                            } catch (Throwable t) {
+                                errorOfB.set(t);
+                            }
+                        },
+                        "CounterStoreTest-serverB");
+        pausedThread.set(threadB);
+        threadB.start();
+        assertTrue("B read the counter", read.await(30, TimeUnit.SECONDS));
+
+        final int idOfA = counterStoreOne.getNextId("Race");
+
+        resume.countDown();
+        threadB.join(TimeUnit.SECONDS.toMillis(30));
+        assertFalse(threadB.isAlive());
+        if (errorOfB.get() != null) {
+            throw new AssertionError("B failed instead of trying again", errorOfB.get());
+        }
+        assertNotEquals("A and B got the same id", idOfA, idOfB.get());
+    }
+
+    /**
+     * The portal's counterStoreTransactionOperations bean, built from persistenceContext.xml on
+     * this context's transaction manager.
+     */
+    private TransactionOperations portalCounterStoreTransactionOperations() {
+        final DefaultListableBeanFactory portalDefinitions = new DefaultListableBeanFactory();
+        new XmlBeanDefinitionReader(portalDefinitions)
+                .loadBeanDefinitions("classpath:properties/contexts/persistenceContext.xml");
+        final DefaultListableBeanFactory beanFactory =
+                new DefaultListableBeanFactory(applicationContext.getAutowireCapableBeanFactory());
+        beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver());
+        beanFactory.registerBeanDefinition(
+                "counterStoreTransactionOperations",
+                portalDefinitions.getBeanDefinition("counterStoreTransactionOperations"));
+        return beanFactory.getBean(
+                "counterStoreTransactionOperations", TransactionOperations.class);
     }
 
     protected void getValue(
