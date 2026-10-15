@@ -14,6 +14,8 @@
  */
 package org.apereo.portal.portlet.dao.jpa;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.Cacheable;
@@ -37,8 +39,6 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.NaturalId;
 import org.hibernate.annotations.NaturalIdCache;
-import org.hibernate.annotations.Type;
-import org.joda.time.DateTime;
 
 /** JPA annotated {@link IPortalCookie} annotation. */
 @Entity
@@ -63,12 +63,10 @@ class PortalCookieImpl implements IPortalCookie {
     private final long entityVersion;
 
     @Column(name = "CREATED", nullable = false, updatable = false)
-    @Type(type = "dateTime")
-    private DateTime created;
+    private Instant created;
 
     @Column(name = "EXPIRES", nullable = false, updatable = true)
-    @Type(type = "dateTime")
-    private DateTime expires;
+    private Instant expires;
 
     @NaturalId
     @Column(name = "COOKIE_VALUE", length = 100, nullable = false)
@@ -89,7 +87,7 @@ class PortalCookieImpl implements IPortalCookie {
     private PortalCookieImpl() {
         this.internalPortalCookieId = -1;
         this.entityVersion = -1;
-        this.created = DateTime.now();
+        this.created = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         this.expires = null;
         this.value = null;
         this.portletCookies = new HashSet<IPortletCookie>();
@@ -98,13 +96,13 @@ class PortalCookieImpl implements IPortalCookie {
     /**
      * @param value
      */
-    PortalCookieImpl(String value, DateTime expiration) {
+    PortalCookieImpl(String value, Instant expiration) {
         this.internalPortalCookieId = -1;
         this.entityVersion = -1;
 
         this.value = value;
 
-        this.created = DateTime.now();
+        this.created = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         this.expires = expiration;
         this.portletCookies = new HashSet<IPortletCookie>();
     }
@@ -120,7 +118,7 @@ class PortalCookieImpl implements IPortalCookie {
      * @return the created
      */
     @Override
-    public DateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
@@ -128,7 +126,7 @@ class PortalCookieImpl implements IPortalCookie {
      * @return the expires
      */
     @Override
-    public DateTime getExpires() {
+    public Instant getExpires() {
         return expires;
     }
 
@@ -152,7 +150,7 @@ class PortalCookieImpl implements IPortalCookie {
      * @param expires the expires to set
      */
     @Override
-    public void setExpires(DateTime expires) {
+    public void setExpires(Instant expires) {
         this.expires = expires;
     }
 

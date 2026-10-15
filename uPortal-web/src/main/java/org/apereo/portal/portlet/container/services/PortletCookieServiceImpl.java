@@ -14,6 +14,8 @@
  */
 package org.apereo.portal.portlet.container.services;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,7 +38,6 @@ import org.apereo.portal.portlet.dao.IPortletCookieDao;
 import org.apereo.portal.portlet.om.IPortalCookie;
 import org.apereo.portal.portlet.om.IPortletCookie;
 import org.apereo.portal.portlet.om.IPortletWindowId;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -173,8 +174,9 @@ public class PortletCookieServiceImpl implements IPortletCookieService, ServletC
 
         // Update the expiration date of the portal cookie stored in the DB if the update interval
         // has passed
-        final DateTime expires = portalCookie.getExpires();
-        if (DateTime.now()
+        final Instant expires = portalCookie.getExpires();
+        if (Instant.now()
+                .truncatedTo(ChronoUnit.MILLIS)
                 .minusMillis(this.maxAgeUpdateInterval)
                 .isAfter(expires.minusSeconds(this.maxAge))) {
             try {
@@ -212,7 +214,7 @@ public class PortletCookieServiceImpl implements IPortletCookieService, ServletC
         for (Entry<String, SessionOnlyPortletCookieImpl> entry : sessionOnlyCookies.entrySet()) {
             String key = entry.getKey();
             SessionOnlyPortletCookieImpl sessionOnlyCookie = entry.getValue();
-            if (sessionOnlyCookie.getExpires().isBeforeNow()) {
+            if (sessionOnlyCookie.getExpires().isBefore(Instant.now())) {
                 sessionOnlyCookies.remove(key);
             }
         }
@@ -244,7 +246,7 @@ public class PortletCookieServiceImpl implements IPortletCookieService, ServletC
         Set<IPortletCookie> portletCookies = new HashSet<IPortletCookie>();
         if (portalCookie != null) {
             for (IPortletCookie portletCookie : portalCookie.getPortletCookies()) {
-                if (portletCookie.getExpires().isAfterNow()) {
+                if (portletCookie.getExpires().isAfter(Instant.now())) {
                     portletCookies.add(portletCookie);
                 }
             }

@@ -15,11 +15,12 @@
 package org.apereo.portal.portlet.container.services;
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpSession;
 import org.apereo.portal.portlet.om.IPortletCookie;
-import org.joda.time.DateTime;
 
 /**
  * {@link IPortletCookie} implementation for {@link IPortletCookie}s that are only stored in the
@@ -36,7 +37,7 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
     private String path;
     private int version = 0;
     private boolean secure;
-    private DateTime expires;
+    private Instant expires;
 
     SessionOnlyPortletCookieImpl(Cookie cookie) {
         this.name = cookie.getName();
@@ -115,7 +116,7 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
         } else {
             return (int)
                     TimeUnit.MILLISECONDS.toSeconds(
-                            System.currentTimeMillis() - this.expires.getMillis());
+                            System.currentTimeMillis() - this.expires.toEpochMilli());
         }
     }
 
@@ -126,7 +127,7 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
         if (maxAge < 0) {
             this.expires = null;
         } else {
-            this.expires = DateTime.now().plusSeconds(maxAge);
+            this.expires = Instant.now().truncatedTo(ChronoUnit.MILLIS).plusSeconds(maxAge);
         }
     }
 
@@ -182,7 +183,7 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
      * @return the expires
      */
     @Override
-    public DateTime getExpires() {
+    public Instant getExpires() {
         return expires;
     }
 
@@ -190,7 +191,7 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
      * @param expires the expires to set
      */
     @Override
-    public void setExpires(DateTime expires) {
+    public void setExpires(Instant expires) {
         this.expires = expires;
     }
 
@@ -218,7 +219,8 @@ class SessionOnlyPortletCookieImpl implements IPortletCookie, Serializable {
     public void updateFromCookie(Cookie cookie) {
         this.setComment(cookie.getComment());
         this.setDomain(cookie.getDomain());
-        this.setExpires(DateTime.now().plusSeconds(cookie.getMaxAge()));
+        this.setExpires(
+                Instant.now().truncatedTo(ChronoUnit.MILLIS).plusSeconds(cookie.getMaxAge()));
         this.setPath(cookie.getPath());
         this.setSecure(cookie.getSecure());
         this.setValue(cookie.getValue());
