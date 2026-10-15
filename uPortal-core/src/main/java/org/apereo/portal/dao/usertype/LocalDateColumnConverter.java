@@ -20,8 +20,8 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
 /**
- * Stores a {@link LocalDate} in a {@code DATE} column as the same date, whatever the JVM's zone,
- * the way Jadira's {@code PersistentLocalDate} with {@code databaseZone=jvm} did.
+ * Stores a {@link LocalDate} in a {@code DATE} column as the same date, whatever the JVM's zone, as
+ * 5.17 stored it through Jadira's {@code PersistentLocalDate} with {@code databaseZone=jvm}.
  *
  * <p>The JDBC value is the date at the JVM's midnight. Hibernate 5.2 binds and reads {@code DATE}
  * without a calendar and ignores {@code hibernate.jdbc.time_zone}, so the driver converts in the

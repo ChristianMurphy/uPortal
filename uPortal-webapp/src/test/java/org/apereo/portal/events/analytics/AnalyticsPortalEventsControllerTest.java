@@ -19,45 +19,50 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.TimeZone;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** The requested dates become the same range the Joda-Time code computed. */
+/**
+ * The requested dates become the same range the Joda-Time code computed: UTC midnight seen in the
+ * default zone, to a calendar day later minus one second. The expected instants were recorded with
+ * Joda-Time 2.14.3.
+ */
 public class AnalyticsPortalEventsControllerTest {
     private TimeZone defaultTimeZone;
-    private DateTimeZone defaultDateTimeZone;
 
     @Before
     public void setUp() {
         defaultTimeZone = TimeZone.getDefault();
-        defaultDateTimeZone = DateTimeZone.getDefault();
     }
 
     @After
     public void tearDown() {
         TimeZone.setDefault(defaultTimeZone);
-        DateTimeZone.setDefault(defaultDateTimeZone);
     }
 
     @Test
     public void rangeMatchesJodaInSeveralZones() {
         for (final String zone : new String[] {"UTC", "America/New_York", "Asia/Kolkata"}) {
             TimeZone.setDefault(TimeZone.getTimeZone(zone));
-            DateTimeZone.setDefault(DateTimeZone.forID(zone));
             // The day of the 2026 US spring-forward change, and an ordinary range
-            assertRange("2026-03-08", "2026-03-08");
-            assertRange("2026-01-01", "2026-01-31");
+            assertRange(
+                    "2026-03-08",
+                    "2026-03-08",
+                    "2026-03-08T00:00:00Z",
+                    zone.equals("America/New_York")
+                            ? "2026-03-08T22:59:59Z"
+                            : "2026-03-08T23:59:59Z");
+            assertRange("2026-01-01", "2026-01-31", "2026-01-01T00:00:00Z", "2026-01-31T23:59:59Z");
         }
     }
 
-    private void assertRange(String start, String end) {
+    private void assertRange(String start, String end, String expectedStart, String expectedEnd) {
         final IAnalyticsPortalEventService service = mock(IAnalyticsPortalEventService.class);
         new AnalyticsPortalEventsController(service).getAnalytics(start, end, null, null);
 
@@ -66,16 +71,8 @@ public class AnalyticsPortalEventsControllerTest {
         final ArgumentCaptor<ZonedDateTime> endDate = ArgumentCaptor.forClass(ZonedDateTime.class);
         verify(service).getAnalytics(startDate.capture(), endDate.capture(), any(), any());
 
-        // What the Joda-Time version computed: UTC midnight, seen in the default zone
-        final DateTime jodaStart =
-                new DateTime(start + "T00:00:00Z").withZone(DateTimeZone.getDefault());
-        final DateTime jodaEnd =
-                new DateTime(end + "T00:00:00Z")
-                        .withZone(DateTimeZone.getDefault())
-                        .plusDays(1)
-                        .minusSeconds(1);
         assertEquals(ZoneId.systemDefault(), startDate.getValue().getZone());
-        assertEquals(jodaStart.getMillis(), startDate.getValue().toInstant().toEpochMilli());
-        assertEquals(jodaEnd.getMillis(), endDate.getValue().toInstant().toEpochMilli());
+        assertEquals(Instant.parse(expectedStart), startDate.getValue().toInstant());
+        assertEquals(Instant.parse(expectedEnd), endDate.getValue().toInstant());
     }
 }

@@ -16,9 +16,6 @@ dependencies {
     }
     api "org.springframework:spring-context-support:${springVersion}"
 
-    // needed for stats portlet
-    implementation "com.fasterxml.jackson.datatype:jackson-datatype-joda:${jacksonVersion}"
-
     testImplementation project(':uPortal-pluto:uPortal-pluto-container-api')
     testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"

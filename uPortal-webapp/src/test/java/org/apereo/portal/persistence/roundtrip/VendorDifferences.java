@@ -27,7 +27,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apereo.portal.test.golden.DatabaseVendor;
 import org.apereo.portal.test.golden.GoldenRenderer;
-import org.joda.time.DateTime;
 
 /**
  * The documented ways a database stores a value differently from HSQLDB, where the goldens are
@@ -114,10 +113,6 @@ final class VendorDifferences {
                         : string;
             }
             return expectedString(vendor, string);
-        }
-        if (value instanceof DateTime) {
-            final DateTime dateTime = (DateTime) value;
-            return new DateTime(timestampMillis(vendor, dateTime.getMillis()), dateTime.getZone());
         }
         if (value instanceof Instant) {
             return Instant.ofEpochMilli(timestampMillis(vendor, ((Instant) value).toEpochMilli()));
@@ -257,7 +252,7 @@ final class VendorDifferences {
     }
 
     /**
-     * Timestamps (Joda {@code DateTime} through Jadira, {@code java.util.Date}/{@code Calendar}):
+     * Timestamps ({@code Instant}, {@code java.util.Date}/{@code Calendar}):
      *
      * <ul>
      *   <li>MySQL: {@code datetime} without fractional seconds (MySQL5Dialect, MOD-I95); the server

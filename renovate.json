@@ -91,10 +91,6 @@
       "matchPackageNames": ["/^org.mockito/"]
     },
     {
-      "groupName": "User Type",
-      "matchPackageNames": ["/^org.jadira.usertype:usertype.core/"]
-    },
-    {
       "groupName": "JAXB2",
       "matchPackageNames": ["/^org.jvnet.jaxb2_commons/"]
     },

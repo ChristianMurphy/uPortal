@@ -19,8 +19,8 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
 /**
- * Stores a {@link MonthDay} as text in the ISO form {@code --MM-dd}, the way Jadira's {@code
- * PersistentMonthDayAsString} did.
+ * Stores a {@link MonthDay} as text in the ISO form {@code --MM-dd}, as 5.17 stored it through
+ * Jadira's {@code PersistentMonthDayAsString}.
  */
 @Converter
 public class MonthDayColumnConverter implements AttributeConverter<MonthDay, String> {
