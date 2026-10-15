@@ -85,9 +85,9 @@ import org.springframework.context.support.GenericXmlApplicationContext;
  * Analytics aggregation goldens (MOD-D29 item 3): {@link GoldenEventStream} is stored through the
  * raw-event store and aggregated by the real pipeline, the way the scheduler runs it ({@code
  * populateDimensions}, then {@code aggregateRawEvents}, which also closes finished intervals), in
- * two JVM time zones. The aggregate rows (logins, concurrent users, tab renders, portlet
- * executions, layout changes, searches), the event sessions, the aggregation status and one stored
- * raw event of each type are compared with {@code aggregation/<zone>.txt}.
+ * three JVM time zones (JvmTimeZone.GOLDEN_ZONES). The aggregate rows (logins, concurrent users,
+ * tab renders, portlet executions, layout changes, searches), the event sessions, the aggregation
+ * status and one stored raw event of each type are compared with {@code aggregation/<zone>.txt}.
  *
  * <p>The aggregation configuration is uPortal-start's {@code default.event-aggregation.xml}
  * (local.Everyone and local.Students; five-minute, hour, day and month intervals), with the login

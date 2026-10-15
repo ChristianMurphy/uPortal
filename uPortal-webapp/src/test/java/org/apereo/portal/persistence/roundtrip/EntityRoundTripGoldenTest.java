@@ -62,7 +62,7 @@ import org.springframework.context.support.GenericXmlApplicationContext;
  * Entity round trip (MOD-D29 item 7): every entity mapped in the three persistence units is built
  * with edge values ({@link Variant}), persisted, flushed, and read back in a new persistence
  * context, then compared field by field, including collections and associations. This runs on the
- * database of dataSource.properties (HSQLDB, or each vendor in db-integration.yml) and in two JVM
+ * database of dataSource.properties (HSQLDB, or each vendor in db-integration.yml) and in three JVM
  * time zones.
  *
  * <p>The golden {@code roundtrip/<unit>-<zone>.txt} records, from HSQLDB with Hibernate 4.3:

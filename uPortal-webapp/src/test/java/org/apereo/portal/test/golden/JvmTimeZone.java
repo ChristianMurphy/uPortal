@@ -29,11 +29,14 @@ import org.joda.time.DateTimeZone;
  */
 public final class JvmTimeZone implements AutoCloseable {
     /**
-     * The zones the goldens are recorded in: UTC, and a zone with DST that is behind UTC (the
-     * repeated hour in November is where JVM-local timestamps become ambiguous).
+     * The zones the goldens are recorded in: UTC, a zone with DST that is behind UTC (the repeated
+     * hour in November is where JVM-local timestamps become ambiguous), and a zone with DST that is
+     * ahead of UTC. Local midnight there falls on the previous UTC day, so a local date or time
+     * converted through UTC is stored a day or several hours off.
      */
     public static final List<String> GOLDEN_ZONES =
-            Collections.unmodifiableList(Arrays.asList("UTC", "America/New_York"));
+            Collections.unmodifiableList(
+                    Arrays.asList("UTC", "America/New_York", "Australia/Sydney"));
 
     private final TimeZoneTestUtils timeZoneTestUtils;
     private final String id;
