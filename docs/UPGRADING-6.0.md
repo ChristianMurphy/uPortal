@@ -34,6 +34,14 @@ A 6.0 portal on SQL Server still creates those `varchar` columns. Until they bec
 (MOD-D44), SQL Server changes text that people enter outside windows-1252. A portlet list named
 "Λίστα" is stored as "??sta", and each character that has no windows-1252 form becomes `?`.
 
+On MariaDB 11.6 and later, InnoDB's REPEATABLE READ refuses to update a row that another
+transaction changed after this one read it ("Record has changed since last read", error 1020).
+uPortal runs its layout saves, its counter blocks (`UP_SEQUENCE`) and its cluster locks under READ
+COMMITTED on every database. Layout saves of the same user that overlap no longer fail on
+MariaDB, and neither do servers that fetch a block of the same counter at the same moment. The
+later save replaces the earlier one, as on the other databases. Your database settings don't need
+to change.
+
 ## uPortal classes moved out of Spring's packages
 
 A few uPortal classes used to live in Spring Framework's own packages. They now live under
