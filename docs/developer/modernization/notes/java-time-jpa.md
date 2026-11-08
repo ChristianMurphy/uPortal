@@ -1,10 +1,10 @@
 # Handoff: Joda-Time out of the JPA mappings (P3-5)
 
 Branch `ccr-43ba0785-hzlrj5-java-time-jpa` in uPortal, based on the integration branch at
-`47d6333e2c`, with the integration branch at `280a638dd` merged on 2026-11-08 (section "Merge of
-2026-11-08"). Plan step P3-5 in the LOG: `notes/java-time.md` plan steps 1 to 3, ADR 0007,
-MOD-I5 and MOD-D22. The schema is frozen (ADR 0006). Column types, names and stored values
-stay as they are, and a golden difference is a bug, never a re-record.
+`47d6333e2c`, with the integration branch at `280a638dd` and then at `0cf02679f` merged on
+2026-11-08 (section "Merges of 2026-11-08"). Plan step P3-5 in the LOG: `notes/java-time.md`
+plan steps 1 to 3, ADR 0007, MOD-I5 and MOD-D22. The schema is frozen (ADR 0006). Column types,
+names and stored values stay as they are, and a golden difference is a bug, never a re-record.
 
 ## Status
 
@@ -22,6 +22,8 @@ stay as they are, and a golden difference is a bug, never a re-record.
 | 7a | fix(events): check the term dates before converting them | done |
 | merge | Merge origin/ccr-43ba0785-hzlrj5 (280a638dd) into java-time-jpa | done, no conflicts |
 | 8 | docs: list the six user types that keep jadira's spi | done |
+| merge | Merge origin/ccr-43ba0785-hzlrj5 (0cf02679f) into java-time-jpa | done, no conflicts |
+| 9 | docs(notice): drop joda-time and jadira's usertype core | done |
 
 Each commit builds and passes the tests of the modules it changes on its own. The subjects of
 commits 0, 2, 3 and 5 are shorter than in the brief, which gave them over 72 characters.
@@ -37,7 +39,7 @@ Differences from the brief's sequence:
   chose to keep the SPI for it (option A, 2026-10-14). The open row below tracks its removal.
   Five more user types extend the same SPI classes (commit 8 and the Jadira SPI row below).
 
-## Merge of 2026-11-08
+## Merges of 2026-11-08
 
 The branch merged `origin/ccr-43ba0785-hzlrj5` at `280a638dd`, 41 commits after `47d6333e2c`, in
 merge commit `b2942c243`. Git didn't find any conflict, and the merge commit contains only the
@@ -65,9 +67,20 @@ may fail with 1020 on MariaDB 11.6+. This branch changes the type of the cookie 
 Joda-Time's `DateTime` to `Instant` and keeps the same reads and writes. It doesn't change that
 risk.
 
-Branches that aren't merged yet: the permission cache work (`-permission-race`) shares only
-`docs/UPGRADING-6.0.md` with this branch. `git merge-tree` merges this head with it and with
-`-layout-save-lock` without conflicts.
+Landing 4 (`0cf02679f`, 9 commits after `280a638dd`) brought the permission cache work
+(`-permission-race`): `AuthorizationImpl`, `AnyUnblockedGrantPermissionPolicy`, the new
+`DecisionCacheMarker`, comments in the two Ehcache files, a test in uPortal-webapp and a section
+in UPGRADING-6.0. It doesn't change a file of this branch apart from UPGRADING-6.0, and none of
+its code uses a date type. The second merge, `f7bbeee38`, had no conflicts either. In
+UPGRADING-6.0 the permission section ("Clusters: permission changes and portal events") comes
+after this branch's section, and both links to this branch's heading still resolve. That section
+names `PortalRawEventsAggregatorImpl.aggregationDelay` (default `PT30S`). This branch keeps the
+setting and its `TemporalAmount` type, and floors the newest event time to the second as
+Joda-Time's `roundFloorCopy` did. After the second merge, `git diff 0cf02679f f7bbeee38` lists the
+same 124 files.
+
+`-layout-save-lock` (MOD-I399) isn't merged yet. `git merge-tree` merges this head with it
+without conflicts, and it doesn't change a file of this branch.
 
 While re-reading the branch, commit 8 corrected one of its claims. The build comment in
 uPortal-core, UPGRADING-6.0 and the open row named `FunctionalNameType` as the only user of
@@ -216,6 +229,27 @@ Before any mapping change, a throwaway test (not committed) dumped HSQLDB's
 identical after commits 2, 3, 4, 5 and 6. The script is
 `~/wt/.agent-tmp/java-time-jpa/schema-check.sh`, and the test is in the same folder.
 
+### After the merges (2026-11-08)
+
+The local runs used Gradle 9.8.1 on JDK 21 with `--offline`, HSQLDB, and UTC as the machine's zone.
+
+| Command | Tree | Result |
+| --- | --- | --- |
+| `./gradlew --continue test` | first merge, `b2942c243` | 2158 tests in 38 modules, 0 failures, 153 skipped. uPortal-webapp ran 473, with the 13 golden cases (the aggregation in 3 zones, the round trip of 3 units in 3 zones, and the query golden) and the merged concurrency tests of the layout store (2), the locale store (3), the user import (1) and the counter store (2) |
+| `TZ=Australia/Sydney ./gradlew --continue test spotlessCheck spotbugsMain` | `1f4fb6efe`, the first merge and commit 8 | All 37 test tasks ran again, none reused: 2158 tests, 0 failures. `spotlessCheck` (69 tasks) and `spotbugsMain` (59 tasks) passed |
+| `./gradlew :uPortal-security:uPortal-security-permissions:test :uPortal-webapp:test` and that module's `spotbugsMain` | second merge, `f7bbeee38` | uPortal-webapp 483 tests, with `PermissionDecisionCacheRaceTest` (10) and the goldens, and `AuthorizationImplCacheTest` (8): 0 failures. SpotBugs passed |
+
+`:uPortal-db-migrate:compileTestJava` and `:uPortal-webcomponents:vpTest` couldn't run on this
+machine. This branch changes neither module, and CI runs both. The first needs jqwik 1.10.1, junit-platform-launcher 6.0.3 and
+byte-buddy-agent 1.18.11, which the offline Gradle cache doesn't have. The second needs Chromium
+1248, and only 1194 is installed.
+
+`check-freeze-store.py 280a638dd HEAD` passed: no rule grew. The Hibernate `Session` rule has 14
+entries on both sides. Its 10 warnings are the entries of `JpaPortalEventStore` recorded under
+the `Instant` signatures (section "ArchUnit freeze store").
+
+CI: section "CI (2026-11-08)".
+
 ## API breaks
 
 `docs/UPGRADING-6.0.md`, section "Joda-Time removed from the database mappings and the event
@@ -223,6 +257,21 @@ aggregation API", lists each changed class. In short, the public signatures
 of the events, event aggregation, cookie and statistics code use `java.time` types,
 `JodaTimeConversions` and `CustomDateMidnightEditor` are gone, and the Jadira typedefs are gone
 from `global.hbm.xml`.
+
+## Open items (2026-11-08)
+
+* Next step: push this head, then the uPortal-start branch of the same name (fast-forwarded to
+  its integration tip `9c20dbaf6`). Its push runs then build this uPortal head. When the uPortal
+  DB integration push run has finished, start `db-integration.yml` by hand on this branch for the
+  six vendors. Record the runs under "CI (2026-11-08)".
+* The user types on Jadira's SPI (row below) must move off it before P6.
+* The `DATE` binding (row below) is guarded by tests. Recheck it at P4-3 and P6.
+* Commit 6's message (`75c398e4b`) says that `usertype.spi` stays for `FunctionalNameType`
+  alone. The commit is pushed, so a reword is for the landing replay.
+* MOD-I382 (portlet cookies may fail with 1020 on MariaDB 11.6+) is still open. This branch
+  doesn't change it.
+* The HTTP replay ran in CI only. A local replay needs a portal and its data on a machine with
+  about 6 GB of free disk shared by three agents.
 
 ## Proposed LOG rows (MOD-I? until the coordinator numbers them)
 
