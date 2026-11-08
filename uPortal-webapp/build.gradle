@@ -100,7 +100,8 @@ dependencies {
     runtimeOnly "org.jasig.cas.client:cas-client-support-distributed-ehcache:${casClientVersion}"
     runtimeOnly "org.jasig.ehcache:ehcache-jgroups3replication:${ehcacheJgroups3ReplicationVersion}"
     runtimeOnly("org.jasig.portlet.utils:portlet-ws-util:${apereoPortletUtilsVersion}") {
-        // It declares joda-time 2.2 but none of its classes use it, and uPortal doesn't (MOD-I5)
+        // It declares joda-time 2.2. Only its org.jasig.xml.bind.JodaTypeConverter uses it, and
+        // nothing in uPortal or uPortal-start loads that class (MOD-I5, UPGRADING-6.0.md)
         exclude group: 'joda-time', module: 'joda-time'
     }
     // portlet-ws-util brings Spring-WS 2.1, which doesn't run on Spring 5 (MOD-I176)
