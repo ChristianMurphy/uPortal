@@ -15,6 +15,8 @@
 package org.apereo.portal.events.aggr;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 /** Details about a term of the year. Its dates are days in the JVM's zone. */
 public interface AcademicTermDetail extends DateRange<LocalDate>, Comparable<AcademicTermDetail> {
@@ -31,6 +33,21 @@ public interface AcademicTermDetail extends DateRange<LocalDate>, Comparable<Aca
 
     /** Set the end of the term, exclusive */
     void setEnd(LocalDate end);
+
+    /**
+     * @return The start of the term's first day in the JVM's zone. Where midnight repeats, it is
+     *     the midnight the term was stored with, as Joda-Time's DateMidnight was.
+     */
+    default ZonedDateTime getStartDateTime() {
+        return getStart().atStartOfDay(ZoneId.systemDefault());
+    }
+
+    /**
+     * @return The start of the day after the term in the JVM's zone, as {@link #getStartDateTime()}
+     */
+    default ZonedDateTime getEndDateTime() {
+        return getEnd().atStartOfDay(ZoneId.systemDefault());
+    }
 
     /** Compare to another {@link AcademicTermDetail}, must sort by {@link #getStart()} */
     @Override

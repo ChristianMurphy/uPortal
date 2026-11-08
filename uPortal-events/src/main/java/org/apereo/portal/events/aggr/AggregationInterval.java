@@ -15,6 +15,8 @@
 package org.apereo.portal.events.aggr;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
@@ -25,6 +27,13 @@ import java.time.temporal.TemporalAdjusters;
  *
  * <p>The interval arithmetic works in the zone of the {@link ZonedDateTime} it is given, the way
  * Joda-Time's did: a minute or an hour is elapsed time, and a day or longer follows the calendar.
+ *
+ * <p>{@link #determineStart(ZonedDateTime)} floors the way Joda-Time's {@code roundFloorCopy} did.
+ * A minute, five minutes or an hour is floored in the instant's own offset, so a zone whose
+ * daylight saving change isn't on a local hour, such as Pacific/Chatham, still steps forward. A day
+ * or longer starts at the local midnight with the instant's offset where that midnight has it, so
+ * where a fall-back repeats midnight, such as in America/Havana, an instant in the repeated hour
+ * gets the second midnight. A day that starts in a gap starts at the gap's end.
  */
 public enum AggregationInterval {
     /** 1 Minute */
@@ -109,24 +118,32 @@ public enum AggregationInterval {
      * @return The start of this interval in relation to the provided instant
      */
     public ZonedDateTime determineStart(ZonedDateTime instant) {
+        final OffsetDateTime inOwnOffset = instant.toOffsetDateTime();
         switch (this) {
             case MINUTE:
-                return instant.truncatedTo(ChronoUnit.MINUTES);
+                return inOwnOffset
+                        .truncatedTo(ChronoUnit.MINUTES)
+                        .atZoneSameInstant(instant.getZone());
             case FIVE_MINUTE:
-                return instant.truncatedTo(ChronoUnit.HOURS)
-                        .plusMinutes((instant.getMinute() / 5) * 5);
+                return inOwnOffset
+                        .truncatedTo(ChronoUnit.HOURS)
+                        .plusMinutes((instant.getMinute() / 5) * 5)
+                        .atZoneSameInstant(instant.getZone());
             case HOUR:
-                return instant.truncatedTo(ChronoUnit.HOURS);
+                return inOwnOffset
+                        .truncatedTo(ChronoUnit.HOURS)
+                        .atZoneSameInstant(instant.getZone());
             case DAY:
-                return instant.toLocalDate().atStartOfDay(instant.getZone());
+                return startOfDay(instant, instant.toLocalDate());
             case WEEK:
-                return instant.toLocalDate()
-                        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                        .atStartOfDay(instant.getZone());
+                return startOfDay(
+                        instant,
+                        instant.toLocalDate()
+                                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
             case MONTH:
-                return instant.toLocalDate().withDayOfMonth(1).atStartOfDay(instant.getZone());
+                return startOfDay(instant, instant.toLocalDate().withDayOfMonth(1));
             case YEAR:
-                return instant.toLocalDate().withDayOfYear(1).atStartOfDay(instant.getZone());
+                return startOfDay(instant, instant.toLocalDate().withDayOfYear(1));
             default:
                 throw new IllegalArgumentException(
                         "Cannot compute interval start time for "
@@ -134,6 +151,17 @@ public enum AggregationInterval {
                                 + " please use "
                                 + AggregationIntervalHelper.class);
         }
+    }
+
+    /**
+     * The start of the day in the instant's zone, with the instant's offset where that offset is
+     * valid at midnight, as Joda-Time's date fields floored. A day that starts in a gap starts at
+     * the gap's end.
+     */
+    private static ZonedDateTime startOfDay(ZonedDateTime instant, LocalDate date) {
+        final ZonedDateTime start =
+                ZonedDateTime.ofLocal(date.atStartOfDay(), instant.getZone(), instant.getOffset());
+        return start.toLocalDate().equals(date) ? start : date.atStartOfDay(instant.getZone());
     }
 
     /**

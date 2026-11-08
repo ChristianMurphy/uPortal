@@ -33,6 +33,7 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.events.aggr.AcademicTermDetail;
+import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.EventDateTimeUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
@@ -151,6 +152,17 @@ public class AcademicTermDetailImpl implements AcademicTermDetail, Serializable 
     public void setEnd(LocalDate end) {
         this.endDate = end;
         this.end = startOfDay(end);
+    }
+
+    /** The day's start of the stored instant in the JVM's zone, with its offset, as Joda-Time's */
+    @Override
+    public ZonedDateTime getStartDateTime() {
+        return AggregationInterval.DAY.determineStart(this.start.atZone(ZoneId.systemDefault()));
+    }
+
+    @Override
+    public ZonedDateTime getEndDateTime() {
+        return AggregationInterval.DAY.determineStart(this.end.atZone(ZoneId.systemDefault()));
     }
 
     @Override

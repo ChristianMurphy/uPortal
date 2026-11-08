@@ -17,7 +17,6 @@ package org.apereo.portal.events.aggr.dao.jpa;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.MonthDay;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
@@ -29,6 +28,7 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import org.apache.commons.lang.Validate;
 import org.apereo.portal.dao.usertype.MonthDayColumnConverter;
+import org.apereo.portal.events.aggr.AggregationInterval;
 import org.apereo.portal.events.aggr.EventDateTimeUtils;
 import org.apereo.portal.events.aggr.QuarterDetail;
 import org.hibernate.annotations.Cache;
@@ -140,10 +140,15 @@ public class QuarterDetailImpl implements QuarterDetail, Serializable {
 
     @Override
     public int compareTo(ZonedDateTime instant) {
-        final ZoneId zone = instant.getZone();
+        // Each day's start with the instant's offset where midnight repeats, as Joda-Time's
+        // MonthDay.toDateTime(instant).toDateMidnight()
         return EventDateTimeUtils.compareTo(
-                this.getStartDate(instant).atStartOfDay(zone).toInstant(),
-                this.getEndDate(instant).atStartOfDay(zone).toInstant(),
+                AggregationInterval.DAY
+                        .determineStart(instant.with(this.getStartDate(instant)))
+                        .toInstant(),
+                AggregationInterval.DAY
+                        .determineStart(instant.with(this.getEndDate(instant)))
+                        .toInstant(),
                 instant.toInstant());
     }
 

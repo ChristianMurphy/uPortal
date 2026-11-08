@@ -16,7 +16,6 @@ package org.apereo.portal.events.aggr;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -82,7 +81,7 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
             // non-matching term
             int count = 0;
             for (final AcademicTermDetail academicTerm : terms) {
-                final ZonedDateTime termStart = startOfDay(academicTerm.getStart());
+                final ZonedDateTime termStart = academicTerm.getStartDateTime();
                 if (end.isAfter(termStart) && !start.isAfter(termStart)) {
                     count++;
                 } else if (count > 0) {
@@ -153,7 +152,7 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
             // term
             final List<ZonedDateTime> result = new ArrayList<ZonedDateTime>(terms.size());
             for (final AcademicTermDetail academicTerm : terms) {
-                final ZonedDateTime termStart = startOfDay(academicTerm.getStart());
+                final ZonedDateTime termStart = academicTerm.getStartDateTime();
                 if (end.isAfter(termStart) && !start.isAfter(termStart)) {
                     result.add(start);
                 } else if (!result.isEmpty()) {
@@ -207,8 +206,14 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
                             this.eventAggregationManagementDao.getQuartersDetails();
                     final QuarterDetail quarterDetail =
                             EventDateTimeUtils.findDateRangeSorted(instant, quartersDetails);
-                    start = quarterDetail.getStartDate(date).atStartOfDay(date.getZone());
-                    end = quarterDetail.getEndDate(date).atStartOfDay(date.getZone());
+                    // The day's start with the date's offset where midnight repeats, as Joda-Time's
+                    // MonthDay.toDateTime(date).toDateMidnight()
+                    start =
+                            AggregationInterval.DAY.determineStart(
+                                    date.with(quarterDetail.getStartDate(date)));
+                    end =
+                            AggregationInterval.DAY.determineStart(
+                                    date.with(quarterDetail.getEndDate(date)));
                     break;
                 }
             case ACADEMIC_TERM:
@@ -221,8 +226,8 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
                         return null;
                     }
 
-                    start = startOfDay(academicTermDetail.getStart());
-                    end = startOfDay(academicTermDetail.getEnd());
+                    start = academicTermDetail.getStartDateTime();
+                    end = academicTermDetail.getEndDateTime();
 
                     break;
                 }
@@ -279,10 +284,5 @@ public class AggregationIntervalHelperImpl implements AggregationIntervalHelper 
                             + " which is more than the specified maximum of "
                             + maxTimes);
         }
-    }
-
-    /** The start of a term's day in the JVM's zone, the zone its dates are days in */
-    private static ZonedDateTime startOfDay(LocalDate date) {
-        return date.atStartOfDay(ZoneId.systemDefault());
     }
 }
