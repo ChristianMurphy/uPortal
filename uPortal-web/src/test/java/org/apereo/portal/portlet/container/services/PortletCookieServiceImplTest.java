@@ -379,4 +379,30 @@ public class PortletCookieServiceImplTest {
             this.value = value;
         }
     }
+
+    /** Only the portlet cookies that haven't expired reach the portlet */
+    @Test
+    public void getAllPortletCookiesDropsExpiredPortletCookies() {
+        final PortletCookieServiceImpl service = spy(new PortletCookieServiceImpl());
+        final IPortalCookie portalCookie = mock(IPortalCookie.class);
+        doReturn(portalCookie).when(service).getPortalCookie(request);
+        doReturn(new java.util.HashMap<String, SessionOnlyPortletCookieImpl>())
+                .when(service)
+                .getSessionOnlyPortletCookieMap(request);
+        when(request.getCookies()).thenReturn(null);
+
+        final IPortletCookie live = mock(IPortletCookie.class);
+        when(live.getExpires()).thenReturn(Instant.now().plus(1, ChronoUnit.HOURS));
+        when(live.toCookie()).thenReturn(new Cookie("live", "1"));
+        final IPortletCookie expired = mock(IPortletCookie.class);
+        when(expired.getExpires()).thenReturn(Instant.now().minus(1, ChronoUnit.HOURS));
+        when(expired.toCookie()).thenReturn(new Cookie("expired", "1"));
+        when(portalCookie.getPortletCookies())
+                .thenReturn(new HashSet<>(java.util.Arrays.asList(live, expired)));
+
+        final Cookie[] result = service.getAllPortletCookies(request, mock(IPortletWindowId.class));
+
+        assertEquals(1, result.length);
+        assertEquals("live", result[0].getName());
+    }
 }
