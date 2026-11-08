@@ -1,6 +1,7 @@
 import { css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import type { Messages } from '../../lib/i18n';
+import { isComposing } from '../../lib/keyboard';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
 import type { BackgroundPreference } from './background-api';
@@ -233,7 +234,7 @@ export class UpBackgroundPreference extends UpElement {
 
     readonly #keydown = (event: KeyboardEvent): void => {
         // While an input method composes text, its keys belong to it (MOD-D51)
-        if (event.isComposing) {
+        if (isComposing(event)) {
             return;
         }
         if (event.key === 'Escape' && this.#background.snapshot.can({ type: 'close' })) {
