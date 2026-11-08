@@ -167,8 +167,16 @@ On the merged head `11be9f6ce`:
 
 ### CI runs
 
-The push of the fix, the merge and this note starts the uPortal push runs. The next docs commit
-records them.
+Push runs of `4c4c82804` (the fix `453cedf0e`, the merge of `92f31a6aa` and this note), all
+green:
+
+| Run | Workflow | Result |
+| --- | --- | --- |
+| 42506212219 | CI | success. Job 128809298836 (ubuntu, Temurin 21): uPortal-webapp 486 tests, 410 passed, 0 failed, 76 skipped, the same counts as the local run. Commit messages and Prose (Vale) pass |
+| 42506212035 | DB integration | success (PostgreSQL 18 job 128809298580, MariaDB 12.3 job 128809298779) |
+| 42506212107 | DB copy tool | success |
+
+uPortal-start isn't changed, so the branch has no uPortal-start runs.
 
 ## Left open
 
@@ -191,4 +199,4 @@ records them.
 
 ## Status and next step
 
-Ready for review once the push runs pass. Next step: record the push runs here.
+Ready for review. The push runs passed. The next step is the review's findings, if it sends any.
