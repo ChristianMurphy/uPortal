@@ -94,7 +94,12 @@ public class EntityTypes {
         return dataResult;
     }
 
-    @Cacheable(cacheNames = "org.apereo.portal.EntityTypes.ID_BY_CLASS", key = "#type.Name")
+    /*
+     * The Class is the key. On Spring 5.3, a SpEL key such as "#type.Name" fails whenever the
+     * interface method cache of ClassUtils misses: SpEL then calls the interface method of the
+     * same name, Principal.getName() for IPerson.class, on the Class object.
+     */
+    @Cacheable("org.apereo.portal.EntityTypes.ID_BY_CLASS")
     public Integer getEntityIDFromType(Class<? extends IBasicEntity> type) {
         return DataAccessUtils.singleResult(
                 this.jdbcOperations.queryForList(

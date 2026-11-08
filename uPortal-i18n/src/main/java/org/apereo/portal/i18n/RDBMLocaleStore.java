@@ -37,6 +37,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionOperations;
@@ -56,7 +57,16 @@ public class RDBMLocaleStore implements ILocaleStore {
     public void setPlatformTransactionManager(
             @Qualifier(BasePortalJpaDao.PERSISTENCE_UNIT_NAME)
                     PlatformTransactionManager platformTransactionManager) {
-        this.transactionOperations = new TransactionTemplate(platformTransactionManager);
+        final TransactionTemplate localeTransactionTemplate =
+                new TransactionTemplate(platformTransactionManager);
+        /*
+         * A save locks the user's UP_USER row, then deletes the user's locales and inserts the
+         * new ones. A second save of the same user waits for the lock and then has to see, and
+         * delete, the rows the first one committed. READ COMMITTED gives that on every database,
+         * whatever isolation it defaults to, as for the layout store.
+         */
+        localeTransactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+        this.transactionOperations = localeTransactionTemplate;
     }
 
     @Resource(name = BasePortalJpaDao.PERSISTENCE_UNIT_NAME)
@@ -121,10 +131,38 @@ public class RDBMLocaleStore implements ILocaleStore {
                                     public Object doInConnection(Connection con)
                                             throws SQLException, DataAccessException {
 
+                                        /*
+                                         * Lock the user's row until the commit, so that two
+                                         * saves of one user run one after the other and the
+                                         * later one replaces the rows of the earlier one.
+                                         * Without it both deleted, then both inserted: the
+                                         * same locale twice violated the primary key, and two
+                                         * different ones both stayed.
+                                         */
+                                        final String lock =
+                                                "UPDATE UP_USER SET USER_DFLT_LAY_ID=USER_DFLT_LAY_ID"
+                                                        + " WHERE USER_ID=?";
+                                        PreparedStatement pstmt = con.prepareStatement(lock);
+                                        try {
+                                            pstmt.setInt(1, person.getID());
+                                            logger.debug(lock);
+                                            if (pstmt.executeUpdate() == 0) {
+                                                // Such as a user deleted while signed in: the
+                                                // save goes on, without the lock
+                                                logger.warn(
+                                                        "No UP_USER row for user id "
+                                                                + person.getID()
+                                                                + " to lock; saving the locales"
+                                                                + " without the lock");
+                                            }
+                                        } finally {
+                                            pstmt.close();
+                                        }
+
                                         // Delete the existing list of locales
                                         final String delete =
                                                 "DELETE FROM UP_USER_LOCALE WHERE USER_ID=?";
-                                        PreparedStatement pstmt = con.prepareStatement(delete);
+                                        pstmt = con.prepareStatement(delete);
                                         try {
                                             pstmt.clearParameters();
                                             pstmt.setInt(1, person.getID());
