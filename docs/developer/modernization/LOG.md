@@ -1920,7 +1920,20 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
     DB integration 38775911920 and DB copy tool 38775911950. uPortal-start Integration
     38775913145, CI 38775913441, Migration equivalence 38775913424, HTTP replay 38775913401,
     Workflow lint 38775913311 and G-index 38775913662. They were still running when the work
-    paused.
+    paused. All of them passed except uPortal-start Integration 38775913145, which built uPortal
+    `498252acd1` and finished red at 17:48Z:
+    * G-migrate postgres 16 to postgres 18 (job 116563567769) failed `pages.spec.ts:121` ("Layout
+      at 390px › admin"). That is MOD-I386, on the integration tip. In the same job,
+      `background-preference.spec.ts:124`, `favorites.spec.ts:272` and
+      `reset-my-layout.spec.ts:308` passed only on a retry.
+    * These jobs went red only because a test passed on a retry, which `failOnFlakyTests` counts
+      as a failure:
+      * Playwright on MariaDB 12.3 (job 116563567479), `self-edit-account.spec.ts:256`.
+      * Playwright on HSQLDB (job 116563567542), `visual-resource-server.spec.ts:153`.
+      * Playwright on PostgreSQL 18 (job 116563567668), `reset-my-layout.spec.ts:289`.
+      * G-migrate postgres 15 to MariaDB 12.3 (job 116563568282), `reset-my-layout.spec.ts:308`.
+    * The fixes for the red tip are on the `-admin-390`, `-test-users` and `-retry-flakes`
+      branches.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
@@ -2258,7 +2271,7 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I383 | Tests | Local runs of the landing 1 tree had failures with no known cause: `popular-portlets.spec.ts:226`, `favorites.spec.ts:314`, `self-edit-account.spec.ts:270`, and `reset-my-layout.spec.ts:238`, where riley's login ended with `ERR_ABORTED`. The last one fails at random on postgres-18 in run 38689486418 too. | **Open.** Unattributed. |
 | MOD-I384 | Tests | The cluster test's `lock-overlap.mjs` reads the local time in the portal log as UTC, so `no-overlap` fails on a machine outside UTC. The local matrix found it on a machine set to MST. | **Open**, small (uPortal-start). |
 | MOD-I385 | Tests | With `failOnFlakyTests`, the set of tests that pass only on a retry changes from run to run under load (favorites, portlet-options, search, user-locale, background-preference, per-role-pages, self-edit), on the tip and on batch 1 alike. | **Open.** The flake work after landing 1 starts from the local matrix lists. |
-| MOD-I386 | Tests | On the postgres 16 to 18 G-migrate pair, the target suite fails `pages.spec.ts:121`: the admin permissions manager overflows sideways at 390 pixels. It failed the same way on batch 1. Landing 1 local matrix. | **Open.** Not yet run on the integration tip, so unattributed. |
+| MOD-I386 | Tests | On the postgres 16 to 18 G-migrate pair, the target suite fails `pages.spec.ts:121`: the admin permissions manager overflows sideways at 390 pixels. It failed the same way on batch 1. Landing 1 local matrix. | **Open.** It fails on the integration tip too: uPortal-start Integration 38775913145 on `d1326f514`, with uPortal `498252acd1`, job 116563567769. The fix is on the `-admin-390` branch. |
 | MOD-I387 | Tests | On the postgres 15 to MariaDB G-migrate pair, the target suite had no failures, but it went red under `failOnFlakyTests` because some specs passed only on a retry: `portlet-modes.spec.ts` ("what is uPortal" and "word of the day") and `reset-my-layout.spec.ts:326`. Landing 1 local matrix. | **Open.** Part of the flake work in MOD-I385. |
 
 ## Open questions
