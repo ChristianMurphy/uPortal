@@ -350,10 +350,18 @@ The rules that agents hit most often:
   through an owner-approved LOG row with an expiry date. Past that date, it is a failure again.
   The G-migrate target suite was red on 20 Integration runs in a row, each time for a different
   reason, while the branch kept moving.
-* Before the replay, the coordinator numbers the LOG rows in the topic's notes. Then
-  `.github/scripts/check-placeholders.sh <tip> <topic head>`, in each repository, must pass. It
-  fails on a `MOD-I?`, `MOD-D?`, `RUNS_PLACEHOLDER` or `START_SHA` that the topic adds to a
-  Markdown file.
+* Before the replay, the coordinator numbers the LOG rows in the topic's notes. Then this check
+  must pass in each repository:
+
+  ```sh
+  .github/scripts/check-placeholders.sh "$(git merge-base origin/ccr-43ba0785-hzlrj5 <topic head>)" <topic head>
+  ```
+
+  It fails on a `MOD-I?`, `MOD-D?`, `RUNS_PLACEHOLDER` or `START_SHA` that the topic adds to a
+  Markdown file, and exits 2 when it can't run, such as on a revision that isn't a commit. Use the
+  merge base, as for `check-freeze-store.py`: with the tip as the first argument, the check
+  blames the topic for placeholders that the tip has numbered since. Use `origin/` refs, because
+  the local `ccr-43ba0785-hzlrj5` branch in the main clones is stale.
 * Re-read the topic's note against the tip. A parallel fix may have overtaken it.
 * After the replay, diff the topic head against the replayed result (`git diff <topic head>
   <replayed head>`) and explain each remaining hunk. A change made inside a merge commit shows up
