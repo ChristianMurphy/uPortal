@@ -2099,6 +2099,30 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   which then reverts that branch. The Session Timeout workload failures were found this way
   on a topic push.
 
+### MOD-D56: the owner's decisions of 2026-11-08
+
+* **Asked by the coordinator:** ten open questions from the day's reviews and landings.
+* **Decisions (owner, 2026-11-08):**
+  1. **P4-3, Q1 of `notes/p4-3-plan.md`:** Hibernate 5.6 first, on the Ehcache 2 cache (step S1),
+     then Caffeine with an invalidation channel that uPortal owns for the provider switch. The
+     coordinator's first topic is `-hibernate56`.
+  2. **Upstream:** the fixes that released 5.17 needs too (MOD-I360, MOD-I361, MOD-I362, MOD-I399,
+     MOD-I408 and MOD-I411) are split off and prepared for upstream from current upstream master.
+  3. **CalendarPortlet and French (MOD-I400):** an overlay in uPortal-start that escapes the JSON
+     in its JSPs, and a report to CalendarPortlet upstream.
+  4. **The permission cache race (MOD-I403):** a cache bug, handled in the open as MOD-I310
+     was. An issue or pull request upstream fixes it there.
+  5. **MOD-I405:** wait for step S5 of the P4-3 plan.
+  6. **MOD-I412:** remove the two uPortal 2.6 stylesheet keys in 6.0, and say so in UPGRADING-6.0.
+  7. **MOD-I406:** a small topic after step S1 reads the layout before the stylesheet preference
+     transaction starts.
+  8. **One shared copy of the Gradle distribution in CI (MOD-I397):** not now. Revisit if GitHub
+     release outages come back.
+  9. **MOD-D37, the history rewrite:** now. First the work in flight is merged and both old heads are
+     tagged. The new history is then built on the upstream units of item 2.
+  10. **NewsReaderPortlet's shared news set (MOD-I422):** a pull request for NewsReaderPortlet,
+      prepared from its upstream master. No known-flake row.
+
 ## Issues
 
 | ID | Area | Issue | Impact / plan |
