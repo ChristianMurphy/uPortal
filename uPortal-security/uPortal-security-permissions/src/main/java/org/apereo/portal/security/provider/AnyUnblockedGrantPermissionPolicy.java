@@ -79,6 +79,9 @@ public class AnyUnblockedGrantPermissionPolicy implements IPermissionPolicy {
 
     private Cache hasUnblockedGrantCache;
 
+    /** Tells a permission check whether a permission changed while it ran. */
+    private DecisionCacheMarker decisionCacheMarker;
+
     @Autowired
     public void setCacheManager(CacheManager cacheManager) {
         this.setHasUnblockedGrantCache(
@@ -87,6 +90,7 @@ public class AnyUnblockedGrantPermissionPolicy implements IPermissionPolicy {
 
     public void setHasUnblockedGrantCache(Cache hasUnblockedGrantCache) {
         this.hasUnblockedGrantCache = hasUnblockedGrantCache;
+        this.decisionCacheMarker = new DecisionCacheMarker(hasUnblockedGrantCache);
     }
 
     @Override
@@ -245,9 +249,15 @@ public class AnyUnblockedGrantPermissionPolicy implements IPermissionPolicy {
         if (cached != null) {
             return cached;
         }
+        // Read before the permissions and the parent groups' answers: the answer is cached only
+        // if no permission changed meanwhile
+        final String marker = decisionCacheMarker.current();
         final boolean answer =
                 hasUnblockedPathToGrant(service, principal, owner, activity, target, seenGroups);
-        hasUnblockedGrantCache.put(cacheKey, answer);
+        decisionCacheMarker.store(
+                marker,
+                () -> hasUnblockedGrantCache.put(cacheKey, answer),
+                () -> hasUnblockedGrantCache.evict(cacheKey));
         return answer;
     }
 
