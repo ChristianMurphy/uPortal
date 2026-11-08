@@ -69,8 +69,14 @@ counted as the expected failure.
   and `check` don't run SpotBugs (`runOnCheck = false`), and CI does. For every change to
   uPortal-start's tests or scripts, also run `npm run lint`, which uPortal-start's CI runs too.
 * `TZ` is an input of every uPortal test task, so `TZ=Australia/Sydney ./gradlew <module>:test`
-  runs the tests again. A zone set any other way, such as `-Duser.timezone`, isn't an input: add
-  `--rerun` to the Gradle command, or Gradle reuses the result from the last zone.
+  runs the tests again in that zone. `./gradlew -Duser.timezone=…` doesn't reach the tests: it
+  sets the property in Gradle's own JVM, and the build doesn't pass it on, so they run in the
+  default zone. To set the zone through a JVM option, use
+  `JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -Duser.timezone=<zone>"`. That isn't an input, so add
+  `--rerun`, and add `--rerun` to the next run without it too, or Gradle reuses the result from
+  the last zone. `uPortal-db-migrate` pins `user.timezone=America/New_York`
+  (`uPortal-db-migrate/build.gradle:190`), so there `TZ` reruns the tests without changing their
+  zone, and `JAVA_TOOL_OPTIONS` doesn't change it either.
 * A spec that accepts any Unicode text (MOD-D49) asks the database vendor on SQL Server until the
   6.0 schema step (MOD-D44). The 5.17 schema stores `varchar` there, so text outside
   windows-1252 becomes `?` (MOD-I372).
