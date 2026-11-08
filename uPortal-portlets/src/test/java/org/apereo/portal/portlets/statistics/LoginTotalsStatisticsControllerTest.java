@@ -59,6 +59,7 @@ public class LoginTotalsStatisticsControllerTest {
     private static final ZonedDateTime DAY3 = DAY1.plusDays(2);
 
     private LoginTotalsStatisticsController controller;
+    private AggregationIntervalHelper intervalHelper;
     private LoginReportForm form;
 
     @Before
@@ -69,7 +70,7 @@ public class LoginTotalsStatisticsControllerTest {
         final AggregatedGroupLookupDao groupDao = mock(AggregatedGroupLookupDao.class);
         when(groupDao.getGroupMapping(1L)).thenReturn(everyone);
 
-        final AggregationIntervalHelper intervalHelper = mock(AggregationIntervalHelper.class);
+        intervalHelper = mock(AggregationIntervalHelper.class);
         when(intervalHelper.getIntervalStartDateTimesBetween(
                         eq(AggregationInterval.DAY), any(), any(), anyInt()))
                 .thenReturn(Arrays.asList(DAY1, DAY2, DAY3));
@@ -169,5 +170,27 @@ public class LoginTotalsStatisticsControllerTest {
                         + "2026-10-02,0,0\n"
                         + "2026-10-03,1,2\n",
                 response.getContentAsString());
+    }
+
+    /**
+     * The report asks for the start day's midnight to the end day's last second, in the JVM's zone.
+     * The JVM is in New York here, so a range in UTC would differ.
+     */
+    @Test
+    public void reportRangeCoversTheWholeEndDay() {
+        final java.util.TimeZone defaultZone = java.util.TimeZone.getDefault();
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/New_York"));
+            controller.renderLoginAggregationReport(form);
+            final java.time.ZoneId zone = java.time.ZoneId.of("America/New_York");
+            org.mockito.Mockito.verify(intervalHelper)
+                    .getIntervalStartDateTimesBetween(
+                            eq(AggregationInterval.DAY),
+                            eq(LocalDate.of(2026, 10, 1).atStartOfDay(zone)),
+                            eq(LocalDate.of(2026, 10, 4).atStartOfDay(zone).minusSeconds(1)),
+                            anyInt());
+        } finally {
+            java.util.TimeZone.setDefault(defaultZone);
+        }
     }
 }
