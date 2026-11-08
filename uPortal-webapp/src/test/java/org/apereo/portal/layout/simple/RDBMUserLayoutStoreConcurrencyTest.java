@@ -31,10 +31,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import javax.sql.DataSource;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -61,12 +63,19 @@ import org.w3c.dom.Node;
  * each save the merged layout. Under snapshot isolation a write to a row that another transaction
  * changed after this one first read fails: MariaDB 11.6 and later do that by default under
  * REPEATABLE READ (innodb_snapshot_isolation), with error 1020 "Record has changed since last read
- * in table 'up_layout_param'". The databases that write the latest committed row pass either way.
+ * in table 'up_layout_param'" (MOD-I360). A save deletes the user's rows and inserts the new ones,
+ * and two saves whose deletes run before either commits insert the same keys: on PostgreSQL the
+ * second save's insert failed with a duplicate key on up_layout_param_pkey (MOD-I399). A save locks
+ * the user's profile rows first, so the second one waits for the first one's commit.
+ *
+ * <p>The test's connections default to SERIALIZABLE (rdbmUserLayoutStoreTestContext.xml), so a save
+ * that doesn't ask for READ COMMITTED itself shows up on every database, HSQLDB included.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath:rdbmUserLayoutStoreTestContext.xml")
 public class RDBMUserLayoutStoreConcurrencyTest {
     private static final int USER_ID = 9001;
+    private static final int SYSTEM_USER_ID = 0;
     private static final int PROFILE_ID = 1;
     private static final int LAYOUT_ID = 1;
 
@@ -82,8 +91,9 @@ public class RDBMUserLayoutStoreConcurrencyTest {
     public void setUp() {
         jdbcTemplate = new JdbcTemplate(dataSource);
         runSql(
-                "CREATE TABLE UP_USER (USER_ID integer NOT NULL, NEXT_STRUCT_ID integer,"
-                        + " LST_CHAN_UPDT_DT timestamp, PRIMARY KEY (USER_ID))");
+                "CREATE TABLE UP_USER (USER_ID integer NOT NULL, USER_NAME varchar(100),"
+                        + " NEXT_STRUCT_ID integer, LST_CHAN_UPDT_DT timestamp,"
+                        + " PRIMARY KEY (USER_ID))");
         runSql(
                 "CREATE TABLE UP_USER_PROFILE (USER_ID integer NOT NULL,"
                         + " PROFILE_ID integer NOT NULL, LAYOUT_ID integer,"
@@ -105,7 +115,18 @@ public class RDBMUserLayoutStoreConcurrencyTest {
                         + " STRUCT_PARM_NM varchar(35) NOT NULL,"
                         + " STRUCT_PARM_VAL varchar(2000) NOT NULL,"
                         + " PRIMARY KEY (USER_ID, LAYOUT_ID, STRUCT_ID, STRUCT_PARM_NM))");
-        jdbcTemplate.update("INSERT INTO UP_USER (USER_ID, NEXT_STRUCT_ID) VALUES (?, 0)", USER_ID);
+        jdbcTemplate.update(
+                "INSERT INTO UP_USER (USER_ID, USER_NAME, NEXT_STRUCT_ID) VALUES (?, 'student', 0)",
+                USER_ID);
+        // The template of a user's first layout
+        jdbcTemplate.update(
+                "INSERT INTO UP_USER (USER_ID, USER_NAME, NEXT_STRUCT_ID) VALUES (?, 'system', 0)",
+                SYSTEM_USER_ID);
+        jdbcTemplate.update(
+                "INSERT INTO UP_USER_LAYOUT (LAYOUT_ID, USER_ID, LAYOUT_TITLE, INIT_STRUCT_ID)"
+                        + " VALUES (?, ?, 'default layout', 1)",
+                LAYOUT_ID,
+                SYSTEM_USER_ID);
         jdbcTemplate.update(
                 "INSERT INTO UP_USER_PROFILE (USER_ID, PROFILE_ID, LAYOUT_ID) VALUES (?, ?, ?)",
                 USER_ID,
@@ -140,37 +161,123 @@ public class RDBMUserLayoutStoreConcurrencyTest {
     }
 
     /**
-     * A reads the user's layout id, B saves the whole layout and commits, then A replaces the rows
-     * B wrote. A has to save, and its layout is the one that remains.
+     * A reads the user's layout id and stops before its write, and B starts to save meanwhile. On
+     * MariaDB 11.6+ under REPEATABLE READ, B committed and A's delete then failed with 1020
+     * (MOD-I360). B now waits for A's lock: both save, and B's layout remains.
      */
     @Test
     public void testLayoutSavedBetweenReadAndWrite() throws Exception {
         store.setUserLayout(person, profile, layout("first"), false);
 
-        final Throwable errorOfA =
+        runPausedAt(
+                "DELETE FROM UP_LAYOUT_PARAM",
+                () -> store.setUserLayout(person, profile, layout("A"), false),
+                () -> store.setUserLayout(person, profile, layout("B"), false));
+
+        assertStoredLayout("B");
+        assertSavedUnderReadCommitted();
+    }
+
+    /**
+     * A deletes the user's rows and stops before its inserts, and B starts to save meanwhile. On
+     * PostgreSQL, B's delete waited for A's and then skipped the rows A had inserted, and B's
+     * insert failed with a duplicate key on up_layout_param_pkey (MOD-I399). B now waits for A's
+     * lock and replaces A's rows.
+     */
+    @Test
+    public void testLayoutSavedBetweenDeleteAndInsert() throws Exception {
+        store.setUserLayout(person, profile, layout("first"), false);
+
+        runPausedAt(
+                "INSERT INTO UP_LAYOUT_STRUCT",
+                () -> store.setUserLayout(person, profile, layout("A"), false),
+                () -> store.setUserLayout(person, profile, layout("B"), false));
+
+        assertStoredLayout("B");
+        assertSavedUnderReadCommitted();
+    }
+
+    /**
+     * The user's first layout, such as two sign-ins at once of a new user: the profile has no
+     * layout id and there are no rows to delete, so both saves inserted the same keys on every
+     * database (MOD-I399). B now waits for A's lock, reads the layout id A recorded and replaces
+     * A's rows.
+     */
+    @Test
+    public void testFirstLayoutSavedTwiceAtOnce() throws Exception {
+        makeNewUser();
+
+        runPausedAt(
+                "INSERT INTO UP_LAYOUT_STRUCT",
+                () -> store.setUserLayout(person, profile, layout("A"), false),
+                () -> store.setUserLayout(person, profile, layout("B"), false));
+
+        assertStoredLayout("B");
+        assertFirstLayoutRecorded();
+        assertSavedUnderReadCommitted();
+    }
+
+    /**
+     * The first layout of a user with two profiles, saved from both at once, such as a desktop and
+     * a mobile session. The profiles share the layout id, so the lock has to cover every profile
+     * row of the user, not only the saved profile's row.
+     */
+    @Test
+    public void testFirstLayoutOfTwoProfilesSavedAtOnce() throws Exception {
+        jdbcTemplate.update(
+                "INSERT INTO UP_USER_PROFILE (USER_ID, PROFILE_ID, LAYOUT_ID) VALUES (?, ?, ?)",
+                USER_ID,
+                PROFILE_ID + 1,
+                LAYOUT_ID);
+        makeNewUser();
+        final IUserProfile otherProfile = mock(IUserProfile.class);
+        when(otherProfile.getProfileId()).thenReturn(PROFILE_ID + 1);
+
+        runPausedAt(
+                "INSERT INTO UP_LAYOUT_STRUCT",
+                () -> store.setUserLayout(person, profile, layout("A"), false),
+                () -> store.setUserLayout(person, otherProfile, layout("B"), false));
+
+        assertStoredLayout("B");
+        assertFirstLayoutRecorded();
+        assertSavedUnderReadCommitted();
+    }
+
+    /**
+     * A takes the save's lock and stops, and B takes a structure id meanwhile, as updateNode does
+     * while it holds the layout manager's monitor. B must not wait for A: a save that joins a
+     * caller's transaction keeps its lock after the monitor is released, and the two would wait for
+     * each other where the database can't see it.
+     */
+    @Test
+    public void testStructIdTakenWhileALayoutSaves() throws Exception {
+        final AtomicReference<String> idOfB = new AtomicReference<>();
+
+        final boolean bWaited =
                 runPausedAt(
                         "DELETE FROM UP_LAYOUT_PARAM",
-                        () -> {
-                            store.setUserLayout(person, profile, layout("A"), false);
-                            return null;
-                        },
-                        () -> store.setUserLayout(person, profile, layout("B"), false));
+                        () -> store.setUserLayout(person, profile, layout("A"), false),
+                        () -> idOfB.set(store.getNextStructId(person, "s")),
+                        20);
 
-        if (errorOfA != null) {
-            throw new AssertionError("A failed instead of saving its layout", errorOfA);
-        }
-        assertEquals(
-                "A",
-                jdbcTemplate.queryForObject(
-                        "SELECT STRUCT_PARM_VAL FROM UP_LAYOUT_PARAM WHERE USER_ID=?",
-                        String.class,
-                        USER_ID));
-        assertEquals(
-                Integer.valueOf(1),
-                jdbcTemplate.queryForObject(
-                        "SELECT COUNT(*) FROM UP_LAYOUT_STRUCT WHERE USER_ID=?",
-                        Integer.class,
-                        USER_ID));
+        assertFalse("B waited for A's save", bWaited);
+        assertEquals("s1", idOfB.get());
+        assertStoredLayout("A");
+        assertSavedUnderReadCommitted();
+    }
+
+    /**
+     * A user whose session has an id without profile rows, such as a user deleted while signed in:
+     * there is no row to lock, and the save goes on as before.
+     */
+    @Test
+    public void testUserWithoutProfileRowStillSaves() {
+        jdbcTemplate.update("DELETE FROM UP_USER_PROFILE WHERE USER_ID=?", USER_ID);
+
+        store.setUserLayout(person, profile, layout("A"), false);
+
+        assertStoredLayout("A");
+        assertSavedUnderReadCommitted();
     }
 
     /**
@@ -182,18 +289,11 @@ public class RDBMUserLayoutStoreConcurrencyTest {
         final AtomicReference<String> idOfB = new AtomicReference<>();
         final AtomicReference<String> idOfA = new AtomicReference<>();
 
-        final Throwable errorOfA =
-                runPausedAt(
-                        "UPDATE UP_USER SET NEXT_STRUCT_ID",
-                        () -> {
-                            idOfA.set(store.getNextStructId(person, "s"));
-                            return null;
-                        },
-                        () -> idOfB.set(store.getNextStructId(person, "s")));
+        runPausedAt(
+                "UPDATE UP_USER SET NEXT_STRUCT_ID",
+                () -> idOfA.set(store.getNextStructId(person, "s")),
+                () -> idOfB.set(store.getNextStructId(person, "s")));
 
-        if (errorOfA != null) {
-            throw new AssertionError("A failed instead of taking an id", errorOfA);
-        }
         assertNotEquals("A and B got the same id", idOfB.get(), idOfA.get());
         assertEquals(
                 Integer.valueOf(2),
@@ -203,35 +303,112 @@ public class RDBMUserLayoutStoreConcurrencyTest {
                         USER_ID));
     }
 
+    /** {@link #runPausedAt(String, Runnable, Runnable, int)} with two seconds for B. */
+    private boolean runPausedAt(String sqlPrefix, Runnable taskOfA, Runnable taskOfB)
+            throws InterruptedException {
+        return runPausedAt(sqlPrefix, taskOfA, taskOfB, 2);
+    }
+
     /**
      * Runs {@code taskOfA} in a thread that stops before its first statement that starts with
-     * {@code sqlPrefix}, runs {@code taskOfB} on this thread meanwhile, then lets A go on.
+     * {@code sqlPrefix}, then {@code taskOfB} in a second thread. B has {@code secondsForB} seconds
+     * to finish, unless the database makes it wait for A, and then A goes on. Both tasks have to
+     * succeed.
      *
-     * @return what A threw, or {@code null}
+     * @return whether B was still running when A went on
      */
-    private Throwable runPausedAt(String sqlPrefix, Supplier<Void> taskOfA, Runnable taskOfB)
+    private boolean runPausedAt(
+            String sqlPrefix, Runnable taskOfA, Runnable taskOfB, int secondsForB)
             throws InterruptedException {
         final AtomicReference<Throwable> errorOfA = new AtomicReference<>();
-        final Thread threadA =
-                new Thread(
-                        () -> {
-                            try {
-                                taskOfA.get();
-                            } catch (Throwable t) {
-                                errorOfA.set(t);
-                            }
-                        },
-                        "RDBMUserLayoutStoreConcurrencyTest-A");
-        store.pause(threadA, sqlPrefix);
+        final AtomicReference<Throwable> errorOfB = new AtomicReference<>();
+        final Thread threadA = inThread("A", taskOfA, errorOfA);
+        final Thread threadB = inThread("B", taskOfB, errorOfB);
+        store.pause(threadA, sqlPrefix, threadB);
+
         threadA.start();
         assertTrue("A reached " + sqlPrefix, store.paused.await(30, TimeUnit.SECONDS));
-
-        taskOfB.run();
-
+        threadB.start();
+        assertTrue("B started", store.otherStarted.await(30, TimeUnit.SECONDS));
+        threadB.join(TimeUnit.SECONDS.toMillis(secondsForB));
+        final boolean bWaited = threadB.isAlive();
         store.resume.countDown();
-        threadA.join(TimeUnit.SECONDS.toMillis(30));
+        threadA.join(TimeUnit.SECONDS.toMillis(60));
+        threadB.join(TimeUnit.SECONDS.toMillis(60));
         assertFalse(threadA.isAlive());
-        return errorOfA.get();
+        assertFalse(threadB.isAlive());
+
+        if (errorOfA.get() != null) {
+            throw new AssertionError("A failed", errorOfA.get());
+        }
+        if (errorOfB.get() != null) {
+            throw new AssertionError("B failed", errorOfB.get());
+        }
+        return bWaited;
+    }
+
+    private static Thread inThread(String name, Runnable task, AtomicReference<Throwable> error) {
+        return new Thread(
+                () -> {
+                    try {
+                        task.run();
+                    } catch (Throwable t) {
+                        error.set(t);
+                    }
+                },
+                "RDBMUserLayoutStoreConcurrencyTest-" + name);
+    }
+
+    /** The user's layout is the one folder {@code name} saved, with one row in each table. */
+    private void assertStoredLayout(String name) {
+        assertEquals(
+                Collections.singletonList(name),
+                jdbcTemplate.queryForList(
+                        "SELECT STRUCT_PARM_VAL FROM UP_LAYOUT_PARAM WHERE USER_ID=?",
+                        String.class,
+                        USER_ID));
+        assertEquals(
+                Integer.valueOf(1),
+                jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM UP_LAYOUT_STRUCT WHERE USER_ID=?",
+                        Integer.class,
+                        USER_ID));
+    }
+
+    /** A user who never saved a layout: no layout id in the profiles and no UP_USER_LAYOUT row. */
+    private void makeNewUser() {
+        jdbcTemplate.update("UPDATE UP_USER_PROFILE SET LAYOUT_ID=NULL WHERE USER_ID=?", USER_ID);
+        jdbcTemplate.update("DELETE FROM UP_USER_LAYOUT WHERE USER_ID=?", USER_ID);
+    }
+
+    /** Every profile of the user has the layout id, and the user has one UP_USER_LAYOUT row. */
+    private void assertFirstLayoutRecorded() {
+        assertEquals(
+                Collections.singletonList(LAYOUT_ID),
+                jdbcTemplate.queryForList(
+                        "SELECT DISTINCT LAYOUT_ID FROM UP_USER_PROFILE WHERE USER_ID=?",
+                        Integer.class,
+                        USER_ID));
+        assertEquals(
+                Integer.valueOf(1),
+                jdbcTemplate.queryForObject(
+                        "SELECT COUNT(*) FROM UP_USER_LAYOUT WHERE USER_ID=?",
+                        Integer.class,
+                        USER_ID));
+    }
+
+    /**
+     * The test's connections default to SERIALIZABLE, so a save that doesn't ask for READ COMMITTED
+     * itself shows up here on every database.
+     */
+    private void assertSavedUnderReadCommitted() {
+        assertFalse("The store prepared statements", store.isolations.isEmpty());
+        for (final int isolation : store.isolations) {
+            assertEquals(
+                    "Isolation of a save's transaction",
+                    Connection.TRANSACTION_READ_COMMITTED,
+                    isolation);
+        }
     }
 
     private void runSql(String sql) {
@@ -255,19 +432,24 @@ public class RDBMUserLayoutStoreConcurrencyTest {
     }
 
     /**
-     * Saves one structure row and one parameter row per layout, and stops one thread before a given
-     * statement until the test lets it go on. The DLM methods are left abstract: the test creates
-     * it with Mockito, which calls the real methods.
+     * Saves one structure row and one parameter row per layout, stops one thread before a given
+     * statement until the test lets it go on, tells the test when another thread sends its first
+     * statement, and records the isolation level of every prepared statement's connection. The DLM
+     * methods are left abstract: the test creates it with Mockito, which calls the real methods.
      */
     abstract static class PausingLayoutStore extends RDBMUserLayoutStore {
         final CountDownLatch paused = new CountDownLatch(1);
         final CountDownLatch resume = new CountDownLatch(1);
+        final CountDownLatch otherStarted = new CountDownLatch(1);
+        final List<Integer> isolations = new CopyOnWriteArrayList<>();
         private volatile Thread pausedThread;
         private volatile String pauseBefore;
+        private volatile Thread otherThread;
 
-        void pause(Thread thread, String sqlPrefix) {
+        void pause(Thread thread, String sqlPrefix, Thread other) {
             pausedThread = thread;
             pauseBefore = sqlPrefix;
+            otherThread = other;
         }
 
         @Override
@@ -286,6 +468,9 @@ public class RDBMUserLayoutStoreConcurrencyTest {
         private Object pausing(Object target, Class<?> type) {
             final InvocationHandler handler =
                     (proxy, method, args) -> {
+                        if ("prepareStatement".equals(method.getName())) {
+                            isolations.add(((Connection) target).getTransactionIsolation());
+                        }
                         if (args != null && args.length > 0 && args[0] instanceof String) {
                             pauseIfDue((String) args[0]);
                         }
@@ -302,7 +487,9 @@ public class RDBMUserLayoutStoreConcurrencyTest {
         }
 
         private void pauseIfDue(String sql) throws InterruptedException {
-            if (Thread.currentThread() == pausedThread && sql.startsWith(pauseBefore)) {
+            if (Thread.currentThread() == otherThread) {
+                otherStarted.countDown();
+            } else if (Thread.currentThread() == pausedThread && sql.startsWith(pauseBefore)) {
                 pausedThread = null;
                 paused.countDown();
                 if (!resume.await(30, TimeUnit.SECONDS)) {
