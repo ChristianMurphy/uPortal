@@ -356,6 +356,12 @@ The rules that agents hit most often:
   through an owner-approved LOG row with an expiry date. Past that date, it is a failure again.
   The G-migrate target suite was red on 20 Integration runs in a row, each time for a different
   reason, while the branch kept moving.
+* Before a topic that changes code, tests or CI is merged, the coordinator reviews it with the
+  oss-review skill (owner, 2026-11-07): the topic head against the integration tip, as a draft
+  that is never posted. Verifiers try to disprove each finding. The confirmed findings go back to
+  the topic's agent, which fixes or answers each one, and a re-review checks the fix commits. A
+  small change can be reviewed inline. A docs-only topic skips the review, since the prose checks
+  cover it. Keep each topic's diff to its cause.
 * Before the replay, the coordinator numbers the LOG rows in the topic's notes. Then this check
   must pass in each repository:
 
