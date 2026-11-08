@@ -39,7 +39,7 @@ uPortal-start under the same path, and a note your brief placed there stays ther
   branch's own commits onto it and leaves your merge commits out. So a merge commit contains only
   its conflict resolution. If resolving a conflict needs a real change, such as a version that
   one side dropped, put it in an ordinary commit after the merge. A version setting and a docs
-  change (in merge commit 1c1b39734b) were lost this way.
+  change were lost this way. The docs change was in merge commit 38fe16ec1.
 * Deleting a branch returns 403 from the git proxy. Leave the branch, and list it in your report
   for the owner to delete.
 * Don't start `CI.yml` or `integration.yml` by hand for the full matrix on your branch. Section 2
