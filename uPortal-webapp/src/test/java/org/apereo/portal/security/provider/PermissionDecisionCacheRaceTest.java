@@ -36,13 +36,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Ehcache;
@@ -78,6 +81,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.springframework.cache.Cache;
 import org.springframework.cache.ehcache.EhCacheCacheManager;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -169,9 +173,10 @@ public class PermissionDecisionCacheRaceTest {
 
     @After
     public void tearDown() {
-        store.release();
+        store.inSelect.release();
         for (Node node : new Node[] {a, b}) {
             if (node != null) {
+                node.decisions.inPut.release();
                 node.ehcache.shutdown();
             }
         }
@@ -217,13 +222,51 @@ public class PermissionDecisionCacheRaceTest {
                 }) {
             assertTrue("ehcache.xml replicates " + cache, replicated.containsKey(cache));
         }
+        // JGroups sends the removals of the three caches in the order they were made only when they
+        // share one queue: all asynchronous with one interval (JGroupsCachePeer keys its queues by
+        // the interval, and sends a synchronous event at once)
+        final Properties decisions =
+                replicated.get(AuthorizationImpl.PRINCIPAL_HAS_PERMISSION_CACHE_NAME);
+        for (String cache :
+                new String[] {
+                    AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT_CACHE_NAME,
+                    IPermissionSet.class.getName()
+                }) {
+            for (String[] setting :
+                    new String[][] {
+                        {"replicateAsynchronously", "true"},
+                        {"asynchronousReplicationIntervalMillis", "1000"}
+                    }) {
+                assertEquals(
+                        cache + " " + setting[0] + " as PRINCIPAL_HAS_PERMISSION",
+                        setting(decisions, setting[0], setting[1]),
+                        setting(replicated.get(cache), setting[0], setting[1]));
+            }
+        }
+        for (String cache :
+                new String[] {
+                    AuthorizationImpl.PRINCIPAL_HAS_PERMISSION_CACHE_NAME,
+                    AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT_CACHE_NAME,
+                    IPermissionSet.class.getName()
+                }) {
+            assertEquals(
+                    cache + " replicates removals",
+                    "true",
+                    setting(replicated.get(cache), "replicateRemovals", "true"));
+        }
         return replicated;
+    }
+
+    /** A replicator setting, or JGroupsCacheReplicatorFactory's default; it trims the values. */
+    private static String setting(Properties replicator, String name, String byDefault) {
+        return replicator.getProperty(name, byDefault).trim().toLowerCase(Locale.ROOT);
     }
 
     /** One portal node: its caches, its AuthorizationImpl and its permission policy. */
     private final class Node {
         private final CacheManager ehcache;
         private final AuthorizationImpl authorization;
+        private final DecisionCache decisions;
 
         Node(Configuration configuration) {
             ehcache = new CacheManager(configuration);
@@ -282,6 +325,11 @@ public class PermissionDecisionCacheRaceTest {
                         }
                     };
             authorization.setCacheManager(cacheManager);
+            decisions =
+                    new DecisionCache(
+                            cacheManager.getCache(
+                                    AuthorizationImpl.PRINCIPAL_HAS_PERMISSION_CACHE_NAME));
+            authorization.setDoesPrincipalHavePermissionCache(decisions);
             authorization.setPermissionStore(store);
             authorization.setCachePermissions(true);
             authorization.setDefaultPermissionPolicy(policy);
@@ -382,6 +430,57 @@ public class PermissionDecisionCacheRaceTest {
         }
 
         assertEquals("node B after the removals and checks " + seen, after, b.check());
+        assertCachedAgain(b, "node B");
+    }
+
+    /**
+     * After a change the node caches its decisions again: the check after the first one that saw
+     * the change is answered from PRINCIPAL_HAS_PERMISSION.
+     */
+    private void assertCachedAgain(Node node, String nodeName) {
+        final int hits = node.decisions.hits.get();
+        assertEquals(after, node.check());
+        assertEquals(
+                nodeName + " answered the next check from PRINCIPAL_HAS_PERMISSION",
+                hits + 1,
+                node.decisions.hits.get());
+    }
+
+    /**
+     * Runs a check on the node in its own thread until the hold stops it, makes the change on node
+     * A and applies the removals node A sends to node B, then lets the check go on.
+     *
+     * @return what the held check decided
+     */
+    private Boolean checkHeldDuringTheChange(Node node, Hold hold) throws InterruptedException {
+        final AtomicReference<Boolean> decided = new AtomicReference<>();
+        final AtomicReference<RuntimeException> failed = new AtomicReference<>();
+        final Thread check =
+                new Thread(
+                        () -> {
+                            try {
+                                decided.set(node.check());
+                            } catch (RuntimeException e) {
+                                failed.set(e);
+                                hold.reached.countDown();
+                            }
+                        },
+                        "permission-check");
+        hold.holdNextOf(check);
+        check.start();
+        assertTrue(
+                "the check reached the hold", hold.reached.await(WAIT_SECONDS, TimeUnit.SECONDS));
+        assertNull("the check failed", failed.get());
+
+        change();
+        for (Removal removal : replication.drain()) {
+            removal.applyTo(b);
+        }
+        hold.release();
+        check.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS));
+        assertFalse("the check finished", check.isAlive());
+        assertNull("the check failed", failed.get());
+        return decided.get();
     }
 
     /**
@@ -391,42 +490,13 @@ public class PermissionDecisionCacheRaceTest {
      */
     private void aCheckThatReadThePermissionsBeforeTheChange(Node node, String nodeName)
             throws InterruptedException {
-        final AtomicReference<Boolean> paused = new AtomicReference<>();
-        final AtomicReference<RuntimeException> failed = new AtomicReference<>();
-        final Thread check =
-                new Thread(
-                        () -> {
-                            try {
-                                paused.set(node.check());
-                            } catch (RuntimeException e) {
-                                failed.set(e);
-                                store.read.countDown();
-                            }
-                        },
-                        "permission-check");
-        store.holdNextSelectOf(check);
-        check.start();
-        assertTrue(
-                "the check read the permissions", store.read.await(WAIT_SECONDS, TimeUnit.SECONDS));
-        assertNull("the check failed", failed.get());
-
-        change();
-        for (Removal removal : replication.drain()) {
-            removal.applyTo(b);
-        }
-        store.release();
-        check.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS));
-        assertFalse("the check finished", check.isAlive());
-        assertNull("the check failed", failed.get());
+        final Boolean held = checkHeldDuringTheChange(node, store.inSelect);
 
         assertEquals(
-                "the next check on "
-                        + nodeName
-                        + " (the paused check decided "
-                        + paused.get()
-                        + ")",
+                "the next check on " + nodeName + " (the held check decided " + held + ")",
                 after,
                 node.check());
+        assertCachedAgain(node, nodeName);
     }
 
     @Test
@@ -439,6 +509,125 @@ public class PermissionDecisionCacheRaceTest {
     public void aCheckOnTheOtherNodeThatReadThePermissionsBeforeTheChangeIsNotCached()
             throws InterruptedException {
         aCheckThatReadThePermissionsBeforeTheChange(b, "node B");
+    }
+
+    /**
+     * A check computes the old decision and finds the marker in place, then waits inside its put
+     * into PRINCIPAL_HAS_PERMISSION while node A changes the permission and both nodes clear their
+     * caches. Its put comes after the clear, so it has to take the decision out again.
+     */
+    private void aCheckHeldInItsPutDuringTheChange(Node node, String nodeName)
+            throws InterruptedException {
+        final Boolean held = checkHeldDuringTheChange(node, node.decisions.inPut);
+
+        assertEquals("what the held check decided, before the change", before, held);
+        assertEquals("the next check on " + nodeName, after, node.check());
+        assertCachedAgain(node, nodeName);
+    }
+
+    @Test
+    public void aCheckOnTheChangingNodeHeldInItsPutDoesNotKeepItsDecision()
+            throws InterruptedException {
+        aCheckHeldInItsPutDuringTheChange(a, "node A");
+    }
+
+    @Test
+    public void aCheckOnTheOtherNodeHeldInItsPutDoesNotKeepItsDecision()
+            throws InterruptedException {
+        aCheckHeldInItsPutDuringTheChange(b, "node B");
+    }
+
+    /** Holds one chosen thread at a point of the code, until the test releases it. */
+    private static final class Hold {
+        private final AtomicReference<Thread> thread = new AtomicReference<>();
+        private volatile CountDownLatch reached = new CountDownLatch(1);
+        private volatile CountDownLatch release = new CountDownLatch(1);
+
+        void holdNextOf(Thread chosen) {
+            reached = new CountDownLatch(1);
+            release = new CountDownLatch(1);
+            thread.set(chosen);
+        }
+
+        void release() {
+            release.countDown();
+        }
+
+        /** Called at the point: the chosen thread waits here the first time it passes. */
+        void here() {
+            if (thread.compareAndSet(Thread.currentThread(), null)) {
+                reached.countDown();
+                try {
+                    release.await(WAIT_SECONDS, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+    }
+
+    /**
+     * PRINCIPAL_HAS_PERMISSION as AuthorizationImpl sees it: counts the hits, and can hold a thread
+     * inside its next put, before the value reaches the cache.
+     */
+    private static final class DecisionCache implements Cache {
+        private final Cache cache;
+        private final Hold inPut = new Hold();
+        private final AtomicInteger hits = new AtomicInteger();
+
+        DecisionCache(Cache cache) {
+            this.cache = cache;
+        }
+
+        @Override
+        public String getName() {
+            return cache.getName();
+        }
+
+        @Override
+        public Object getNativeCache() {
+            return cache.getNativeCache();
+        }
+
+        @Override
+        public ValueWrapper get(Object key) {
+            return cache.get(key);
+        }
+
+        @Override
+        public <T> T get(Object key, Class<T> type) {
+            final T value = cache.get(key, type);
+            if (value != null) {
+                hits.incrementAndGet();
+            }
+            return value;
+        }
+
+        @Override
+        public <T> T get(Object key, Callable<T> valueLoader) {
+            return cache.get(key, valueLoader);
+        }
+
+        @Override
+        public void put(Object key, Object value) {
+            inPut.here();
+            cache.put(key, value);
+        }
+
+        @Override
+        public ValueWrapper putIfAbsent(Object key, Object value) {
+            return cache.putIfAbsent(key, value);
+        }
+
+        @Override
+        public void evict(Object key) {
+            cache.evict(key);
+        }
+
+        @Override
+        public void clear() {
+            cache.clear();
+        }
     }
 
     /** One removal JGroups sends to the other nodes. */
@@ -570,19 +759,7 @@ public class PermissionDecisionCacheRaceTest {
      */
     private static final class PermissionStore implements IPermissionStore {
         private final List<IPermission> rows = new CopyOnWriteArrayList<>();
-        private final AtomicReference<Thread> holdThread = new AtomicReference<>();
-        private volatile CountDownLatch read = new CountDownLatch(1);
-        private volatile CountDownLatch release = new CountDownLatch(1);
-
-        void holdNextSelectOf(Thread thread) {
-            read = new CountDownLatch(1);
-            release = new CountDownLatch(1);
-            holdThread.set(thread);
-        }
-
-        void release() {
-            release.countDown();
-        }
+        private final Hold inSelect = new Hold();
 
         @Override
         public IPermission[] select(
@@ -597,14 +774,7 @@ public class PermissionDecisionCacheRaceTest {
                     selected.add(row);
                 }
             }
-            if (holdThread.compareAndSet(Thread.currentThread(), null)) {
-                read.countDown();
-                try {
-                    release.await(WAIT_SECONDS, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            inSelect.here();
             return selected.toArray(new IPermission[0]);
         }
 
