@@ -8,8 +8,10 @@
 #   dispatch  whether the gh token may start workflow_dispatch runs. Reported, never a failure.
 #   chromium  the Chromium and headless-shell revisions that uPortal-start's pinned Playwright
 #             wants are installed (PLAYWRIGHT_BROWSERS_PATH, else ~/.cache/ms-playwright).
-#   jdk       the JDK in each repository's .sdkmanrc is installed under SDKMAN.
-#   port      the portal's ports are free (PORTS, default 8080 8005 8009 8887).
+#   jdk       a JDK with the major version of each repository's .sdkmanrc is installed under
+#             SDKMAN, in /usr/lib/jvm or at JAVA_HOME, where Gradle's toolchains find it too.
+#   port      the portal's ports are free (PORTS, default 8080 8005 8009 8887). A portal on other
+#             ports passes them, such as PORTS="8480 8405 8487".
 #   memory    at least 4 GB of memory is available. A local Playwright run crashed its browser at
 #             2.8 GB available.
 # Exit status: 1 when any check other than dispatch fails.
@@ -55,22 +57,44 @@ fi
 sdkman=${SDKMAN_DIR:-$HOME/.sdkman}
 for repo in "$(git rev-parse --show-toplevel)" "$start"; do
   jdk=$(sed -n 's/^java=//p' "$repo/.sdkmanrc")
-  if [ -n "$jdk" ] && [ -d "$sdkman/candidates/java/$jdk" ]; then
-    ok jdk "$(basename "$repo") .sdkmanrc: $jdk"
+  major=${jdk%%.*}
+  found=
+  # The major version from each JDK's release file, such as 25 from JAVA_VERSION="25.0.4.1" and 8
+  # from "1.8.0_462".
+  for home in "$sdkman"/candidates/java/* /usr/lib/jvm/* "${JAVA_HOME:-}"; do
+    [ -f "$home/release" ] || continue
+    if [ "$(sed -n 's/^JAVA_VERSION="\(1\.\)\{0,1\}\([0-9]*\).*/\2/p' "$home/release")" = "$major" ]; then
+      found=$home
+      break
+    fi
+  done
+  if [ -n "$jdk" ] && [ -n "$found" ]; then
+    ok jdk "$(basename "$repo") .sdkmanrc wants $jdk: JDK $major at $found"
   else
-    installed=$(cd "$sdkman/candidates/java" 2> /dev/null && printf '%s ' [0-9]*)
-    bad jdk "$(basename "$repo") .sdkmanrc wants '$jdk'. SDKMAN has: ${installed:-none}"
+    bad jdk "$(basename "$repo") .sdkmanrc wants '$jdk': no JDK $major under $sdkman, /usr/lib/jvm or JAVA_HOME"
   fi
 done
 
+# Whether a TCP socket listens on the port, from the LISTEN (0A) rows of /proc/net/tcp and, where
+# it exists, /proc/net/tcp6: the tables ss reads. Status 2 when neither can be read.
+listening() {
+  local hex files=() f
+  hex=$(printf ':%04X' "$1")
+  for f in /proc/net/tcp /proc/net/tcp6; do
+    [ -r "$f" ] && files+=("$f")
+  done
+  [ "${#files[@]}" -gt 0 ] || return 2
+  awk -v port="$hex" 'FNR > 1 && $4 == "0A" && substr($2, length($2) - 4) == port {found = 1}
+    END {exit !found}' "${files[@]}"
+}
+
 for port in ${PORTS:-8080 8005 8009 8887}; do
-  if ! user=$(ss -Hltnp "sport = :$port" 2>&1); then
-    bad port "$port: ss failed: $user"
-  elif [ -z "$user" ]; then
-    ok port "$port is free"
-  else
-    bad port "$port is in use: $(head -1 <<< "$user" | tr -s ' ')"
-  fi
+  listening "$port"
+  case $? in
+    0) bad port "$port is in use" ;;
+    1) ok port "$port is free" ;;
+    *) bad port "$port: can't read /proc/net/tcp" ;;
+  esac
 done
 
 available=$(awk '/^MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)
