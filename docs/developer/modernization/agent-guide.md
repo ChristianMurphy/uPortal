@@ -286,10 +286,13 @@ The rules that agents hit most often:
 * **One-off builds** pass `--no-daemon`. A daemon left behind holds about 2.7 GB of the shared
   memory.
 * **Preflight.** Before you start a portal, run `.github/scripts/preflight.sh <uPortal-start
-  checkout>` from uPortal. It checks the JDKs in both `.sdkmanrc` files, the Chromium revision
+  checkout>` from uPortal. It checks for a JDK with the major version in each `.sdkmanrc` file
+  (under SDKMAN, in `/usr/lib/jvm` or at `JAVA_HOME`), the Chromium revision
   that the pinned Playwright version downloads, the portal's ports and at least 4 GB of available memory, and
   reports whether the token may start `workflow_dispatch` runs. Don't start a portal while it
-  fails.
+  fails. It checks ports 8080, 8005, 8009 and 8887. A portal on other ports, such as a second
+  portal on a shared machine, gives its own in `PORTS`:
+  `PORTS="8480 8405 8487" .github/scripts/preflight.sh <uPortal-start checkout>`.
 * **Processes.** Stop only processes you started, by exact PID, after checking the command line.
   Never use `pkill -f` or `killall` with a pattern.
 * **TLS and the proxy.** Keep TLS verification on and keep `HTTPS_PROXY` set. For proxy
