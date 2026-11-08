@@ -17,7 +17,10 @@ package org.apereo.portal.events.aggr;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.base.Function;
@@ -34,6 +37,7 @@ import org.apereo.portal.events.handlers.db.IPortalEventDao;
 import org.apereo.portal.security.IPerson;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.invocation.InvocationOnMock;
@@ -200,6 +204,57 @@ public class PortalRawEventsAggregatorImplTest {
         assertEquals(false, result.isComplete());
 
         this.portalEventAggregator.setEventAggregationBatchSize(1000);
+    }
+
+    /**
+     * The status times hold whole milliseconds and the aggregation ends on a whole second, as with
+     * Joda-Time: the status columns keep 5.17's precision, and the cluster settings in
+     * UPGRADING-6.0 count on the second.
+     */
+    @Test
+    public void storesMillisecondStatusTimesAndEndsOnAWholeSecond() throws Exception {
+        when(transactionOperations.execute(any(TransactionCallback.class)))
+                .then(
+                        invocation ->
+                                ((TransactionCallback<EventProcessingResult>)
+                                                invocation.getArguments()[0])
+                                        .doInTransaction(mock(TransactionStatus.class)));
+        when(clusterLockService.isLockOwner(PortalRawEventsAggregator.AGGREGATION_LOCK_NAME))
+                .thenReturn(true);
+        when(portalEventDimensionPopulator.isCheckedDimensions()).thenReturn(true);
+        when(eventAggregationManagementDao.getEventAggregatorStatus(
+                        ProcessingType.AGGREGATION, true))
+                .thenReturn(eventAggregatorStatus);
+        when(portalInfoProvider.getUniqueServerName()).thenReturn("serverName_abcd");
+        when(eventAggregatorStatus.getLastEventDate())
+                .thenReturn(Instant.ofEpochMilli(1325881376117l));
+        when(portalEventDao.aggregatePortalEvents(
+                        any(Instant.class),
+                        any(Instant.class),
+                        (int) any(Integer.TYPE),
+                        (Function<PortalEvent, Boolean>) any(Function.class)))
+                .thenReturn(true);
+
+        portalEventAggregator.doAggregateRawEvents();
+
+        final ArgumentCaptor<Instant> end = ArgumentCaptor.forClass(Instant.class);
+        verify(portalEventDao)
+                .aggregatePortalEvents(
+                        eq(Instant.ofEpochMilli(1325881376117l)),
+                        end.capture(),
+                        anyInt(),
+                        any(Function.class));
+        assertEquals("aggregation end " + end.getValue(), 0, end.getValue().getNano());
+
+        final ArgumentCaptor<Instant> lastStart = ArgumentCaptor.forClass(Instant.class);
+        final ArgumentCaptor<Instant> lastEnd = ArgumentCaptor.forClass(Instant.class);
+        verify(eventAggregatorStatus).setLastStart(lastStart.capture());
+        verify(eventAggregatorStatus).setLastEnd(lastEnd.capture());
+        assertEquals(
+                "last start " + lastStart.getValue(),
+                0,
+                lastStart.getValue().getNano() % 1_000_000);
+        assertEquals("last end " + lastEnd.getValue(), 0, lastEnd.getValue().getNano() % 1_000_000);
     }
 
     private static class MockPortalEvent extends PortalEvent {
