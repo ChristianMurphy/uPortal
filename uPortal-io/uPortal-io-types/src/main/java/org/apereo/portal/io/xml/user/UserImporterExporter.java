@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** */
@@ -102,7 +103,13 @@ public class UserImporterExporter extends AbstractJaxbDataHandler<UserType> {
                         userName -> new SimpleStringPortalData(userName, null, null));
     }
 
-    @Transactional
+    /*
+     * READ COMMITTED: the import updates the user's row and inserts it when the update matched
+     * none. Under REPEATABLE READ, InnoDB (MariaDB, MySQL) locks the gap of UPU_USER_NAME where the
+     * missing name would go. The inserts of two imports of new names in the same gap then wait for
+     * each other, and one import fails with deadlock error 1213.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     @Override
     public void importData(UserType userType) {
         final String username = userType.getUsername();
