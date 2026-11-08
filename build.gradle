@@ -486,6 +486,10 @@ subprojects {
         // happens, depending on what the second-level cache holds. Production runs without -ea;
         // test with this assertion off as well.
         jvmArgs '-da:org.hibernate.engine.internal.BatchFetchQueueHelper'
+        // The JVM takes its default time zone from TZ, so a run with another TZ must not reuse
+        // results from the last one. Adding this input changes each test task's cache key once.
+        // uPortal's CI doesn't use Gradle's build cache (no --build-cache or org.gradle.caching).
+        inputs.property('TZ', providers.environmentVariable('TZ').orElse(''))
     }
 
     /* Release Management

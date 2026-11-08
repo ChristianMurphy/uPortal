@@ -5,7 +5,7 @@
  */
 export const RESET_MY_LAYOUT_MESSAGES = {
     'reset.my.layout.description': 'Use this portlet to reset your portal layout to the defaults.',
-    'reset.my.layout.note': 'NOTE: You must sign on again to see the changes.',
+    'reset.my.layout.note': 'NOTE: The default layout shows the next time a page loads.',
     'reset.now': 'Reset Now',
     'reset.user.layout': 'Reset User Layout',
     'resetting.user.layout.irreversible': "Resetting a user's layout is irreversible.",

@@ -65,6 +65,7 @@ import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -119,7 +120,16 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
     public void setPlatformTransactionManager(
             @Qualifier(BasePortalJpaDao.PERSISTENCE_UNIT_NAME)
                     PlatformTransactionManager platformTransactionManager) {
-        transactionOperations = new TransactionTemplate(platformTransactionManager);
+        final TransactionTemplate layoutTransactionTemplate =
+                new TransactionTemplate(platformTransactionManager);
+        /*
+         * A layout save deletes the user's rows and writes them again, and two requests of the
+         * same user may save at once: the later save must replace the rows the earlier one
+         * committed, as READ COMMITTED does everywhere. Under REPEATABLE READ, MariaDB 11.6+ by
+         * default refuses that with "Record has changed since last read" (error 1020) instead.
+         */
+        layoutTransactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+        transactionOperations = layoutTransactionTemplate;
 
         final DefaultTransactionDefinition nextStructTransactionDefinition =
                 new DefaultTransactionDefinition();
@@ -395,33 +405,30 @@ public abstract class RDBMUserLayoutStore implements IUserLayoutStore, Initializ
                                     public String doInConnection(Connection con)
                                             throws SQLException, DataAccessException {
 
+                                        /*
+                                         * Increment first, then read: the update locks the row
+                                         * until the commit, so two requests of the same user
+                                         * never get the same id, and no read comes before the
+                                         * write (MOD-I361).
+                                         */
                                         try (Statement stmt = con.createStatement()) {
+                                            String sUpdate =
+                                                    "UPDATE UP_USER SET NEXT_STRUCT_ID=NEXT_STRUCT_ID+1"
+                                                            + " WHERE USER_ID="
+                                                            + userId;
+                                            logger.debug("getNextStructId(): {}", sUpdate);
+                                            if (stmt.executeUpdate(sUpdate) != 1) {
+                                                throw new SQLException(
+                                                        "no row updated by [" + sUpdate + "]");
+                                            }
                                             String sQuery =
                                                     "SELECT NEXT_STRUCT_ID FROM UP_USER WHERE USER_ID="
                                                             + userId;
                                             logger.debug("getNextStructId(): {}", sQuery);
-                                            int currentStructId;
                                             try (ResultSet rs = stmt.executeQuery(sQuery)) {
-                                                if (rs.next()) {
-                                                    currentStructId = rs.getInt(1);
-                                                } else {
-                                                    throw new SQLException(
-                                                            "no rows returned for query ["
-                                                                    + sQuery
-                                                                    + "]");
-                                                }
+                                                rs.next();
+                                                return prefix + rs.getInt(1);
                                             }
-                                            int nextStructId = currentStructId + 1;
-                                            String sUpdate =
-                                                    "UPDATE UP_USER SET NEXT_STRUCT_ID="
-                                                            + nextStructId
-                                                            + " WHERE USER_ID="
-                                                            + userId
-                                                            + " AND NEXT_STRUCT_ID="
-                                                            + currentStructId;
-                                            logger.debug("getNextStructId(): {}", sUpdate);
-                                            stmt.executeUpdate(sUpdate);
-                                            return prefix + nextStructId;
                                         }
                                     }
                                 }));

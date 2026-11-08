@@ -27,11 +27,14 @@ import org.apereo.portal.layout.om.IStylesheetDescriptor;
 import org.apereo.portal.layout.om.IStylesheetUserPreferences;
 import org.apereo.portal.security.IPerson;
 import org.apereo.portal.security.PersonFactory;
+import org.apereo.portal.utils.cache.UsernameTaggedCacheEntryPurger;
 import org.apereo.services.persondir.IPersonAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * Helper class for reset-layout based web flows.
@@ -50,7 +53,15 @@ public class UserLayoutHelperImpl extends JdbcDaoSupport implements IUserLayoutH
 
     private IStylesheetDescriptorDao stylesheetDescriptorDao;
 
+    private UsernameTaggedCacheEntryPurger usernameTaggedCacheEntryPurger;
+
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @Autowired
+    public void setUsernameTaggedCacheEntryPurger(
+            UsernameTaggedCacheEntryPurger usernameTaggedCacheEntryPurger) {
+        this.usernameTaggedCacheEntryPurger = usernameTaggedCacheEntryPurger;
+    }
 
     @Autowired
     public void setUserLayoutStore(IUserLayoutStore userLayoutStore) {
@@ -94,6 +105,7 @@ public class UserLayoutHelperImpl extends JdbcDaoSupport implements IUserLayoutH
             resetUserLayoutForProfileByName(person, profile);
             resetStylesheetUserPreferencesForProfile(person, profile);
         }
+        purgeCachedLayoutAfterCommit(personAttributes.getName());
     }
 
     /**
@@ -119,6 +131,28 @@ public class UserLayoutHelperImpl extends JdbcDaoSupport implements IUserLayoutH
         resetUserLayoutForProfileByName(person, profile);
 
         resetStylesheetUserPreferencesForProfile(person, profile);
+        purgeCachedLayoutAfterCommit(personAttributes.getName());
+    }
+
+    /*
+     * The user's other sessions share one cached layout and keep using it until it is purged. A
+     * session that saves its layout after the reset would write its old copy back and undo the
+     * reset (MOD-I363). After the purge each session reloads from the database at its next
+     * request. Purging before the commit would let a session reload the layout from before the
+     * reset.
+     */
+    private void purgeCachedLayoutAfterCommit(String userName) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                    new TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            usernameTaggedCacheEntryPurger.purgeTaggedCacheEntries(userName);
+                        }
+                    });
+        } else {
+            usernameTaggedCacheEntryPurger.purgeTaggedCacheEntries(userName);
+        }
     }
 
     private void resetUserLayoutForProfileByName(IPerson person, IUserProfile profile) {
