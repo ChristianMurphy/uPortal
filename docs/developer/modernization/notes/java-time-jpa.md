@@ -35,6 +35,7 @@ names and stored values stay as they are, and a golden difference is a bug, neve
 | 16 | docs: correct the java.time sections of UPGRADING-6.0 and CHANGES | done |
 | merge | Merge origin/ccr-43ba0785-hzlrj5 (92f31a6aa) into java-time-jpa | done, no conflicts |
 | 17 | docs: record the review fixes in the branch note | done |
+| 18 | docs: record the ci runs after the review in the note \[skip ci] | done |
 
 Each commit builds and passes the tests of the modules it changes on its own. The subjects of
 commits 0, 2, 3 and 5 are shorter than in the brief, which gave them over 72 characters.
@@ -284,6 +285,40 @@ Every job reached its tests, and none ran again. The replay didn't find a new di
 from the configured maximum age, and the statistics form prints its dates with the same
 `M/d/yyyy` pattern.
 
+### After the review (2026-11-08)
+
+Local runs on the head `7fd9f0291`, after the fourth merge, with Gradle 9.8.1 on JDK 21 and
+`--offline`:
+
+| Command | Result |
+| --- | --- |
+| `./gradlew --continue test spotbugsMain spotlessCheck` | 37 test tasks, 2222 tests, 0 failures, 153 skipped. `spotbugsMain` (59 tasks) and `spotlessCheck` (69 tasks) passed |
+| `TZ=America/New_York ./gradlew --continue test` | 37 test tasks ran again, 2222 tests, 0 failures |
+| `TZ=Australia/Sydney ./gradlew --continue test` | 37 test tasks ran again, 2222 tests, 0 failures |
+| `check-freeze-store.py 92f31a6aa HEAD` | passed: no rule grew, the `Session` rule has 14 entries on both sides |
+
+Each run excluded `:uPortal-db-migrate:compileTestJava` and `:uPortal-webcomponents:vpTest` for
+the reasons in "After the merges". The goldens ran in all three, with their own zones.
+
+The CI runs below built uPortal `7fd9f0291`, as each `Build uPortal` notice in uPortal-start says.
+The uPortal-start branch is its tip `88542e157` plus the NOTICE commit `bd60da15c`.
+
+| Repository | Run | Workflow | Result |
+| --- | --- | --- | --- |
+| uPortal | 42504952473 | CI (push) | passed, with the Java 21 job 128805466946 |
+| uPortal | 42504952500 | DB integration (push) | passed: PostgreSQL 18 and MariaDB 12.3 |
+| uPortal | 42505546542 | DB integration (started by hand) | passed: PostgreSQL 18, MariaDB 12.3, MySQL 9.7, SQL Server 2025 (job 128807260291) and Oracle 23 (job 128807260330), and the three canaries |
+| uPortal | 42504952458 | DB copy tool (push) | passed |
+| uPortal-start | 42504959376 | Integration (push, workstream set) | passed. Its jobs were the Playwright suites on HSQLDB, on PostgreSQL 18 and on HSQLDB with CAS, the DB harness, the cluster test and G-migrate from MariaDB 11.4 to PostgreSQL 18 |
+| uPortal-start | 42505001388 | HTTP replay (started by hand) | passed. The push run 42504959404 skipped the replay, because `tests/replay` didn't change. In the manual run, "Replay against 5.17" (job 128806546244) compared 2387 exchanges and reported 0 unexplained differences, with 1570 intended ones applied, and 128 changed cells of the security matrix, 0 of them unexplained. The counts equal the earlier runs |
+| uPortal-start | 42504959370 | Migration equivalence (push) | passed |
+| uPortal-start | 42504959375 | CI (push) | passed |
+| uPortal-start | 42504959368 | Workflow lint (push) | passed |
+| uPortal-start | 42504959378 | G-index (push) | passed (PostgreSQL 18, job 128806137327) |
+
+Every job reached its tests, and none ran again. `npm run lint` passed in uPortal-start before its
+push.
+
 ### ArchUnit freeze store
 
 | After commit | Joda-Time entries | Hibernate `Session` entries |
@@ -338,8 +373,8 @@ from `global.hbm.xml`.
 
 ## Open items (2026-11-08)
 
-* Next step: the re-review of commits 10 to 17 and the merge of `92f31a6aa`. Then the CI runs of
-  the head, recorded under "CI after the review".
+* Next step: the re-review of commits 10 to 18 and the merge of `92f31a6aa`. The CI runs of the
+  head are in "After the review (2026-11-08)".
 * The hour intervals of Australia/Lord_Howe don't move forward on its fall-back day, in 5.17 too
   (row below). The branch keeps 5.17's floors.
 * The user types on Jadira's SPI (row below) must move off it before P6.
