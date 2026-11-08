@@ -7,8 +7,8 @@
 # Usage: tip-status.sh [<branch>]
 # Exit status: 0 when the latest finished run of each workflow on the tip passed, 1 otherwise: a
 # red run, or a tip whose run is missing, cancelled, queued or still running. A pass on an older
-# commit doesn't count. Workflow lint runs only when .github changes, so for it the latest finished
-# run on any commit counts, and a branch without a run of it isn't red.
+# commit doesn't count. Workflow lint runs only when .github changes, so when the tip has no run of
+# it, the latest finished run on any commit counts, and a branch without a run of it isn't red.
 # Needs gh, signed in with read access to both repositories.
 set -euo pipefail
 
@@ -43,9 +43,12 @@ for entry in "${required[@]}"; do
   at_tip=$([ "$sha" = "$tip" ] && echo "tip" || echo "older commit ${sha:0:10}")
   latest="$id $event $status/$conclusion on $at_tip"
   # A cancelled run says nothing about the code, so the last finished run is the last other one.
-  # Only a run of the tip counts, except for Workflow lint.
+  # Only a run of the tip counts, except for Workflow lint when the tip has no run of it.
   on=$tip
-  [ "$workflow" != workflow-lint.yml ] || on=any
+  if [ "$workflow" = workflow-lint.yml ] &&
+    ! awk -F'\t' -v tip="$tip" '$5 == tip {found = 1} END {exit !found}' <<< "$runs"; then
+    on=any
+  fi
   finished=$(awk -F'\t' -v on="$on" '$2 == "completed" && $3 != "cancelled" && (on == "any" || $5 == on)' \
     <<< "$runs" | head -1)
   if [ -z "$finished" ]; then
@@ -53,7 +56,8 @@ for entry in "${required[@]}"; do
     if [ "$on" = any ]; then
       printf '%-14s %-26s latest %s; no finished run in the last 20\n' "$repo" "$workflow" "$latest"
     elif awk -F'\t' -v tip="$tip" '$5 == tip {found = 1} END {exit !found}' <<< "$runs"; then
-      printf '%-14s %-26s latest %s; not finished on the tip %s\n' "$repo" "$workflow" "$latest" "${tip:0:10}"
+      printf '%-14s %-26s latest %s; no finished run on the tip %s (cancelled, queued or running)\n' \
+        "$repo" "$workflow" "$latest" "${tip:0:10}"
     else
       printf '%-14s %-26s latest %s; no run on the tip %s\n' "$repo" "$workflow" "$latest" "${tip:0:10}"
     fi

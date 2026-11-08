@@ -351,7 +351,7 @@ The rules that agents hit most often:
   and before every landing. It prints the latest run of every workflow a landing needs on both
   integration tips. It fails when the tip's latest finished run of a workflow is red, and when the
   tip has no finished run of it yet. A pass on an older commit doesn't count, except for Workflow
-  lint, which runs only when `.github` changes.
+  lint when the tip has no run of it, since Workflow lint runs only when `.github` changes.
 * The coordinator merges only the fix for a red tip until the tip is green again. A test may count as a known flake only
   through an owner-approved LOG row with an expiry date. Past that date, it is a failure again.
   The G-migrate target suite was red on 20 Integration runs in a row, each time for a different

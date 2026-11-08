@@ -33,24 +33,37 @@ it passes through the script's own `--jq` expression with `jq -r`. Real `gh` giv
 `conclusion` for an unfinished run, and the fake does the same. Each case changes the runs of one
 workflow. The fake gives each of the others one green run of the tip.
 
-| Case | retro-1 script | This branch |
-| --- | --- | --- |
-| The tip's run in progress, an older commit's run passed | exit 0, the SHA in the event field | exit 1, "not finished on the tip" |
-| The tip's run queued | exit 0 | exit 1, "not finished on the tip" |
-| The tip's run cancelled | exit 0 | exit 1, "not finished on the tip" |
-| No run of the tip (just pushed, or `[skip ci]`) | exit 0 | exit 1, "no run on the tip" |
-| The tip's run passed, an older one failed | exit 0 | exit 0 |
-| The tip's run failed | exit 1 | exit 1 |
-| Workflow lint only on an older commit, passed | exit 0 | exit 0 |
-| The tip passed, then a manual run of it was cancelled | exit 0 | exit 0 |
-| The tip failed, then a manual run of it is in progress | exit 1 | exit 1 |
-| Workflow lint in progress on the tip, passed on an older commit | exit 0 | exit 0 |
-| No run on the branch at all | exit 1 | exit 1 |
+The first fix (a586d2e0d) still counted an older commit's Workflow lint pass when the tip had its
+own lint run, queued, running or cancelled. The re-review found it. The script now counts any
+commit's lint run only when the tip has none. The column "first fix" shows the cases that changed.
+
+| Case | retro-1 script | First fix | This branch |
+| --- | --- | --- | --- |
+| The tip's run in progress, an older commit's run passed | exit 0, the SHA in the event field | exit 1 | exit 1, "no finished run on the tip" |
+| The tip's run queued | exit 0 | exit 1 | exit 1, "no finished run on the tip" |
+| The tip's run cancelled | exit 0 | exit 1 | exit 1, "no finished run on the tip" |
+| No run of the tip (just pushed, or `[skip ci]`) | exit 0 | exit 1 | exit 1, "no run on the tip" |
+| The tip's run passed, an older one failed | exit 0 | exit 0 | exit 0 |
+| The tip's run failed | exit 1 | exit 1 | exit 1 |
+| The tip passed, then a manual run of it was cancelled | exit 0 | exit 0 | exit 0 |
+| The tip failed, then a manual run of it is in progress | exit 1 | exit 1 | exit 1 |
+| No run on the branch at all | exit 1 | exit 1 | exit 1 |
+| Workflow lint only on an older commit, passed | exit 0 | exit 0 | exit 0 |
+| Workflow lint running on the tip, passed on an older commit | exit 0 | **exit 0** | exit 1, "no finished run on the tip" |
+| Workflow lint cancelled on the tip, passed on an older commit | exit 0 | **exit 0** | exit 1 |
+| Workflow lint queued on the tip, passed on an older commit | exit 0 | **exit 0** | exit 1 |
+| Workflow lint passed on the tip, failed on an older commit | exit 0 | exit 0 | exit 0 |
+| Workflow lint failed on the tip, passed on an older commit | exit 1 | exit 1 | exit 1 |
+| Workflow lint passed on the tip, then a manual run of it is in progress | exit 0 | exit 0 | exit 0 |
+
+The message for a tip whose run is cancelled, queued or still running is "no finished run on the
+tip (cancelled, queued or running)".
 
 On the real `ccr-43ba0785-hzlrj5-admin-390` branch, whose uPortal-start Integration run was in
 progress, the retro-1 script printed `latest 42455714441 397e40df6… in_progress/push on older
-commit ; no finished run in the last 20`. This branch prints `latest 42455714441 push
-in_progress/- on tip; not finished on the tip 397e40df63`.
+commit ; no finished run in the last 20`. The first fix printed `latest 42455714441 push
+in_progress/- on tip; not finished on the tip 397e40df63`. On the integration tip and on this
+branch after its push runs, this branch's script gives the same results as the first fix.
 
 ## 2. `preflight.sh`
 
