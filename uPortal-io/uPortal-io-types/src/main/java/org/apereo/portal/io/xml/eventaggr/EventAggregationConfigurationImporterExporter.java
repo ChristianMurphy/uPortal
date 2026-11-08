@@ -20,7 +20,6 @@ import com.google.common.collect.Lists;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.MonthDay;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -240,23 +239,24 @@ public class EventAggregationConfigurationImporterExporter
         this.aggregationManagementDao.setAcademicTermDetails(academicTerms);
     }
 
-    /** The start of the calendar's day in the calendar's zone, as Joda-Time's DateMidnight was */
+    /**
+     * The start of the calendar's day in the calendar's zone, as Joda-Time's DateMidnight was:
+     * where midnight repeats, the one with the calendar's offset
+     */
     private static ZonedDateTime startOfDay(Calendar calendar) {
-        final ZoneId zone = calendar.getTimeZone().toZoneId();
-        return Instant.ofEpochMilli(calendar.getTimeInMillis())
-                .atZone(zone)
-                .toLocalDate()
-                .atStartOfDay(zone);
+        return AggregationInterval.DAY.determineStart(
+                Instant.ofEpochMilli(calendar.getTimeInMillis())
+                        .atZone(calendar.getTimeZone().toZoneId()));
     }
 
     /**
-     * The start of the day in the JVM's zone, as Joda-Time's DateMidnight.toGregorianCalendar()
-     * built it, so the exported xs:date keeps its text
+     * The term's day start as Joda-Time's DateMidnight.toGregorianCalendar() built it, so the
+     * exported xs:date keeps its text and offset
      */
-    private static Calendar toCalendar(LocalDate date) {
-        final ZoneId zone = ZoneId.systemDefault();
-        final GregorianCalendar calendar = new GregorianCalendar(TimeZone.getTimeZone(zone));
-        calendar.setTimeInMillis(date.atStartOfDay(zone).toInstant().toEpochMilli());
+    private static Calendar toCalendar(ZonedDateTime startOfDay) {
+        final GregorianCalendar calendar =
+                new GregorianCalendar(TimeZone.getTimeZone(startOfDay.getZone()));
+        calendar.setTimeInMillis(startOfDay.toInstant().toEpochMilli());
         return calendar;
     }
 
@@ -400,8 +400,8 @@ public class EventAggregationConfigurationImporterExporter
                 this.aggregationManagementDao.getAcademicTermDetails()) {
             final ExternalTermDetail externalTermDetail = new ExternalTermDetail();
             externalTermDetail.setName(academicTermDetail.getTermName());
-            externalTermDetail.setStart(toCalendar(academicTermDetail.getStart()));
-            externalTermDetail.setEnd(toCalendar(academicTermDetail.getEnd()));
+            externalTermDetail.setStart(toCalendar(academicTermDetail.getStartDateTime()));
+            externalTermDetail.setEnd(toCalendar(academicTermDetail.getEndDateTime()));
             externalTermDetails.add(externalTermDetail);
         }
         Collections.sort(externalTermDetails, ExternalTermDetailComparator.INSTANCE);
