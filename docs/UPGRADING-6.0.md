@@ -714,8 +714,9 @@ The columns and their values stay the same, on every database and in every JVM t
 `monthDay` types, and `org.apereo.portal.dao.usertype.JvmZoneLocalTimeType` is gone. If an entity
 in your overlay maps a Joda-Time field with `@Type(type = "dateTime")` or one of the others, change
 the field to `java.time.Instant`, `LocalDate`, `LocalTime` or `MonthDay`, and use the converters
-above for the last three. Jadira's `usertype.spi` stays in uPortal-core for the `fname` type,
-which doesn't use Joda-Time.
+above for the last three. Jadira's `usertype.spi` stays in uPortal-core for the `fname`,
+`nullSafeString`, `qname`, `json`, `stats_json` and `windowState` types, which don't use
+Joda-Time.
 
 ### Java API changes
 

@@ -1,7 +1,8 @@
 # Handoff: Joda-Time out of the JPA mappings (P3-5)
 
 Branch `ccr-43ba0785-hzlrj5-java-time-jpa` in uPortal, based on the integration branch at
-`47d6333e2c`. Plan step P3-5 in the LOG: `notes/java-time.md` plan steps 1 to 3, ADR 0007,
+`47d6333e2c`, with the integration branch at `280a638dd` merged on 2026-11-08 (section "Merge of
+2026-11-08"). Plan step P3-5 in the LOG: `notes/java-time.md` plan steps 1 to 3, ADR 0007,
 MOD-I5 and MOD-D22. The schema is frozen (ADR 0006). Column types, names and stored values
 stay as they are, and a golden difference is a bug, never a re-record.
 
@@ -18,6 +19,9 @@ stay as they are, and a golden difference is a bug, never a re-record.
 | 5a | fix(io): read the quarter dates that joda-time's monthday read | done |
 | 6 | build!: remove joda-time, jadira and jackson-datatype-joda | done |
 | 7 | docs: list the java.time api breaks in UPGRADING-6.0 | done |
+| 7a | fix(events): check the term dates before converting them | done |
+| merge | Merge origin/ccr-43ba0785-hzlrj5 (280a638dd) into java-time-jpa | done, no conflicts |
+| 8 | docs: list the six user types that keep jadira's spi | done |
 
 Each commit builds and passes the tests of the modules it changes on its own. The subjects of
 commits 0, 2, 3 and 5 are shorter than in the brief, which gave them over 72 characters.
@@ -31,6 +35,45 @@ Differences from the brief's sequence:
 * Commit 6 keeps Jadira's `usertype.spi`: `FunctionalNameType`, the `fname` typedef, extends
   its `AbstractSingleColumnUserType`. The brief puts `fname` out of scope, and the coordinator
   chose to keep the SPI for it (option A, 2026-10-14). The open row below tracks its removal.
+  Five more user types extend the same SPI classes (commit 8 and the Jadira SPI row below).
+
+## Merge of 2026-11-08
+
+The branch merged `origin/ccr-43ba0785-hzlrj5` at `280a638dd`, 41 commits after `47d6333e2c`, in
+merge commit `b2942c243`. Git didn't find any conflict, and the merge commit contains only the
+merge. `git diff 280a638dd b2942c243` lists the same 124 files as the branch's diff against
+`47d6333e2c`.
+
+What was merged since 2026-10-14, read against this branch (LOG rows MOD-I360 to MOD-I402):
+
+| Merged change | Rows | Overlap with this branch |
+| --- | --- | --- |
+| The layout store and the counter store run under READ COMMITTED, and a structure id is incremented before it is read | MOD-I360 to MOD-I362 | None. `RDBMUserLayoutStore`, `HibernateStyleCounterStore` and `persistenceContext.xml` don't use a Joda-Time or Jadira type, and this branch doesn't change them. Their new concurrency tests load the whole `PortalDb` unit with this branch's mappings |
+| The layout reload and the purge after a reset | MOD-I363 | None. `DistributedLayoutManager` and `UserLayoutHelperImpl` don't use a date type |
+| The user import runs under READ COMMITTED | MOD-I394 | None. `UserImporterExporter` changed its isolation only. This branch changes the event aggregation import, a different class |
+| A locale save locks the user's row | MOD-I391 | None |
+| The entity type cache uses the class as its key | MOD-I392 | None |
+| `TZ` is an input of every test task (retro-1) | none | Gradle no longer reuses a test result from another zone. "Running the checks again" below says so now |
+| The Gradle wrapper retries the download | MOD-I397 | None |
+
+The 41 commits don't use `org.joda`, Jadira's `usertype.core` or a typedef this branch removes
+(`git grep` on the merged tree). The other rows in that range are about uPortal-start
+specs, CI and portlets this branch doesn't change.
+
+MOD-I382 (open) lists portlet cookies among the code that reads a row and then updates it, which
+may fail with 1020 on MariaDB 11.6+. This branch changes the type of the cookie fields from
+Joda-Time's `DateTime` to `Instant` and keeps the same reads and writes. It doesn't change that
+risk.
+
+Branches that aren't merged yet: the permission cache work (`-permission-race`) shares only
+`docs/UPGRADING-6.0.md` with this branch. `git merge-tree` merges this head with it and with
+`-layout-save-lock` without conflicts.
+
+While re-reading the branch, commit 8 corrected one of its claims. The build comment in
+uPortal-core, UPGRADING-6.0 and the open row named `FunctionalNameType` as the only user of
+Jadira's SPI. `NullSafeStringType`, `QNameType`, `JacksonType` and `StatisticsJacksonType` in
+uPortal-rdbm, and `WindowStateType` in uPortal-rendering, extend it too. All six
+were there before this branch, and none uses Joda-Time.
 
 ## Mapping rules
 
@@ -190,11 +233,15 @@ from `global.hbm.xml`.
   dates a day early ahead of UTC. **Guarded:** `JavaTimeColumnStorageTest` asserts the stored
   literals in UTC, America/New_York and Australia/Sydney, and the Sydney goldens. Recheck at P4-3
   (Hibernate 5.6) and P6 (Hibernate 6 and 7).
-* **MOD-I?: `fname` must leave Jadira before Hibernate 6.** `FunctionalNameType` extends
-  `org.jadira.usertype.spi.shared.AbstractSingleColumnUserType`, and Jadira has no Hibernate 6
-  support. Joda-Time and Jadira's `usertype.core` are gone (P3-5). **Open:** rewrite
-  `FunctionalNameType` as an `AttributeConverter` or a plain `UserType` before P6, with the round
-  trip on the `fname` columns.
+* **MOD-I?: six user types must leave Jadira's SPI before Hibernate 6.** The user types of the
+  `fname`, `nullSafeString`, `qname`, `json`, `stats_json` and `windowState` typedefs
+  (`FunctionalNameType` in uPortal-core, `NullSafeStringType`, `QNameType`, `JacksonType` and
+  `StatisticsJacksonType` in uPortal-rdbm, `WindowStateType` in uPortal-rendering) extend
+  `org.jadira.usertype.spi.shared.AbstractSingleColumnUserType`, and their column mappers extend
+  `AbstractStringColumnMapper`. Jadira has no Hibernate 6 support. Joda-Time and Jadira's
+  `usertype.core` are gone (P3-5). **Open:** rewrite the six as `AttributeConverter`s or plain
+  `UserType`s before P6, with the round trip on their columns. Until 2026-11-08 this row, the
+  build comment and UPGRADING-6.0 named `fname` alone.
 * **MOD-I?: the event aggregation import read only `--MM-dd` quarter dates.** Under 5.17, a file
   with `--1-1` or a full ISO date as a quarter's start imported, because Joda-Time's
   `MonthDay.parse` accepted both. **Fixed:**
@@ -205,12 +252,15 @@ from `global.hbm.xml`.
   classes use Joda-Time.
 * **MOD-I5 (update):** uPortal no longer contains Joda-Time or Jadira's Joda-Time types. The JPA
   columns keep their types and values (goldens in UTC, New York and Sydney on HSQLDB and the
-  databases below). Only Jadira's SPI remains, for `fname` (row above).
+  databases below). Only Jadira's SPI remains, for six user types that don't use Joda-Time (row
+  above).
 
 ## Running the checks again
 
 * Goldens: `./gradlew :uPortal-webapp:test --tests 'org.apereo.portal.*Golden*'`. They set the
   JVM zone themselves (`JvmTimeZone.GOLDEN_ZONES`).
-* Whole suite per zone: `TZ=<zone> ./gradlew test --rerun`. Without `--rerun`, Gradle reuses the
-  results of a run in another zone, because `TZ` isn't a task input.
-* Other databases: as `db-integration.yml` does, with `-Duportal.test.db.*` and the same images.
+* Whole suite per zone: `TZ=<zone> ./gradlew test`. Since retro-1 (`ed3233a47`), `TZ` is an input
+  of every test task, so a run in another zone runs the tests again without `--rerun`. A zone set
+  through `JAVA_TOOL_OPTIONS` still needs `--rerun` (agent guide, section 2).
+* Other databases: as `db-integration.yml` does, with `-Duportal.test.db.*` and the same images,
+  or a manual run of `db-integration.yml` on the branch, which runs all six vendors.

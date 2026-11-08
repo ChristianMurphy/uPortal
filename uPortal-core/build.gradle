@@ -11,9 +11,9 @@ dependencies {
     // Hibernate 5.2 builds its lazy-loading proxies with Javassist; the 3.22 it asks for cannot
     // define them on JDK 21 (NullPointerException in DefineClassHelper), 3.30 can
     runtimeOnly "org.javassist:javassist:${javassistVersion}"
-    // Only for FunctionalNameType (the fname typedef), which is built on Jadira's SPI and doesn't
-    // use Joda-Time. Jadira has no Hibernate 6 support: see the fname row in
-    // docs/developer/modernization/notes/java-time-jpa.md
+    // For the user types of the fname, nullSafeString, qname, json, stats_json and windowState
+    // typedefs, which are built on Jadira's SPI and don't use Joda-Time. Jadira has no Hibernate 6
+    // support: see the Jadira SPI row in docs/developer/modernization/notes/java-time-jpa.md
     api "org.jadira.usertype:usertype.spi:${usertypeVersion}"
     implementation "org.slf4j:log4j-over-slf4j:${slf4jVersion}"
     implementation "org.slf4j:jcl-over-slf4j:${slf4jVersion}"
