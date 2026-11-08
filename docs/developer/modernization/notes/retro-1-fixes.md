@@ -210,4 +210,4 @@ text, and `git show --remerge-diff 1c1b39734b` doesn't touch any doc. Commit 47a
 
 | ID | Area | Finding | Status |
 | --- | --- | --- | --- |
-| MOD-I? | CI | `tip-status.sh` counts a uPortal-start run on the uPortal-start tip, but the run doesn't say which uPortal commit it built. When the coordinator merges a change to uPortal alone, uPortal-start's tip doesn't move. Its runs still count as green although they tested the older uPortal tip. | **Open.** Read the commit from the `uPortal under test` annotation of the `Build uPortal` job and compare it with the uPortal tip, or start a uPortal-start run after each merge that changes only uPortal. |
+| MOD-I388 | CI | `tip-status.sh` counts a uPortal-start run on the uPortal-start tip, but the run doesn't say which uPortal commit it built. When the coordinator merges a change to uPortal alone, uPortal-start's tip doesn't move. Its runs still count as green although they tested the older uPortal tip. | **Open.** Read the commit from the `uPortal under test` annotation of the `Build uPortal` job and compare it with the uPortal tip, or start a uPortal-start run after each merge that changes only uPortal. |

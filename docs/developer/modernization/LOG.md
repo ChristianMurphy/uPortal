@@ -1935,6 +1935,25 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
       * G-migrate postgres 15 to MariaDB 12.3 (job 116563568282), `reset-my-layout.spec.ts:308`.
     * The fixes for the red tip are on the `-admin-390`, `-test-users` and `-retry-flakes`
       branches.
+* **Landing 2 (coordinator, 2026-11-08):** fixes for the red tip (MOD-I386, and the tests that
+  passed only on a retry in Integration 38775913145), with `-retro-1` and `-retro-1-fixes`.
+  * uPortal: `-retro-1` and `-retro-1-fixes` by fast-forward, then `-admin-390`. uPortal-start:
+    `-retro-1` and `-retro-1-fixes` by fast-forward, then `-admin-390`, `-retry-flakes` and
+    `-replay-date`, and a commit that numbers the notes' rows (MOD-I388 to MOD-I396). Each
+    replayed tree equals a merge of the topic heads into the tip.
+  * An exception to section 11 of the agent guide: `-retro-1` and `-retro-1-fixes` aren't fixes
+    for the red tip. They land with the fixes because they don't change runtime code, the fixes'
+    notes refer to their rows (MOD-I360 to MOD-I387), and `tip-status.sh` from `-retro-1-fixes` is
+    the landing check itself.
+  * Reviews, under the owner's rule of 2026-11-07 (agent guide, section 11): `-retro-1` had an
+    oss-review with two aspect reviewers and five verifiers. Its 13 findings are fixed on
+    `-retro-1-fixes`, and a re-review confirmed each fix. `-admin-390`, `-retry-flakes` and
+    `-replay-date` were reviewed inline, with no findings.
+  * Still open for the red tip: the specs that change a shared user (`-test-users`), and the
+    portal bugs behind other retries: MOD-I391, MOD-I392 and MOD-I394 (`-portal-races`), and a
+    race in the permission caches between servers (`-permission-race`).
+  * The topics' own push runs are in their notes. The integration push runs follow in the next
+    log entry.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
@@ -2272,8 +2291,17 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I383 | Tests | Local runs of the landing 1 tree had failures with no known cause: `popular-portlets.spec.ts:226`, `favorites.spec.ts:314`, `self-edit-account.spec.ts:270`, and `reset-my-layout.spec.ts:238`, where riley's login ended with `ERR_ABORTED`. The last one fails at random on postgres-18 in run 38689486418 too. | **Open.** Unattributed. |
 | MOD-I384 | Tests | The cluster test's `lock-overlap.mjs` reads the local time in the portal log as UTC, so `no-overlap` fails on a machine outside UTC. The local matrix found it on a machine set to MST. | **Open**, small (uPortal-start). |
 | MOD-I385 | Tests | With `failOnFlakyTests`, the set of tests that pass only on a retry changes from run to run under load (favorites, portlet-options, search, user-locale, background-preference, per-role-pages, self-edit), on the tip and on batch 1 alike. | **Open.** The flake work after landing 1 starts from the local matrix lists. |
-| MOD-I386 | Tests | On the postgres 16 to 18 G-migrate pair, the target suite fails `pages.spec.ts:121`: the admin permissions manager overflows sideways at 390 pixels. It failed the same way on batch 1. Landing 1 local matrix. | **Open.** It fails on the integration tip too: uPortal-start Integration 38775913145 on `d1326f514`, with uPortal `498252acd1`, job 116563567769. The fix is on the `-admin-390` branch. |
+| MOD-I386 | Tests | On the postgres 16 to 18 G-migrate pair, the target suite fails `pages.spec.ts:121`: the admin permissions manager overflows sideways at 390 pixels. It failed the same way on batch 1. Landing 1 local matrix. | **Fixed** (uPortal `bad0bc1ae`, uPortal-start `28a9886e1`): the overlap check compares each line box of a control, not its bounding box. A link that wraps in running text has a bounding box over both lines, which overlapped the links beside it. On the migrated database the Permissions portlet's row order (MOD-I389) put two wrapped links next to each other. Reproduced on HSQLDB with that order. The postgres 16 pair runs again in landing 2's Integration push run (`notes/admin-390.md` in uPortal-start). |
 | MOD-I387 | Tests | On the postgres 15 to MariaDB G-migrate pair, the target suite had no failures, but it went red under `failOnFlakyTests` because some specs passed only on a retry: `portlet-modes.spec.ts` ("what is uPortal" and "word of the day") and `reset-my-layout.spec.ts:326`. Landing 1 local matrix. | **Open.** Part of the flake work in MOD-I385. |
+| MOD-I388 | CI | `tip-status.sh` counts a uPortal-start run on the uPortal-start tip, but the run doesn't say which uPortal commit it built. When the coordinator merges a change to uPortal alone, uPortal-start's tip doesn't move. Its runs still count as green although they tested the older uPortal tip. | **Open.** Read the commit from the `uPortal under test` annotation of the `Build uPortal` job and compare it with the uPortal tip, or start a uPortal-start run after each merge that changes only uPortal. |
+| MOD-I389 | Portlets | The Permissions portlet lists the owners in row order and each owner's activities in `HashSet` order (`PermissionOwnerImpl`). Names that share a hash bucket come in the order the database returns their rows. The page differs between databases and after a copy. Found by MOD-I386. | **Open**, small. Sorting by name changes the markup. The replay then needs an intended difference. |
+| MOD-I390 | Tests | `search-web-component.spec.ts` saved Spanish and French for the shared student. A spec that signed in as the student meanwhile got Spanish pages: `reset-my-layout.spec.ts:289` and `:308` were flaky in Integration 38775913145 (jobs 116563567668, 116563567769, 116563568282). | **Fixed** (uPortal-start `eee4ec9a3`): the language tests sign in as the developer (`notes/retry-flakes.md`). |
+| MOD-I391 | i18n | `PUT /api/v6-0/locale` answers 500 when two sessions of one user save the language at the same moment: `RDBMLocaleStore.updateUserLocales` deletes, then inserts, and the second insert violates `UP_USER_LOCALE`'s primary key. Seen locally on HSQLDB, once in 60 search tests that shared the student. | **Open**, small. Language tests that share a user can hit it (`notes/retry-flakes.md`). The fix is on the `-portal-races` branch. |
+| MOD-I392 | Security | `EntityTypes.getEntityIDFromType`'s cache key `#type.Name` fails on Spring 5.3 on the first call and after the garbage collector clears an entry of `ClassUtils`' interface method cache: SpEL calls `Principal.getName()` on `IPerson.class`. A sign-in then fails with "Invalid username or password", and a render or REST call answers 500. Spring 4.3 (5.17) doesn't fail. Cause of MOD-I383's `reset-my-layout.spec.ts:238` in run 38689486418. | **Open.** Drop the `key` attribute so the `Class` is the key (`notes/retry-flakes.md`). The fix is on the `-portal-races` branch. |
+| MOD-I393 | Tests | `importLocalAccount` named accounts `<prefix>-<time>-<n>` with a count per worker. The self-edit specs keep their counts in step and could ask for the same user in the same millisecond. The second import answered 500 (unique key on `UPU_USER_NAME`). `self-edit-account-component.spec.ts:255` was flaky in run 42455427048 (job 128653803621). | **Fixed** (uPortal-start `3900fb4a1`): the name contains the worker's index (`notes/retry-flakes.md`). |
+| MOD-I394 | Persistence | Overlapping imports of new users deadlock on MariaDB (1213): `UserImporterExporter.importData` updates, then inserts, under REPEATABLE READ, and InnoDB's gap locks on `UPU_USER_NAME` block both inserts. `self-edit-account.spec.ts:256` was flaky in job 116563567479. | **Open.** Run the import under READ COMMITTED, as MOD-I360 did. Related to MOD-I382. The fix is on the `-portal-races` branch. |
+| MOD-I395 | Tests | HTTP replay: the mask for HTTP dates wanted a two-digit day. The health check writes its time with java.time's `RFC_1123_DATE_TIME`, which writes `Sun, 8 Nov 2026` on days 1 to 9, in 5.17.9 and in 6.0 alike. The replay failed on five health check requests on 2026-11-08 (runs 42455427011, 42455714380, 42456118615, 42458398153). | **Fixed** (uPortal-start `8cf291842`): a JSON string's RFC 1123 date may have a one-digit day. Header dates keep IMF-fixdate (`notes/replay-date.md`). |
+| MOD-I396 | Tests | HTTP replay: runner image ubuntu24/20261101.360 lists uPortal-start's data files in another order, and `dataInit` gave the IPerson entity type the id 13 in place of 14 with the same uPortal build. The replay didn't mask the type in person principal keys (`14.admin`), and seven exchanges failed on 2026-11-08 (the same runs). | **Fixed** (uPortal-start `64ecd1a60`): the type of every `principalString` is masked. `replay --actual` applies the current masks to a saved run (`cf5545547`) (`notes/replay-date.md`). |
 
 ## Open questions
 
