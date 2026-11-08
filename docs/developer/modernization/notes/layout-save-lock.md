@@ -273,5 +273,17 @@ moved to the integration tip `9c20dbaf6`.
 | uPortal-start CI 42486476098, HTTP replay 42486476172, Migration equivalence 42486476336 | passed. "Replay against 5.17" was skipped, as on a topic push that doesn't change `tests/replay`. It ran and passed on the first push |
 | uPortal-start G-index 42486476104 | passed, with its seeded faults |
 
+After the review, the push was uPortal `2df9a5092`. The uPortal-start branch stayed at the
+integration tip `9c20dbaf6`, which hadn't moved. The review commits change the reset of every
+profile, the store's comment and the tests. Only a commented-out option of
+`reset-user-layout.xml` calls that reset. The layout save is the code the Integration runs above
+tested.
+
+| Run | Result |
+| --- | --- |
+| uPortal CI 42496895903 | passed |
+| uPortal DB integration 42496903978, started by hand | passed. uPortal-webapp's 484 tests, the 7 of `RDBMUserLayoutStoreConcurrencyTest` included, pass under the test's SERIALIZABLE default on PostgreSQL 18, MariaDB 12.3, MySQL 9.7, SQL Server 2025 and Oracle 23, and on the three canaries. It cancelled the push run 42496895871 |
+| uPortal DB copy tool 42496895890 | passed |
+
 The postgres-16 to postgres-18 G-migrate pair, where the failure was, runs only in the full matrix
 of a batch.
