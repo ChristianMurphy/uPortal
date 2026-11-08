@@ -206,6 +206,30 @@ America/New_York, Australia/Sydney and UTC on the branch head.
   failed on the missing `uportal-maven-local` artifact. The Integration run predates
   `b6ebdf2c6e`, which changes only the null check.
 
+### CI (2026-11-08)
+
+The runs built uPortal `8828a2482`, the head after both merges. Each uPortal-start run's
+`Build uPortal` job gives that commit in its `uPortal under test` notice. The uPortal-start
+branch of the same name is its integration tip, `9c20dbaf6`, without commits of its own.
+
+| Repository | Run | Workflow | Result |
+| --- | --- | --- | --- |
+| uPortal | 42485893545 | CI (push) | passed, with the Java 21 job 128747556128 and the commit message and Prose jobs |
+| uPortal | 42485893483 | DB integration (push) | passed: PostgreSQL 18 and MariaDB 12.3 |
+| uPortal | 42486609200 | DB integration (started by hand) | passed: PostgreSQL 18, MariaDB 12.3, MySQL 9.7, SQL Server 2025 (job 128749757169) and Oracle 23 (job 128749757166), and the PostgreSQL 19, MariaDB 13 and MySQL 26 canaries |
+| uPortal | 42485893546 | DB copy tool (push) | passed |
+| uPortal | 42485893537 | Workflow lint (push) | passed |
+| uPortal-start | 42485900437 | Integration (push, workstream set) | passed. Its jobs were the Playwright suites on HSQLDB, on PostgreSQL 18 and on HSQLDB with CAS, the DB harness, the cluster test and G-migrate from MariaDB 11.4 to PostgreSQL 18 |
+| uPortal-start | 42485900446 | HTTP replay (push) | passed. "Replay against 5.17" ran (job 128749199145) and compared 2387 exchanges with the recording. It reported 0 unexplained differences and applied 1570 intended ones, and 128 cells of the security matrix changed, 0 of them unexplained. The tip's run 42479132157 has the same counts |
+| uPortal-start | 42485900459 | Migration equivalence (push) | passed |
+| uPortal-start | 42485900481 | CI (push) | passed |
+| uPortal-start | 42485900441 | G-index (push) | passed (PostgreSQL 18, job 128748525885) |
+
+Every job reached its tests, and none ran again. The replay didn't find a new difference.
+`tests/replay/intended-differences.json` doesn't need an entry. The portal cookie's `Max-Age` comes
+from the configured maximum age, and the statistics form prints its dates with the same
+`M/d/yyyy` pattern.
+
 ### ArchUnit freeze store
 
 | After commit | Joda-Time entries | Hibernate `Session` entries |
@@ -248,7 +272,7 @@ byte-buddy-agent 1.18.11, which the offline Gradle cache doesn't have. The secon
 entries on both sides. Its 10 warnings are the entries of `JpaPortalEventStore` recorded under
 the `Instant` signatures (section "ArchUnit freeze store").
 
-CI: section "CI (2026-11-08)".
+The CI runs are in section "CI (2026-11-08)".
 
 ## API breaks
 
@@ -260,10 +284,7 @@ from `global.hbm.xml`.
 
 ## Open items (2026-11-08)
 
-* Next step: push this head, then the uPortal-start branch of the same name (fast-forwarded to
-  its integration tip `9c20dbaf6`). Its push runs then build this uPortal head. When the uPortal
-  DB integration push run has finished, start `db-integration.yml` by hand on this branch for the
-  six vendors. Record the runs under "CI (2026-11-08)".
+* Next step: the oss-review of the topic against the integration tip.
 * The user types on Jadira's SPI (row below) must move off it before P6.
 * The `DATE` binding (row below) is guarded by tests. Recheck it at P4-3 and P6.
 * Commit 6's message (`75c398e4b`) says that `usertype.spi` stays for `FunctionalNameType`
