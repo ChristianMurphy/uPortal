@@ -1,6 +1,7 @@
 import { css, html, nothing, type PropertyValues, type TemplateResult } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
 import type { Messages } from '../../lib/i18n';
+import { isComposing } from '../../lib/keyboard';
 import { UpElement } from '../../lib/up-element';
 import { ActorController } from '../../state/actor-controller';
 import type { BackgroundPreference } from './background-api';
@@ -53,9 +54,11 @@ export class UpBackgroundPreference extends UpElement {
                 position: absolute;
                 inset-inline-end: 0;
                 z-index: 1000;
-                min-width: 100%;
-                max-height: 515px;
+                min-inline-size: 100%;
+                max-block-size: 515px;
+                /* overflow-block where the browser has it, overflow-y where it doesn't */
                 overflow-y: auto;
+                overflow-block: auto;
                 background: var(--bg-body);
                 box-shadow: var(--box-shadow);
             }
@@ -73,7 +76,7 @@ export class UpBackgroundPreference extends UpElement {
             }
 
             .choice img {
-                width: 80%;
+                inline-size: 80%;
             }
 
             .alert p {
@@ -231,6 +234,10 @@ export class UpBackgroundPreference extends UpElement {
     }
 
     readonly #keydown = (event: KeyboardEvent): void => {
+        // While an input method composes text, its keys belong to it (MOD-D51)
+        if (isComposing(event)) {
+            return;
+        }
         if (event.key === 'Escape' && this.#background.snapshot.can({ type: 'close' })) {
             event.preventDefault();
             this.#background.send({ type: 'close' });

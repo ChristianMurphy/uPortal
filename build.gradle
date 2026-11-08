@@ -138,12 +138,15 @@ allprojects {
             }
         }
     }
-    tasks.withType(CodeNarc).configureEach {
-        // Gradle 9 hands CodeNarc the compile classpath by default, which switches on its
-        // "enhanced" rules (they were skipped before). Keep the previous rule set here; the
-        // enhanced rules currently flag AnyUnblockedGrantPermissionPolicyTest
-        // (JUnitAssertEqualsConstantActualValue) and can be enabled separately.
-        compilationClasspath = files()
+    // CodeNarc's "enhanced" rules (CloneWithoutCloneable, JUnitAssertEqualsConstantActualValue,
+    // MissingOverrideAnnotation, UnsafeImplementationAsMap) need the classes that the Groovy
+    // sources use. Without them every file printed "unable to resolve class" for each import
+    // and the rules were skipped. Give each CodeNarc task the compile classpath and the output
+    // classes of its source set; the task then also waits for those classes to be compiled.
+    sourceSets.all { SourceSet codenarcSourceSet ->
+        tasks.withType(CodeNarc).matching { it.name.equalsIgnoreCase("codenarc${codenarcSourceSet.name}") }.configureEach {
+            compilationClasspath = codenarcSourceSet.output + codenarcSourceSet.compileClasspath
+        }
     }
 
     java {
