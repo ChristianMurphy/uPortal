@@ -22,6 +22,11 @@
 <!--
     RDBMUserLayoutStoreConcurrencyTest's context: the portal database and its JPA transaction
     manager, which the layout store's JDBC transactions run under in the portal.
+
+    On HSQLDB the test runs on a database of its own with MVCC transactions, as uPortal-start's
+    HSQLDB server runs. With HSQLDB's default table locks, two first saves of a layout ran one
+    after the other without the store's lock. The uportal.test.db.* properties select another
+    database instead.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
@@ -46,6 +51,7 @@
 
     <bean id="PortalDb" parent="TestDb">
         <qualifier value="PortalDb" />
+        <property name="url" value="${uportal.test.db.url:jdbc:hsqldb:mem:rdbmUserLayoutStoreTest;hsqldb.tx=mvcc}" />
     </bean>
 
     <import resource="classpath:sharedJpaTestContext.xml"/>
