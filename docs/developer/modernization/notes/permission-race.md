@@ -99,17 +99,42 @@ replicator ("You have configured the cache with a replication scheme that cannot
 CAS operation guarantees"). The marker is created with a plain `put`. When two checks create one at
 once, the check whose marker is replaced doesn't store its result. That costs one recomputation.
 
-What it costs: on a miss, three more reads of the marker in `HAS_UNBLOCKED_GRANT` (one before, two
-around the put), and after each permission change one `put` of a new marker. Hits cost the same as
-before. Each permission change sends three more removals of one key each. When a marker expires
-with the cache's 300 s TTL, a check running at that moment doesn't store its result.
+The marker stays in `HAS_UNBLOCKED_GRANT` and doesn't get a cache of its own. A new cache name
+would stop every portal whose own `ehcache.xml` lacks it at startup (`CacheLookup.requireCache`),
+until the site adds it with the same replication settings. `HAS_UNBLOCKED_GRANT` is already
+required and replicates its removals in the same queue. With 250000 entries and LRU it keeps the
+marker, which every miss reads. In return `PRINCIPAL_HAS_PERMISSION` and `IPermissionSet` don't
+cache anything while `HAS_UNBLOCKED_GRANT` is disabled, and little when it stores only a few
+entries (with 1 or 2 entries the review's probe kept `PRINCIPAL_HAS_PERMISSION` empty). The comments of both
+`ehcache.xml` files and `UPGRADING-6.0.md` say so.
 
-What it doesn't close: within one "remove all" of `HAS_UNBLOCKED_GRANT`, a principal's answer is
-computed from its parent groups' answers in the same cache. A check that reads a group's old answer
-before the loop removes it, and stores the member's answer after the loop removed that key, keeps
-the old answer until the entry expires. Both happen while one loop runs, and only when the change
-was to a group's permission. The proposed listener has the same gap, because it hears of the
-removal after the loop.
+What it costs:
+
+* Each marker read is a full Ehcache `get` on `HAS_UNBLOCKED_GRANT`. It updates the marker
+  element's statistics and access time, and counts as a hit of that cache in its statistics and in
+  JMX.
+* Each cache layer that misses reads the marker three times (one before its inputs, two around
+  its put). A decision that misses `PRINCIPAL_HAS_PERMISSION`, computes N answers and loads one
+  permission set reads it 3 × (N + 2) times. Hits read nothing more.
+* After each permission change one check puts a new marker. Each change sends three more removals
+  of one key each.
+* When a marker expires with the cache's 300 s TTL, a check running at that moment doesn't store
+  its result.
+
+What it doesn't close (open, for the owner): the marker changes before a "remove all" starts, and a
+check can still read an old entry of the same cache while the loop runs.
+
+* Within one "remove all" of `HAS_UNBLOCKED_GRANT`, a principal's answer is computed from its
+  parent groups' answers in the same cache. A check that reads a group's old answer before the loop
+  removes it, and stores the member's answer after the loop removed that key, keeps the old answer
+  until the entry expires (300 s). This needs a change to a group's permission.
+* `AuthorizationImpl.doesPrincipalHavePermission` answers an activity that the database doesn't
+  define with the cached administrator decision (`UP_SYSTEM`, `ALL_PERMISSIONS`, `ALL`) from
+  `PRINCIPAL_HAS_PERMISSION`. A check that reads it before the loop of
+  `PRINCIPAL_HAS_PERMISSION` removes it, and stores its own decision after the loop removed that
+  key, keeps it for 180 s.
+
+The proposed listener has the same gaps, because it hears of a "remove all" after the loop.
 
 ## Evidence
 
@@ -144,6 +169,35 @@ Local runs, Gradle 9.8.1 on JDK 25, `--offline`:
 | The fix, with `putIfAbsent` for a new marker | 6 of 6 fail with Ehcache's "cannot properly support CAS operation guarantees" |
 
 The seeded faults were reverted after each run.
+
+The review of `490187844` found that no test checked that caching works again after a change, and
+that nothing tested the step that takes a put out again. The branch now also has:
+
+* In `AuthorizationImplCacheTest`, the grant, revocation and update tests check twice after the
+  change and expect one more policy call. `checksAreCachedAgainOnceTheMarkerIsGone` removes the
+  marker, as its TTL does, then checks twice and expects one policy call.
+* In `PermissionDecisionCacheRaceTest`, every case asserts that the check after the first one that
+  saw the change is answered from `PRINCIPAL_HAS_PERMISSION`. The test counts the hits through a
+  wrapper of that cache, which `AuthorizationImpl.setDoesPrincipalHavePermissionCache` installs.
+* `aCheckOnTheChangingNodeHeldInItsPutDoesNotKeepItsDecision` and
+  `aCheckOnTheOtherNodeHeldInItsPutDoesNotKeepItsDecision` (case 3): a check computes the old
+  decision, passes the marker comparison and is held inside its put into
+  `PRINCIPAL_HAS_PERMISSION`, while node A makes the change and both nodes clear their caches. The
+  put then comes after the clear. The next check must see the change, and the one after it must be
+  a hit.
+* `takeOutJGroups` asserts that `ehcache.xml` gives the three caches `replicateRemovals=true`, and
+  the same `replicateAsynchronously` (default true) and `asynchronousReplicationIntervalMillis`
+  (default 1000), as the test's in-order replay of the removals needs.
+
+The cases now run 10 times (5 cases, grant and revocation). Seeded faults, each reverted after its
+run, against the 8 tests of `AuthorizationImplCacheTest` and the 10 of the race test:
+
+| Fault | `AuthorizationImplCacheTest` | Race test |
+| --- | --- | --- |
+| None | 8 of 8 pass | 10 of 10 pass |
+| Each `DecisionCacheMarker` puts a marker only the first time it finds none | 4 fail (the three change tests and `checksAreCachedAgainOnceTheMarkerIsGone`) | 4 fail (case 3: the next check isn't a hit) |
+| The marker is never put | 7 fail | 10 fail |
+| `store` without the second read and the undo | pass | 4 fail (case 3: "the next check on node A expected:<true> but was:<false>", and on node B, and for the revocation) |
 
 ### Checks before the push
 
@@ -219,11 +273,12 @@ run 42458398202 don't show how long node B's removals took there.
 | --- | --- | --- | --- |
 | MOD-I? | Security | **Cache bug.** A permission check that raced a permission change could keep the old decision after the change, on the node that made the change or on another. It lasted until the entry expired (180 s in `PRINCIPAL_HAS_PERMISSION`, 300 s in `HAS_UNBLOCKED_GRANT`, 6 hours for the principal's cached permission set). On another node a check between the replicated clears of `PRINCIPAL_HAS_PERMISSION` and `HAS_UNBLOCKED_GRANT` (emptied in that order) recomputed the decision from the old answer, and on any node a check that read the permissions before the clears stored its result after them. Found by uPortal-start's cluster test (run 42458398202, job 128662855202, `permission-session`: a session on node B denied 150 s after the grant), once in 24 runs since MOD-I212. `PermissionDecisionCacheRaceTest` fails 6 of 6 on the integration branch. | **Fixed** (`permission-race` 352aec7d7): `HAS_UNBLOCKED_GRANT` is emptied first, and a marker entry in it (`DecisionCacheMarker`), removed before each step of a change and replicated, keeps a check's result out of the three caches when a change happened while it ran. It uses Spring's `Cache` API, without an Ehcache listener (MOD-D43). uPortal-start's cluster test adds `permission-rounds` and logs the cache replication messages. |
 | MOD-I? | Caching | Ehcache 2 refuses `putIfAbsent` and the other compare-and-set operations on a cache with a replicator, so `Cache.putIfAbsent` through Spring throws `CacheException` on the 112 caches `ehcache.xml` gives a JGroups replicator. Unit tests that build caches without a replicator don't see it. | Open, for the provider switch (P4-3). No uPortal code calls it on a replicated cache today. `DecisionCacheMarker` uses `put`, and `PermissionDecisionCacheRaceTest` gives its caches a replicator, so it fails if `putIfAbsent` comes back. |
+| MOD-I? | Security | The decision marker leaves an old answer cached in these cases, both while a node empties one of the decision caches with a "remove all". A member's answer in `HAS_UNBLOCKED_GRANT` computed from a parent group's old answer, read before the loop removed it and stored after the loop removed the member's key, stays for 300 s. It needs a change to a group's permission. `AuthorizationImpl` answers an activity the database doesn't define with the cached administrator decision from `PRINCIPAL_HAS_PERMISSION`, and the same order of reads and stores keeps that answer for 180 s. The window is one loop, measured in CI at up to 26 ms. | Open, for the owner (`notes/permission-race.md`). A second removal of the marker and a second clear after each loop would close both, and so would having the fallback call the policy directly. |
 
 ## Status and next step
 
-Done. Both branches are pushed, and the after-fix Integration run built the uPortal branch and
-passed its Cluster job. The push runs that failed while downloading the Gradle distribution,
-Chromium or Vale (GitHub's release downloads answered 504 from about 08:45 to 10:50 UTC) were
-started again once, as section 10 of the agent guide allows. Their results are in the report to
+The coordinator accepted the marker in place of a listener, and the in-loop cases above stay an
+open row for the owner. The review of `490187844` asked for the tests and documentation in
+"Evidence" and in `UPGRADING-6.0.md`, which are now on the branch, and merged with landing 3
+(uPortal `280a638dd`, uPortal-start `09ccc9cbb`). The push runs of that head are in the report to
 the coordinator.
