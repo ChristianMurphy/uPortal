@@ -20,8 +20,11 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,6 +38,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -45,7 +49,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
  * REPEATABLE READ, InnoDB (MariaDB, MySQL) locks the gap of the unique index UPU_USER_NAME where
  * the missing name would go. When both names fall in the same gap, each insert waits for the other
  * import's gap lock, and one import fails with deadlock error 1213. The other databases insert both
- * users either way.
+ * users either way. So the test also checks that the import asks for READ COMMITTED: the test's
+ * connections default to SERIALIZABLE, which shows the difference on every database.
  */
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath:userImporterExporterTestContext.xml")
@@ -97,10 +102,12 @@ public class UserImporterExporterConcurrencyTest {
         final CountDownLatch bBeforeInsert = new CountDownLatch(1);
         final CountDownLatch resumeA = new CountDownLatch(1);
         final AtomicReference<Thread> threadOfA = new AtomicReference<>();
+        final List<Integer> isolations = new CopyOnWriteArrayList<>();
         // The import takes the new user's id between its update and its insert
         when(counterStore.getNextId("UP_USER"))
                 .thenAnswer(
                         invocation -> {
+                            isolations.add(isolationOfTheImport());
                             if (Thread.currentThread() == threadOfA.get()) {
                                 aBeforeInsert.countDown();
                                 if (!resumeA.await(30, TimeUnit.SECONDS)) {
@@ -129,6 +136,12 @@ public class UserImporterExporterConcurrencyTest {
         assertFalse(threadA.isAlive());
         assertFalse(threadB.isAlive());
 
+        assertEquals(
+                "Isolation of each import's transaction",
+                Arrays.asList(
+                        Connection.TRANSACTION_READ_COMMITTED,
+                        Connection.TRANSACTION_READ_COMMITTED),
+                isolations);
         if (errorOfA.get() != null) {
             throw new AssertionError("The import of A failed", errorOfA.get());
         }
@@ -141,6 +154,20 @@ public class UserImporterExporterConcurrencyTest {
                                 + " ORDER BY USER_NAME",
                         Integer.class);
         assertEquals(Arrays.asList(ID_OF_A, ID_OF_B), ids);
+    }
+
+    /**
+     * The isolation level of the import's transaction, read from the connection that Spring bound
+     * to it. The test DataSource defaults to SERIALIZABLE, so only an import that asks for READ
+     * COMMITTED itself gets it.
+     */
+    private int isolationOfTheImport() throws SQLException {
+        final Connection connection = DataSourceUtils.getConnection(dataSource);
+        try {
+            return connection.getTransactionIsolation();
+        } finally {
+            DataSourceUtils.releaseConnection(connection, dataSource);
+        }
     }
 
     private Thread importInThread(String username, AtomicReference<Throwable> error) {
