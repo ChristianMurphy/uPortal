@@ -207,5 +207,17 @@ integration tip `09ccc9cbb` and had no commit of its own.
 | uPortal-start Migration equivalence 42482825719 | passed |
 | uPortal-start G-index 42482825617 | passed, with its seeded faults |
 
+After the merge of landing 4, the push was uPortal `26789dc9d`, and the uPortal-start branch
+moved to the integration tip `9c20dbaf6`.
+
+| Run | Result |
+| --- | --- |
+| uPortal CI 42486435686 | passed |
+| uPortal DB integration 42486463935, started by hand | passed. uPortal-webapp's 483 tests pass on PostgreSQL 18, MariaDB 12.3, MySQL 9.7, SQL Server 2025 and Oracle 23, and on the three canaries. It cancelled the push run 42486435689 |
+| uPortal DB copy tool 42486435682 | passed |
+| uPortal-start Integration 42486476143 | passed. Build uPortal built uPortal `26789dc9d` from this branch (notice of job 128749348083). Playwright on HSQLDB and on PostgreSQL 18 passed 512 tests each, with no test that passed only on a retry. The other jobs of the push profile passed |
+| uPortal-start CI 42486476098, HTTP replay 42486476172, Migration equivalence 42486476336 | passed. "Replay against 5.17" was skipped, as on a topic push that doesn't change `tests/replay`. It ran and passed on the first push |
+| uPortal-start G-index 42486476104 | passed, with its seeded faults |
+
 The postgres-16 to postgres-18 G-migrate pair, where the failure was, runs only in the full matrix
 of a batch.
