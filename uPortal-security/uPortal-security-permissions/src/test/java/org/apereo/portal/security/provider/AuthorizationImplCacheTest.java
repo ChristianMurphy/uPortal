@@ -186,6 +186,8 @@ public class AuthorizationImplCacheTest {
         authorization.addPermissions(changed());
 
         assertTrue(check(student, "target1"));
+        // The change removed the marker: the next decision is cached again all the same
+        assertTrue(check(student, "target1"));
         verifyPolicyCalls(2);
     }
 
@@ -197,6 +199,7 @@ public class AuthorizationImplCacheTest {
 
         authorization.removePermissions(changed());
 
+        assertFalse(check(student, "target1"));
         assertFalse(check(student, "target1"));
         verifyPolicyCalls(2);
     }
@@ -210,6 +213,20 @@ public class AuthorizationImplCacheTest {
         authorization.updatePermissions(changed());
 
         assertFalse(check(student, "target1"));
+        assertFalse(check(student, "target1"));
+        verifyPolicyCalls(2);
+    }
+
+    @Test
+    public void checksAreCachedAgainOnceTheMarkerIsGone() {
+        check(student, "target1");
+        // As when the marker expires with the cache's TTL
+        unblockedGrantCache.remove(DecisionCacheMarker.KEY);
+
+        check(student, "target2");
+        check(student, "target2");
+
+        verifyPolicyCalls(2);
     }
 
     @Test
