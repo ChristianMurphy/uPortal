@@ -124,15 +124,23 @@ Playwright 1.64.
   `e2e-background-<slot>`). Until the merge of 2026-11-08 it signed in as the quickstart
   developer, whose language the Reset My Layout tests save too (`batch-1.md`).
 * MOD-D49: the component has no text inputs, so the Unicode round trip doesn't apply.
-* MOD-D51: the component ignores Escape while `event.isComposing` is true. The list uses `min-inline-size`,
-  `max-block-size` and `overflow-block`, the thumbnails `inline-size`, and the theme rule that
-  places the channel `inset-inline-end` and `inset-block-start`. Long captions wrap
-  (`overflow-wrap: anywhere`). Browser tests cover the composing key and the long caption.
+* MOD-D51: while an input method composes, the component leaves Escape alone. It asks
+  `isComposing()` in `lib/keyboard.ts`, which counts keyCode 229 too (batch 1 review). The list uses
+  `min-inline-size`, `max-block-size` and `overflow-block`, with `overflow-y` before it for
+  browsers without `overflow-block`, the thumbnails `inline-size`, and the theme rule that places
+  the channel `inset-inline-end` and `inset-block-start`. Long captions wrap through the
+  `overflow-wrap: anywhere` that `hostStyles` gives every component. Browser tests cover the
+  composing key and the long caption.
 
 | Seeded fault | Caught by |
 | --- | --- |
 | The `isComposing` check removed | browser "leaves Escape to an input method that is composing" |
-| The wrap removed | browser "wraps a caption too long for its width" (2061px in a 200px element) |
+| `event.isComposing` in place of `isComposing()` | the same test with keyCode 229, where Escape is prevented and the list closes |
+| The wrap removed from `hostStyles` in `shared-styles.ts` | browser "wraps a caption too long for its width" (2061px in a 200px element) |
+
+Until the batch 1 review the component set `overflow-wrap: anywhere` on its own `:host` as well,
+so removing that line didn't fail the test. The review found it, and the component now takes the
+wrap from `hostStyles` only.
 | The test doesn't set the language | e2e "speaks es": the element's locale stays `en-US` |
 
 ## Landing
