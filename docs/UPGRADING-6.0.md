@@ -700,29 +700,43 @@ aggregation API uses `java.time` throughout.
 The columns and their values stay the same, on every database and in every JVM time zone:
 
 * Timestamps (raw and analytics events, event sessions, aggregation status, academic terms,
-  portal and portlet cookies) are `Instant` fields and hold UTC clock time, as Jadira stored
-  them.
+  portal and portlet cookies) are `Instant` fields and hold UTC clock time to the millisecond, as
+  Jadira stored them. Hibernate writes an `Instant` as UTC clock time because uPortal's
+  `hibernate.properties` sets `hibernate.jdbc.time_zone=UTC`. Don't remove that setting. Without
+  it, every `Instant` column holds the JVM's local clock time.
 * `UP_DATE_DIMENSION.DD_DATE` holds the date and `UP_TIME_DIMENSION.TD_TIME` the JVM's local time
   of day, through `LocalDateColumnConverter` and `LocalTimeColumnConverter` in
-  `org.apereo.portal.dao.usertype`. The time converter relies on `hibernate.jdbc.time_zone=UTC`,
-  which uPortal's `hibernate.properties` sets. Don't remove that setting.
+  `org.apereo.portal.dao.usertype`. The time converter relies on the same setting. Hibernate 5.2
+  binds a `DATE` without it, and the date converter is written for that.
 * The quarter columns hold `--MM-dd` text, through `MonthDayColumnConverter`.
 
 ### Hibernate types
 
 `global.hbm.xml` no longer defines the `dateTime`, `dateTimeTZ`, `localDate`, `localTime` and
 `monthDay` types, and `org.apereo.portal.dao.usertype.JvmZoneLocalTimeType` is gone. If an entity
-in your overlay maps a Joda-Time field with `@Type(type = "dateTime")` or one of the others, change
-the field to `java.time.Instant`, `LocalDate`, `LocalTime` or `MonthDay`, and use the converters
-above for the last three. Jadira's `usertype.spi` stays in uPortal-core for the `fname`,
-`nullSafeString`, `qname`, `json`, `stats_json` and `windowState` types, which don't use
-Joda-Time.
+in your overlay maps a Joda-Time field with one of them, change the field:
+
+| Type | Field now |
+| --- | --- |
+| `dateTime` | `java.time.Instant` |
+| `localDate` | `LocalDate`, with `@Convert(converter = LocalDateColumnConverter.class)` |
+| `localTime` | `LocalTime`, with `@Convert(converter = LocalTimeColumnConverter.class)` |
+| `monthDay` | `MonthDay`, with `@Convert(converter = MonthDayColumnConverter.class)` |
+| `dateTimeTZ` | Two fields. Jadira's `PersistentDateTimeWithZone` mapped two columns, the UTC timestamp and the zone id. Map the first as an `Instant` and the second as a `String`, and build the `ZonedDateTime` from both |
+
+Jadira's `usertype.spi` stays in uPortal-core for the `fname`, `nullSafeString`, `qname`, `json`,
+`stats_json` and `windowState` types, which don't use Joda-Time.
+
+`portlet-ws-util`, which is in the web application, declares Joda-Time 2.2, and the build excludes it.
+Its class `org.jasig.xml.bind.JodaTypeConverter` uses Joda-Time, and nothing in uPortal or
+uPortal-start loads it. An overlay that uses that class needs to add `joda-time:joda-time` itself.
 
 ### Java API changes
 
 A Joda-Time `DateTime` that marks a point in time is now an `Instant`. One that has calendar
 meaning, such as an aggregation interval's start, is now a `ZonedDateTime` in the JVM's default
-zone, the zone Jadira read the columns in. A `DateMidnight` is now a `LocalDate`, and Joda-Time's
+zone. For a region id such as America/New_York, that is the zone Joda-Time read the columns in.
+For a few other ids it isn't (see "The JVM's time zone" below). A `DateMidnight` is now a `LocalDate`, and Joda-Time's
 `LocalTime` and `MonthDay` are now `java.time`'s.
 
 | Class | Change |
@@ -740,20 +754,55 @@ zone, the zone Jadira read the columns in. A `DateMidnight` is now a `LocalDate`
 | `DateDimension`, `DateDimensionDao` | `getDate` returns `LocalDate`, and the lookups take it |
 | `TimeDimension`, `TimeDimensionDao` | Use `java.time.LocalTime` |
 | `QuarterDetail` | `getStart` and `getEnd` return `java.time.MonthDay`. `getStartDate(ZonedDateTime)` and `getEndDate(ZonedDateTime)` replace `getStartDateMidnight` and `getEndDateMidnight` |
-| `AcademicTermDetail` | `getStart`, `getEnd` and their setters use `LocalDate` |
+| `AcademicTermDetail` | `getStart`, `getEnd` and their setters use `LocalDate`. The new `getStartDateTime` and `getEndDateTime` give the start of the first day and of the day after the term, with the stored midnight's offset |
+| `AcademicTermDetailImpl` | The constructors take two `LocalDate`s, or two `ZonedDateTime`s for the starts of the days |
+| `QuarterDetailImpl` | The constructor takes two `java.time.MonthDay`s |
 | `DateRange` | `compareTo` takes a `ZonedDateTime` |
 | `EventDateTimeUtils` | `compareTo` takes `Instant`s, and `findDateRange` and `findDateRangeSorted` take a `ZonedDateTime` |
+| `EventProcessingResult` (protected constructor) | Takes `Instant`s |
+| `AggregationIntervalHelperImpl` | The protected `getAcademicTermsAfter` and `verifyIntervalCount` take `ZonedDateTime` |
+| `PortalEventDimensionPopulatorImpl` | The protected `createDateDimension` takes a `LocalDate` |
+| `JpaBaseAggregationDao` | The protected query parameters `startDate`, `endDate` and `endPlusOneDate` are `ParameterExpression<java.time.LocalDate>`, and `startTime` and `endTime` are `ParameterExpression<java.time.LocalTime>`. A subclass that sets them with Joda-Time values doesn't compile |
+| JPA metamodel classes (`PortalCookieImpl_`, `AcademicTermDetailImpl_` and the others of these entities) | The date attributes are `SingularAttribute`s of the `java.time` types, such as `SingularAttribute<PortalCookieImpl, Instant> expires` |
 | `IPortalCookie`, `IPortletCookie` | Created and expiry dates are `Instant` |
 | `BaseReportForm` (statistics portlet) | `start` and `end` are `LocalDate` |
-| `CustomDateMidnightEditor` | Replaced by `CustomLocalDateEditor`. Its `REPORT_DATE_FORMAT` parses the reports' `M/d/yyyy` dates as before |
+| `StatisticsPortletController` | `getIntervalCount` takes `LocalDate`s |
+| `CustomDateMidnightEditor` | Replaced by `CustomLocalDateEditor`. Its `REPORT_DATE_FORMAT` parses the reports' `M/d/yyyy` dates as before. The 3-argument constructor, with an exact date length, has no replacement |
 | `JodaTimeConversions` | Removed |
 
 ### Event aggregation files
 
 The import and export of `event-aggregation` data files work as before. A term's `start` and
-`end` are read in the zone the file gives, and written as the JVM zone's midnight. A quarter's
-`start` and `end` are read as `--MM-dd`, also with one-digit fields, or as a full ISO date of
-which the month and day are used. uPortal exports `--MM-dd`.
+`end` are read in the zone the file gives, and written as the JVM zone's midnight. Where that
+midnight repeats, the import keeps the file's offset and the export writes the stored one, as
+5.17 did.
+
+A quarter's `start` and `end` are read in these forms, and uPortal exports the first:
+
+* `--MM-dd`, such as `--04-01`;
+* `--M-d`, with one-digit fields, such as `--4-1`;
+* a full ISO date, `yyyy-MM-dd`, of which the month and day are used, such as `2026-04-01`.
+
+Joda-Time read more forms, and 6.0 refuses them: a date with one-digit fields such as `2026-4-1`,
+a year and month (`2026-04`), a year (`2026`), a week date (`2026-W14-3`), an ordinal date
+(`2026-091`) and a year with a sign (`+2026-04-01`). Write such a quarter as `--MM-dd` before
+the import.
+
+### The JVM's time zone
+
+The event aggregation reads the stored timestamps, and builds its days, hours, quarters and terms,
+in the JVM's default zone, as 5.17 did. What changed about that zone:
+
+* Joda-Time mapped some ids to other zones, and `java.time` doesn't. `EST`, `MST` and `HST` were
+  America/New_York, America/Denver and Pacific/Honolulu in 5.17, and are now fixed offsets
+  without daylight saving time. Every `SystemV/` id, such as `SystemV/EST5EDT`, was UTC in 5.17.
+  With one of these ids, the aggregation's hours and days and the term dates move by an hour or
+  more against the rows 5.17 wrote, in the months where the two zones differ. The portal logs a
+  warning at startup when the JVM runs with one of them. Set a region id, such as
+  `-Duser.timezone=America/New_York`, to keep 5.17's reading.
+* The zone rules now come from the JDK's time zone data, not from Joda-Time's copy. Joda-Time
+  2.14.3 had tzdata 2026c. Update the JDK, or its time zone data with Oracle's `tzupdater`, when
+  a zone's rules change. The portal uses the new rules only after that.
 
 ## spring-modules-cache is gone; the user attribute cache uses Spring's cache API
 

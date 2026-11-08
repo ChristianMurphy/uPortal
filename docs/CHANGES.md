@@ -87,10 +87,19 @@
   `hibernate.properties` and `PortalDialectResolver` keep the Hibernate
   4.3 dialects, table, column and constraint names, and identifier
   generation. `hibernate-entitymanager` is now part of `hibernate-core`;
-  Jadira Usertype 3.2.0.GA → 6.0.1.GA (same Joda-Time storage);
+  Jadira Usertype 3.2.0.GA → 6.0.1.GA (later reduced to its SPI, see
+  below);
   Javassist 3.30.2-GA (the 3.22 Hibernate asks for cannot define its
   proxy classes on JDK 21); the portal keeps dom4j 1.6.1. Adopters with code or settings
   that touch Hibernate directly should read
+  [UPGRADING-6.0.md](UPGRADING-6.0.md).
+- **Joda-Time removed from the database mappings and the event
+  aggregation API.** The event, event aggregation and cookie entities
+  map `java.time` types, and Joda-Time, Jadira's Joda-Time types and
+  `jackson-datatype-joda` are no longer in the web application. The
+  columns keep their types and stored values. Jadira's `usertype.spi`
+  stays for six user types that don't use Joda-Time. The API changes,
+  and the JVM zone ids that Joda-Time read differently, are in
   [UPGRADING-6.0.md](UPGRADING-6.0.md).
 - **PostgreSQL: `vacuumlo` deletes raw event data.** The large-object
   strings `UP_RAW_EVENTS.EVENT_DATA` and `UP_ANALYTICS_EVENTS.EVENT_DATA`
