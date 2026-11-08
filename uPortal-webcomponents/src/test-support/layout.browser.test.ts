@@ -66,6 +66,12 @@ const FAULTS: [Check, string, string, string][] = [
         `<div style="position: relative; height: 40px"><button style="position: absolute; left: 0">One</button><button style="position: absolute; left: 10px">Two</button></div>`,
     ],
     [
+        'spill',
+        'a link over the second line of a link that wraps',
+        'a',
+        `<p style="width: 130px"><a href="#c">Edit user attribute</a><a href="#d" style="margin-left: -40px">Delete</a></p>`,
+    ],
+    [
         'wrap',
         'a button on two lines',
         'button',
@@ -115,6 +121,13 @@ const SCREEN_READER_ONLY = `<a href="#main" style="position: absolute; left: -10
 /* Allowed: an ellipsis whose full text is in the title */
 const TITLED_ELLIPSIS = `<div title="A long name that does not fit" style="width: 80px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis">A long name that does not fit</div>`;
 
+/*
+ * Allowed: links in running text that wrap onto the next line, as the Permissions portlet lists
+ * its permissions. The bounding box of a link that wraps covers the full width of both lines,
+ * over the links beside it.
+ */
+const WRAPPED_LINKS = `<p style="width: 130px"><a href="#c">Edit user attribute</a>, <a href="#d">Impersonate users</a>, <a href="#e">Delete users</a>, <a href="#f">View user</a>, <a href="#g">Edit users</a></p>`;
+
 let container: HTMLElement | undefined;
 
 /** Renders the markup in a fresh container; a declarative shadow root needs setHTMLUnsafe. */
@@ -146,6 +159,11 @@ describe('layout checks', () => {
 
     it('ignore text for screen readers only', () => {
         render(FITS + SCREEN_READER_ONLY);
+        expect(layoutProblems()).toEqual([]);
+    });
+
+    it('allow links that wrap beside each other', () => {
+        render(FITS + WRAPPED_LINKS);
         expect(layoutProblems()).toEqual([]);
     });
 
