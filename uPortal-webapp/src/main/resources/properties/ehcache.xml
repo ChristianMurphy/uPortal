@@ -201,6 +201,8 @@
      | 1 x principal x permission x target (potentially very large)
      | - removals replicated - AuthorizationImpl clears it when a permission changes, and every
      |   node must forget its decisions then, not only when they expire
+     | - also holds DecisionCacheMarker's entry, which AuthorizationImpl removes before each step
+     |   of a permission change; the other nodes must receive these removals in the same order
      +-->
     <cache name="org.apereo.portal.security.provider.AnyUnblockedGrantPermissionPolicy.HAS_UNBLOCKED_GRANT"
         eternal="false" maxElementsInMemory="250000" overflowToDisk="false" diskPersistent="false"

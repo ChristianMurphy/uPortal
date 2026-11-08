@@ -114,6 +114,9 @@ public class AuthorizationImpl implements IAuthorizationService {
     /** AnyUnblockedGrantPermissionPolicy's cache of permission resolution. */
     private Cache hasUnblockedGrantCache;
 
+    /** Tells a permission check whether a permission changed while it ran. */
+    private DecisionCacheMarker decisionCacheMarker;
+
     /** The class representing the permission set type. */
     private static final Class<IPermissionSet> PERMISSION_SET_TYPE = IPermissionSet.class;
 
@@ -171,6 +174,7 @@ public class AuthorizationImpl implements IAuthorizationService {
 
     public void setHasUnblockedGrantCache(Cache hasUnblockedGrantCache) {
         this.hasUnblockedGrantCache = hasUnblockedGrantCache;
+        this.decisionCacheMarker = new DecisionCacheMarker(hasUnblockedGrantCache);
     }
 
     @Autowired
@@ -578,6 +582,9 @@ public class AuthorizationImpl implements IAuthorizationService {
         if (cachedResult != null) {
             return cachedResult;
         }
+        // Read before the policy reads anything: the result is cached only if no permission
+        // changed meanwhile
+        final String marker = this.decisionCacheMarker.current();
 
         boolean result = false; // fail closed
 
@@ -637,7 +644,11 @@ public class AuthorizationImpl implements IAuthorizationService {
                             policy);
         }
 
-        this.doesPrincipalHavePermissionCache.put(key, result);
+        final boolean decision = result;
+        this.decisionCacheMarker.store(
+                marker,
+                () -> this.doesPrincipalHavePermissionCache.put(key, decision),
+                () -> this.doesPrincipalHavePermissionCache.evict(key));
 
         return result;
     }
@@ -995,10 +1006,14 @@ public class AuthorizationImpl implements IAuthorizationService {
             synchronized (principal) {
                 ps = cacheGet(principal);
                 if (ps == null) {
+                    // A change between this read and the put must keep the set out of the cache
+                    final String marker = this.decisionCacheMarker.current();
                     IPermission[] permissions =
                             getUncachedPermissionsForPrincipal(principal, null, null, null);
-                    ps = new PermissionSetImpl(permissions, principal);
-                    cacheAdd(ps);
+                    final IPermissionSet loaded = new PermissionSetImpl(permissions, principal);
+                    this.decisionCacheMarker.store(
+                            marker, () -> cacheAdd(loaded), () -> cacheRemove(principal));
+                    ps = loaded;
                 }
             } // end synchronized
         return ps.getPermissions();
@@ -1165,10 +1180,18 @@ public class AuthorizationImpl implements IAuthorizationService {
      * Forgets every cached permission decision, on this node and, as both caches replicate
      * removals, on the others. A change reaches every member of the group it names, so the entries
      * of all principals go, not only those of the principals in the changed permissions.
+     *
+     * <p>Another node applies the two clears one after the other, while its checks go on.
+     * PRINCIPAL_HAS_PERMISSION is computed from HAS_UNBLOCKED_GRANT, so it is cleared last: a check
+     * between the two clears then finds no old entry to compute from. The marker goes before each
+     * clear, so that a check that read an old entry before a clear doesn't store what it computed
+     * from it after the clear.
      */
     private void clearPermissionDecisions() {
-        this.doesPrincipalHavePermissionCache.clear();
+        this.decisionCacheMarker.remove();
         this.hasUnblockedGrantCache.clear();
+        this.decisionCacheMarker.remove();
+        this.doesPrincipalHavePermissionCache.clear();
     }
 
     /**
@@ -1179,6 +1202,8 @@ public class AuthorizationImpl implements IAuthorizationService {
     private void removeFromPermissionsCache(IPermission[] permissions)
             throws AuthorizationException {
         IAuthorizationPrincipal[] principals = getPrincipalsFromPermissions(permissions);
+        // A load of these sets that read the store before the change must not cache them
+        this.decisionCacheMarker.remove();
         removeFromPermissionsCache(principals);
     }
 
