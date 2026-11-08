@@ -57,6 +57,8 @@ export class UpBackgroundPreference extends UpElement {
                 z-index: 1000;
                 min-inline-size: 100%;
                 max-block-size: 515px;
+                /* overflow-block where the browser has it, overflow-y where it doesn't */
+                overflow-y: auto;
                 overflow-block: auto;
                 background: var(--bg-body);
                 box-shadow: var(--box-shadow);
