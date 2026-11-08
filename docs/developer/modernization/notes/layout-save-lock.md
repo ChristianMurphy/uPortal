@@ -50,15 +50,24 @@ other save is still open.
 `UPDATE UP_USER_PROFILE SET LAYOUT_ID=LAYOUT_ID WHERE USER_ID=?`. A second save of the same user
 waits there until the first commits, then reads the layout id and deletes the rows the first one
 wrote. A user without profile rows, such as one deleted while signed in, logs a warning and saves
-as before. The store keeps READ COMMITTED (MOD-I360). The second save's statements read the
-committed rows whatever isolation the database defaults to.
+as before.
+
+The lock takes every profile row of the user, not only the saved profile's row. A user has a row
+per profile, such as `default` and `mobileDefault` (`userContext.xml`), and the profiles share
+layout id 1. A desktop and a mobile session that save at once write the same layout rows.
+
+The second save reads the rows the first one committed because the store forces READ COMMITTED on
+its transactions (MOD-I360). Under the database's default isolation, if that is higher, the
+waiting save would keep a snapshot from before the first save's commit: with the test's
+SERIALIZABLE default and without that setting, HSQLDB rolls the waiting save back with a
+serialization failure.
 
 ### Lock order
 
 1. The layout manager's monitor. `DistributedLayoutManager` is one object per session, and the
    sign-in (`afterPropertiesSet`, `loadUserLayout`), the reload (`getDistributedUserLayout`,
    MOD-I363), `saveUserLayout` and `updateNode` are synchronized on it.
-2. The user's `UP_USER_PROFILE` rows, in key order (the new lock).
+2. All of the user's `UP_USER_PROFILE` rows, in one statement (the new lock).
 3. The user's `UP_LAYOUT_PARAM` and `UP_LAYOUT_STRUCT` rows, then `UP_USER_LAYOUT`, then
    `UP_USER_PROFILE` again for a first layout, then `UP_USER` when channels were added.
 
@@ -69,13 +78,21 @@ saves, resets, new profiles and user deletion write the profile rows:
 
 * A save that now waits for another save at step 2 would have waited for that save's layout rows
   at step 3 before.
-* A reset (`UserLayoutHelperImpl`, `@PortalTransactional`) updates the profile rows and deletes
-  stylesheet preferences. It doesn't take the monitor or a layout row.
+* A reset (`UserLayoutHelperImpl`, `@PortalTransactional`) doesn't take the monitor or a layout
+  row. `resetUserLayout` updates one profile row and deletes stylesheet preferences, so it never
+  holds a profile row while it waits for another.
+* `resetUserLayoutAllProfiles` updated the profile rows one at a time, in the order of a
+  `Hashtable`, while the save takes them all in the order of its statement's plan. Each could
+  hold a row the other waits for. It now first takes the rows with the save's statement
+  (commit `fix(layout): lock all profile rows before resetting every profile`). It is reachable
+  only through the commented-out option of `reset-user-layout.xml`.
 * A new profile (`addUserProfile`, or `RDBMUserIdentityStore` creating a user) is an insert, and
   the lock doesn't wait for rows that aren't committed yet.
 * `removePortalUID` deletes the layout rows too, so a save waited for it before as well.
 
-So the lock doesn't add a cycle that the layout rows didn't already allow.
+So the lock doesn't add a cycle with the monitor. Between database locks alone, the two cases in
+the table below can still end in a deadlock that the database detects, and it rolls one request
+back.
 
 ### Why not the `UP_USER` row
 
@@ -106,6 +123,7 @@ holds (proposed row below).
 | --- | --- | --- |
 | `RDBMUserIdentityStore.removePortalUID` | `UP_USER`, `UP_USER_LAYOUT`, `UP_USER_PROFILE`, layout rows | can meet a save that added channels in a deadlock the database detects, as before (the old save had locked the layout rows and wanted `UP_USER`) |
 | `RDBMDistributedLayoutStore.importLayout` (`@Transactional`) | profile import, `UP_USER`, then the save joins | a profile import that writes one of several profile rows can meet a concurrent save in a deadlock the database detects. Import and sign-in of one user at once only |
+| `UserLayoutHelperImpl.resetUserLayoutAllProfiles` | all profile rows with the save's statement, then each row, then stylesheet preferences | waits for the save at the same statement, or the save waits for it |
 | `getNextStructId` (MOD-I361) | `UP_USER` only, own transaction | unchanged |
 | `getPersonalUserLayout`, first layout | `UP_USER` in autocommit | unchanged |
 | `RDBMLocaleStore.updateUserLocales` (MOD-I391) | `UP_USER`, `UP_USER_LOCALE` | unchanged |
@@ -134,12 +152,18 @@ default table locks the first-layout test passed on the old code.
 | --- | --- |
 | `testLayoutSavedBetweenReadAndWrite` (MOD-I360) | A stops before its delete. Both save, and B's layout remains |
 | `testLayoutSavedBetweenDeleteAndInsert` (new) | A stops after its deletes, before its inserts. Both save, and B's layout remains |
-| `testFirstLayoutSavedTwiceAtOnce` (new) | the same with no rows and `LAYOUT_ID=0`. Both save, B's layout remains, and the profile has `LAYOUT_ID=1` |
+| `testFirstLayoutSavedTwiceAtOnce` (new) | a user who never saved a layout. The profile's layout id is NULL, the user has no `UP_USER_LAYOUT` row, and the save copies the `system` user's. Both save, B's layout remains, the profile has `LAYOUT_ID=1` and the user one `UP_USER_LAYOUT` row |
+| `testFirstLayoutOfTwoProfilesSavedAtOnce` (new, from the review) | the same, with A saving profile 1 and B profile 2. Both profiles get `LAYOUT_ID=1` |
 | `testStructIdTakenWhileALayoutSaves` (new) | A takes the save's lock and stops, and B takes a structure id. B must finish before A goes on |
 | `testUserWithoutProfileRowStillSaves` (new) | no profile row: the save goes on |
 | `testStructIdTakenBetweenReadAndWrite` (MOD-I361) | unchanged, with B in a thread |
 
-Results (local, JDK 25, `--offline --no-daemon`):
+The test's connections default to SERIALIZABLE, as in `RDBMLocaleStoreConcurrencyTest`, and
+every test that saves checks that each prepared statement of the store ran under READ COMMITTED.
+`UserLayoutHelperImplTest.testResetOfAllProfilesLocksTheProfileRowsFirst` (uPortal-layout-core)
+checks that the reset of every profile locks the rows before it updates them.
+
+Results of the first round, before the review (local, JDK 25, `--offline --no-daemon`):
 
 | Store | HSQLDB, MVCC | PostgreSQL 16 | MariaDB 10.11, `innodb_snapshot_isolation=ON` |
 | --- | --- | --- | --- |
@@ -166,13 +190,43 @@ HSQLDB, the changed modules: uPortal-layout-impl 12 tests and uPortal-webapp 473
 merge of landing 4, uPortal-webapp's 483 tests pass again on HSQLDB, and `spotlessCheck` and
 `spotbugsMain` pass.
 
+### After the review
+
+The oss-review of `4279d3cdd` asked for the two-profile test, the isolation check and a real first
+layout. Results with the 7 tests and the SERIALIZABLE default (local, JDK 25):
+
+| Store | HSQLDB, MVCC | PostgreSQL 16 | MariaDB 10.11, `innodb_snapshot_isolation=ON` |
+| --- | --- | --- | --- |
+| `aaa3740f9^` (before MOD-I360) | all 7 fail | not run | `testLayoutSavedBetweenReadAndWrite` fails, as A gets 1020 on `UP_LAYOUT_PARAM` |
+| tip `280a638dd` | 3 fail: `testFirstLayoutOfTwoProfilesSavedAtOnce` and `testFirstLayoutSavedTwiceAtOnce` with a unique constraint violation on `UP_LAYOUT_STRUCT`, and `testLayoutSavedBetweenReadAndWrite` with `[A]` | 4 fail: the same three (`up_layout_struct_pkey`), and `testLayoutSavedBetweenDeleteAndInsert` with the CI error on `up_layout_param_pkey` | 3 fail, as on HSQLDB, with duplicate entry `1-9001-1` |
+| this branch | 7 pass | 7 pass | 7 pass |
+
+Seeded faults on HSQLDB, not committed:
+
+* The lock limited to the saved profile (`AND PROFILE_ID=?`):
+  `testFirstLayoutOfTwoProfilesSavedAtOnce` fails, A with a unique constraint violation on
+  `UP_LAYOUT_STRUCT`. The other 6 tests pass.
+* The store's READ COMMITTED removed: 6 of 7 fail. In the 4 tests where B waits for A's lock, B
+  gets "transaction rollback: serialization failure". The other 2 report "Isolation of a save's
+  transaction expected:<2> but was:<8>".
+* The reset's lock removed: `testResetOfAllProfilesLocksTheProfileRowsFirst` fails with "Wanted
+  but not invoked: jdbcTemplate.update(...)".
+
+HSQLDB, the changed modules after the review: uPortal-layout-core 49 tests, uPortal-layout-impl 12
+and uPortal-webapp 484 (76 `@Ignore`d), with the persistence goldens, pass. `spotlessCheck` of the
+three modules, `spotbugsMain` of uPortal-layout-core and uPortal-layout-impl and
+`check-freeze-store.py` (no rule grew) pass. SpotBugs first reported
+`NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE` on the reset's `getJdbcTemplate()`, which Spring marks
+nullable. The reset now goes through `Objects.requireNonNull`.
+
 ## Commands
 
 The uPortal worktree is `/home/user/wt/uPortal-layoutlock`. PostgreSQL 16 ran from the system's
 binaries, as the `postgres` user, with a data directory of its own on port 8287. MariaDB 10.11.14
 ran from Ubuntu's `mariadb-server-core` package, extracted with `dpkg -x`, as `nobody`, on port
-8280 with `--innodb-snapshot-isolation=ON`. No portal ran. For the old code, the store's source
-was restored from the tip or from `aaa3740f9^`, and the test run again.
+8280 with `--innodb-snapshot-isolation=ON`. Both were set up again for the review round and
+removed after it. No portal ran. For the old code, the store's source was restored from the tip
+or from `aaa3740f9^`, and the test run again.
 
 ```sh
 ./gradlew --offline --no-daemon :uPortal-webapp:test --rerun \
@@ -188,7 +242,7 @@ MOD-I399 has its number. This row replaces its "Open" resolution.
 
 | ID | Area | Issue | Status |
 | --- | --- | --- | --- |
-| MOD-I399 | Layout | Saves of one user's layout that overlap fail on PostgreSQL with `DuplicateKeyException` on `up_layout_param_pkey`: `setUserLayout` deletes, then inserts, and the second save's delete doesn't see the rows the first one committed. For a first layout both saves insert the same keys on every database. Parallel sign-ins of one user each save the merged layout. `background-preference.spec.ts:124` failed at the student's sign-in in job 116563567769 (run 38775913145). | **Fixed** (uPortal `fix(layout): save one user's layout from two requests in turn`): a save first locks the user's `UP_USER_PROFILE` rows. The `UP_USER` row would close a cycle with `updateNode`'s directive ids under the layout manager's monitor, and `testStructIdTakenWhileALayoutSaves` fails with it. `RDBMUserLayoutStoreConcurrencyTest` fails on the old code on HSQLDB (MVCC), PostgreSQL 16 (the CI error) and MariaDB 10.11. MOD-I360's test runs its second save in a thread and still fails before MOD-I360 (1020) (`notes/layout-save-lock.md`). |
+| MOD-I399 | Layout | Saves of one user's layout that overlap fail on PostgreSQL with `DuplicateKeyException` on `up_layout_param_pkey`: `setUserLayout` deletes, then inserts, and the second save's delete doesn't see the rows the first one committed. For a first layout both saves insert the same keys on every database. Parallel sign-ins of one user each save the merged layout. `background-preference.spec.ts:124` failed at the student's sign-in in job 116563567769 (run 38775913145). | **Fixed** (uPortal `fix(layout): save one user's layout from two requests in turn`): a save first locks all of the user's `UP_USER_PROFILE` rows, since the profiles share the layout id. The `UP_USER` row would close a cycle with `updateNode`'s directive ids under the layout manager's monitor, and `testStructIdTakenWhileALayoutSaves` fails with it. A reset of every profile takes the rows with the same statement first. `RDBMUserLayoutStoreConcurrencyTest` fails on the old code on HSQLDB (MVCC), PostgreSQL 16 (the CI error) and MariaDB 10.11, and checks under a SERIALIZABLE default that saves run under READ COMMITTED. MOD-I360's test runs its second save in a thread and still fails before MOD-I360 (1020) (`notes/layout-save-lock.md`). |
 | MOD-I? | Layout | A layout reload inside a caller's transaction keeps the user's layout row locks after the layout manager's monitor is released. `StylesheetUserPreferencesServiceImpl.setLayoutAttribute` (`@Transactional`) can reload and save in its first `getUserLayout()`, then take the monitor again through `removeLayoutAttribute`. A save in another request of the same session that holds the monitor and waits for those rows then deadlocks with it, and the database can't see it: on PostgreSQL both requests hang. A first-layout reload in that transaction also holds `UP_USER` (MOD-I361). From the review for MOD-I399, not seen in a run. | **Open.** Read the layout before the transaction starts, or keep the reload out of the caller's transaction (`notes/layout-save-lock.md`). |
 
 ## Runs
