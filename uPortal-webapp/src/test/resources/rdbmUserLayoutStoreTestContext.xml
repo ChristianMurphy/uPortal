@@ -27,6 +27,9 @@
     HSQLDB server runs. With HSQLDB's default table locks, two first saves of a layout ran one
     after the other without the store's lock. The uportal.test.db.* properties select another
     database instead.
+
+    The connections default to SERIALIZABLE (8), so a save that doesn't ask for READ COMMITTED
+    itself shows up on every database, HSQLDB included.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
@@ -52,6 +55,7 @@
     <bean id="PortalDb" parent="TestDb">
         <qualifier value="PortalDb" />
         <property name="url" value="${uportal.test.db.url:jdbc:hsqldb:mem:rdbmUserLayoutStoreTest;hsqldb.tx=mvcc}" />
+        <property name="defaultTransactionIsolation" value="8" />
     </bean>
 
     <import resource="classpath:sharedJpaTestContext.xml"/>
