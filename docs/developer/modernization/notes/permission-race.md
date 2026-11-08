@@ -280,5 +280,14 @@ run 42458398202 don't show how long node B's removals took there.
 The coordinator accepted the marker in place of a listener, and the in-loop cases above stay an
 open row for the owner. The review of `490187844` asked for the tests and documentation in
 "Evidence" and in `UPGRADING-6.0.md`, which are now on the branch, and merged with landing 3
-(uPortal `280a638dd`, uPortal-start `09ccc9cbb`). The push runs of that head are in the report to
-the coordinator.
+(uPortal `280a638dd`, uPortal-start `09ccc9cbb`).
+
+Push runs of that round, all green on the first attempt:
+
+* On uPortal `81b797067`, CI 42481092562 and DB integration 42481092533 passed, and so did DB
+  copy tool 42481092542.
+* On uPortal-start `b796c1f01`, Integration 42481094541 built the uPortal branch at `81b797067`
+  (job 128732971575). Its Cluster job 128733840833 passed in 10 min 55 s, `permission-rounds` with the
+  4 sessions following each of the 20 changes, the slowest in 1029 ms. CI 42481094558, Migration
+  equivalence 42481094591, G-index 42481094552, Workflow lint 42481094532 and HTTP replay
+  42481094623 passed too.
