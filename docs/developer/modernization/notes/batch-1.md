@@ -117,17 +117,32 @@ has the fixes of both, and this run passed without a retry.
 
 ## Open items
 
-* `overflow-block` (MOD-D51's list of logical properties) works in Chromium 141. Other
-  browsers weren't checked here. In a browser without it, the list of backgrounds doesn't scroll
-  at 515 pixels and grows instead. With the quickstart's four choices it stays below that height.
-  Keeping `overflow-y` too for such browsers is the owner's call.
 * The describes of `background-preference.spec.ts` that sign in as the shared student collide with
   their own copies under `--repeat-each` with two workers, as seen above. CI runs one copy, and
   test-users kept the student for this spec because no other spec reads the student's background.
-* `tomcat-log-summary.sh` prints each SEVERE line again in its exceptions section and stops at 300
-  lines. It reads the `catalina` logs before the `localhost` logs, so in a job whose Tomcat logged
-  many SEVERE lines before it failed, the cause in `localhost.*.log` can fall after the limit.
+* `up-search.ts` and `up-search-box.ts` still check `event.isComposing` alone, as the background
+  preference did before the review. They belong to the search conversion, outside this batch.
 * MOD-I375, the request-level portlet entity cache, is still open. This branch doesn't change it.
+
+## Review of 2026-11-08
+
+The oss-review of uPortal `779599f56` and uPortal-start `e47c4f3de` against the tips found these.
+Each has a commit after those heads.
+
+| Finding | Commit | Evidence |
+| --- | --- | --- |
+| B1. `tomcat-log-summary.sh` printed every SEVERE line, read the catalina logs first and stopped at 300 lines in the log and 60 in the summary | uPortal-start `3959acd97` | With 167 plain SEVERE lines in the catalina log the old script left the cause out of the summary, and with 400 out of the job log too. The new script keeps it in both. `tomcat-log-summary.test.sh` (7 cases, in Workflow lint) passes, and 2 of its 7 cases pass on the old script |
+| B2. Escape with keyCode 229, which Safari sends at the end of a composition, closed the list | uPortal `e1d0955a8` | The browser test's new keyCode 229 case fails on `event.isComposing` alone and passes with `isComposing()` |
+| B3. Without `overflow-block` the list doesn't scroll and its choices spill out of it | uPortal `432df2944` | A local probe in Chromium 1194 with 12 choices: `clientHeight` 515 and `scrollHeight` 548 in each case. Computed `overflow-y` is `auto` with both properties, `auto` with `overflow-y` alone (a browser without `overflow-block`), and `visible` with neither |
+| B4. The wrap test's seeded fault no longer held, since `hostStyles` sets `overflow-wrap: anywhere` too (`a608d5efd`) | uPortal `c090f29a7` | The component's own line is gone. With the line removed from `hostStyles` the test fails (2061 px in a 200 px element). `wc-background-preference.md`'s fault table says so |
+| B5. RTLCSS already mirrored the old rule | this note | RTLCSS 4.3.0 turns `right: 12px` into `left: 12px`, so `defaultSkin-rtl.css` placed the channel at the same place before `8ca0effc6`. The logical insets help skins that aren't mirrored, such as the Dynamic Respondr Skin the review names |
+| B6. `assertEquals(msg, true, ...)` in `testContainsType` | uPortal `29a723f8c` | `assertTrue` and `assertFalse`. The class's 2 tests pass, and `codenarcTest` finds 0 violations in 8 files |
+| `g-index.md` cited the branch `-tomcat-causes`, and `test-users.md` didn't list `background` | uPortal-start `21ffca18a` | Docs |
+
+After the review, `:uPortal-webcomponents:test` passed 1533 of 1533 tests on Chromium 1194 with
+Gradle on JDK 21, and `uPortal-webapp`'s CodeNarc tasks and `AnyUnblockedGrantPermissionPolicyTest`
+passed. In uPortal-start actionlint, `zizmor --offline` and `tomcat-log-summary.test.sh` passed.
+The commits don't change Java code, and `spotbugsMain` wasn't run again.
 
 ## Next step
 
@@ -138,7 +153,7 @@ None on this branch. The coordinator reviews it against the tip.
 | ID | Area | Finding | Status |
 | --- | --- | --- | --- |
 | MOD-I? | Build | Since the Gradle 9 upgrade (`798d0c098`) uPortal's `build.gradle` gave every CodeNarc task an empty compilation classpath. CodeNarc's enhanced rules (`CloneWithoutCloneable`, `JUnitAssertEqualsConstantActualValue`, `MissingOverrideAnnotation`, `UnsafeImplementationAsMap`) didn't run, and each build printed 571 "unable to resolve class" lines. With the classpath, the rules found six `assertEquals` calls in `AnyUnblockedGrantPermissionPolicyTest` with the expected and actual values swapped | **Fixed** (uPortal `656815f78`, `93df49aca`): each CodeNarc task gets its source set's classes and compile classpath. 8 files, 0 violations, and a swapped call fails `codenarcTest` |
-| MOD-I? | CI | When a web application failed to start, uPortal-start's job log showed only Tomcat's SEVERE line ("Exception sending context initialized event"). The exception and its causes were only in the logs inside the artifact (MOD-I192) | **Fixed** (uPortal-start `0096b2304`): `tomcat-log-summary.sh` prints the exception and `Caused by:` lines after each SEVERE line, without stack frames, in the job log and the summary |
+| MOD-I? | CI | When a web application failed to start, uPortal-start's job log showed only Tomcat's SEVERE line ("Exception sending context initialized event"). The exception and its causes were only in the logs inside the artifact (MOD-I192) | **Fixed** (uPortal-start `0096b2304`, `3959acd97`): `tomcat-log-summary.sh` prints the exception and `Caused by:` lines after a SEVERE line, without stack frames, in the job log and the summary. It reads the localhost logs first and prints a SEVERE line only when an exception follows it, so plain SEVERE lines don't push the cause past its limits. `tomcat-log-summary.test.sh` checks 0, 167 and 400 of them |
 
 Status lines for rows that exist:
 
