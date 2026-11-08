@@ -93,7 +93,7 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
   (`preference-cache.md`): a stale preference list in a `NONSTRICT_READ_WRITE` cache region.
 * `PortletEntityRegistryImpl.getPortletEntityMap` reads the request attribute
   `PORTLET_ENTITY_ATTRIBUTE + threadId` but stores it under `PORTLET_ENTITY_ATTRIBUTE`, so the
-  request-level entity cache never hits.
+  request-level entity cache never hits. Logged as MOD-I375, open.
 * The old portlet's output is cached for five minutes (`expiration-cache` 300), so a choice made
   elsewhere showed only at the next sign-in. The component has no such cache.
 
@@ -104,7 +104,7 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
   characterisation spec passes on the portlet and on the component. The portlet stays until
   MOD-I133.
 * MOD-I230 (logged): the stale preference cache of the first finding.
-* Issue: the request-level portlet entity cache never hits (second finding).
+* MOD-I375 (logged): the request-level portlet entity cache of the second finding.
 
 ## Running locally
 
@@ -114,14 +114,16 @@ Playwright 1.64.
 
 ## Owner rulings of 2026-10-11
 
-* MOD-D49: the six new keys have Spanish and French text, with `\u` escapes and the French
+* MOD-D50: the six new keys have Spanish and French text, with `\u` escapes and the French
   apostrophes doubled. The captions Galaxy, Mountain and Nebula come from the definition's
   `backgroundImageCaptions` preference, not from the message bundles, so they stay as the data
   has them.
 * MOD-D50: uPortal-start's spec renders `/p/background-preference` for a user whose language is
-  es_ES and one whose language is fr_FR, through the User Locales Selector channel, signed in as
-  the quickstart developer user (as in `wc-reset-my-layout.md`). The component has no text
-  inputs, so the Unicode round trip doesn't apply.
+  es_ES and one whose language is fr_FR. It saves the language through `PUT /api/v6-0/locale`,
+  the API of the User Locales Selector, signed in as a user of its own (`ownUser("background")`,
+  `e2e-background-<slot>`). Until the merge of 2026-11-08 it signed in as the quickstart
+  developer, whose language the Reset My Layout tests save too (`batch-1.md`).
+* MOD-D49: the component has no text inputs, so the Unicode round trip doesn't apply.
 * MOD-D51: the component ignores Escape while `event.isComposing` is true. The list uses `min-inline-size`,
   `max-block-size` and `overflow-block`, the thumbnails `inline-size`, and the theme rule that
   places the channel `inset-inline-end` and `inset-block-start`. Long captions wrap
@@ -139,9 +141,9 @@ The coordinator landed uPortal `7769bf8` and uPortal-start `283b22d` as uPortal 
 uPortal-start `ad9521267`. Evidence: uPortal CI 38130739840 (full matrix, green) and uPortal-start
 Integration 38130741635 (18 jobs, green). The MOD-D49 to MOD-D51 work above (`ee07cbf`, `0ea55db`
 and the uPortal-start es/fr spec `2886eb998`) is in landing batch 1, the branch
-`ccr-43ba0785-hzlrj5-batch-1` in both repositories. The coordinator pushes that branch and runs its
-push runs.
+`ccr-43ba0785-hzlrj5-batch-1` in both repositories. `batch-1.md` has the batch's state after
+the merge of the integration branch on 2026-11-08 and its evidence.
 
 ## Next step
 
-None on this branch. The batch's push runs are the landing evidence.
+None on this branch. `batch-1.md` lists the batch's open items.
