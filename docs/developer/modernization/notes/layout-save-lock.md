@@ -2,9 +2,9 @@
 
 # Overlapping saves of one user's layout (MOD-I399)
 
-Branch `ccr-43ba0785-hzlrj5-layout-save-lock` in uPortal, from the integration tip `280a638dd`.
-The uPortal-start branch of the same name has no commit of its own. Its push runs build this
-uPortal branch.
+Branch `ccr-43ba0785-hzlrj5-layout-save-lock` in uPortal, from the integration tip `280a638dd`,
+with landing 4 (`0cf02679f`) merged in. The uPortal-start branch of the same name has no commit
+of its own. Its push runs build this uPortal branch.
 
 ## What failed
 
@@ -162,7 +162,9 @@ only `testLayoutSavedBetweenReadAndWrite`.
 HSQLDB, the changed modules: uPortal-layout-impl 12 tests and uPortal-webapp 473 (76 of them
 `@Ignore`d before this branch), with the persistence goldens (`EntityRoundTripGoldenTest` 6,
 `DaoQueryGoldenTest` 1, `AggregationGoldenTest` 2), pass. `spotlessCheck` of both modules,
-`spotbugsMain` of uPortal-layout-impl and `check-freeze-store.py` (no rule grew) pass.
+`spotbugsMain` of uPortal-layout-impl and `check-freeze-store.py` (no rule grew) pass. After the
+merge of landing 4, uPortal-webapp's 483 tests pass again on HSQLDB, and `spotlessCheck` and
+`spotbugsMain` pass.
 
 ## Commands
 
@@ -191,5 +193,19 @@ MOD-I399 has its number. This row replaces its "Open" resolution.
 
 ## Runs
 
-Next steps: after the push of this branch, a `db-integration.yml` run started by hand and the
-push runs of the uPortal-start branch of the same name. Their IDs and results go here.
+The first push was uPortal `1ca924f62`. The uPortal-start branch of the same name pointed at the
+integration tip `09ccc9cbb` and had no commit of its own.
+
+| Run | Result |
+| --- | --- |
+| uPortal CI 42482810742 | passed (build and tests on JDK 21, Prose, Commit messages) |
+| uPortal DB integration 42482816258, started by hand | passed. uPortal-webapp's 473 tests (76 `@Ignore`d, as on HSQLDB), the 6 of `RDBMUserLayoutStoreConcurrencyTest` included, pass on PostgreSQL 18, MariaDB 12.3, MySQL 9.7, SQL Server 2025 and Oracle 23, and on the canaries PostgreSQL 19, MariaDB 13 and MySQL 26. It cancelled the push run 42482810680, as they share a group |
+| uPortal DB copy tool 42482810749 | passed |
+| uPortal-start Integration 42482825596 | passed. Build uPortal built uPortal `1ca924f62` from this branch (notice of job 128738294124). Playwright on HSQLDB and on PostgreSQL 18 passed 512 tests each, with no test that passed only on a retry. Playwright with CAS, the PostgreSQL 18 harness, G-migrate mariadb-11.4 to postgres-18 and Cluster passed. The portal logs of both Playwright jobs have no duplicate key on a layout table and no "No UP_USER_PROFILE row" warning |
+| uPortal-start CI 42482825645 | passed |
+| uPortal-start HTTP replay 42482825581 | passed, "Replay against 5.17" included |
+| uPortal-start Migration equivalence 42482825719 | passed |
+| uPortal-start G-index 42482825617 | passed, with its seeded faults |
+
+The postgres-16 to postgres-18 G-migrate pair, where the failure was, runs only in the full matrix
+of a batch.
