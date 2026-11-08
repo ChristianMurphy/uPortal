@@ -93,19 +93,19 @@ class AnyUnblockedGrantPermissionPolicyTest extends AnyUnblockedGrantPermissionP
             activeDenyPermission
         ]);
 
-        assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyGrant, 'GRANT'), true);
-        assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyDeny, 'GRANT'), false);
-        assertEquals('Incorrect output from containsType() -- ',
-            containsType(bothGrantAndDeny, 'GRANT'), true);
+        assertTrue('Incorrect output from containsType() -- ',
+            containsType(onlyGrant, 'GRANT'));
+        assertFalse('Incorrect output from containsType() -- ',
+            containsType(onlyDeny, 'GRANT'));
+        assertTrue('Incorrect output from containsType() -- ',
+            containsType(bothGrantAndDeny, 'GRANT'));
 
-        assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyGrant, 'DENY'), false);
-        assertEquals('Incorrect output from containsType() -- ',
-            containsType(onlyDeny, 'DENY'), true);
-        assertEquals('Incorrect output from containsType() -- ',
-            containsType(bothGrantAndDeny, 'DENY'), true);
+        assertFalse('Incorrect output from containsType() -- ',
+            containsType(onlyGrant, 'DENY'));
+        assertTrue('Incorrect output from containsType() -- ',
+            containsType(onlyDeny, 'DENY'));
+        assertTrue('Incorrect output from containsType() -- ',
+            containsType(bothGrantAndDeny, 'DENY'));
     }
 
     @Test

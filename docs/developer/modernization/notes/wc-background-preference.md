@@ -88,10 +88,12 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
   `PortletPreferenceImpl` that makes the user's next sign-in fail with
   `EntityNotFoundException` until Tomcat restarts. The store code is the existing
   `PortletEntityPreferencesAPIImpl`; the portlet's own `PortletEntityPreferencesImpl` stores the
-  same way. Found when two Playwright workers changed the student's background at once.
+  same way. Found when two Playwright workers changed the student's background at once. Logged
+  as MOD-I230, root cause and fix on `ccr-43ba0785-hzlrj5-preference-cache`
+  (`preference-cache.md`): a stale preference list in a `NONSTRICT_READ_WRITE` cache region.
 * `PortletEntityRegistryImpl.getPortletEntityMap` reads the request attribute
   `PORTLET_ENTITY_ATTRIBUTE + threadId` but stores it under `PORTLET_ENTITY_ATTRIBUTE`, so the
-  request-level entity cache never hits.
+  request-level entity cache never hits. Logged as MOD-I375, open.
 * The old portlet's output is cached for five minutes (`expiration-cache` 300), so a choice made
   elsewhere showed only at the next sign-in. The component has no such cache.
 
@@ -101,9 +103,8 @@ the service classes in the deployed `uPortal-api-rest` jar, with Tomcat restarte
   and `<up-background-preference>` in uPortal, the Web Component definition in uPortal-start. The
   characterisation spec passes on the portlet and on the component. The portlet stays until
   MOD-I133.
-* Issue: concurrent saves of one user's portlet-entity preferences from two sessions can leave a
-  stale second-level cache entry that breaks the user's sign-in until restart (first finding).
-* Issue: the request-level portlet entity cache never hits (second finding).
+* MOD-I230 (logged): the stale preference cache of the first finding.
+* MOD-I375 (logged): the request-level portlet entity cache of the second finding.
 
 ## Running locally
 
@@ -111,7 +112,46 @@ As in `wc-reset-my-layout.md`, with Google's Maven mirror through a Gradle init 
 `~/.m2`, `JDK_JAVA_OPTIONS` with the two `--add-opens`, and a Chromium 1248 symlink tree for
 Playwright 1.64.
 
+## Owner rulings of 2026-10-11
+
+* MOD-D50: the six new keys have Spanish and French text, with `\u` escapes and the French
+  apostrophes doubled. The captions Galaxy, Mountain and Nebula come from the definition's
+  `backgroundImageCaptions` preference, not from the message bundles, so they stay as the data
+  has them.
+* MOD-D50: uPortal-start's spec renders `/p/background-preference` for a user whose language is
+  es_ES and one whose language is fr_FR. It saves the language through `PUT /api/v6-0/locale`,
+  the API of the User Locales Selector, signed in as a user of its own (`ownUser("background")`,
+  `e2e-background-<slot>`). Until the merge of 2026-11-08 it signed in as the quickstart
+  developer, whose language the Reset My Layout tests save too (`batch-1.md`).
+* MOD-D49: the component has no text inputs, so the Unicode round trip doesn't apply.
+* MOD-D51: while an input method composes, the component leaves Escape alone. It asks
+  `isComposing()` in `lib/keyboard.ts`, which counts keyCode 229 too (batch 1 review). The list uses
+  `min-inline-size`, `max-block-size` and `overflow-block`, with `overflow-y` before it for
+  browsers without `overflow-block`, the thumbnails `inline-size`, and the theme rule that places
+  the channel `inset-inline-end` and `inset-block-start`. Long captions wrap through the
+  `overflow-wrap: anywhere` that `hostStyles` gives every component. Browser tests cover the
+  composing key and the long caption.
+
+| Seeded fault | Caught by |
+| --- | --- |
+| The `isComposing` check removed | browser "leaves Escape to an input method that is composing" |
+| `event.isComposing` in place of `isComposing()` | the same test with keyCode 229, where Escape is prevented and the list closes |
+| The wrap removed from `hostStyles` in `shared-styles.ts` | browser "wraps a caption too long for its width" (2061px in a 200px element) |
+
+Until the batch 1 review the component set `overflow-wrap: anywhere` on its own `:host` as well,
+so removing that line didn't fail the test. The review found it, and the component now takes the
+wrap from `hostStyles` only.
+| The test doesn't set the language | e2e "speaks es": the element's locale stays `en-US` |
+
+## Landing
+
+The coordinator landed uPortal `7769bf8` and uPortal-start `283b22d` as uPortal `5a7276803` and
+uPortal-start `ad9521267`. Evidence: uPortal CI 38130739840 (full matrix, green) and uPortal-start
+Integration 38130741635 (18 jobs, green). The MOD-D49 to MOD-D51 work above (`ee07cbf`, `0ea55db`
+and the uPortal-start es/fr spec `2886eb998`) is in landing batch 1, the branch
+`ccr-43ba0785-hzlrj5-batch-1` in both repositories. `batch-1.md` has the batch's state after
+the merge of the integration branch on 2026-11-08 and its evidence.
+
 ## Next step
 
-Run CI.yml by hand on the uPortal topic branch and integration.yml on the uPortal-start topic
-branch, then send the coordinator the run IDs and head SHAs.
+None on this branch. `batch-1.md` lists the batch's open items.
