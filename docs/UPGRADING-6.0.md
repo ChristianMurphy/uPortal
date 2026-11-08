@@ -938,6 +938,15 @@ with `replicatePuts=false, replicateUpdates=false, replicateRemovals=true` (see 
 copy). Each permission change now costs a round of fresh permission checks, on every
 node.
 
+A permission check that runs while a permission changes doesn't cache its result, on any node.
+`HAS_UNBLOCKED_GRANT` stores one marker entry that `AuthorizationImpl` removes before each step of
+a change, and a check stores its result only if the marker it read when it started is still there.
+The other nodes must apply the removals of `org.apereo.portal.security.IPermissionSet`,
+`HAS_UNBLOCKED_GRANT` and `PRINCIPAL_HAS_PERMISSION` in the order they were made. uPortal's
+`ehcache.xml` replicates the three caches asynchronously with the default interval. Their removals
+go through one queue. Keep it that way in your own copy: a different
+`asynchronousReplicationIntervalMillis` on one of them puts its removals in another queue.
+
 **Portal events are written from the start.** A node used to queue its portal events in memory
 for the first 120 s after it started, with its other scheduled tasks. Another node's aggregator
 had passed their time by then, so they were never aggregated, and every restart in a running
