@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -98,6 +99,7 @@ public class RDBMLocaleStoreConcurrencyTest {
         saveAtOnce(Locale.forLanguageTag("es-ES"), Locale.forLanguageTag("es-ES"));
 
         assertEquals(Collections.singletonList("es_ES"), storedLocales());
+        assertSavedUnderReadCommitted();
     }
 
     /** A saves French and B Spanish over English. B saves later, so Spanish remains. */
@@ -108,6 +110,27 @@ public class RDBMLocaleStoreConcurrencyTest {
         saveAtOnce(Locale.FRANCE, Locale.forLanguageTag("es-ES"));
 
         assertEquals(Collections.singletonList("es_ES"), storedLocales());
+        assertSavedUnderReadCommitted();
+    }
+
+    /**
+     * A user whose session has an id without an UP_USER row, such as a user deleted while signed
+     * in: there is no row to lock, and the save goes on as before.
+     */
+    @Test
+    public void testUserWithoutUserRowStillSaves() {
+        final IPerson personWithoutRow = mock(IPerson.class);
+        when(personWithoutRow.getID()).thenReturn(USER_ID + 1);
+
+        store.updateUserLocales(personWithoutRow, new Locale[] {Locale.FRANCE});
+
+        assertEquals(
+                Collections.singletonList("fr_FR"),
+                jdbcTemplate.queryForList(
+                        "SELECT LOCALE FROM UP_USER_LOCALE WHERE USER_ID=?",
+                        String.class,
+                        USER_ID + 1));
+        assertSavedUnderReadCommitted();
     }
 
     /**
@@ -153,6 +176,20 @@ public class RDBMLocaleStoreConcurrencyTest {
                 "RDBMLocaleStoreConcurrencyTest-" + name);
     }
 
+    /**
+     * The test's connections default to SERIALIZABLE (rdbmLocaleStoreTestContext.xml), so a save
+     * that doesn't ask for READ COMMITTED itself shows up here on every database.
+     */
+    private void assertSavedUnderReadCommitted() {
+        assertFalse("The store prepared statements", store.isolations.isEmpty());
+        for (final int isolation : store.isolations) {
+            assertEquals(
+                    "Isolation of a save's transaction",
+                    Connection.TRANSACTION_READ_COMMITTED,
+                    isolation);
+        }
+    }
+
     private List<String> storedLocales() {
         return jdbcTemplate.queryForList(
                 "SELECT LOCALE FROM UP_USER_LOCALE WHERE USER_ID=? ORDER BY PRIORITY, LOCALE",
@@ -165,10 +202,12 @@ public class RDBMLocaleStoreConcurrencyTest {
     }
 
     /**
-     * Stops one thread before its insert until the test lets it go on, and tells the test when
-     * another thread prepares its first statement.
+     * Stops one thread before its insert until the test lets it go on, tells the test when another
+     * thread prepares its first statement, and records the isolation level of every statement's
+     * connection.
      */
     static class PausingLocaleStore extends RDBMLocaleStore {
+        final List<Integer> isolations = new CopyOnWriteArrayList<>();
         final CountDownLatch paused = new CountDownLatch(1);
         final CountDownLatch resume = new CountDownLatch(1);
         final CountDownLatch otherStarted = new CountDownLatch(1);
@@ -198,6 +237,7 @@ public class RDBMLocaleStoreConcurrencyTest {
                             new Class<?>[] {Connection.class},
                             (proxy, method, args) -> {
                                 if ("prepareStatement".equals(method.getName())) {
+                                    isolations.add(target.getTransactionIsolation());
                                     beforeStatement((String) args[0]);
                                 }
                                 try {

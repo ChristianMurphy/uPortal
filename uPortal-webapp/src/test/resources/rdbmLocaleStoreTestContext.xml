@@ -25,6 +25,9 @@
 
     On HSQLDB the test runs on a database of its own with MVCC transactions, as uPortal-start's
     HSQLDB server runs. The uportal.test.db.* properties select another database instead.
+
+    The connections default to SERIALIZABLE (8), so a save that doesn't ask for READ COMMITTED
+    itself shows up on every database, HSQLDB included.
 -->
 <beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
@@ -45,6 +48,7 @@
     <bean id="PortalDb" parent="TestDb">
         <qualifier value="PortalDb" />
         <property name="url" value="${uportal.test.db.url:jdbc:hsqldb:mem:rdbmLocaleStoreTest;hsqldb.tx=mvcc}" />
+        <property name="defaultTransactionIsolation" value="8" />
     </bean>
 
     <import resource="classpath:sharedJpaTestContext.xml"/>
