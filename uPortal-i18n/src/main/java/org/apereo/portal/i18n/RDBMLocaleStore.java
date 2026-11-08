@@ -146,7 +146,15 @@ public class RDBMLocaleStore implements ILocaleStore {
                                         try {
                                             pstmt.setInt(1, person.getID());
                                             logger.debug(lock);
-                                            pstmt.executeUpdate();
+                                            if (pstmt.executeUpdate() == 0) {
+                                                // Such as a user deleted while signed in: the
+                                                // save goes on, without the lock
+                                                logger.warn(
+                                                        "No UP_USER row for user id "
+                                                                + person.getID()
+                                                                + " to lock; saving the locales"
+                                                                + " without the lock");
+                                            }
                                         } finally {
                                             pstmt.close();
                                         }
