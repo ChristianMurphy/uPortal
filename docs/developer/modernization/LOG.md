@@ -1903,8 +1903,9 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   * Local Docker matrix (the jobs the push runs skip), paused at the owner's request with 22 of
     23 jobs finished: 17 passed. All six DB integration vendors, all five DB harnesses with zero
     drift, Query budgets, and the MySQL, SQL Server and Oracle G-migrate pairs passed. The SQL
-    Server harness, the SQL Server pair and MariaDB Playwright, which failed on batch 1, now pass
-    their checks.
+    Server harness and the SQL Server pair, which failed on batch 1, now pass. MariaDB Playwright,
+    which failed on batch 1 too, had no failed test this time, but one test passed only on a retry,
+    so it is with the reds below.
   * Local reds, none attributed to landing 1:
     * The postgres to SQL Server and Oracle copy pair: the SQL Server container didn't start. The
       allowed rerun was dropped by the pause.
@@ -2262,8 +2263,8 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I374 | Tests | `layout-checks.spec.ts` builds its pages with `page.setContent`, which has no doctype, so they render in quirks mode and the portal's pages don't. A fault that depends on the size of `<html>` behaves differently there than in the portal or in Vitest. | **Open.** Adding `<!doctype html>` to the fixture pages is for the test owner to decide, since it can change what the other faults measure. |
 | MOD-I375 | Portlets | The request-level cache of `PortletEntityRegistryImpl.getPortletEntityMap` never hits: it reads the key `PORTLET_ENTITY_ATTRIBUTE + threadId` and stores under `PORTLET_ENTITY_ATTRIBUTE`. Found in batch 1 (wc-background-preference). | **Open.** |
 | MOD-I376 | Tests | uPortal-start's `tests/query-budget/run.sh` reads `-PtomcatHttpPort` for its own check but doesn't pass the port to `query-budget.mjs`, which defaults to 8080. A local run on another port needs `PORTAL_BASE_URL`. | **Open**, small (`notes/fix-tip.md`). |
-| MOD-I377 | CI | Windows CI run 38203657042 ran out of Java heap in `removedApiScan`. | **Open**, intermittent. |
-| MOD-I378 | Tests | `visual-resource-server.spec.ts:153` ("student home (with portlet thumbnails)") was flaky on tip run 38204127794 and failed in layout-calendar Integration job 116224145491. | **Open.** Cause found on the landing 1 local matrix and reproduced on the integration tip: CalendarPortlet 2.7.4's `calendarNarrowView.jsp` puts `javaScriptEscape` output in JSON, so the French text `Voir plus d'évènements` becomes `\'` and the JSON doesn't parse. A student set to French gets it every time. In the suite, `user-locale.spec.ts` sets the shared student to French while other specs run. Fix it in the Calendar portlet upgrade, or give user-locale a user of its own. |
+| MOD-I377 | CI | uPortal-start's Windows CI run 38203657042 ran out of Java heap in `removedApiScan`. | **Open**, intermittent. |
+| MOD-I378 | Tests | `visual-resource-server.spec.ts:153` ("student home (with portlet thumbnails)") was flaky on tip run 38204127794 and in layout-calendar Integration job 116224145491, where it passed only on a retry and the job failed on `rtl-theme.spec.ts:123`. | **Open.** Cause found on the landing 1 local matrix and reproduced on the integration tip: CalendarPortlet 2.7.4's `calendarNarrowView.jsp` puts `javaScriptEscape` output in JSON, so the French text `Voir plus d'évènements` becomes `\'` and the JSON doesn't parse. A student set to French gets it every time. In the suite, `user-locale.spec.ts` sets the shared student to French while other specs run. Fix it in the Calendar portlet upgrade, or give user-locale a user of its own. |
 | MOD-I379 | Tests | `user-locale.spec.ts:121` was flaky on PostgreSQL 18 (java-time-jpa job 116253776217) and failed on batch 1 (run 38672648246). `favorites.spec.ts:120` was flaky on HSQLDB (job 116253776202). | **Open.** Queued after landing 1 with MOD-I378. Favorites changes the student's layout in parallel, which may share the cause of MOD-I363, so recheck it on the landing 1 tree. |
 | MOD-I380 | Tests | `favorites.spec.ts` fails at random when it runs in parallel with `portlet-options.spec.ts`, since both change the student's layout: 3 of 5 rounds on the tip, 1 of 5 on the layout-store branch. | **Open.** Give it a user of its own, as the reset specs got one (MOD-I363). |
 | MOD-I381 | i18n | The de, ja, lv, mk and sv bundles still tell the user to sign in again after Reset My Layout, and the i18n build check doesn't read those bundles. | **Open**, small. |
