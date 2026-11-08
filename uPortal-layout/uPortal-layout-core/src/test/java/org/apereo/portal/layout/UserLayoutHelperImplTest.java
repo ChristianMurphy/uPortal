@@ -17,15 +17,19 @@ package org.apereo.portal.layout;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.List;
 import org.apereo.portal.IUserIdentityStore;
 import org.apereo.portal.IUserProfile;
+import org.apereo.portal.UserProfile;
 import org.apereo.portal.layout.dao.IStylesheetDescriptorDao;
 import org.apereo.portal.layout.dao.IStylesheetUserPreferencesDao;
 import org.apereo.portal.security.IPerson;
@@ -34,6 +38,8 @@ import org.apereo.services.persondir.IPersonAttributes;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InOrder;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -43,6 +49,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  */
 public class UserLayoutHelperImplTest {
     private UserLayoutHelperImpl helper;
+    private IUserLayoutStore userLayoutStore;
     private UsernameTaggedCacheEntryPurger purger;
     private IPersonAttributes student;
 
@@ -50,7 +57,7 @@ public class UserLayoutHelperImplTest {
     public void setUp() {
         final IUserIdentityStore userIdentityStore = mock(IUserIdentityStore.class);
         when(userIdentityStore.getPortalUID(any(IPerson.class), anyBoolean())).thenReturn(20);
-        final IUserLayoutStore userLayoutStore = mock(IUserLayoutStore.class);
+        userLayoutStore = mock(IUserLayoutStore.class);
         when(userLayoutStore.getUserProfileByFname(any(IPerson.class), anyString()))
                 .thenReturn(mock(IUserProfile.class));
         purger = mock(UsernameTaggedCacheEntryPurger.class);
@@ -94,5 +101,28 @@ public class UserLayoutHelperImplTest {
         helper.resetUserLayout(student);
 
         verify(purger).purgeTaggedCacheEntries("student");
+    }
+
+    /**
+     * A reset of all profiles updates the profile rows one at a time. It first locks them all in
+     * the statement a layout save locks them with (MOD-I399), so the two take the rows in the same
+     * order and can't deadlock.
+     */
+    @Test
+    public void testResetOfAllProfilesLocksTheProfileRowsFirst() {
+        final JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+        helper.setJdbcTemplate(jdbcTemplate);
+        final Hashtable<Integer, UserProfile> profiles = new Hashtable<>();
+        profiles.put(1, mock(UserProfile.class));
+        profiles.put(2, mock(UserProfile.class));
+        when(userLayoutStore.getUserProfileList(any(IPerson.class))).thenReturn(profiles);
+
+        helper.resetUserLayoutAllProfiles(student);
+
+        final InOrder order = inOrder(jdbcTemplate, userLayoutStore);
+        order.verify(jdbcTemplate)
+                .update("UPDATE UP_USER_PROFILE SET LAYOUT_ID=LAYOUT_ID WHERE USER_ID=?", 20);
+        order.verify(userLayoutStore, times(2))
+                .updateUserProfile(any(IPerson.class), any(IUserProfile.class));
     }
 }
