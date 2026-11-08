@@ -42,7 +42,6 @@ export class UpBackgroundPreference extends UpElement {
             :host {
                 display: block;
                 position: relative;
-                overflow-wrap: anywhere;
             }
 
             .toggle {
