@@ -7,8 +7,34 @@ integration tip is green. The retro-1 branches stay as they are.
 
 ## Status
 
-Findings 1 to 13 each have a commit. The push runs of both heads are the remaining evidence.
-The second question the coordinator decided needs a LOG row, proposed at the end.
+Findings 1 to 13 each have a commit, and the re-review found all of them fixed. A follow-up commit
+narrows the Workflow lint exception in `tip-status.sh` (section 1). The proposed LOG row at the end
+answers the second question the coordinator decided.
+
+These commits leave the runtime code as it is. The uPortal build differs from retro-1 only by a
+comment in `build.gradle`. In uPortal-start they change scripts, a Workflow lint step and docs.
+
+Push runs of the first heads, uPortal `425884690` and uPortal-start `73281b071`. The uPortal-start
+runs built uPortal `425884690`.
+
+| Repository | Workflow | Run | Result |
+| --- | --- | --- | --- |
+| uPortal | CI | 42458390231 | passed |
+| uPortal | DB integration | 42458390289 | passed |
+| uPortal | DB copy tool | 42458390273 | passed |
+| uPortal | Workflow lint | 42458390356 | passed, with the placeholder test: 17 rows, 0 failed |
+| uPortal-start | CI | 42458398199 | passed, with the lint job |
+| uPortal-start | Migration equivalence | 42458398228 | passed |
+| uPortal-start | G-index | 42458398208 | passed. The change filter skipped the G-index job |
+| uPortal-start | Workflow lint | 42458398439 | passed, with the downloads check and the tests of it and of the placeholder check |
+| uPortal-start | HTTP replay | 42458398153 | **failed**: the replay's date mask. The `-replay-date` branch fixes it |
+| uPortal-start | Integration | 42458398202 | **failed**, see below |
+
+* Integration's Playwright job on HSQLDB (128662855111) failed because `reset-my-layout.spec.ts:289`
+  and `user-locale.spec.ts:121` passed only on a retry.
+* Integration's Cluster job (128662855202) failed `permission-session`. On node B, a session that
+  was denied the portlet before the grant was still denied 30 s after it, and 120 s after that.
+  Another agent is investigating it.
 
 | Finding | Repository | Fix | Evidence |
 | --- | --- | --- | --- |
