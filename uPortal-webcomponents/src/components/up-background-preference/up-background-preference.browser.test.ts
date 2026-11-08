@@ -238,22 +238,26 @@ describe('up-background-preference list', () => {
         expect(escape.defaultPrevented).toBe(false);
     });
 
-    it('leaves Escape to an input method that is composing', async () => {
-        const element = await opened();
-        const escape = new KeyboardEvent('keydown', {
-            key: 'Escape',
-            isComposing: true,
-            bubbles: true,
-            composed: true,
-            cancelable: true,
-        });
+    // Safari sends the keydown that ends a composition with isComposing false and keyCode 229
+    it.each<KeyboardEventInit & { keyCode?: number }>([{ isComposing: true }, { keyCode: 229 }])(
+        'leaves Escape to an input method that is composing (%o)',
+        async (composing) => {
+            const element = await opened();
+            const escape = new KeyboardEvent('keydown', {
+                key: 'Escape',
+                ...composing,
+                bubbles: true,
+                composed: true,
+                cancelable: true,
+            });
 
-        (button(element, 'Galaxy').element() as HTMLElement).dispatchEvent(escape);
-        await element.updateComplete;
+            (button(element, 'Galaxy').element() as HTMLElement).dispatchEvent(escape);
+            await element.updateComplete;
 
-        expect(escape.defaultPrevented).toBe(false);
-        expect(shadow(element).querySelector('#choices')).not.toBeNull();
-    });
+            expect(escape.defaultPrevented).toBe(false);
+            expect(shadow(element).querySelector('#choices')).not.toBeNull();
+        },
+    );
 
     it('wraps a caption too long for its width', async () => {
         const caption = 'Mountain'.repeat(30);
