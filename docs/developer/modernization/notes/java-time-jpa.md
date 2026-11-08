@@ -392,16 +392,16 @@ from `global.hbm.xml`.
   such as the Calendar portlet, may bring Joda-Time in their own war. Whether NOTICE lists those
   is for the coordinator or the owner.
 
-## Proposed LOG rows (MOD-I? until the coordinator numbers them)
+## LOG rows (MOD-I413 to MOD-I420)
 
-* **MOD-I?: the `DATE` binding of Hibernate 5.2.18 ignores `hibernate.jdbc.time_zone`.** Its
+* **MOD-I413: the `DATE` binding of Hibernate 5.2.18 ignores `hibernate.jdbc.time_zone`.** Its
   `DateTypeDescriptor` binds and reads `DATE` without a calendar; `TIME` and `TIMESTAMP` use the
   setting. A `LocalDate` converter returning `Date.valueOf` stores the same date as Jadira
   (`databaseZone=jvm`). A Hibernate version that binds `DATE` with the UTC calendar would store
   dates a day early ahead of UTC. **Guarded:** `JavaTimeColumnStorageTest` asserts the stored
   literals in UTC, America/New_York and Australia/Sydney, and the Sydney goldens. Recheck at P4-3
   (Hibernate 5.6) and P6 (Hibernate 6 and 7).
-* **MOD-I?: six user types must leave Jadira's SPI before Hibernate 6.** The user types of the
+* **MOD-I414: six user types must leave Jadira's SPI before Hibernate 6.** The user types of the
   `fname`, `nullSafeString`, `qname`, `json`, `stats_json` and `windowState` typedefs
   (`FunctionalNameType` in uPortal-core, `NullSafeStringType`, `QNameType`, `JacksonType` and
   `StatisticsJacksonType` in uPortal-rdbm, `WindowStateType` in uPortal-rendering) extend
@@ -410,18 +410,18 @@ from `global.hbm.xml`.
   `usertype.core` are gone (P3-5). **Open:** rewrite the six as `AttributeConverter`s or plain
   `UserType`s before P6, with the round trip on their columns. Until 2026-11-08 this row, the
   build comment and UPGRADING-6.0 named `fname` alone.
-* **MOD-I?: the event aggregation import read only `--MM-dd` quarter dates.** Under 5.17, a file
+* **MOD-I415: the event aggregation import read only `--MM-dd` quarter dates.** Under 5.17, a file
   with `--1-1` or a full ISO date as a quarter's start imported, because Joda-Time's
   `MonthDay.parse` accepted both. **Fixed:**
   `EventAggregationConfigurationImporterExporter.parseMonthDay` reads those forms
   (`QuarterMonthDayParsingTest`). Joda-Time read more forms, which 6.0 refuses: `2026-4-1`,
   `2026-04`, `2026`, `2026-W14-3`, `2026-091` and `+2026-04-01`. UPGRADING-6.0 lists the forms the
   import reads (D3, 2026-11-08).
-* **MOD-I?: `portlet-ws-util` 1.1.3 declares joda-time 2.2.** With uPortal's own joda-time gone,
+* **MOD-I416: `portlet-ws-util` 1.1.3 declares joda-time 2.2.** With uPortal's own joda-time gone,
   it would have put 2.2 on the classpath. **Fixed:** excluded in uPortal-webapp. Only its
   `org.jasig.xml.bind.JodaTypeConverter` uses Joda-Time, and nothing in uPortal or uPortal-start
   loads it. UPGRADING-6.0 tells overlay authors who use that class to add joda-time themselves.
-* **MOD-I?: the JVM zone ids `EST`, `MST`, `HST` and `SystemV/*` meant other zones to Joda-Time.**
+* **MOD-I417: the JVM zone ids `EST`, `MST`, `HST` and `SystemV/*` meant other zones to Joda-Time.**
   `DateTimeZone.forTimeZone` maps `EST` to America/New_York, `MST` to America/Denver, `HST` to
   Pacific/Honolulu and every `SystemV/` id to UTC. `java.time` reads the first three as fixed
   offsets and the `SystemV/` ids by their own rules. With `TZ=EST`, a term that 5.17 stored during
@@ -429,7 +429,7 @@ from `global.hbm.xml`.
   comparison differ. **Mitigated** (commits 11 and 16): `JvmTimeZoneCheck` logs a warning at
   startup with the region id to set, and UPGRADING-6.0 explains it. The code doesn't copy
   Joda-Time's mapping (coordinator, 2026-11-08).
-* **MOD-I?: the `java.time` floors differed from Joda-Time's where a daylight saving change isn't on
+* **MOD-I418: the `java.time` floors differed from Joda-Time's where a daylight saving change isn't on
   a local hour or repeats midnight.** In Pacific/Chatham, five-minute intervals stopped moving
   forward on 2026-04-05, and a statistics report of that day ran out of memory. In America/Havana
   and Atlantic/Azores, an instant in the repeated hour got the first midnight as its day's start,
@@ -439,11 +439,11 @@ from `global.hbm.xml`.
   and terms start at their stored midnight (`getStartDateTime`). 27 of 532 recorded Joda-Time
   results differed before and none after (`AggregationIntervalJodaParityTest`), and
   `AggregationIntervalHelperImplZoneTest` and `TermDateZoneTest` fail on the old code.
-* **MOD-I?: the hour intervals of Australia/Lord_Howe don't move forward on its fall-back day.** The
+* **MOD-I419: the hour intervals of Australia/Lord_Howe don't move forward on its fall-back day.** The
   hour starting at 01:30 +11:00 on 2026-04-05 ends at 01:30 +10:30, whose hour starts at 01:30
   +11:00 again. 5.17 had the same loop with Joda-Time, and the branch keeps 5.17's floors. **Open**:
   an hourly aggregation in that zone doesn't finish that day.
-* **MOD-I?: the time zone rules come from the JDK.** Joda-Time 2.14.3 carried tzdata 2026c, and
+* **MOD-I420: the time zone rules come from the JDK.** Joda-Time 2.14.3 carried tzdata 2026c, and
   the JDKs on the prototype machine have 2026b. Africa/Casablanca, Africa/El_Aaiun and
   America/Edmonton (with its aliases) differ between the two in some months of 2024 to 2027.
   **Documented** in UPGRADING-6.0: update the JDK or its data with `tzupdater` (D4).
