@@ -941,11 +941,23 @@ node.
 A permission check that runs while a permission changes doesn't cache its result, on any node.
 `HAS_UNBLOCKED_GRANT` stores one marker entry that `AuthorizationImpl` removes before each step of
 a change, and a check stores its result only if the marker it read when it started is still there.
-The other nodes must apply the removals of `org.apereo.portal.security.IPermissionSet`,
-`HAS_UNBLOCKED_GRANT` and `PRINCIPAL_HAS_PERMISSION` in the order they were made. uPortal's
-`ehcache.xml` replicates the three caches asynchronously with the default interval. Their removals
-go through one queue. Keep it that way in your own copy: a different
-`asynchronousReplicationIntervalMillis` on one of them puts its removals in another queue.
+While a node empties one of the caches, an old answer can still be cached in these cases: a
+member's answer computed from a parent group's old answer in `HAS_UNBLOCKED_GRANT`, and the
+administrator decision that `AuthorizationImpl` reads from `PRINCIPAL_HAS_PERMISSION` for an
+activity the database doesn't define. Such an entry keeps the old answer until it expires, after
+300 s or 180 s.
+
+In your own `ehcache.xml`:
+
+* Keep `replicateRemovals=true`, `replicateAsynchronously=true` and one
+  `asynchronousReplicationIntervalMillis` on `org.apereo.portal.security.IPermissionSet`,
+  `HAS_UNBLOCKED_GRANT` and `PRINCIPAL_HAS_PERMISSION`, as uPortal's copy does, or make all three
+  synchronous. The other nodes must apply the removals of the three caches in the order they were
+  made. ehcache-jgroups sends asynchronous events through one queue for each interval, and a
+  synchronous event at once, ahead of the queue. With a synchronous replicator on
+  `IPermissionSet` alone, another node can cache an old permission set for 6 hours.
+* Don't shrink `HAS_UNBLOCKED_GRANT` to a few entries or disable it. `PRINCIPAL_HAS_PERMISSION`
+  and `IPermissionSet` store an entry only while the marker is in it.
 
 **Portal events are written from the start.** A node used to queue its portal events in memory
 for the first 120 s after it started, with its other scheduled tasks. Another node's aggregator
