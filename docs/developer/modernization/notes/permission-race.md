@@ -23,9 +23,9 @@ passed. From both nodes' access logs (artifact `integration-cluster`, read in
 | 07:32:06 | B | A new student session is allowed. Its login purged the student's tagged entries on node B. |
 | 07:32:07 | A | The admin revokes the permission. A new session on node B is denied 1898 ms later, and the existing sessions on both nodes follow the revocation. |
 
-So node B applied the grant within about a second, as it did the revocation, but one decision on
-node B kept the old answer. `PRINCIPAL_HAS_PERMISSION` keeps an entry for 180 s, and the session gave up
-after 150 s.
+So node B applied the grant within about a second, as it did the revocation, but one decision
+on node B kept the old answer. `PRINCIPAL_HAS_PERMISSION` keeps an entry for 180 s, and the
+session gave up after 150 s.
 
 ## Cause
 
@@ -53,11 +53,12 @@ This leaves windows on any node, for grants and for revocations:
 1. **Between the two clears.** Node B empties `PRINCIPAL_HAS_PERMISSION` first. A check that runs
    before node B empties `HAS_UNBLOCKED_GRANT` misses the first cache, finds the old answer in the
    second, and stores the old decision in the first again, for 180 s. The window is the time
-   between the two removals on node B. If node A's queue timer fires between its two
-   `notifyRemoveAll` calls (node A removes every `HAS_UNBLOCKED_GRANT` key between them), node A
-   sends the two removals in two lists about a second apart. That is the likely way the
-   window got wide enough for a session that asks once a second. The logs of run 42458398202
-   can't show it: the replication messages weren't logged then (the cluster test now logs them).
+   between the two removals on node B, and it includes the loop that removes the
+   `HAS_UNBLOCKED_GRANT` keys one at a time. The CI runs below measured that loop at up to 26 ms.
+   If node A's queue timer fired between its two `notifyRemoveAll` calls, node A would send the
+   two removals in two lists a second apart. In the 73 clears of both runs it never did. The
+   logs of run 42458398202 can't show which happened there: the replication messages weren't
+   logged then (the cluster test now logs them).
 2. **A check that read its inputs before the clears.** A check that read the permission set or a
    cached answer before a clear could store its result after the clear. The permission set it
    stores lasts 6 hours.
@@ -150,8 +151,8 @@ Run locally on the final code (Gradle 9.8.1 on JDK 25, `--offline`):
 
 * `:uPortal-security:uPortal-security-permissions:test`: `AuthorizationImplCacheTest`, 7 of 7 pass,
   unchanged.
-* `:uPortal-webapp:test`: all 471 run pass or are skipped (76), among them `MigrationFreezeRulesTest`
-  and `CacheConfigurationCoverageTest`.
+* `:uPortal-webapp:test`: all 471 run pass or are skipped (76), among them
+  `MigrationFreezeRulesTest` and `CacheConfigurationCoverageTest`.
 * `spotbugsMain` (every module), `spotlessCheck` of both changed modules: pass.
 * `check-freeze-store.py <merge base> HEAD`: no rule grew (Ehcache 2: 335 recorded uses before and
   after).
@@ -171,7 +172,46 @@ Run locally on the final code (Gradle 9.8.1 on JDK 25, `--offline`):
   then each must still see it. A miss is listed in `build/cluster/permission-rounds.txt` with the
   session's user from `/api/session.json`, and the sessions log in again.
 
-CI runs: in progress, see the next step.
+### CI runs
+
+**Before the fix.** uPortal-start `ccd93137d` was pushed before the uPortal branch existed, so its
+Integration run 42465456850 built the uPortal integration tip `1d485034e` ("uPortal under test"
+annotation of job 128683811307). Cluster job 128683896914 passed in 10 min 50 s. Passing Cluster
+jobs earlier today took 10.5 to 11.5 min (jobs 128653803604, 128654963387, 128655530942,
+128658780276). `permission-rounds`: the 4 sessions followed each of the 20 changes, the slowest
+in 938 ms. The run's other jobs failed while downloading the
+Gradle distribution (timeouts from services.gradle.org), before any test ran.
+
+What the replication log of that run shows (scripts in the session scratchpad, logs in the
+`integration-cluster` artifact):
+
+* On node A, the two `Remove all elements called on` lines of each change
+  (`PRINCIPAL_HAS_PERMISSION`, then `HAS_UNBLOCKED_GRANT`) were at most 1 ms apart, and the queue
+  was never sent between them (37 clears).
+* Node B received each pair in one list and applied the two removals at most 3 ms apart.
+
+So in this run window 1 was at most a few milliseconds wide on node B. Node B's access log has
+1944 requests for the portlet, about 95 for each change, and none of them came inside it. The
+logs of run 42458398202 have no replication lines, so they can't show the width of its window.
+The race test shows both windows and that the fix closes them, and each Cluster run now logs the
+replication messages that a lost change would follow.
+
+**After the fix.** uPortal-start `afb27f197`, Integration run 42466487884, attempt 3, built the
+uPortal branch at `4f1c2a325` (annotation of job 128709759746). Attempts 1 and 2 failed in
+`Build uPortal` while downloading `gradle-9.8.1-bin.zip` (HTTP 504 and timeouts, from GitHub's
+release downloads, between 09:03 and 10:50 UTC). Cluster job 128711224056 passed in 11 min 36 s,
+with `permission-session` and `permission-rounds` (the 4 sessions followed each of the 20 changes,
+the slowest in 984 ms). On node A the two clears of each change, now `HAS_UNBLOCKED_GRANT` then
+`PRINCIPAL_HAS_PERMISSION`, were at most 1 ms apart and never split by a queue send (36 clears).
+Node B received the marker removals, the permission set removal and the two clears in that order.
+
+One list in that run shows how wide window 1 can get: during the portlet import
+(`invalidation-portlet`), node B spent 26 ms in one "remove all" of `HAS_UNBLOCKED_GRANT` before
+it went on to `PRINCIPAL_HAS_PERMISSION`. In the rounds the same removal took at most 1 ms. With
+the old order, a check during such a loop missed `PRINCIPAL_HAS_PERMISSION` and could still find
+the old answer for its key. A session that asks once a second asks inside a 26 ms window about
+once in 40 changes, the same order as one failure in 24 runs with two changes each. The logs of
+run 42458398202 don't show how long node B's removals took there.
 
 ## Proposed LOG rows
 
@@ -182,10 +222,8 @@ CI runs: in progress, see the next step.
 
 ## Status and next step
 
-1. Push uPortal-start `ccd93137d` (the cluster test change) before the uPortal branch exists. Its
-   Integration run builds the integration tip, without the fix, and records `permission-rounds`
-   and the replication log before the fix.
-2. Once that run's `Build uPortal` job has chosen the tip, push the uPortal branch.
-3. Push uPortal-start `afb27f197` (the docs). Its Integration run builds the uPortal branch. Its
-   Cluster job must pass, with `permission-rounds`.
-4. Record both runs here, then report to the coordinator.
+Done. Both branches are pushed, and the after-fix Integration run built the uPortal branch and
+passed its Cluster job. The push runs that failed while downloading the Gradle distribution,
+Chromium or Vale (GitHub's release downloads answered 504 from about 08:45 to 10:50 UTC) were
+started again once, as section 10 of the agent guide allows. Their results are in the report to
+the coordinator.
