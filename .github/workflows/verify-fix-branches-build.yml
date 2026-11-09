@@ -1,0 +1,75 @@
+name: Build the fix branches
+#
+# Runs upstream CI's build command on each fix branch as it is, with no verification patch:
+# JDK 11 (Temurin) on Ubuntu, the whole build with every module's tests, then the JavaScript lint.
+# Upstream's CI workflow starts only for pull requests and for master, so the branches have no
+# run of their own yet.
+#
+on:
+  push:
+    branches:
+      - test/verify-fixes-on-databases
+    paths:
+      - .github/workflows/verify-fix-branches-build.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    name: "Build: ${{ matrix.branch }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - branch: fix/permission-set-import
+            sha: 9ea09028862c4d68d59d909bb9e7b1f075fd384e
+          - branch: fix/structure-id-race
+            sha: e64627991211aba81026bebdf07ee024ef2b402e
+          - branch: fix/counter-store-read-committed
+            sha: 31b0bd37354e4d6b4ac2477163cfe281482f34a8
+          - branch: fix/layout-save-overlap
+            sha: 4d5bb86f4ec79e18edb7c336e8bbb7e495078838
+          - branch: fix/skin-elements-copy
+            sha: 89f26f8c2c18afba30f60bf258023f0d45b82bc8
+          - branch: fix/logout-session-race
+            sha: a478937db0321e27e64e600e34f54e09d61b1c29
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+          persist-credentials: false
+      - name: Check that the branch is at the expected commit
+        env:
+          SHA: ${{ matrix.sha }}
+        run: |
+          git log -1 --format='%H %s'
+          case "$(git rev-parse HEAD)" in "$SHA"*) ;; *) echo "expected $SHA"; exit 1 ;; esac
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Build and Test
+        run: ./gradlew -S --stacktrace --no-daemon --no-parallel build
+      - name: Lint JavaScript
+        run: ./gradlew -S --no-daemon --no-parallel :npm_run_lint-js
+      - name: Count the tests
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob
+          import xml.etree.ElementTree as ET
+          tests = failures = errors = skipped = 0
+          for path in glob.glob('**/build/test-results/test/*.xml', recursive=True):
+              root = ET.parse(path).getroot()
+              tests += int(root.get('tests', 0))
+              failures += int(root.get('failures', 0))
+              errors += int(root.get('errors', 0))
+              skipped += int(root.get('skipped', 0))
+          print(f'tests {tests}, failures {failures}, errors {errors}, skipped {skipped}')
+          PY
