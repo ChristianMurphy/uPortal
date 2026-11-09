@@ -15,6 +15,7 @@
 package org.apereo.portal.hibernate;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -186,6 +188,20 @@ public class PersistenceUnitDdlTest {
                                         .getSchemaTool()
                                         .getUpdateScript(connection));
                     }
+                    for (final String sql : ddl.get("tables.xml create")) {
+                        statement.execute(sql);
+                    }
+                    for (final String section : ddl.keySet()) {
+                        if (section.endsWith(" drop")) {
+                            for (final String sql : ddl.get(section)) {
+                                statement.execute(sql);
+                            }
+                        }
+                    }
+                    assertEquals(
+                            "The drop scripts must remove every table and sequence",
+                            Collections.emptyList(),
+                            tablesAndSequences(statement));
                 }
             }
         } finally {
@@ -217,6 +233,22 @@ public class PersistenceUnitDdlTest {
                             + " cast(INCREMENT as numeric(28)) as INCREMENT_BY"
                             + " from INFORMATION_SCHEMA.SEQUENCES");
         }
+    }
+
+    private static List<String> tablesAndSequences(Statement statement) throws SQLException {
+        final List<String> names = new ArrayList<>();
+        try (ResultSet rs =
+                statement.executeQuery(
+                        "select TABLE_NAME from INFORMATION_SCHEMA.TABLES"
+                                + " where TABLE_SCHEMA = 'PUBLIC'"
+                                + " union all select SEQUENCE_NAME"
+                                + " from INFORMATION_SCHEMA.SEQUENCES"
+                                + " where SEQUENCE_SCHEMA = 'PUBLIC'")) {
+            while (rs.next()) {
+                names.add(rs.getString(1));
+            }
+        }
+        return names;
     }
 
     private LocalContainerEntityManagerFactoryBean entityManagerFactory(

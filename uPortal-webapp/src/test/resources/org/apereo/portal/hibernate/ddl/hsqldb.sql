@@ -136,40 +136,6 @@ create table UP_TENANT (TENANT_ID bigint not null, TENANT_FNAME varchar(128) not
 create table UP_TENANT_ATTRIBUTES (TENANT_ID bigint not null, ATTR_VALUE varchar(2000) not null, ATTR_NAME varchar(500) not null, primary key (TENANT_ID, ATTR_NAME))
 create table UP_VERSION (VERSION_ID bigint not null, ENTITY_VERSION bigint, LOCAL_VER integer, MAJOR_VER integer not null, MINOR_VER integer not null, PATCH_VER integer not null, PRODUCT varchar(128) not null, primary key (VERSION_ID))
 -- PortalDb drop
-alter table UP_DLM_EVALUATOR_PAREN drop constraint FK_3hbkemg0gydgc606l2io1x0gp
-alter table UP_DLM_EVALUATOR_PAREN drop constraint FK_b3rertpqnnjrvd257fge2sj75
-alter table UP_PAGS_GROUP_MEMBERS drop constraint FK_561gbtgfe5oi30yc2bspcoom
-alter table UP_PAGS_GROUP_MEMBERS drop constraint FK_fsr7qaohryhcdv877sg60id6e
-alter table UP_PAGS_TEST drop constraint FK_474tvkmldo7agadpwp0c7v3ko
-alter table UP_PAGS_TEST_GROUP drop constraint FK_hygx3nc0f1dl8tgsmvte36ggo
-alter table UP_PERMISSION_ACTIVITY drop constraint FK_16ncixqeffipy3vhia0bksvwy
-alter table UP_PERSON_ATTR drop constraint FK_4s6n2w5mggpiif98ukmoyx5f8
-alter table UP_PERSON_ATTR_VALUES drop constraint FK_qqexbdecsbkj4q5kiomuwn62d
-alter table UP_PORTLET_COOKIES drop constraint FK_1eiw3v16g4l8uic967eefpupv
-alter table UP_PORTLET_COOKIES drop constraint FK_5nbeljrfl8xrselnib4jlc8rm
-alter table UP_PORTLET_DEF drop constraint FK_aw02n7y507j2o7a5unh3x6gmx
-alter table UP_PORTLET_DEF drop constraint FK_sk16u3b6h5onabw0tkbfjb9t3
-alter table UP_PORTLET_DEF_MDATA drop constraint FK_3mblqw8kx445e1wphecduvkal
-alter table UP_PORTLET_DEF_PARAM drop constraint FK_8pr53vk0s7cj591svwm55mwuf
-alter table UP_PORTLET_ENT drop constraint FK_9g5u5s6q6fyllrocmjknkgke1
-alter table UP_PORTLET_ENT drop constraint FK_momja5hs0eruu7ke7naq542hn
-alter table UP_PORTLET_ENT__STATES drop constraint FK_78ol5mt3uvfgxikpnhm4gc8hr
-alter table UP_PORTLET_ENT__STATES drop constraint FK_fdl45hs325hvdevocoynuufgd
-alter table UP_PORTLET_LIFECYCLE drop constraint FK_h2ih95p990rtn5nu74udal0ab
-alter table UP_PORTLET_LIST_ITEM drop constraint FK_qsriu31b7uia45e0aj9odg368
-alter table UP_PORTLET_PREF drop constraint FK_pgqclxrroe8ed8stf00pt2s93
-alter table UP_PORTLET_PREF_VALUES drop constraint FK_tqk3058y17ttobwa3l8pc4fwd
-alter table UP_PORTLET_RATING drop constraint FK_m8902ol9lpgf17b081uvfobyl
-alter table UP_SS_DESC_LAY_ATTR drop constraint FK_meru2advdfypwhfddn5gnjnvy
-alter table UP_SS_DESC_LAY_ATTR_ELMS drop constraint FK_2qvk7f3048lo65b5wmmh430ck
-alter table UP_SS_DESC_OUTPUT_PROP drop constraint FK_j4hmf1wlxtv514o6xqd9g1rkq
-alter table UP_SS_DESC_PARAM drop constraint FK_9ckpxmguyriun7eq1l57pej79
-alter table UP_SS_USER_PREF drop constraint FK_ffsut1mr9t6sdtby7pm4brc3p
-alter table UP_SS_USER_PREF_LAY_ATTR drop constraint FK_959w0xa3yub0fua4joy6evaog
-alter table UP_SS_USER_PREF_LAY_ATTR_VAL drop constraint FK_esn4u5yf4875do543qas3u7b0
-alter table UP_SS_USER_PREF_OUTPUT_PROP drop constraint FK_jvv6wrfl6y7g4p0so63i4hujq
-alter table UP_SS_USER_PREF_PARAM drop constraint FK_532664n0k0c9ckj13e7gpya08
-alter table UP_TENANT_ATTRIBUTES drop constraint FK_egnmdn482aeixi5ww8ieo41jk
 drop sequence UP_DLM_EVALUATOR_SEQ if exists
 drop sequence UP_MESSAGE_SEQ if exists
 drop sequence UP_MUTEX_SEQ if exists
@@ -198,49 +164,49 @@ drop sequence UP_SS_USER_PREF_LAY_ATTR_SEQ if exists
 drop sequence UP_SS_USER_PREF_SEQ if exists
 drop sequence UP_TENANT_SEQ if exists
 drop sequence UP_VERSION_SEQ if exists
-drop table UP_DLM_EVALUATOR if exists
-drop table UP_DLM_EVALUATOR_PAREN if exists
-drop table UP_JGROUPS_AUTH if exists
-drop table UP_MESSAGE if exists
-drop table UP_MUTEX if exists
-drop table UP_PAGS_GROUP if exists
-drop table UP_PAGS_GROUP_MEMBERS if exists
-drop table UP_PAGS_TEST if exists
-drop table UP_PAGS_TEST_GROUP if exists
-drop table UP_PERMISSION_ACTIVITY if exists
-drop table UP_PERMISSION_OWNER if exists
-drop table UP_PERSON_ATTR if exists
-drop table UP_PERSON_ATTR_VALUES if exists
-drop table UP_PERSON_DIR if exists
-drop table UP_PORTAL_COOKIES if exists
-drop table UP_PORTLET_COOKIES if exists
-drop table UP_PORTLET_DEF if exists
-drop table UP_PORTLET_DEF_MDATA if exists
-drop table UP_PORTLET_DEF_PARAM if exists
-drop table UP_PORTLET_ENT if exists
-drop table UP_PORTLET_ENT__STATES if exists
-drop table UP_PORTLET_LIFECYCLE if exists
-drop table UP_PORTLET_LIST if exists
-drop table UP_PORTLET_LIST_ITEM if exists
-drop table UP_PORTLET_PREF if exists
-drop table UP_PORTLET_PREFS if exists
-drop table UP_PORTLET_PREF_VALUES if exists
-drop table UP_PORTLET_RATING if exists
-drop table UP_PORTLET_TYPE if exists
-drop table UP_PROFILE_SELECTION if exists
-drop table UP_SS_DESC if exists
-drop table UP_SS_DESC_LAY_ATTR if exists
-drop table UP_SS_DESC_LAY_ATTR_ELMS if exists
-drop table UP_SS_DESC_OUTPUT_PROP if exists
-drop table UP_SS_DESC_PARAM if exists
-drop table UP_SS_USER_PREF if exists
-drop table UP_SS_USER_PREF_LAY_ATTR if exists
-drop table UP_SS_USER_PREF_LAY_ATTR_VAL if exists
-drop table UP_SS_USER_PREF_OUTPUT_PROP if exists
-drop table UP_SS_USER_PREF_PARAM if exists
-drop table UP_TENANT if exists
-drop table UP_TENANT_ATTRIBUTES if exists
-drop table UP_VERSION if exists
+drop table if exists UP_DLM_EVALUATOR CASCADE
+drop table if exists UP_DLM_EVALUATOR_PAREN CASCADE
+drop table if exists UP_JGROUPS_AUTH CASCADE
+drop table if exists UP_MESSAGE CASCADE
+drop table if exists UP_MUTEX CASCADE
+drop table if exists UP_PAGS_GROUP CASCADE
+drop table if exists UP_PAGS_GROUP_MEMBERS CASCADE
+drop table if exists UP_PAGS_TEST CASCADE
+drop table if exists UP_PAGS_TEST_GROUP CASCADE
+drop table if exists UP_PERMISSION_ACTIVITY CASCADE
+drop table if exists UP_PERMISSION_OWNER CASCADE
+drop table if exists UP_PERSON_ATTR CASCADE
+drop table if exists UP_PERSON_ATTR_VALUES CASCADE
+drop table if exists UP_PERSON_DIR CASCADE
+drop table if exists UP_PORTAL_COOKIES CASCADE
+drop table if exists UP_PORTLET_COOKIES CASCADE
+drop table if exists UP_PORTLET_DEF CASCADE
+drop table if exists UP_PORTLET_DEF_MDATA CASCADE
+drop table if exists UP_PORTLET_DEF_PARAM CASCADE
+drop table if exists UP_PORTLET_ENT CASCADE
+drop table if exists UP_PORTLET_ENT__STATES CASCADE
+drop table if exists UP_PORTLET_LIFECYCLE CASCADE
+drop table if exists UP_PORTLET_LIST CASCADE
+drop table if exists UP_PORTLET_LIST_ITEM CASCADE
+drop table if exists UP_PORTLET_PREF CASCADE
+drop table if exists UP_PORTLET_PREFS CASCADE
+drop table if exists UP_PORTLET_PREF_VALUES CASCADE
+drop table if exists UP_PORTLET_RATING CASCADE
+drop table if exists UP_PORTLET_TYPE CASCADE
+drop table if exists UP_PROFILE_SELECTION CASCADE
+drop table if exists UP_SS_DESC CASCADE
+drop table if exists UP_SS_DESC_LAY_ATTR CASCADE
+drop table if exists UP_SS_DESC_LAY_ATTR_ELMS CASCADE
+drop table if exists UP_SS_DESC_OUTPUT_PROP CASCADE
+drop table if exists UP_SS_DESC_PARAM CASCADE
+drop table if exists UP_SS_USER_PREF CASCADE
+drop table if exists UP_SS_USER_PREF_LAY_ATTR CASCADE
+drop table if exists UP_SS_USER_PREF_LAY_ATTR_VAL CASCADE
+drop table if exists UP_SS_USER_PREF_OUTPUT_PROP CASCADE
+drop table if exists UP_SS_USER_PREF_PARAM CASCADE
+drop table if exists UP_TENANT CASCADE
+drop table if exists UP_TENANT_ATTRIBUTES CASCADE
+drop table if exists UP_VERSION CASCADE
 -- RawEventsDb create
 create index IDX_UP_ANALYTICS_EVENTS_SERVER_ID on UP_ANALYTICS_EVENTS (SERVER_ID)
 create index IDX_UP_ANALYTICS_EVENTS_SESSION_ID on UP_ANALYTICS_EVENTS (SESSION_ID)
@@ -259,8 +225,8 @@ create table UP_RAW_EVENTS (EVENT_ID bigint not null, AGGREGATED boolean, ERROR_
 -- RawEventsDb drop
 drop sequence UP_ANALYTICS_EVENTS_SEQ if exists
 drop sequence UP_RAW_EVENTS_SEQ if exists
-drop table UP_ANALYTICS_EVENTS if exists
-drop table UP_RAW_EVENTS if exists
+drop table if exists UP_ANALYTICS_EVENTS CASCADE
+drop table if exists UP_RAW_EVENTS CASCADE
 -- AggrEventsDb create
 alter table UP_ACADEMIC_TERM_DETAIL add constraint UK_h3gl6cihs58jmkw0p8rxctq6e unique (TERM_END, TERM_START)
 alter table UP_AGGR_GROUP_MAPPING add constraint UK_nrmtcrt3gptt26te8fpbxbb4e unique (GROUP_NAME, GROUP_SERVICE)
@@ -390,39 +356,6 @@ create table UP_UNIQUE_STR (UNIQUE_STR_ID bigint not null, primary key (UNIQUE_S
 create table UP_UNIQUE_STR_SEGMENT (UNIQUE_STR_SEGMENT_ID bigint not null, UNIQUE_STR_ID bigint not null, primary key (UNIQUE_STR_SEGMENT_ID))
 create table UP_UNIQUE_STR_SEGMENT__UIDS (UNIQUE_STR_SEGMENT_ID bigint not null, UNIQUE_STR varchar(255) not null, primary key (UNIQUE_STR_SEGMENT_ID, UNIQUE_STR))
 -- AggrEventsDb drop
-alter table UP_CONCURRENT_USER_AGGR drop constraint FK_1crh0u5hdegnhoauxieag3a4r
-alter table UP_CONCURRENT_USER_AGGR drop constraint FK_2nygg0lvedcjb61ku9091b6dn
-alter table UP_CONCURRENT_USER_AGGR drop constraint FK_ah140ktotfckypsu0bikxxdms
-alter table UP_CONCURRENT_USER_AGGR drop constraint FK_fevflomiojm7s6aka5ar6md9b
-alter table UP_EVENT_AGGR_CONF_GROUPS_EXC drop constraint FK_74rcg2txnpblpo44d3o06d7rf
-alter table UP_EVENT_AGGR_CONF_GROUPS_EXC drop constraint FK_9jw0rlw4hvpybrd8usmwua0jm
-alter table UP_EVENT_AGGR_CONF_GROUPS_INC drop constraint FK_943ene82efvoquc5lb9kj4s75
-alter table UP_EVENT_AGGR_CONF_GROUPS_INC drop constraint FK_iao8dyvaqe3eofd3tsov4ajvj
-alter table UP_EVENT_AGGR_CONF_INTRVL_EXC drop constraint FK_olivv7buxiyxirms24kwnltdv
-alter table UP_EVENT_AGGR_CONF_INTRVL_INC drop constraint FK_5bn3fmi5gtm9sodb7tra6ifj3
-alter table UP_EVENT_SESSION_GROUPS drop constraint FK_59xvrgdwm8ti0jfk8aboi3bxq
-alter table UP_EVENT_SESSION_GROUPS drop constraint FK_f955axnw72t6o8j9pg7ar126s
-alter table UP_LOGIN_EVENT_AGGR drop constraint FK_a0ytd5or6pogsgpiw2dwrekar
-alter table UP_LOGIN_EVENT_AGGR drop constraint FK_b3e3bhqcgbavdw2ooy5lc32du
-alter table UP_LOGIN_EVENT_AGGR drop constraint FK_i0jl7o218lqxqaqt0ihyycayt
-alter table UP_LOGIN_EVENT_AGGR drop constraint FK_j242b9y972r8yjm9lhmw4ukfk
-alter table UP_PORTLET_EXEC_AGGR drop constraint FK_5dm3bkqehgn813y9m789w9lsj
-alter table UP_PORTLET_EXEC_AGGR drop constraint FK_88xcdt0n49vgpjhq45wsb615h
-alter table UP_PORTLET_EXEC_AGGR drop constraint FK_h2a84m5e2ofpr3ma9dbksojus
-alter table UP_PORTLET_EXEC_AGGR drop constraint FK_rs4dl1aufde7lei12ssq1ama9
-alter table UP_PORTLET_LAYOUT_AGGR drop constraint FK_2ymw67vmy3w726tqmubl5vy7x
-alter table UP_PORTLET_LAYOUT_AGGR drop constraint FK_ccxeenr6yku33fgaj2sdr26vm
-alter table UP_PORTLET_LAYOUT_AGGR drop constraint FK_p4p3gpngs4fr6nxm9ot7kd4n
-alter table UP_PORTLET_LAYOUT_AGGR drop constraint FK_rnqay4ktmvb4tir3hbuxpdd3m
-alter table UP_SEARCH_REQ_AGGR drop constraint FK_5qs16vldyls8s8l4wddduvwas
-alter table UP_SEARCH_REQ_AGGR drop constraint FK_fdsmb9vgbgr38u1y8nxp9d9pn
-alter table UP_SEARCH_REQ_AGGR drop constraint FK_ki95eyb5kx2way36sksiewt8m
-alter table UP_TAB_RENDER_AGGR drop constraint FK_8enpaf5sqybuiyyhcy5o1p2so
-alter table UP_TAB_RENDER_AGGR drop constraint FK_9vmi8jjue0tvdv18f8gxp061h
-alter table UP_TAB_RENDER_AGGR drop constraint FK_fg956a15thl835b0q60w24w3q
-alter table UP_TAB_RENDER_AGGR drop constraint FK_qi52trj4gl7a8p53yyl4scsy9
-alter table UP_UNIQUE_STR_SEGMENT drop constraint FK_e3lqm10qhd0u7mu10assdfxx8
-alter table UP_UNIQUE_STR_SEGMENT__UIDS drop constraint FK_et6ttoxrppodvhd4gb3mm1ypt
 drop sequence UP_ACADEMIC_TERM_DETAIL_SEQ if exists
 drop sequence UP_AGGR_GROUP_MAPPING_SEQ if exists
 drop sequence UP_AGGR_PORTLET_MAPPING_SEQ if exists
@@ -442,31 +375,31 @@ drop sequence UP_TAB_RENDER_AGGR_SEQ if exists
 drop sequence UP_TIME_DIMENSION_SEQ if exists
 drop sequence UP_UNIQUE_STR_SEGMENT_SEQ if exists
 drop sequence UP_UNIQUE_STR_SEQ if exists
-drop table UP_ACADEMIC_TERM_DETAIL if exists
-drop table UP_AGGR_GROUP_MAPPING if exists
-drop table UP_AGGR_PORTLET_MAPPING if exists
-drop table UP_AGGR_TAB_MAPPING if exists
-drop table UP_CONCURRENT_USER_AGGR if exists
-drop table UP_DATE_DIMENSION if exists
-drop table UP_EVENT_AGGR_CONF_GROUPS if exists
-drop table UP_EVENT_AGGR_CONF_GROUPS_EXC if exists
-drop table UP_EVENT_AGGR_CONF_GROUPS_INC if exists
-drop table UP_EVENT_AGGR_CONF_INTRVL if exists
-drop table UP_EVENT_AGGR_CONF_INTRVL_EXC if exists
-drop table UP_EVENT_AGGR_CONF_INTRVL_INC if exists
-drop table UP_EVENT_AGGR_STATUS if exists
-drop table UP_EVENT_SESSION if exists
-drop table UP_EVENT_SESSION_GROUPS if exists
-drop table UP_LOGIN_EVENT_AGGR if exists
-drop table UP_PORTLET_EXEC_AGGR if exists
-drop table UP_PORTLET_LAYOUT_AGGR if exists
-drop table UP_QUARTER_DETAIL if exists
-drop table UP_SEARCH_REQ_AGGR if exists
-drop table UP_TAB_RENDER_AGGR if exists
-drop table UP_TIME_DIMENSION if exists
-drop table UP_UNIQUE_STR if exists
-drop table UP_UNIQUE_STR_SEGMENT if exists
-drop table UP_UNIQUE_STR_SEGMENT__UIDS if exists
+drop table if exists UP_ACADEMIC_TERM_DETAIL CASCADE
+drop table if exists UP_AGGR_GROUP_MAPPING CASCADE
+drop table if exists UP_AGGR_PORTLET_MAPPING CASCADE
+drop table if exists UP_AGGR_TAB_MAPPING CASCADE
+drop table if exists UP_CONCURRENT_USER_AGGR CASCADE
+drop table if exists UP_DATE_DIMENSION CASCADE
+drop table if exists UP_EVENT_AGGR_CONF_GROUPS CASCADE
+drop table if exists UP_EVENT_AGGR_CONF_GROUPS_EXC CASCADE
+drop table if exists UP_EVENT_AGGR_CONF_GROUPS_INC CASCADE
+drop table if exists UP_EVENT_AGGR_CONF_INTRVL CASCADE
+drop table if exists UP_EVENT_AGGR_CONF_INTRVL_EXC CASCADE
+drop table if exists UP_EVENT_AGGR_CONF_INTRVL_INC CASCADE
+drop table if exists UP_EVENT_AGGR_STATUS CASCADE
+drop table if exists UP_EVENT_SESSION CASCADE
+drop table if exists UP_EVENT_SESSION_GROUPS CASCADE
+drop table if exists UP_LOGIN_EVENT_AGGR CASCADE
+drop table if exists UP_PORTLET_EXEC_AGGR CASCADE
+drop table if exists UP_PORTLET_LAYOUT_AGGR CASCADE
+drop table if exists UP_QUARTER_DETAIL CASCADE
+drop table if exists UP_SEARCH_REQ_AGGR CASCADE
+drop table if exists UP_TAB_RENDER_AGGR CASCADE
+drop table if exists UP_TIME_DIMENSION CASCADE
+drop table if exists UP_UNIQUE_STR CASCADE
+drop table if exists UP_UNIQUE_STR_SEGMENT CASCADE
+drop table if exists UP_UNIQUE_STR_SEGMENT__UIDS CASCADE
 -- tables.xml create
 alter table UP_ENTITY_TYPE add constraint UPET_NAME_UNQ unique (ENTITY_TYPE_NAME)
 alter table UP_USER add constraint UPU_USER_NAME unique (USER_NAME)
@@ -492,20 +425,20 @@ create table UP_USER_LAYOUT (LAYOUT_ID integer not null, USER_ID integer not nul
 create table UP_USER_LOCALE (USER_ID integer not null, LOCALE varchar(64) not null, PRIORITY integer, primary key (USER_ID, LOCALE))
 create table UP_USER_PROFILE (USER_ID integer not null, PROFILE_ID integer not null, PROFILE_FNAME varchar(50) not null, PROFILE_NAME varchar(50), DESCRIPTION varchar(100), LAYOUT_ID integer, STRUCTURE_SS_ID integer, THEME_SS_ID integer, primary key (USER_ID, PROFILE_ID))
 -- tables.xml drop
-drop table JGROUPSPING if exists
-drop table UP_ENTITY_CACHE_INVALIDATION if exists
-drop table UP_ENTITY_LOCK if exists
-drop table UP_ENTITY_TYPE if exists
-drop table UP_GROUP if exists
-drop table UP_GROUP_MEMBERSHIP if exists
-drop table UP_LAYOUT_PARAM if exists
-drop table UP_LAYOUT_STRUCT if exists
-drop table UP_PERMISSION if exists
-drop table UP_SEQUENCE if exists
-drop table UP_USER if exists
-drop table UP_USER_LAYOUT if exists
-drop table UP_USER_LOCALE if exists
-drop table UP_USER_PROFILE if exists
+drop table if exists JGROUPSPING CASCADE
+drop table if exists UP_ENTITY_CACHE_INVALIDATION CASCADE
+drop table if exists UP_ENTITY_LOCK CASCADE
+drop table if exists UP_ENTITY_TYPE CASCADE
+drop table if exists UP_GROUP CASCADE
+drop table if exists UP_GROUP_MEMBERSHIP CASCADE
+drop table if exists UP_LAYOUT_PARAM CASCADE
+drop table if exists UP_LAYOUT_STRUCT CASCADE
+drop table if exists UP_PERMISSION CASCADE
+drop table if exists UP_SEQUENCE CASCADE
+drop table if exists UP_USER CASCADE
+drop table if exists UP_USER_LAYOUT CASCADE
+drop table if exists UP_USER_LOCALE CASCADE
+drop table if exists UP_USER_PROFILE CASCADE
 -- PortalDb update after create
 -- RawEventsDb update after create
 -- AggrEventsDb update after create
