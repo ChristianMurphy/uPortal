@@ -1,0 +1,77 @@
+name: Verify fixes in a portal
+#
+# Checks three fix branches in a portal: uPortal-start's master with HSQLDB on JDK 11, first with
+# a uPortal built from upstream master and then with the fix branch's build deployed over it.
+#
+#   fix/permission-set-import  dataExport of the permission sets, delete two, dataImport, compare
+#   fix/skin-elements-copy     sign in, load pages, sign out; the head's CSS and JS links; a
+#                              minute of parallel page loads and the nodeList2Iterator count
+#   fix/logout-session-race    the same checks; a page request sent within a few milliseconds of
+#                              /Logout, 300 times, and what the session it started shows
+#
+# The two portal jobs run the same checks, so each fix is also checked for the other's symptom.
+# .github/verify/portal/verify-portal.sh has the steps. A job fails if a check fails with the fix
+# deployed. What the master build did is reported, not judged.
+#
+on:
+  push:
+    branches:
+      - test/verify-fixes-on-databases
+    paths:
+      - .github/verify/portal/**
+      - .github/workflows/verify-fixes-in-a-portal.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portal:
+    name: "Verify in a portal: ${{ matrix.fix }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        fix:
+          - permission-set-import
+          - skin-elements-copy
+          - logout-session-race
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch the fix branch
+        env:
+          FIX: ${{ matrix.fix }}
+        run: git fetch --no-tags origin "fix/$FIX"
+      - name: Clone uPortal-start at upstream master
+        run: |
+          git clone --quiet https://github.com/uPortal-Project/uPortal-start.git "$RUNNER_TEMP/uPortal-start"
+          git -C "$RUNNER_TEMP/uPortal-start" checkout --quiet --detach 2a519ad7f52a018674403bc7d87447351bde1475
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Check the fix in a portal, before and after
+        env:
+          FIX: ${{ matrix.fix }}
+        run: |
+          cp -r .github/verify/portal "$RUNNER_TEMP/verify-portal"
+          "$RUNNER_TEMP/verify-portal/verify-portal.sh" "$FIX" "$PWD" "$RUNNER_TEMP/uPortal-start" "$RUNNER_TEMP/out"
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: portal-${{ matrix.fix }}
+          path: |
+            ${{ runner.temp }}/out
+            !${{ runner.temp }}/out/m2-master
+            !${{ runner.temp }}/out/m2-fix

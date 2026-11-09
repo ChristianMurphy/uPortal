@@ -22,6 +22,12 @@ on:
   push:
     branches:
       - test/verify-fixes-on-databases
+    # Only when what this workflow runs changes, not for the portal checks beside it
+    paths:
+      - .github/verify/run.sh
+      - .github/verify/summary.py
+      - .github/verify/verify.init.gradle
+      - .github/verify/patches/**
   workflow_dispatch:
 permissions:
   contents: read
