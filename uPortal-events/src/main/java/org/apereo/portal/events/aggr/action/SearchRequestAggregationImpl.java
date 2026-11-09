@@ -57,7 +57,7 @@ import org.hibernate.annotations.NaturalIdCache;
         region = "org.apereo.portal.events.aggr.action.SearchRequestAggregationImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
-public class SearchRequestAggregationImpl
+public final class SearchRequestAggregationImpl
         extends BaseAggregationImpl<
                 SearchRequestAggregationKey, SearchRequestAggregationDiscriminator>
         implements SearchRequestAggregation, Serializable {

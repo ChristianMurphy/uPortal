@@ -990,6 +990,9 @@ sequences.
   `hibernate.properties` sets `hibernate.cache.ehcache.missing_cache_strategy=create-warn`.
 * The portal logs HHH020100 at startup, because Hibernate deprecated its Ehcache 2 module.
   uPortal replaces the cache provider in a later step.
+* `SearchRequestAggregationImpl` is a final class, as the other aggregation entities are.
+  Hibernate 5.6 refuses to build a lazy-loading proxy for a class with a final getter, and logged
+  HHH000305 with a stack trace at every start.
 * On HSQLDB, `dataInit` drops tables with `drop table if exists … CASCADE`. The schema it creates
   is the same.
 
