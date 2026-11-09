@@ -626,7 +626,7 @@ chosen per portlet.
     menu, dialog and drawer. That is inferred from file names and
     still to be confirmed against the v6 migration guide.
   * **Confirmed by Bootstrap's own migration skill** (`npx skills add
-    twbs/bootstrap`, installed in `~/.claude/skills`: 11 markdown-only
+    twbs/bootstrap`, installed in the agent's skills directory: 11 markdown-only
     skills, reviewed before use):
     * Modal → **Dialog**: a native `<dialog>`. The `.modal-dialog` and
       `.modal-content` wrappers are removed, and `.dialog-open` goes on
