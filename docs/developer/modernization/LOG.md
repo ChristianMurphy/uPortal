@@ -2063,6 +2063,20 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
     coordinator checked the interval fix inline.
   * The P4-3 plan (`notes/p4-3-plan.md`, MOD-I423 to MOD-I426) rides with this landing as a
     docs-only commit. Its questions Q1 to Q7 wait for the owner.
+* **Landing 8's push runs and the red tip (2026-11-08):** uPortal passed. On uPortal-start,
+  Integration 42516129147 was red: on the postgres 16 pair (job 128840231513),
+  `session-timeout.spec.ts:150` passed only on a retry (MOD-I427 and MOD-I428).
+* **2026-11-09, at the owner's request:** the integration branches' history was rewritten so that
+  every commit has the owner as its author and committer, without tool trailers. The trees didn't
+  change. The old heads are on `ccr-43ba0785-hzlrj5-archive-2026-11-08` (uPortal `287617ca3f`,
+  uPortal-start `6021af529e`). SHAs in earlier log entries are from before the rewrite. The
+  regrouping of MOD-D37 is still to do. The coordinator's brief and push helper are in
+  `.claude/modernization`.
+* **Landing 9 (coordinator, 2026-11-09):** `-session-timeout-flake` (MOD-I427 and MOD-I428), the
+  fix for that red tip. A request that overlapped a logout could put the logged-out user's
+  layout into a new session, and `UserInstanceManagerImpl` now reads the person again when the
+  session changed. The spec waits for the logout's answer. Reviewed inline. Each replayed tree
+  equals a merge of the topic head into the tip.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
@@ -2470,6 +2484,8 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I424 | Caching | 14 Hibernate regions in use have no `ehcache.xml` entry and get `defaultCache` (1000 entries, 600 s, not replicated), among them `PortletLifecycleEntryImpl`, `ProfileSelection`, three PAGS natural ids and `PortletList.Query`. 8 `@Cache` annotations on subclasses of `Evaluator` and one on an `@Embeddable` are ignored. 18 entries are used by nothing: 5 subclass regions, 2 inherited collection roles, `MarketplaceRatingImpl`, 6 `.Query` regions and 4 application caches | Open, P4-3 step S2 (Q3) |
 | MOD-I425 | Caching | Infinispan 14.0.35's JCache `removeAll()` removes only the keys of the local node in invalidation mode, and Spring 5.3's `JCacheCache.clear()` calls it. A permission change would then leave other nodes' decisions cached. Its asynchronous invalidations are unordered (`DeliverOrder.NONE`), and a plain `put` invalidates the key on the other nodes | Design input for Q1. With Infinispan, the Spring caches need an adapter over the native API, and the three permission caches need synchronous invalidation |
 | MOD-I426 | Caching | `PortalDb`'s timestamps region isn't replicated, so another node's cached query results may not see a change until they expire (6 hours for portlet definitions). Not checked at runtime | Open (Q5): a cluster check first |
+| MOD-I427 | Security | A request in flight during a logout could leave the browser with a new session that showed the logged-out user's name, layout and portlets. The REST APIs treated that session as a guest. `UserInstanceManagerImpl.getUserInstance` read the person from the session, then called `getSession()`, which starts a new session once the logout has ended the old one, and stored the old person's `UserInstance` there. The code predates the modernization (unchanged since `a951c7838`). Fixed: the person is read again when the session changed. Found through uPortal-start Integration run 42516129147 (job 128840231513), where `session-timeout.spec.ts:150` passed only on a retry. |
+| MOD-I428 | Tests | `session-timeout.spec.ts` waited for the `/Logout` request to start and then loaded the next page, which cancelled the logout navigation. Both logout tests now wait for the answer to `/Logout`. |
 
 ## Open questions
 

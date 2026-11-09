@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-# A request racing a logout kept the user's layout in a new session (MOD-I?)
+# A request racing a logout kept the user's layout in a new session (MOD-I427)
 
 Branch `ccr-43ba0785-hzlrj5-session-timeout-flake` in uPortal and in uPortal-start, both from the
 integration branch (uPortal `1d5fac532`, uPortal-start `2a7d891ee`). It is the fix for the red
@@ -122,5 +122,5 @@ would have stayed signed in and the test would have failed without any fault in 
 
 | ID | Area | Finding |
 | --- | --- | --- |
-| MOD-I? | Security | A request in flight during a logout could leave the browser with a new session that showed the logged-out user's name, layout and portlets. The REST APIs treated that session as a guest. `UserInstanceManagerImpl.getUserInstance` read the person from the session, then called `getSession()`, which starts a new session once the logout has ended the old one, and stored the old person's `UserInstance` there. The code predates the modernization (unchanged since `a951c7838`). Fixed: the person is read again when the session changed. Found through uPortal-start Integration run 42516129147 (job 128840231513), where `session-timeout.spec.ts:150` passed only on a retry. |
-| MOD-I? | Tests | `session-timeout.spec.ts` waited for the `/Logout` request to start and then loaded the next page, which cancelled the logout navigation. Both logout tests now wait for the answer to `/Logout`. |
+| MOD-I427 | Security | A request in flight during a logout could leave the browser with a new session that showed the logged-out user's name, layout and portlets. The REST APIs treated that session as a guest. `UserInstanceManagerImpl.getUserInstance` read the person from the session, then called `getSession()`, which starts a new session once the logout has ended the old one, and stored the old person's `UserInstance` there. The code predates the modernization (unchanged since `a951c7838`). Fixed: the person is read again when the session changed. Found through uPortal-start Integration run 42516129147 (job 128840231513), where `session-timeout.spec.ts:150` passed only on a retry. |
+| MOD-I428 | Tests | `session-timeout.spec.ts` waited for the `/Logout` request to start and then loaded the next page, which cancelled the logout navigation. Both logout tests now wait for the answer to `/Logout`. |
