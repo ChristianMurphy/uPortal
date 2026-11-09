@@ -44,10 +44,9 @@ import org.apereo.portal.test.BaseAggrEventsJpaDaoTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.transaction.TransactionSystemException;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = "classpath:jpaAggrEventsTestContext.xml")
@@ -300,9 +299,10 @@ public class JpaEventAggregationManagementDaoTest extends BaseAggrEventsJpaDaoTe
                     });
 
             fail();
-        } catch (TransactionSystemException | JpaSystemException e) {
-            // Expected: the transaction was marked rollback-only. Committing it raised a
-            // TransactionSystemException on Hibernate 4.3 and raises a JpaSystemException on 5.2.
+        } catch (UnexpectedRollbackException e) {
+            // Expected: the transaction was marked rollback-only. Hibernate 5.6 rolls such a
+            // transaction back on commit without an exception of its own, and Spring reports the
+            // rollback. Hibernate 5.2 threw from the commit (JpaSystemException).
         }
 
         this.executeInTransaction(
