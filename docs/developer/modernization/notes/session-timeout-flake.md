@@ -91,7 +91,23 @@ would have stayed signed in and the test would have failed without any fault in 
   the race needs a request inside a window of a few milliseconds.
 * HTTP replay: the change alters a response only for a request that races a logout. The replay
   sends its requests one after another, so it has nothing to register.
-* Push runs: RUNS_PLACEHOLDER
+* The manual run hid a fault of the test: it mocks `IPortalRequestUtils`, whose methods take
+  `javax.portlet.PortletRequest`, and the module had the portlet API as `compileOnly`. Both tests
+  failed in uPortal CI run 42702364522 (job 129450290292) with `NoClassDefFoundError`.
+  `36abaad0e` adds the portlet API as a test dependency. The manual run gives the same error
+  without the portlet API's classes and passes with them.
+* uPortal push runs on `36abaad0e`, all passed. They are CI 42707830583, DB integration 42707830555,
+  DB copy tool 42707830579. Workflow lint passed on `c15b525bb` (42702364382), and `36abaad0e`
+  doesn't change `.github`.
+* uPortal-start push runs on `72b879228`, all passed. They are Integration 42702377482, CI 42702377415,
+  HTTP replay 42702377778, G-index 42702377424, Migration equivalence 42702377781, Workflow lint
+  42702377268. Integration built uPortal `c15b525bb`, which has the fix. `36abaad0e` differs from
+  it only in the test dependency. This Integration run is a push run, so it has a reduced set of
+  jobs (ten, three of them skipped), and the pair that failed, G-migrate postgres-16 to
+  postgres-18, isn't among them.
+* The Commit messages job of run 42702364522 failed on words from older commits. The push before
+  it replaced the branch after the integration history was rewritten, so the job's range held
+  about 700 commits. It passed in 42707830583.
 
 ## Not done
 
