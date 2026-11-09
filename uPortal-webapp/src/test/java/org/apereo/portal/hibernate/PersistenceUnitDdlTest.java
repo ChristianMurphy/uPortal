@@ -126,6 +126,9 @@ public class PersistenceUnitDdlTest {
                 new DriverManagerDataSource("jdbc:hsqldb:mem:ddl-" + database, "sa", "");
         hsqldb.setDriverClassName("org.hsqldb.jdbc.JDBCDriver");
         final DataSource dataSource = productName == null ? hsqldb : reportingVendor(hsqldb);
+        if ("Oracle".equals(productName)) {
+            createOracleSequenceView(hsqldb);
+        }
 
         final Map<String, HibernateConfiguration> configurations = new LinkedHashMap<>();
         final HibernateConfigurationAwareInjector injector =
@@ -197,6 +200,23 @@ public class PersistenceUnitDdlTest {
         }
 
         assertExpected(render(ddl));
+    }
+
+    /**
+     * Hibernate reads the increment of every sequence when it boots, to compare it with the
+     * mapping's allocationSize ({@code hibernate.id.sequence.increment_size_mismatch_strategy}). On
+     * Oracle it asks {@code all_sequences}, which HSQLDB doesn't have.
+     */
+    private static void createOracleSequenceView(DataSource hsqldb) throws SQLException {
+        try (Connection connection = hsqldb.getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute(
+                    "create view ALL_SEQUENCES as select SEQUENCE_NAME,"
+                            + " cast(MINIMUM_VALUE as numeric(28)) as MIN_VALUE,"
+                            + " cast(MAXIMUM_VALUE as numeric(28)) as MAX_VALUE,"
+                            + " cast(INCREMENT as numeric(28)) as INCREMENT_BY"
+                            + " from INFORMATION_SCHEMA.SEQUENCES");
+        }
     }
 
     private LocalContainerEntityManagerFactoryBean entityManagerFactory(
