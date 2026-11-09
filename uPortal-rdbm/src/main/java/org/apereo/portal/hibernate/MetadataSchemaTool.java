@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Map;
 import org.hibernate.MappingException;
 import org.hibernate.boot.model.naming.Identifier;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
+import org.hibernate.boot.model.relational.internal.SqlStringGenerationContextImpl;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
@@ -54,14 +56,30 @@ import org.hibernate.tool.schema.spi.TargetDescriptor;
  * TargetType#SCRIPT} target that collects the statements; nothing is executed here.
  */
 public class MetadataSchemaTool implements SchemaTool {
+    /**
+     * In Hibernate 5.6 a script target ends every statement with {@code
+     * hibernate.hbm2ddl.delimiter}, which defaults to {@code ;}. The callers run each statement
+     * through JDBC, where Oracle among others rejects a trailing semicolon.
+     */
+    private static final String NO_DELIMITER = "";
+
     private final MetadataImplementor metadata;
     private final ServiceRegistry serviceRegistry;
     private final Dialect dialect;
+    private final SqlStringGenerationContext context;
 
     public MetadataSchemaTool(MetadataImplementor metadata, ServiceRegistry serviceRegistry) {
         this.metadata = metadata;
         this.serviceRegistry = serviceRegistry;
-        this.dialect = serviceRegistry.getService(JdbcServices.class).getDialect();
+        final JdbcServices jdbcServices = serviceRegistry.getService(JdbcServices.class);
+        this.dialect = jdbcServices.getDialect();
+        // The context Hibernate's own schema creator builds, so that tables.xml and the entity
+        // tables get their names qualified the same way
+        this.context =
+                SqlStringGenerationContextImpl.fromConfigurationMap(
+                        jdbcServices.getJdbcEnvironment(),
+                        metadata.getDatabase(),
+                        serviceRegistry.getService(ConfigurationService.class).getSettings());
     }
 
     @Override
@@ -76,7 +94,9 @@ public class MetadataSchemaTool implements SchemaTool {
 
     private List<String> export(SchemaExport.Action action) {
         final CollectingTarget target = new CollectingTarget();
-        new SchemaExport().doExecution(action, false, metadata, serviceRegistry, target);
+        new SchemaExport()
+                .setDelimiter(NO_DELIMITER)
+                .doExecution(action, false, metadata, serviceRegistry, target);
         return target.statements;
     }
 
@@ -88,6 +108,7 @@ public class MetadataSchemaTool implements SchemaTool {
                 new HashMap<>(serviceRegistry.getService(ConfigurationService.class).getSettings());
         settings.put(AvailableSettings.HBM2DDL_CONNECTION, connection);
         settings.put(AvailableSettings.FORMAT_SQL, false);
+        settings.put(AvailableSettings.HBM2DDL_DELIMITER, NO_DELIMITER);
         final ExecutionOptions options =
                 SchemaManagementToolCoordinator.buildExecutionOptions(
                         settings, ExceptionHandlerHaltImpl.INSTANCE);
@@ -113,7 +134,8 @@ public class MetadataSchemaTool implements SchemaTool {
                     if (fk.isPhysicalConstraint()) {
                         Collections.addAll(
                                 script,
-                                dialect.getForeignKeyExporter().getSqlDropStrings(fk, metadata));
+                                dialect.getForeignKeyExporter()
+                                        .getSqlDropStrings(fk, metadata, context));
                     }
                 }
             }
@@ -121,7 +143,7 @@ public class MetadataSchemaTool implements SchemaTool {
 
         for (final Table table : tables) {
             Collections.addAll(
-                    script, dialect.getTableExporter().getSqlDropStrings(table, metadata));
+                    script, dialect.getTableExporter().getSqlDropStrings(table, metadata, context));
         }
 
         return script;
@@ -135,20 +157,23 @@ public class MetadataSchemaTool implements SchemaTool {
 
         for (final Table table : tables) {
             Collections.addAll(
-                    script, dialect.getTableExporter().getSqlCreateStrings(table, metadata));
+                    script,
+                    dialect.getTableExporter().getSqlCreateStrings(table, metadata, context));
         }
 
         for (final Table table : tables) {
             for (final Iterator<UniqueKey> uks = table.getUniqueKeyIterator(); uks.hasNext(); ) {
                 Collections.addAll(
                         script,
-                        dialect.getUniqueKeyExporter().getSqlCreateStrings(uks.next(), metadata));
+                        dialect.getUniqueKeyExporter()
+                                .getSqlCreateStrings(uks.next(), metadata, context));
             }
 
             for (final Iterator<Index> indexes = table.getIndexIterator(); indexes.hasNext(); ) {
                 Collections.addAll(
                         script,
-                        dialect.getIndexExporter().getSqlCreateStrings(indexes.next(), metadata));
+                        dialect.getIndexExporter()
+                                .getSqlCreateStrings(indexes.next(), metadata, context));
             }
 
             if (dialect.hasAlterTable()) {
@@ -158,7 +183,8 @@ public class MetadataSchemaTool implements SchemaTool {
                     if (fk.isPhysicalConstraint()) {
                         Collections.addAll(
                                 script,
-                                dialect.getForeignKeyExporter().getSqlCreateStrings(fk, metadata));
+                                dialect.getForeignKeyExporter()
+                                        .getSqlCreateStrings(fk, metadata, context));
                     }
                 }
             }
