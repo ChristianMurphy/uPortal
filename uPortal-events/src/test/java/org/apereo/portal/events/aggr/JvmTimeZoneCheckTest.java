@@ -18,16 +18,22 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.time.ZoneId;
 import java.util.TimeZone;
 import org.junit.Test;
 
 /** The startup warning for JVM zone ids that Joda-Time read as another zone */
 public class JvmTimeZoneCheckTest {
     @Test
-    public void namesTheRegionJodaTimeUsedForAFixedOffsetShortId() {
-        assertWarning("EST", "-05:00", "-Duser.timezone=America/New_York");
-        assertWarning("MST", "-07:00", "-Duser.timezone=America/Denver");
-        assertWarning("HST", "-10:00", "-Duser.timezone=Pacific/Honolulu");
+    public void namesTheRegionJodaTimeUsedForAShortId() {
+        // Java 24 and later read these ids as regions, earlier versions as fixed offsets
+        assertWarning("EST", javaTimeReading("EST"), "-Duser.timezone=America/New_York");
+        assertWarning("MST", javaTimeReading("MST"), "-Duser.timezone=America/Denver");
+        if ("Pacific/Honolulu".equals(javaTimeReading("HST"))) {
+            assertNull(JvmTimeZoneCheck.warningFor("HST"));
+        } else {
+            assertWarning("HST", javaTimeReading("HST"), "-Duser.timezone=Pacific/Honolulu");
+        }
     }
 
     @Test
@@ -56,6 +62,10 @@ public class JvmTimeZoneCheckTest {
         } finally {
             TimeZone.setDefault(defaultZone);
         }
+    }
+
+    private static String javaTimeReading(String id) {
+        return ZoneId.of(id, ZoneId.SHORT_IDS).toString();
     }
 
     private static void assertWarning(String id, String javaTimeZone, String setting) {

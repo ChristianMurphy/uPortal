@@ -794,8 +794,9 @@ The event aggregation reads the stored timestamps, and builds its days, hours, q
 in the JVM's default zone, as 5.17 did. What changed about that zone:
 
 * Joda-Time mapped some ids to other zones, and `java.time` doesn't. `EST`, `MST` and `HST` were
-  America/New_York, America/Denver and Pacific/Honolulu in 5.17, and are now fixed offsets
-  without daylight saving time. Every `SystemV/` id, such as `SystemV/EST5EDT`, was UTC in 5.17.
+  America/New_York, America/Denver and Pacific/Honolulu in 5.17, and now have no daylight
+  saving time. Up to Java 23 they are fixed offsets. From Java 24 they are America/Panama,
+  America/Phoenix and Pacific/Honolulu, so `HST` reads as it did in 5.17. Every `SystemV/` id, such as `SystemV/EST5EDT`, was UTC in 5.17.
   With one of these ids, the aggregation's hours and days and the term dates move by an hour or
   more against the rows 5.17 wrote, in the months where the two zones differ. The portal logs a
   warning at startup when the JVM runs with one of them. Set a region id, such as
