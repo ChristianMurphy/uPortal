@@ -5,7 +5,10 @@ dependencies {
 
     implementation "com.google.guava:guava:${guavaVersion}"
     api "org.apache.commons:commons-math3:${commonsMath3Version}"
-    implementation "org.hibernate:hibernate-core:${hibernateVersion}"
+    implementation("org.hibernate:hibernate-core:${hibernateVersion}") {
+        // One JAXB runtime in the web application: see uPortal-core/build.gradle
+        exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
+    }
     implementation "javax.persistence:javax.persistence-api:${jpaApiVersion}"
     api "org.jasig.portlet.utils:portlet-jdbc-util:${apereoPortletUtilsVersion}"
     implementation "org.springframework:spring-context:${springVersion}"

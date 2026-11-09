@@ -954,6 +954,9 @@ If you customized any of the following, adapt it before you upgrade:
   `org.javassist:javassist`. An overlay that uses Javassist itself needs to declare it.
 * **The JPA API.** The web application contains `javax.persistence:javax.persistence-api` 2.2
   in place of `hibernate-jpa-2.1-api`.
+* **JAXB.** The web application keeps one JAXB runtime, `com.sun.xml.bind:jaxb-impl` 2.3.3.
+  The build excludes the `org.glassfish.jaxb:jaxb-runtime` that Hibernate 5.6 asks for, because
+  its classes are the same ones.
 * **`hibernate.ejb.cfgfile`.** uPortal's `persistence.xml` uses the newer name,
   `hibernate.cfg_xml_file`. Hibernate 5.6 still reads the old one and logs a deprecation warning.
 

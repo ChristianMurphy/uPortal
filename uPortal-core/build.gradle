@@ -4,7 +4,12 @@ dependencies {
     api 'javax.annotation:javax.annotation-api:1.3.2'
     api "commons-lang:commons-lang:${commonsLangVersion}"
     api "org.apache.commons:commons-lang3:${commonsLang3Version}"
-    api "org.hibernate:hibernate-core:${hibernateVersion}"
+    api("org.hibernate:hibernate-core:${hibernateVersion}") {
+        // The web application already has a JAXB runtime, com.sun.xml.bind:jaxb-impl (through
+        // jaxb2-basics-runtime and Pluto). Hibernate 5.6 asks for org.glassfish.jaxb:jaxb-runtime,
+        // which holds the same com.sun.xml.bind classes under another name.
+        exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
+    }
     // Hibernate up to 5.2.17 brought dom4j 1.6.1, which uPortal's XML code is written against;
     // 5.2.18 brings org.dom4j:dom4j 2.x instead, which the root build excludes
     api "dom4j:dom4j:${dom4jVersion}"
