@@ -36,7 +36,12 @@
         </property>
     </bean>
 
-    <bean id="TestDb" abstract="true" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+    <!--
+     | The Tomcat JDBC pool, as in properties/contexts/datasourceContext.xml. Hibernate 5.6 asks
+     | each batched statement whether it is closed, and commons-dbcp 1.2 (which cernunnos brings)
+     | predates JDBC 4: its Statement.isClosed() is protected.
+     +-->
+    <bean id="TestDb" abstract="true" class="org.apache.tomcat.jdbc.pool.DataSource" destroy-method="close">
         <property name="driverClassName" value="${hibernate.connection.driver_class}" />
         <property name="url" value="${hibernate.connection.url}" />
         <property name="username" value="${hibernate.connection.username}" />
@@ -48,7 +53,6 @@
         <property name="removeAbandoned" value="true" />
         <property name="removeAbandonedTimeout" value="300" />
         <property name="logAbandoned" value="true" />
-        <property name="poolPreparedStatements" value="false" />
     </bean>
 
     <bean id="factoryBean" class="org.apereo.portal.jpa.EventingLocalContainerEntityManagerFactoryBean" depends-on="" autowire="byType">
