@@ -10,8 +10,7 @@ dependencies {
         // which holds the same com.sun.xml.bind classes under another name.
         exclude group: 'org.glassfish.jaxb', module: 'jaxb-runtime'
     }
-    // Hibernate up to 5.2.17 brought dom4j 1.6.1, which uPortal's XML code is written against;
-    // 5.2.18 brings org.dom4j:dom4j 2.x instead, which the root build excludes
+    // uPortal's XML code is written against dom4j 1.6.1. Hibernate 5.6 doesn't bring a dom4j jar.
     api "dom4j:dom4j:${dom4jVersion}"
     // Hibernate 5.6 builds its lazy-loading proxies with Byte Buddy. The 1.12 it asks for knows
     // class files up to Java 20, and the portal runs on newer JDKs. This is the version the

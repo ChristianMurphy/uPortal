@@ -936,8 +936,8 @@ If you customized any of the following, adapt it before you upgrade:
 * **`hibernate.dialect.storage_engine`.** Hibernate 5's `MySQL5Dialect` creates MyISAM tables
   unless this is set. uPortal does not use that dialect, but a dialect you configured yourself
   might.
-* **dom4j.** The portal keeps `dom4j:dom4j` 1.6.1, which the uPortal code is written against,
-  and excludes `org.dom4j:dom4j` 2.1.
+* **dom4j.** The portal keeps `dom4j:dom4j` 1.6.1, which the uPortal code is written against.
+  Hibernate 5.6 doesn't use dom4j.
 * **A custom dialect that overrides an exporter**, as uPortal's `MySQL5InnoDBCompressedDialect`
   does: the `Exporter` methods take a third argument, a `SqlStringGenerationContext`. The
   two-argument methods still compile and throw `IllegalStateException` when called.
