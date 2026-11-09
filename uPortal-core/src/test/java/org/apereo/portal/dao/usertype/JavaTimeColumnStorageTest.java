@@ -20,6 +20,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Types;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -127,6 +128,17 @@ public class JavaTimeColumnStorageTest {
                                 "SELECT A_DATE, A_TIME, A_MONTH_DAY, A_TIMESTAMP"
                                         + " FROM JAVA_TIME_COLUMNS")) {
             rs.next();
+            assertEquals(
+                    "A converter to java.sql.Date maps a DATE column. TIMESTAMP means Hibernate"
+                            + " found no descriptor for java.sql.Date: see"
+                            + " JdbcDateTimeTypeContributor",
+                    Types.DATE,
+                    rs.getMetaData().getColumnType(1));
+            assertEquals(
+                    "A converter to java.sql.Time maps a TIME column: see"
+                            + " JdbcDateTimeTypeContributor",
+                    Types.TIME,
+                    rs.getMetaData().getColumnType(2));
             assertEquals(
                     "DATE holds the local date. A day early in a zone ahead of UTC means DATE is"
                             + " bound with the hibernate.jdbc.time_zone calendar: fix"
