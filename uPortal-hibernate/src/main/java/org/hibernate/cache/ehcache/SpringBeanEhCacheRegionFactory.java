@@ -20,6 +20,7 @@ import org.apache.commons.lang.StringUtils;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.ehcache.internal.EhcacheRegionFactory;
+import org.hibernate.cache.spi.support.SimpleTimestamper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,15 @@ public class SpringBeanEhCacheRegionFactory extends EhcacheRegionFactory {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     public static final String CACHE_MANAGER_NAME = "org.apereo.portal.cache.CacheManagerName";
+
+    private volatile boolean cacheLockTimeoutConfigured;
+
+    @Override
+    protected void prepareForUse(SessionFactoryOptions settings, Map configValues) {
+        super.prepareForUse(settings, configValues);
+        this.cacheLockTimeoutConfigured =
+                configValues.get(ConfigSettings.EHCACHE_CONFIGURATION_CACHE_LOCK_TIMEOUT) != null;
+    }
 
     @Override
     protected CacheManager resolveCacheManager(SessionFactoryOptions settings, Map properties) {
@@ -55,6 +65,19 @@ public class SpringBeanEhCacheRegionFactory extends EhcacheRegionFactory {
                             + "' exists. It must be created before the session factory.");
         }
         return cacheManager;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>{@link EhcacheRegionFactory} keeps the soft locks of read-write regions and the
+     * pre-invalidation of the query cache for no time at all unless the timeout setting is present:
+     * its field stays 0. Hibernate 5.2 kept them for 60 seconds, as {@link
+     * org.hibernate.cache.spi.AbstractRegionFactory} still does.
+     */
+    @Override
+    public long getTimeout() {
+        return cacheLockTimeoutConfigured ? super.getTimeout() : SimpleTimestamper.timeOut();
     }
 
     /** Spring stops the cache manager, so there is nothing to release. */

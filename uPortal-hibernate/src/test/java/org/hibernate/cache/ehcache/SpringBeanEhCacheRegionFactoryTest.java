@@ -27,12 +27,16 @@ import net.sf.ehcache.Status;
 import net.sf.ehcache.config.Configuration;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
+import org.hibernate.cache.spi.support.SimpleTimestamper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SpringBeanEhCacheRegionFactoryTest {
     private static final String MANAGER_NAME = "SpringBeanEhCacheRegionFactoryTest.cacheManager";
+
+    /** 60 seconds in the units of Hibernate's timestamps, the default of hibernate-ehcache 5.2 */
+    private static final long SIXTY_SECONDS = 60000L * SimpleTimestamper.ONE_MS;
 
     private final SessionFactoryOptions options = mock(SessionFactoryOptions.class);
     private final SpringBeanEhCacheRegionFactory factory = new SpringBeanEhCacheRegionFactory();
@@ -68,6 +72,23 @@ public class SpringBeanEhCacheRegionFactoryTest {
         factory.stop();
 
         assertEquals(Status.STATUS_ALIVE, cacheManager.getStatus());
+    }
+
+    @Test
+    public void keepsLocksForSixtySecondsWhenNoTimeoutIsConfigured() {
+        factory.start(options, settings());
+
+        assertEquals(SIXTY_SECONDS, factory.getTimeout());
+    }
+
+    @Test
+    public void usesTheConfiguredLockTimeout() {
+        final Map<String, Object> settings = settings();
+        settings.put(ConfigSettings.EHCACHE_CONFIGURATION_CACHE_LOCK_TIMEOUT, "1500");
+
+        factory.start(options, settings);
+
+        assertEquals(1500L * SimpleTimestamper.ONE_MS, factory.getTimeout());
     }
 
     @Test
