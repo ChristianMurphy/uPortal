@@ -5,9 +5,9 @@ dependencies {
     implementation "net.sf.ehcache:ehcache-core:${ehcacheVersion}"
     implementation "org.hibernate:hibernate-core:${hibernateVersion}"
     implementation("org.hibernate:hibernate-ehcache:${hibernateVersion}") {
-        // hibernate-ehcache 5.2 asks for net.sf.ehcache:ehcache 2.10, the same classes as the
-        // ehcache-core 2.6 the portal runs on (and its JGroups replication needs). Only its
-        // Terracotta statistics MBean (tc.active) needs 2.10 APIs.
+        // hibernate-ehcache 5.6 asks for net.sf.ehcache:ehcache 2.10, the same classes as the
+        // ehcache-core 2.6 the portal runs on (and its JGroups replication needs). The Ehcache
+        // classes it uses (Ehcache, Element, the nonstop exception handler) are in 2.6 as well.
         exclude group: 'net.sf.ehcache', module: 'ehcache'
     }
 }

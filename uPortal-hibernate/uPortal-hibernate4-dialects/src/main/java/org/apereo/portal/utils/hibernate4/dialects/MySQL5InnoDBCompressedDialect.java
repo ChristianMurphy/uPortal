@@ -19,6 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.hibernate.boot.Metadata;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.dialect.MySQL5InnoDBDialect;
 import org.hibernate.mapping.Table;
 import org.hibernate.tool.schema.internal.StandardTableExporter;
@@ -43,10 +44,11 @@ public class MySQL5InnoDBCompressedDialect extends MySQL5InnoDBDialect {
                  * like any other table; strip the table type again so new databases match.
                  */
                 @Override
-                public String[] getSqlCreateStrings(Table table, Metadata metadata) {
-                    final String[] sql = super.getSqlCreateStrings(table, metadata);
+                public String[] getSqlCreateStrings(
+                        Table table, Metadata metadata, SqlStringGenerationContext context) {
+                    final String[] sql = super.getSqlCreateStrings(table, metadata, context);
                     final String tableType = getTableTypeString();
-                    if (!table.getInitCommands().isEmpty() && sql[0].endsWith(tableType)) {
+                    if (!table.getInitCommands(context).isEmpty() && sql[0].endsWith(tableType)) {
                         sql[0] = sql[0].substring(0, sql[0].length() - tableType.length());
                     }
                     return sql;

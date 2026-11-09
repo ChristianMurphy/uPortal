@@ -14,16 +14,20 @@
  */
 package org.hibernate.cache.ehcache;
 
-import java.util.Properties;
+import java.util.Map;
 import net.sf.ehcache.CacheManager;
 import org.apache.commons.lang.StringUtils;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
+import org.hibernate.cache.ehcache.internal.EhcacheRegionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Region factory that loads the {@link CacheManager} by name */
-public class SpringBeanEhCacheRegionFactory extends AbstractEhcacheRegionFactory {
+/**
+ * Region factory that loads the {@link CacheManager} by name. The manager belongs to Spring, which
+ * also stops it, so this factory never shuts it down.
+ */
+public class SpringBeanEhCacheRegionFactory extends EhcacheRegionFactory {
     private static final long serialVersionUID = 1L;
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
@@ -31,32 +35,31 @@ public class SpringBeanEhCacheRegionFactory extends AbstractEhcacheRegionFactory
     public static final String CACHE_MANAGER_NAME = "org.apereo.portal.cache.CacheManagerName";
 
     @Override
-    public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
-        this.settings = settings;
-        try {
-            String cacheManagerBeanName = null;
-            if (properties != null) {
-                cacheManagerBeanName =
-                        StringUtils.trimToNull(properties.getProperty(CACHE_MANAGER_NAME));
-            }
-
-            if (cacheManagerBeanName == null) {
-                throw new IllegalArgumentException(
-                        "The '" + CACHE_MANAGER_NAME + "' property must be set");
-            }
-
-            logger.debug("Getting CacheManager bean named {}", cacheManagerBeanName);
-            manager = CacheManager.getCacheManager(cacheManagerBeanName);
-            mbeanRegistrationHelper.registerMBean(manager, properties);
-        } catch (net.sf.ehcache.CacheException e) {
-            throw new CacheException(e);
+    protected CacheManager resolveCacheManager(SessionFactoryOptions settings, Map properties) {
+        String cacheManagerName = null;
+        if (properties != null) {
+            final Object name = properties.get(CACHE_MANAGER_NAME);
+            cacheManagerName = name == null ? null : StringUtils.trimToNull(name.toString());
         }
+
+        if (cacheManagerName == null) {
+            throw new CacheException("The '" + CACHE_MANAGER_NAME + "' property must be set");
+        }
+
+        logger.debug("Getting CacheManager named {}", cacheManagerName);
+        final CacheManager cacheManager = CacheManager.getCacheManager(cacheManagerName);
+        if (cacheManager == null) {
+            throw new CacheException(
+                    "No Ehcache CacheManager named '"
+                            + cacheManagerName
+                            + "' exists. It must be created before the session factory.");
+        }
+        return cacheManager;
     }
 
-    /** {@inheritDoc} */
+    /** Spring stops the cache manager, so there is nothing to release. */
     @Override
-    public void stop() {
-        // Assume spring will stop the cache manager
-        manager = null;
+    protected void releaseFromUse() {
+        // EhcacheRegionFactory would shut the shared manager down here
     }
 }
