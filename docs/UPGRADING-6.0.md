@@ -973,21 +973,30 @@ while the associated database sequence increment size is [1].
 
 Every sequence that uPortal 5 created has the right increment. An unchanged database starts.
 A sequence that was created again manually, or by a copy tool that doesn't keep the increment,
-can differ. Set its increment to the number in the message (`ALTER SEQUENCE … INCREMENT BY …`),
-and make sure its next value is above the largest identifier in the table. Don't relax the
+can differ. Set its increment to the first number in the message, which is the mapping's:
+`ALTER SEQUENCE … INCREMENT BY 10` for the message above. Its next value must also be above the
+largest identifier in the table. Don't relax the
 setting: with a smaller increment in the database, Hibernate would hand out identifiers that
 exist already.
 
-On Oracle, Hibernate reads `all_sequences` and compares by sequence name only. The check may
-read a sequence with the same name in another schema, such as a second uPortal installation,
-when the portal's database user has access to it. Give the portal a user that sees only its own
-sequences.
+On Oracle, Hibernate reads `all_sequences` and compares by sequence name only. When the portal's
+database user has access to a sequence with the same name in another schema, such as a second
+uPortal installation, the check may read that one. The portal then stops with the message above
+for a sequence whose own increment is right. To find the cause, list every sequence with that
+name that the portal's user has access to:
+
+```sql
+select sequence_owner, increment_by from all_sequences where sequence_name = 'UP_PORTLET_PREF_SEQ';
+```
+
+More than one row means the user has access to another schema's sequence. Give the portal a user
+that has access to its own sequences only.
 
 ### Other changes in behaviour
 
 * A commit of a transaction that was marked rollback-only now ends in Spring's
-  `UnexpectedRollbackException`. With Hibernate 5.2 it was a `JpaSystemException`. The
-  transaction is rolled back in both cases.
+  `UnexpectedRollbackException`. In uPortal 5.17 (Hibernate 4.3) it was a
+  `TransactionSystemException`. The transaction is rolled back in both cases.
 * A second-level cache region without an entry in `ehcache.xml` is still created from
   `defaultCache`. The warning is now HHH90001006 (it was HHH020003).
   `hibernate.properties` sets `hibernate.cache.ehcache.missing_cache_strategy=create-warn`.
