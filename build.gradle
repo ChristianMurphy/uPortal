@@ -483,12 +483,6 @@ subprojects {
         // extension functions. A portal running on JDK 24+ needs this flag too; on JDK 21 it is
         // already the default.
         systemProperty 'jdk.xml.enableExtensionFunctions', 'true'
-        // Hibernate 5.2's BatchFetchQueueHelper asserts that a batch load returned one row per
-        // requested id. A batch-loaded entity with a join-fetched collection (PortletPreferencesImpl)
-        // returns one row per collection element, so the assertion fails whenever such a batch load
-        // happens, depending on what the second-level cache holds. Production runs without -ea;
-        // test with this assertion off as well.
-        jvmArgs '-da:org.hibernate.engine.internal.BatchFetchQueueHelper'
         // The JVM takes its default time zone from TZ, so a run with another TZ must not reuse
         // results from the last one. Adding this input changes each test task's cache key once.
         // uPortal's CI doesn't use Gradle's build cache (no --build-cache or org.gradle.caching).
