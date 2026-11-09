@@ -8,9 +8,10 @@ dependencies {
     // Hibernate up to 5.2.17 brought dom4j 1.6.1, which uPortal's XML code is written against;
     // 5.2.18 brings org.dom4j:dom4j 2.x instead, which the root build excludes
     api "dom4j:dom4j:${dom4jVersion}"
-    // Hibernate 5.2 builds its lazy-loading proxies with Javassist; the 3.22 it asks for cannot
-    // define them on JDK 21 (NullPointerException in DefineClassHelper), 3.30 can
-    runtimeOnly "org.javassist:javassist:${javassistVersion}"
+    // Hibernate 5.6 builds its lazy-loading proxies with Byte Buddy. The 1.12 it asks for knows
+    // class files up to Java 20, and the portal runs on newer JDKs. This is the version the
+    // tests already run with, through Mockito.
+    runtimeOnly "net.bytebuddy:byte-buddy:${byteBuddyVersion}"
     // For the user types of the fname, nullSafeString, qname, json, stats_json and windowState
     // typedefs, which are built on Jadira's SPI and don't use Joda-Time. Jadira has no Hibernate 6
     // support: see the Jadira SPI row in docs/developer/modernization/notes/java-time-jpa.md
