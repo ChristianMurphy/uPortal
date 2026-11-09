@@ -40,6 +40,13 @@
      | The Tomcat JDBC pool, as in properties/contexts/datasourceContext.xml. Hibernate 5.6 asks
      | each batched statement whether it is closed, and commons-dbcp 1.2 (which cernunnos brings)
      | predates JDBC 4: its Statement.isClosed() is protected.
+     |
+     | The settings keep the connection use of that commons-dbcp pool: no connection is opened
+     | before a test asks for one (Tomcat's pool opens 10 by default), and a returned connection is
+     | closed at once when 10 are idle. Tomcat's pool does that only while its sweeper is off
+     | (timeBetweenEvictionRunsMillis=0). With the sweeper on, each pool keeps up to maxActive idle
+     | connections for a minute. The test contexts hold several pools between them, and
+     | PostgreSQL, SQL Server and Oracle ran out of connections in the DB integration jobs.
      +-->
     <bean id="TestDb" abstract="true" class="org.apache.tomcat.jdbc.pool.DataSource" destroy-method="close">
         <property name="driverClassName" value="${hibernate.connection.driver_class}" />
@@ -47,12 +54,12 @@
         <property name="username" value="${hibernate.connection.username}" />
         <property name="password" value="${hibernate.connection.password}" />
 
+        <property name="initialSize" value="0" />
+        <property name="minIdle" value="0" />
         <property name="maxActive" value="50" />
         <property name="maxIdle" value="10" />
         <property name="maxWait" value="1000" />
-        <property name="removeAbandoned" value="true" />
-        <property name="removeAbandonedTimeout" value="300" />
-        <property name="logAbandoned" value="true" />
+        <property name="timeBetweenEvictionRunsMillis" value="0" />
     </bean>
 
     <bean id="factoryBean" class="org.apereo.portal.jpa.EventingLocalContainerEntityManagerFactoryBean" depends-on="" autowire="byType">
