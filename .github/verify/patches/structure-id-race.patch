@@ -1,0 +1,72 @@
+diff --git a/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreStructIdTest.java b/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreStructIdTest.java
+index 1f09245f8b..7709102288 100644
+--- a/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreStructIdTest.java
++++ b/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreStructIdTest.java
+@@ -38,6 +38,7 @@ import org.junit.Before;
+ import org.junit.Test;
+ import org.springframework.jdbc.core.JdbcTemplate;
+ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
++import org.springframework.jdbc.datasource.DriverManagerDataSource;
+ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
+ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+@@ -49,19 +50,40 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+ public class RDBMUserLayoutStoreStructIdTest {
+     private static final int USER_ID = 9001;
+ 
+-    private EmbeddedDatabase dataSource;
++    private EmbeddedDatabase embeddedDatabase;
++    private DataSource dataSource;
+     private JdbcTemplate jdbcTemplate;
+     private PausingLayoutStore store;
+     private IPerson person;
+ 
+     @Before
+     public void setUp() {
+-        dataSource =
+-                new EmbeddedDatabaseBuilder()
+-                        .generateUniqueName(true)
+-                        .setType(EmbeddedDatabaseType.HSQL)
+-                        .build();
++        // Verification only: -Dverify.jdbc.url and friends give the test a real database
++        final String vendorUrl = System.getProperty("verify.jdbc.url");
++        if (vendorUrl == null) {
++            embeddedDatabase =
++                    new EmbeddedDatabaseBuilder()
++                            .generateUniqueName(true)
++                            .setType(EmbeddedDatabaseType.HSQL)
++                            .build();
++            dataSource = embeddedDatabase;
++        } else {
++            final DriverManagerDataSource vendorDataSource =
++                    new DriverManagerDataSource(
++                            vendorUrl,
++                            System.getProperty("verify.jdbc.user"),
++                            System.getProperty("verify.jdbc.password"));
++            vendorDataSource.setDriverClassName(System.getProperty("verify.jdbc.driver"));
++            dataSource = vendorDataSource;
++        }
+         jdbcTemplate = new JdbcTemplate(dataSource);
++        if (vendorUrl != null) {
++            try {
++                jdbcTemplate.execute("DROP TABLE UP_USER");
++            } catch (RuntimeException e) {
++                // No table left over from an earlier run
++            }
++        }
+         jdbcTemplate.execute(
+                 "CREATE TABLE UP_USER (USER_ID integer NOT NULL, NEXT_STRUCT_ID integer,"
+                         + " PRIMARY KEY (USER_ID))");
+@@ -79,7 +101,11 @@ public class RDBMUserLayoutStoreStructIdTest {
+ 
+     @After
+     public void tearDown() {
+-        dataSource.shutdown();
++        if (embeddedDatabase != null) {
++            embeddedDatabase.shutdown();
++        } else {
++            jdbcTemplate.execute("DROP TABLE UP_USER");
++        }
+     }
+ 
+     /**

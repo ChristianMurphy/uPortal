@@ -1,0 +1,29 @@
+/*
+ * Verification only. Gives every test task the JDBC drivers of the databases the fixes are
+ * checked on, hands the verify.* system properties to the test JVM, and logs each test's result.
+ */
+allprojects {
+    pluginManager.withPlugin('java') {
+        dependencies {
+            testRuntimeOnly 'org.postgresql:postgresql:42.7.11'
+            testRuntimeOnly 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
+            testRuntimeOnly 'com.mysql:mysql-connector-j:8.4.0'
+            testRuntimeOnly 'com.microsoft.sqlserver:mssql-jdbc:13.4.0.jre11'
+            testRuntimeOnly 'com.oracle.database.jdbc:ojdbc11:23.9.0.25.07'
+        }
+        tasks.withType(Test).configureEach {
+            System.properties.each { key, value ->
+                if (key.toString().startsWith('verify.')) {
+                    systemProperty key.toString(), value
+                }
+            }
+            // A run without the fix can leave two transactions waiting for each other
+            timeout = java.time.Duration.ofMinutes(10)
+            outputs.upToDateWhen { false }
+            testLogging {
+                events 'passed', 'failed', 'skipped'
+                exceptionFormat 'full'
+            }
+        }
+    }
+}

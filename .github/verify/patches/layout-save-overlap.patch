@@ -1,0 +1,65 @@
+diff --git a/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreConcurrencyTest.java b/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreConcurrencyTest.java
+index 8d42f4c13e..2a5e9e5cc0 100644
+--- a/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreConcurrencyTest.java
++++ b/uPortal-webapp/src/test/java/org/apereo/portal/layout/simple/RDBMUserLayoutStoreConcurrencyTest.java
+@@ -89,6 +89,23 @@ public class RDBMUserLayoutStoreConcurrencyTest {
+     @Before
+     public void setUp() {
+         jdbcTemplate = new JdbcTemplate(dataSource);
++        if (System.getProperty("verify.jdbc.url") != null) {
++            // Verification only: no tables left over from an earlier run on a real database
++            for (final String table :
++                    new String[] {
++                        "UP_LAYOUT_PARAM",
++                        "UP_LAYOUT_STRUCT",
++                        "UP_USER_LAYOUT",
++                        "UP_USER_PROFILE",
++                        "UP_USER"
++                    }) {
++                try {
++                    jdbcTemplate.execute("DROP TABLE " + table);
++                } catch (RuntimeException e) {
++                    // No such table
++                }
++            }
++        }
+         runSql(
+                 "CREATE TABLE UP_USER (USER_ID integer NOT NULL, USER_NAME varchar(100),"
+                         + " NEXT_STRUCT_ID integer, LST_CHAN_UPDT_DT timestamp,"
+diff --git a/uPortal-webapp/src/test/resources/rdbmUserLayoutStoreTestContext.xml b/uPortal-webapp/src/test/resources/rdbmUserLayoutStoreTestContext.xml
+index 0732961c1b..492da580a3 100644
+--- a/uPortal-webapp/src/test/resources/rdbmUserLayoutStoreTestContext.xml
++++ b/uPortal-webapp/src/test/resources/rdbmUserLayoutStoreTestContext.xml
+@@ -53,8 +53,16 @@
+ 
+     <bean id="PortalDb" parent="TestDb">
+         <qualifier value="PortalDb" />
+-        <property name="url" value="jdbc:hsqldb:mem:rdbmUserLayoutStoreTest;hsqldb.tx=mvcc" />
+-        <property name="defaultTransactionIsolation" value="8" />
++        <!--
++            Verification only: -Dverify.jdbc.url and friends give the test a real database.
++            -Dverify.jdbc.isolation=-1 keeps the isolation level that database gives its
++            connections by default.
++        -->
++        <property name="driverClassName" value="${verify.jdbc.driver:org.hsqldb.jdbcDriver}" />
++        <property name="url" value="${verify.jdbc.url:jdbc:hsqldb:mem:rdbmUserLayoutStoreTest;hsqldb.tx=mvcc}" />
++        <property name="username" value="${verify.jdbc.user:sa}" />
++        <property name="password" value="${verify.jdbc.password:}" />
++        <property name="defaultTransactionIsolation" value="${verify.jdbc.isolation:8}" />
+     </bean>
+ 
+     <import resource="classpath:sharedJpaTestContext.xml"/>
+diff --git a/uPortal-webapp/src/test/resources/sharedJpaTestContext.xml b/uPortal-webapp/src/test/resources/sharedJpaTestContext.xml
+index ac1e2d720d..0c6bfa4234 100644
+--- a/uPortal-webapp/src/test/resources/sharedJpaTestContext.xml
++++ b/uPortal-webapp/src/test/resources/sharedJpaTestContext.xml
+@@ -69,7 +69,8 @@
+     </bean>
+ 
+     <bean id="jpaVendorAdapter" class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+-        <property name="generateDdl" value="true" />
++        <!-- Verification only: false leaves the portal's JPA tables out of a real database -->
++        <property name="generateDdl" value="${verify.jpa.generateDdl:true}" />
+     </bean>
+ 
+     <bean id="jpaInterceptor" class="org.apereo.portal.test.PortalJpaInterceptor">

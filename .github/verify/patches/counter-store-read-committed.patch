@@ -1,0 +1,50 @@
+diff --git a/uPortal-webapp/src/test/java/org/apereo/portal/utils/CounterStoreTest.java b/uPortal-webapp/src/test/java/org/apereo/portal/utils/CounterStoreTest.java
+index 30ca16be21..4d1c527cfe 100644
+--- a/uPortal-webapp/src/test/java/org/apereo/portal/utils/CounterStoreTest.java
++++ b/uPortal-webapp/src/test/java/org/apereo/portal/utils/CounterStoreTest.java
+@@ -138,13 +138,30 @@ public class CounterStoreTest {
+     @Test
+     public void testBlockTakenBetweenReadAndWrite() throws Exception {
+         final BasicDataSource dataSource = new BasicDataSource();
+-        dataSource.setDriverClassName("org.hsqldb.jdbcDriver");
+-        dataSource.setUrl("jdbc:hsqldb:mem:counterStoreRace;hsqldb.tx=mvcc");
+-        dataSource.setUsername("sa");
+-        dataSource.setPassword("");
+-        dataSource.setDefaultTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
++        // Verification only: -Dverify.jdbc.url and friends give the test a real database, whose
++        // connections keep the isolation level that database gives them by default
++        final String vendorUrl = System.getProperty("verify.jdbc.url");
++        if (vendorUrl == null) {
++            dataSource.setDriverClassName("org.hsqldb.jdbcDriver");
++            dataSource.setUrl("jdbc:hsqldb:mem:counterStoreRace;hsqldb.tx=mvcc");
++            dataSource.setUsername("sa");
++            dataSource.setPassword("");
++            dataSource.setDefaultTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
++        } else {
++            dataSource.setDriverClassName(System.getProperty("verify.jdbc.driver"));
++            dataSource.setUrl(vendorUrl);
++            dataSource.setUsername(System.getProperty("verify.jdbc.user"));
++            dataSource.setPassword(System.getProperty("verify.jdbc.password"));
++        }
+         try {
+             final JdbcTemplate raceJdbcTemplate = new JdbcTemplate(dataSource);
++            if (vendorUrl != null) {
++                try {
++                    raceJdbcTemplate.execute("DROP TABLE UP_SEQUENCE");
++                } catch (RuntimeException e) {
++                    // No table left over from an earlier run
++                }
++            }
+             raceJdbcTemplate.update(
+                     "CREATE TABLE UP_SEQUENCE (SEQUENCE_NAME VARCHAR(1000), SEQUENCE_VALUE INTEGER)");
+             raceJdbcTemplate.update(
+@@ -212,7 +229,8 @@ public class CounterStoreTest {
+             }
+             assertNotEquals("A and B got the same id", idOfA, idOfB.get());
+         } finally {
+-            new JdbcTemplate(dataSource).execute("SHUTDOWN");
++            new JdbcTemplate(dataSource)
++                    .execute(vendorUrl == null ? "SHUTDOWN" : "DROP TABLE UP_SEQUENCE");
+             dataSource.close();
+         }
+     }
