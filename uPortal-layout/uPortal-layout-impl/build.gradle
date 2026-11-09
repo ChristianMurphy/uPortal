@@ -7,6 +7,7 @@ dependencies {
     implementation project(':uPortal-security:uPortal-security-core')
     implementation project(':uPortal-spring')
 
+    testImplementation project(':uPortal-pluto:uPortal-pluto-portlet-api')
     testImplementation "${servletApiDependency}"
     testImplementation "org.hsqldb:hsqldb:${hsqldbVersion}"
 
