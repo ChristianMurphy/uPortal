@@ -211,8 +211,8 @@ LOG rows:
   refactor, perf, test, build, ci, chore or revert. The description is lowercase and imperative,
   without a final period, and the subject has at most 72 characters.
 * The body says the problem and then the change. MOD IDs go in a `Refs MOD-...` footer, never in the
-  subject. Commits are authored and committed as the owner, without a `Co-Authored-By` line or
-  any other trailer for a tool (owner, 2026-11-09).
+  subject. Every commit has the owner's name and email as its author and its committer. Don't
+  add a `Co-Authored-By` line, or any other line that credits a tool (owner, 2026-11-09).
 * Never push `wip:` or `fixup!` commits. Reword or squash unpushed commits. The coordinator rewords
   pushed ones when it merges your branch.
 
