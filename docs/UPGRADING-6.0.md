@@ -706,8 +706,10 @@ The columns and their values stay the same, on every database and in every JVM t
   it, every `Instant` column holds the JVM's local clock time.
 * `UP_DATE_DIMENSION.DD_DATE` holds the date and `UP_TIME_DIMENSION.TD_TIME` the JVM's local time
   of day, through `LocalDateColumnConverter` and `LocalTimeColumnConverter` in
-  `org.apereo.portal.dao.usertype`. The time converter relies on the same setting. Hibernate 5.2
-  binds a `DATE` without it, and the date converter is written for that.
+  `org.apereo.portal.dao.usertype`. The time converter relies on the same setting. Hibernate 5.6
+  binds a `DATE` without it, and the date converter is written for that. Both converters need
+  `JdbcDateTimeTypeContributor`, which uPortal-core registers through `META-INF/services`:
+  without it Hibernate 5.6 maps their columns as `TIMESTAMP`.
 * The quarter columns hold `--MM-dd` text, through `MonthDayColumnConverter`.
 
 ### Hibernate types
@@ -895,10 +897,11 @@ the wrong type throws `IllegalArgumentException` instead. The view bean names,
 The CSV and HTML downloads format numbers and dates as before. In locales whose default calendar
 isn't Gregorian or Buddhist, such as `ar-SA` and `fa-IR`, dates are now Gregorian.
 
-## Hibernate 5.2
+## Hibernate 5.6
 
-uPortal now runs on Hibernate ORM 5.2.18 instead of 4.3.11. An existing database upgrades in
-place: no SQL needs to be run, and new rows keep the identifiers the old ones were given.
+uPortal now runs on Hibernate ORM 5.6.15 instead of 4.3.11. An existing database upgrades in
+place: no SQL needs to be run, and new rows keep the identifiers the old ones were given. The
+second-level cache still uses Ehcache 2.6 with `ehcache.xml` and JGroups replication.
 
 uPortal keeps every database on the schema and identifier generation it had under Hibernate
 4.3. The settings that do this are in `hibernate.properties` (a "freeze block"), together with
@@ -911,7 +914,7 @@ the dialect choice in `PortalDialectResolver`. Do not override them in your own
 | `hibernate.implicit_naming_strategy=org.apereo.portal.hibernate.PortalImplicitNamingStrategy` | Join column names and the `FK_…`/`UK_…` constraint names of Hibernate 4.3 |
 | `hibernate.physical_naming_strategy=…PhysicalNamingStrategyStandardImpl` | Names are used as they are mapped |
 | `hibernate.id.optimizer.pooled.preferred=pooled` | Identifiers are allocated as before from the `UP_*_SEQ` sequences or one-row tables |
-| `hibernate.id.sequence.increment_size_mismatch_strategy=EXCEPTION` | Takes effect from Hibernate 5.4: startup stops if a sequence's increment no longer matches its mapping |
+| `hibernate.id.sequence.increment_size_mismatch_strategy=EXCEPTION` | Startup stops if a sequence's increment no longer matches its mapping. See [Sequence increments are checked at startup](#sequence-increments-are-checked-at-startup) |
 
 If you customized any of the following, adapt it before you upgrade:
 
@@ -930,11 +933,65 @@ If you customized any of the following, adapt it before you upgrade:
   the values. Hibernate 5 applies it to the values only. uPortal's own maps declare `@MapKeyType`
   so that existing rows are read and written as before. An entity of your own that relies on
   the old behaviour needs `@MapKeyType(@Type(type = "…"))` too.
-* **`hibernate.dialect.storage_engine`.** Hibernate 5.2's `MySQL5Dialect` creates MyISAM tables
+* **`hibernate.dialect.storage_engine`.** Hibernate 5's `MySQL5Dialect` creates MyISAM tables
   unless this is set. uPortal does not use that dialect, but a dialect you configured yourself
   might.
-* **dom4j.** Hibernate 5.2.18 depends on `org.dom4j:dom4j` 2.1. The portal keeps
-  `dom4j:dom4j` 1.6.1, which the uPortal code is written against, and excludes 2.1.
+* **dom4j.** The portal keeps `dom4j:dom4j` 1.6.1, which the uPortal code is written against,
+  and excludes `org.dom4j:dom4j` 2.1.
+* **A custom dialect that overrides an exporter**, as uPortal's `MySQL5InnoDBCompressedDialect`
+  does: the `Exporter` methods take a third argument, a `SqlStringGenerationContext`. The
+  two-argument methods still compile and throw `IllegalStateException` when called.
+* **A custom region factory.** Hibernate 5.3 replaced the cache SPI
+  (`org.hibernate.cache.spi.support`). `SpringBeanEhCacheRegionFactory` keeps its name and its
+  `org.apereo.portal.cache.CacheManagerName` setting. `persistenceContext.xml` and
+  `eventPersistenceContext.xml` stay as they are.
+* **A data source of your own with a pool older than JDBC 4**, such as commons-dbcp 1.2 or 1.3.
+  Hibernate 5.6 calls `Statement.isClosed()` on batched statements, and those pools fail with
+  `IllegalAccessError`. uPortal's own data sources use the Tomcat JDBC pool and are not
+  affected. The commons-dbcp 1.2.2 jar is still in the web application, because cernunnos
+  declares it.
+* **Javassist.** Hibernate builds its proxies with Byte Buddy now, and the portal no longer adds
+  `org.javassist:javassist`. An overlay that uses Javassist itself needs to declare it.
+* **The JPA API.** The web application contains `javax.persistence:javax.persistence-api` 2.2
+  in place of `hibernate-jpa-2.1-api`.
+* **`hibernate.ejb.cfgfile`.** uPortal's `persistence.xml` uses the newer name,
+  `hibernate.cfg_xml_file`. Hibernate 5.6 still reads the old one and logs a deprecation warning.
+
+### Sequence increments are checked at startup
+
+On databases with sequences (PostgreSQL, Oracle and HSQLDB), Hibernate now reads each sequence's
+increment when the portal starts and compares it with the `allocationSize` of the mapping. On a
+difference the portal doesn't start, and the log says:
+
+```text
+The increment size of the [UP_PORTLET_PREF_SEQ] sequence is set to [10] in the entity mapping
+while the associated database sequence increment size is [1].
+```
+
+Every sequence that uPortal 5 created has the right increment. An unchanged database starts.
+A sequence that was created again manually, or by a copy tool that doesn't keep the increment,
+can differ. Set its increment to the number in the message (`ALTER SEQUENCE … INCREMENT BY …`),
+and make sure its next value is above the largest identifier in the table. Don't relax the
+setting: with a smaller increment in the database, Hibernate would hand out identifiers that
+exist already.
+
+On Oracle, Hibernate reads `all_sequences` and compares by sequence name only. The check may
+read a sequence with the same name in another schema, such as a second uPortal installation,
+when the portal's database user has access to it. Give the portal a user that sees only its own
+sequences.
+
+### Other changes in behaviour
+
+* A commit of a transaction that was marked rollback-only now ends in Spring's
+  `UnexpectedRollbackException`. With Hibernate 5.2 it was a `JpaSystemException`. The
+  transaction is rolled back in both cases.
+* A second-level cache region without an entry in `ehcache.xml` is still created from
+  `defaultCache`. The warning is now HHH90001006 (it was HHH020003).
+  `hibernate.properties` sets `hibernate.cache.ehcache.missing_cache_strategy=create-warn`.
+* The portal logs HHH020100 at startup, because Hibernate deprecated its Ehcache 2 module.
+  uPortal replaces the cache provider in a later step.
+* On HSQLDB, `dataInit` drops tables with `drop table if exists … CASCADE`. The schema it creates
+  is the same.
 
 On Oracle, some deletes that failed in 5.17 now work. Oracle stores an empty string as NULL, and
 Hibernate does not load a NULL value of an element collection, so it did not delete that row with

@@ -23,7 +23,7 @@ import javax.persistence.Converter;
  * Stores a {@link LocalDate} in a {@code DATE} column as the same date, whatever the JVM's zone, as
  * 5.17 stored it through Jadira's {@code PersistentLocalDate} with {@code databaseZone=jvm}.
  *
- * <p>The JDBC value is the date at the JVM's midnight. Hibernate 5.2 binds and reads {@code DATE}
+ * <p>The JDBC value is the date at the JVM's midnight. Hibernate 5.6 binds and reads {@code DATE}
  * without a calendar and ignores {@code hibernate.jdbc.time_zone}, so the driver converts in the
  * JVM's zone and the date is unchanged. If a Hibernate version binds {@code DATE} with the UTC
  * calendar, every date is stored a day early in a zone ahead of UTC; {@code
