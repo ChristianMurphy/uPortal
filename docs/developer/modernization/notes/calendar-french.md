@@ -30,7 +30,7 @@ Spring writes a vertical tab as `\013`, which JSON refuses too. No label has one
 
 The copies are laid out so that the page is the same, byte for byte, for a text without an
 apostrophe. `<c:set>` trims its body, and the copy puts back the line break and the indent around
-it. I checked that by reading the JSP. No run has compared the bytes yet (see "Not verified").
+it. The replay against 5.17 passed with the copies (see "Evidence").
 
 ### Removing the overlay
 
@@ -83,8 +83,16 @@ overlay. Two JSPs are easier to remove.
   reads "Voir plus d'évènements" and the console has no error. The page was built manually, with
   no portal.
 * `npm run lint` in uPortal-start passes with no errors and the same 41 warnings as the tip.
-* CI runs of the uPortal-start branch: see the report. They built uPortal `ccr-43ba0785-hzlrj5-calendar-french`,
-  which is the integration tip plus this note.
+* CI, the push runs of uPortal-start `559f9f954f`. They built uPortal `d177dae90e`, which is the
+  integration tip plus this note.
+  * Integration 42824923180 passed. In "Playwright: hsqldb" (job 129863065796) 515 tests passed,
+    and the report lists "Calendar in French, shows its labels in French" as passed on its first
+    attempt. "Playwright: hsqldb, CAS" (129863065942) and "Playwright: postgres-18"
+    (129863066052) passed too.
+  * HTTP replay 42824923034 passed, and its job "Replay against 5.17" (129862924127) ran. The
+    fixtures have Calendar pages in English, so the copies don't change those.
+  * CI 42824923024 and Migration equivalence 42824923031 passed. G-index 42824923057 was still
+    running when this note was written.
 
 ## Not verified
 
@@ -94,10 +102,8 @@ overlay. Two JSPs are easier to remove.
   same reason. So the new test never ran here, with or without the overlay. The CI runs show that
   it passes with the overlay. I couldn't show the test failing without it. The MOD-I400 job
   (116563567542) and the element check above show the two symptoms it looks for.
-* **The EL in the copies** (`"\\'"` as a backslash and an apostrophe) ran only in CI.
-* **The bytes for English.** No replay ran. The 5.17 fixtures have Calendar pages and no French
-  request, so a replay would show any difference in the English page. On a topic push "Replay
-  against 5.17" runs only when `tests/replay` changes. The staging run of a landing includes it.
+* **French pages in the replay.** The fixtures have no French request. The replay says nothing
+  about the French page, and the Playwright test covers it.
 * **The upstream JSPs in a servlet container.** The tag is tested with Spring's mock page context.
   No Tomcat has rendered the two JSPs with it.
 
