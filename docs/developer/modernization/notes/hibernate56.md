@@ -181,9 +181,31 @@ JDK 21, Gradle 9.8.1, dependencies through the approved mirror init script.
 
 ## Runs
 
-The runs in this table are from before the rebase and the review fixes: uPortal `5ffc5a7369`
-(commit 16) and uPortal-start `60f2d9f406`. The push runs of the final heads are in the report to
-the coordinator.
+### After the rebase and the review fixes
+
+uPortal `cf52b454d5`, uPortal-start `df45e44523`. The push runs of the commit that adds this
+section are in the report to the coordinator.
+
+| Repository | Workflow | Run | Result |
+| --- | --- | --- | --- |
+| uPortal | CI (push) | 42723868771 | Build and Prose passed. Commit messages failed: after the forced push the job couldn't find the previous head and checked the whole history, and the findings are in three older commits. The 21 commits of this branch pass both checks |
+| uPortal | DB copy tool (push) | 42723869181 | passed |
+| uPortal | DB integration (manual) | 42723886969 | seven of eight jobs passed. SQL Server 2025 failed in `JpaClusterLockDaoTest.testConcurrentCreation` (job 129524473140), see the next paragraph |
+| uPortal-start | CI, Workflow lint | 42723874175, 42723874192 | passed |
+| uPortal-start | HTTP replay (push) | 42723874264 | passed without "Replay against 5.17": the push didn't change `tests/replay` |
+
+`testConcurrentCreation` on SQL Server: one of its threads was chosen as a deadlock victim inside
+`persist`, in the isolated transaction that reads the next id of `ClusterMutex`
+(`LockAcquisitionException: error performing isolated work`). On SQL Server the sequences are
+one-row tables, and Hibernate reads them with `with (updlock, holdlock, rowlock)`. That hint and
+`TableStructure` are the same in Hibernate 5.2.18 and 5.6.15 (`SQLServer2005Dialect.appendLockHint`).
+The same test passed on SQL Server in run 42710461224, on this branch's Hibernate code. So this
+is an intermittent failure that this branch didn't introduce, as far as the sources show. It
+wasn't re-run to get a pass, and it has no LOG row yet (proposed below).
+
+### Before the rebase
+
+uPortal `5ffc5a7369` (commit 16) and uPortal-start `60f2d9f406`.
 
 | Repository | Workflow | Run | Result |
 | --- | --- | --- | --- |
@@ -229,6 +251,7 @@ the coordinator.
 | MOD-I? | Caching | hibernate-ehcache 5.6's `EhcacheRegionFactory.getTimeout()` is 0 unless `net.sf.ehcache.hibernate.cache_lock_timeout` is set, where 5.2 used 60 seconds. Soft locks and query cache pre-invalidation would expire at once | **Fixed** in `SpringBeanEhCacheRegionFactory`, with a test |
 | MOD-I? | Build | With Hibernate 5.6 the web application held `hibernate-jpa-2.1-api` and `javax.persistence-api` 2.2 together, and Byte Buddy 1.12.18 (Java 20 at most) where the tests ran on Mockito's 1.18.12 | **Fixed**: one JPA jar, Byte Buddy 1.18.12 declared, Javassist removed |
 | MOD-I? | Persistence | On Oracle, Hibernate 5.6's increment check reads `all_sequences` and compares by name only, across the schemas the user has access to | Documented in UPGRADING-6.0, with the query that finds the cause (review of 2026-11-09) |
+| MOD-I? | Tests | `JpaClusterLockDaoTest.testConcurrentCreation` failed once on SQL Server 2025 (run 42723886969, job 129524473140): a thread was the deadlock victim while Hibernate read the one-row table `UP_MUTEX_SEQ` with `updlock, holdlock, rowlock` in its isolated id transaction. The hint and the generator code are the same in 5.2.18 and 5.6.15, and the test passed on SQL Server in run 42710461224 | Open. Intermittent, not re-run. Needs a cause and a fix of its own (agent guide, section 10) |
 | MOD-I121 (update) | Tests | Rechecked on 5.6.15: `BatchFetchQueueHelper` has no `assert` statement any more | The `-da` switch is removed from the test JVMs |
 | MOD-I? | Build | hibernate-core 5.6.15 brings `org.glassfish.jaxb:jaxb-runtime` 2.3.1 with four more jars, next to the `jaxb-impl` 2.3.3 the web application has. The root build still excluded `org.dom4j:dom4j`, which no dependency brings since 5.6 | **Fixed**: `jaxb-runtime` excluded where Hibernate is declared, and the dom4j exclusion removed |
 | MOD-I125 (update) | Runtime | On 5.6 a portal logs HHH020100, HHH90001006 and HHH90001007 (the cache provider and region names, for S2 and S6) and HHH90001003 for `PortletLifecycleEntryImpl`. HHH000112 became HHH000305 with a stack trace for `SearchRequestAggregationImpl`. No `AggrEvents.AggrEvents.*` region appeared in a ten-minute local run in which no aggregation query ran | HHH000305 **fixed** (the class is final). The doubled prefix needs a run with aggregation. The rest stays for S2 |
