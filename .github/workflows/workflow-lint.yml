@@ -5,7 +5,19 @@ on:
       - master
       # Prototype only (MOD-I74): run CI on the modernization
       # integration branches. Drop this line before upstreaming.
+      # The names are in .github/scripts/branches.sh, and its table test checks this list.
+      # 'ccr-*' is the scheme from before 2026-11-10. Drop it when those branches are deleted.
       - 'ccr-*'
+      - 'feat/**'
+      - 'fix/**'
+      - 'ci/**'
+      - 'docs/**'
+      - 'test/**'
+      - 'build/**'
+      - 'refactor/**'
+      - 'chore/**'
+      - 'perf/**'
+      - 'staging/landing-*'
     paths:
       - '.github/**'
   pull_request:
@@ -43,6 +55,8 @@ jobs:
         uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # 1.7.12
         with:
           args: -color
+      - name: Test the branch names and the push triggers
+        run: .github/scripts/branches.test.sh
       - name: Test the check for placeholders in the notes
         run: .github/scripts/check-placeholders.test.sh
       - name: Test the check for an earlier pass of the slow jobs

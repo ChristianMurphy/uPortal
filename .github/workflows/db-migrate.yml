@@ -14,9 +14,9 @@ name: DB copy tool
 # LOBs, the pairs with SQL Server 2025 and Oracle Free 23.26, and mutation testing (PIT) of the
 # tool's core and of JpaClusterLockDao. Nothing here is allowed to fail.
 #
-# Prototype only (MOD-D30): a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs the push job
+# Prototype only (MOD-D30): a workstream branch (<type>/<topic>) runs the push job
 # with PostgreSQL and MariaDB only; master, pull requests, the integration branch, a staging branch
-# (ccr-43ba0785-hzlrj5-landing-<n>) and the schedule run MySQL too.
+# (staging/landing-<n>) and the schedule run MySQL too.
 #
 on:
   push:
@@ -24,7 +24,19 @@ on:
       - master
       # Prototype only (MOD-I74): run on the modernization
       # integration branches. Drop this line before upstreaming.
+      # The names are in .github/scripts/branches.sh, and its table test checks this list.
+      # 'ccr-*' is the scheme from before 2026-11-10. Drop it when those branches are deleted.
       - 'ccr-*'
+      - 'feat/**'
+      - 'fix/**'
+      - 'ci/**'
+      - 'docs/**'
+      - 'test/**'
+      - 'build/**'
+      - 'refactor/**'
+      - 'chore/**'
+      - 'perf/**'
+      - 'staging/landing-*'
   pull_request:
     branches:
       - master
@@ -34,10 +46,13 @@ on:
 permissions:
   contents: read
 env:
-  # Prototype only (MOD-D53): a topic branch (ccr-*) saves its own Gradle cache. setup-gradle
+  # Prototype only (MOD-D53): a topic branch saves its own Gradle cache. setup-gradle
   # writes the cache only on the default branch by default, and none of our work branches is that
   # one, so no job ever saved or restored a cache. Pull requests keep the action's default.
-  GRADLE_CACHE_READ_ONLY: ${{ github.event.repository.default_branch != github.ref_name && !startsWith(github.ref_name, 'ccr-') }}
+  # A workflow's env can't run branches.sh. So one of our branches is a name with a slash
+  # (fix/<topic>, feat/uportal-6, staging/landing-<n>) or the older ccr-*. The ref name of a
+  # pull request has a slash too (<number>/merge).
+  GRADLE_CACHE_READ_ONLY: ${{ github.event.repository.default_branch != github.ref_name && !startsWith(github.ref_name, 'ccr-') && (github.event_name == 'pull_request' || !contains(github.ref_name, '/')) }}
   # Prototype only (MOD-D53): the first job of a key to finish saves its Gradle cache, and an entry
   # is never replaced. So one job per runner OS and set of build files saves it, the one whose
   # Gradle work is the broadest, and the other jobs of the key only read (this variable). On the
@@ -46,13 +61,13 @@ env:
 concurrency:
   # By event too: a push waiting in the group would otherwise cancel a waiting nightly or manual run
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
-  # Prototype only (MOD-D30): a newer push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>)
+  # Prototype only (MOD-D30): a newer push to a workstream branch (<type>/<topic>)
   # cancels the older run.
-  cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') || (contains(github.ref_name, '/') && github.ref_name != 'feat/uportal-6') }}
 
 jobs:
   # Prototype only: on the integration branch and on a staging branch
-  # (ccr-43ba0785-hzlrj5-landing-<n>), asks whether the slow jobs of this workflow already passed
+  # (staging/landing-<n>), asks whether the slow jobs of this workflow already passed
   # for this tree (.github/scripts/staged.sh). They are skipped when they did, and the notice of
   # this job gives the run that passed.
   staged:
@@ -63,6 +78,7 @@ jobs:
       contents: read
       actions: read # to list the markers that earlier runs uploaded
     outputs:
+      kind: ${{ steps.branch.outputs.kind }}
       skip: ${{ steps.check.outputs.skip }}
       mark: ${{ steps.check.outputs.mark }}
       key: ${{ steps.check.outputs.key }}
@@ -72,6 +88,15 @@ jobs:
         with:
           persist-credentials: false
           sparse-checkout: .github/scripts
+      # integration, staging, topic or other (.github/scripts/branches.sh), for the jobs below
+      - name: Which kind of branch is this
+        id: branch
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          kind=$(.github/scripts/branches.sh kind "$BRANCH")
+          echo "kind=$kind" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Branch kind::$BRANCH is $kind"
       - name: Did the slow jobs already pass for this tree
         id: check
         env:
@@ -90,7 +115,7 @@ jobs:
     timeout-minutes: 60
     env:
       # Prototype only (MOD-D30): the light profile on workstream branches
-      VENDORS: ${{ startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-') && 'postgres,mariadb' || 'postgres,mariadb,mysql' }}
+      VENDORS: ${{ needs.staged.outputs.kind == 'topic' && 'postgres,mariadb' || 'postgres,mariadb,mysql' }}
       SEED: '20261010'
       FACTOR: '1'
       MAX_LOB: '20000'

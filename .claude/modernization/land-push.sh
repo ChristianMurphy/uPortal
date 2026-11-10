@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Coordinator helper: check the commits about to land, then push them to the integration branch.
+# Coordinator helper: check the commits about to land, then push them to the integration branch:
+# the first name in .github/scripts/branches.sh that origin has, so feat/uportal-6 once that branch
+# exists and ccr-43ba0785-hzlrj5 until then.
 # Run it from a clone or worktree whose HEAD is the landing: the head of the staging branch
-# (ccr-43ba0785-hzlrj5-landing-<n>) whose runs passed, with at most the log entry and other
+# (staging/landing-<n>) whose runs passed, with at most the log entry and other
 # modernization notes on top. Land uPortal first: uPortal-start's check uses the tip of uPortal's
 # integration branch.
 #
@@ -9,7 +11,9 @@
 # message has [skip ci] (such a push starts no runs), and a tree whose slow jobs haven't passed on
 # a staging branch (.github/scripts/staged.sh landing).
 set -euo pipefail
-branch=ccr-43ba0785-hzlrj5
+# shellcheck source=.github/scripts/branches.sh
+. .github/scripts/branches.sh
+branch=$(integration_on origin) || { echo "Could not find the integration branch on origin (${INTEGRATION_BRANCHES[*]})."; exit 1; }
 owner_email=${OWNER_EMAIL:-christian.murphy.42@gmail.com}
 git fetch -q origin "$branch"
 git rebase -q "origin/$branch"
@@ -26,7 +30,7 @@ fi
 .github/scripts/check-commit-messages.sh "$range"
 .github/scripts/vale.sh commits "$range"
 if ! .github/scripts/staged.sh landing; then
-  echo "Not staged. Push this landing to a staging branch ($branch-landing-<n>) in both"
+  echo "Not staged. Push this landing to a staging branch (${STAGING_PREFIX}<n>) in both"
   echo "repositories, uPortal first, wait for its runs to pass, and land uPortal before uPortal-start."
   exit 1
 fi

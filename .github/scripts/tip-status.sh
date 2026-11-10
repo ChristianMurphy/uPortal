@@ -5,6 +5,8 @@
 # landing: nothing lands on a red tip except the fix for it (agent-guide section 11).
 #
 # Usage: tip-status.sh [<branch>]
+# Without <branch> it takes the integration branch: the first name in branches.sh that uPortal has,
+# so feat/uportal-6 once that branch exists and ccr-43ba0785-hzlrj5 until then.
 # Exit status: 0 when the latest finished run of each workflow on the tip passed, 1 otherwise: a
 # red run, or a tip whose run is missing, cancelled, queued or still running. A pass on an older
 # commit doesn't count. Workflow lint runs only when .github changes, so when the tip has no run of
@@ -12,13 +14,24 @@
 #
 # A run whose slow jobs were skipped because they had passed for the same tree on a staging branch
 # (.github/scripts/staged.sh) concludes with success and counts as a pass. The line below it gives
-# the run that passed. Give a staging branch (ccr-43ba0785-hzlrj5-landing-<n>) as <branch> to see
+# the run that passed. Give a staging branch (staging/landing-<n>) as <branch> to see
 # its runs before a landing.
 # Needs gh, signed in with read access to both repositories.
 set -euo pipefail
 
-branch=${1:-ccr-43ba0785-hzlrj5}
 owner=${UPORTAL_OWNER:-ChristianMurphy}
+# shellcheck source=.github/scripts/branches.sh
+. "$(dirname "${BASH_SOURCE[0]}")/branches.sh"
+branch=${1:-}
+if [ -z "$branch" ]; then
+  for candidate in "${INTEGRATION_BRANCHES[@]}"; do
+    if gh api "repos/$owner/uPortal/branches/$candidate" --silent 2>/dev/null; then
+      branch=$candidate
+      break
+    fi
+  done
+  [ -n "$branch" ] || { echo "$owner/uPortal has none of the branches ${INTEGRATION_BRANCHES[*]}" >&2; exit 1; }
+fi
 required=(
   "uPortal CI.yml" "uPortal db-integration.yml" "uPortal db-migrate.yml" "uPortal workflow-lint.yml"
   "uPortal-start CI.yml" "uPortal-start integration.yml" "uPortal-start replay.yml"
