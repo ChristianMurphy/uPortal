@@ -28,6 +28,7 @@ import org.apereo.portal.portlet.om.IPortletLifecycleEntry;
 import org.apereo.portal.portlet.om.PortletLifecycleState;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Immutable;
 
 /** JPA implementation of the IPortletParameter interface. */
 @Entity
@@ -37,10 +38,10 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
         sequenceName = "UP_PORTLET_LIFECYCLE_SEQ",
         allocationSize = 5)
 @Cacheable
-@Cache(
-        usage =
-                CacheConcurrencyStrategy
-                        .READ_ONLY) // Should work, AFAIK, since these objects are immutable
+// A lifecycle entry never changes once written. Hibernate warns about a read-only cache for an
+// entity that isn't marked immutable (HHH90001003).
+@Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
+@Immutable
 public class PortletLifecycleEntryImpl implements IPortletLifecycleEntry {
 
     private static final long serialVersionUID = 1L;
