@@ -50,8 +50,41 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') }}
 
 jobs:
+  # Prototype only: on the integration branch and on a staging branch
+  # (ccr-43ba0785-hzlrj5-landing-<n>), asks whether the slow jobs of this workflow already passed
+  # for this tree (.github/scripts/staged.sh). They are skipped when they did, and the notice of
+  # this job gives the run that passed.
+  staged:
+    name: Staging check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read # to list the markers that earlier runs uploaded
+    outputs:
+      skip: ${{ steps.check.outputs.skip }}
+      mark: ${{ steps.check.outputs.mark }}
+      key: ${{ steps.check.outputs.key }}
+    steps:
+      - name: Checkout the scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - name: Did the slow jobs already pass for this tree
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          EVENT_NAME: ${{ github.event_name }}
+          BRANCH: ${{ github.ref_name }}
+          WORKFLOW: db-integration
+        run: .github/scripts/staged.sh check
+
   db:
     name: "DB integration: ${{ matrix.vendor }}"
+    needs: staged
+    if: ${{ needs.staged.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -163,7 +196,8 @@ jobs:
     name: "DB integration: ${{ matrix.vendor }}"
     # Prototype only (MOD-D30): skipped on workstream branches, except in a manual run, so a
     # workstream can check SQL Server and Oracle before it lands.
-    if: ${{ github.event_name == 'workflow_dispatch' || !(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-')) }}
+    needs: staged
+    if: ${{ needs.staged.outputs.skip != 'true' && (github.event_name == 'workflow_dispatch' || !(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-'))) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -284,6 +318,40 @@ jobs:
           path: |
             uPortal-webapp/build/reports/tests/
             uPortal-webapp/build/test-results/
+
+  # Prototype only: a full run on the integration branch or a staging branch records that the slow
+  # jobs passed for this tree. The marker is an artifact that staged.sh looks for. This job runs
+  # only when every job it needs passed.
+  staged-mark:
+    name: Record the pass for this tree
+    needs: [staged, db, db-full]
+    if: ${{ needs.staged.outputs.mark == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write the marker
+        env:
+          KEY: ${{ needs.staged.outputs.key }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          mkdir marker
+          {
+            echo "workflow=db-integration"
+            echo "key=$KEY"
+            echo "repository=$GITHUB_REPOSITORY"
+            echo "branch=$BRANCH"
+            echo "commit=$GITHUB_SHA"
+            echo "run=$GITHUB_RUN_ID"
+          } > marker/staged.txt
+          cat marker/staged.txt
+      - name: Upload the marker
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: staged-db-integration-${{ needs.staged.outputs.key }}
+          path: marker/staged.txt
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
 
   # The next server releases, nightly. These are the only jobs allowed to fail (canary: true), so
   # an incompatibility shows up early without blocking anyone; a failure still shows on the run.
