@@ -2089,6 +2089,26 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   the same deadlock on the tip's Hibernate 5.2 code, so `-mssql-id-lock` fixes it in the
   portal's dialect and goes in first. `-hibernate56` was rebased onto it, so both topics went in
   as a fast-forward. `-mssql-id-lock` was reviewed inline.
+* **Opened upstream (project owner, 2026-11-10):** six pull requests and one issue on
+  `uPortal-Project/uPortal`, each from a `fix/` branch of the fork on upstream `master`. Before
+  they were opened, each fix ran with and without its change on PostgreSQL 16 and 18, MariaDB
+  12.3, MySQL 8.4, SQL Server 2025 and Oracle 23, or in a running portal. The workflows for those
+  runs are on the fork's branch `test/verify-fixes-on-databases`. The texts as opened are in
+  `.claude/modernization/upstream/`.
+
+  | Upstream | Fork branch | What | Rows here |
+  | --- | --- | --- | --- |
+  | PR 3046 | `fix/permission-set-import` | `dataImport` reads the permission sets that `dataExport` writes | MOD-I411 |
+  | PR 3047 | `fix/structure-id-race` | One structure id per request | MOD-I361 |
+  | PR 3048 | `fix/counter-store-read-committed` | Counter blocks are fetched under READ COMMITTED | MOD-I362 |
+  | PR 3049 | `fix/layout-save-overlap` | Two saves of one user's layout run in turn | MOD-I399 |
+  | PR 3050 | `fix/skin-elements-copy` | A page render gets its own copy of the skin elements | MOD-I408 |
+  | PR 3051 | `fix/logout-session-race` | A logged-out user's instance stays out of a new session | MOD-I427 |
+  | Issue 3052 | `test/permission-decision-cache-repro` | Cached permission decisions outlive a permission change | MOD-I403 |
+
+  The verification also met upstream issue 3044, a `NullPointerException` in
+  `RemoteCookieCheckFilter` for a request without a `User-Agent` header, which someone else
+  reported on 2026-10-26.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
