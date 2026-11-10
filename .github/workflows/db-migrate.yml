@@ -15,8 +15,8 @@ name: DB copy tool
 # tool's core and of JpaClusterLockDao. Nothing here is allowed to fail.
 #
 # Prototype only (MOD-D30): a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs the push job
-# with PostgreSQL and MariaDB only; master, pull requests, the integration branch and the schedule
-# run MySQL too.
+# with PostgreSQL and MariaDB only; master, pull requests, the integration branch, a staging branch
+# (ccr-43ba0785-hzlrj5-landing-<n>) and the schedule run MySQL too.
 #
 on:
   push:
@@ -57,7 +57,7 @@ jobs:
     timeout-minutes: 60
     env:
       # Prototype only (MOD-D30): the light profile on workstream branches
-      VENDORS: ${{ startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && 'postgres,mariadb' || 'postgres,mariadb,mysql' }}
+      VENDORS: ${{ startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-') && 'postgres,mariadb' || 'postgres,mariadb,mysql' }}
       SEED: '20261010'
       FACTOR: '1'
       MAX_LOB: '20000'
