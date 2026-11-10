@@ -2109,6 +2109,18 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   The verification also met upstream issue 3044, a `NullPointerException` in
   `RemoteCookieCheckFilter` for a request without a `User-Agent` header, which someone else
   reported on 2026-10-26.
+* **Landing 11 (coordinator, 2026-11-10):** `-h56-query-budget` (MOD-I437 and MOD-I438), the fix
+  for the tip that landing 10 left red. On Hibernate 5.6 the eight subclasses of `Evaluator`
+  were not in the second-level cache, so a warm sign-in ran 31 statements where 5.2 ran 12. The
+  subclasses lose their own cache annotations and inherit the root's setting, and a test fails
+  for any uncached entity below a cached root. The "Query budgets" job doesn't run on a topic
+  push, so landing 10 went in without it. The `-ci-prelanding` topic changes that.
+  Reviewed inline. The manual Integration run on the fix was red from one spec that passed on
+  a retry (MOD-I439), which is open.
+* **Decisions (project owner, 2026-11-10):** the full job matrix runs on a staging branch before
+  a landing. SQL Server probably gets real sequences in 6.0, prototyped in the schema phase
+  (MOD-I431). When weekly usage nears its limit, the order is a green tip, upstream review, the
+  next migration step, then cleanup.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
@@ -2526,6 +2538,9 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I434 | Persistence | On Oracle, Hibernate 5.6's increment check reads `all_sequences` and compares by name only, across the schemas the user has access to. Documented in UPGRADING-6.0, with the query that finds the cause (review of 2026-11-09). |
 | MOD-I435 | Build | hibernate-core 5.6.15 brings `org.glassfish.jaxb:jaxb-runtime` 2.3.1 with four more jars, next to the `jaxb-impl` 2.3.3 the web application has. The root build still excluded `org.dom4j:dom4j`, which no dependency brings since 5.6. **Fixed**: `jaxb-runtime` excluded where Hibernate is declared, and the dom4j exclusion removed. |
 | MOD-I436 | Testing | Tomcat's JDBC pool with default settings opens 10 connections per pool and keeps returned ones idle. The shared JPA test context then used more connections than PostgreSQL, SQL Server and Oracle allow in the DB integration jobs. **Fixed**: `initialSize=0`, `minIdle=0`, sweeper off. |
+| MOD-I437 | Caching | On Hibernate 5.6 the eight subclasses of `Evaluator` weren't in the second-level cache: since 5.3, `@Cache` on a subclass (HHH000482) leaves that class uncached, where 5.2 applied the root's setting to the hierarchy. Each login read the fragment definitions and evaluators from the database, 19 statements more on a warm login. Found by the "Query budgets" job on the tip after landing 10 (run 42743207405). **Fixed** in `-h56-query-budget`: the subclasses inherit the root's setting. `CachedEntityHierarchyTest`. |
+| MOD-I438 | CI | uPortal-start's "Query budgets" job doesn't run on a topic push, so `-hibernate56` was merged without it. Open, for the coordinator: add it to the topic profile for persistence and cache changes. |
+| MOD-I439 | Tests | `reset-password.spec.ts:134` passed only on a retry in the manual Integration run 42753109471 (job 129622410669, HSQLDB). The portal refused a sign-in with the old password after a logout, as it should. The page didn't show the "Invalid username or password" message. The agent's reading, which a test doesn't show yet, is that the session changed between the failed sign-in and the redirect to the form. The same spec passed in the push run on the same build. Open. |
 
 ## Open questions
 

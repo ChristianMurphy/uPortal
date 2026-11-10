@@ -92,7 +92,7 @@ run, are in the report to the coordinator.
 
 | ID | Area | Finding | Resolution |
 | --- | --- | --- | --- |
-| MOD-I? | Caching | On Hibernate 5.6 the eight subclasses of `Evaluator` weren't in the second-level cache: since 5.3, `@Cache` on a subclass (HHH000482) leaves that class uncached, where 5.2 applied the root's setting to the hierarchy. Each login read the fragment definitions and evaluators from the database, 19 statements more on a warm login. Found by the "Query budgets" job on the tip after landing 10 (run 42743207405) | **Fixed** in `-h56-query-budget`: the subclasses inherit the root's setting. `CachedEntityHierarchyTest` |
+| MOD-I437 | Caching | On Hibernate 5.6 the eight subclasses of `Evaluator` weren't in the second-level cache: since 5.3, `@Cache` on a subclass (HHH000482) leaves that class uncached, where 5.2 applied the root's setting to the hierarchy. Each login read the fragment definitions and evaluators from the database, 19 statements more on a warm login. Found by the "Query budgets" job on the tip after landing 10 (run 42743207405) | **Fixed** in `-h56-query-budget`: the subclasses inherit the root's setting. `CachedEntityHierarchyTest` |
 | MOD-I125 (update) | Runtime | HHH000482 is gone: its eight lines were these subclasses | Done |
 | MOD-I424 (update) | Caching | The 8 `@Cache` annotations on `Evaluator` subclasses are removed here. On 5.6 they weren't harmless | Done for those 8. The rest stays with step S2 |
-| MOD-I? | CI | uPortal-start's "Query budgets" job doesn't run on a topic push, so `-hibernate56` was merged without it | Open, for the coordinator: add it to the topic profile for persistence and cache changes |
+| MOD-I438 | CI | uPortal-start's "Query budgets" job doesn't run on a topic push, so `-hibernate56` was merged without it | Open, for the coordinator: add it to the topic profile for persistence and cache changes |
