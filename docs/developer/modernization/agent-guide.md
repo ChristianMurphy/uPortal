@@ -29,9 +29,11 @@ uPortal-start under the same path, and a note your brief placed there stays ther
   docs-only `[skip ci]` commit off the head of a push that also contains code: push it under your
   next code commit, or leave `[skip ci]` out of its message. A push of docs-only commits may end
   with one.
-* Never push to `ccr-43ba0785-hzlrj5`. The coordinator merges topic branches in batches of up to
-  four and runs the full matrix once on the result. If that run fails, the coordinator reverts the
-  branch that broke it with revert commits and tells you. The other branches in the batch remain.
+* Never push to `ccr-43ba0785-hzlrj5` or to a staging branch (`ccr-43ba0785-hzlrj5-landing-<n>`).
+  The coordinator replays reviewed topics, up to four at a time, onto a staging branch. The full
+  matrix runs there before anything reaches the integration branch (section 11). If a run fails,
+  the coordinator leaves out the topic that broke it and tells you. The other topics of the batch
+  go on. Don't start a topic's name with `landing-`, because such a branch runs the full matrix.
 * Never force-push. Don't open pull requests.
 * To take in newer commits from the integration branch, merge `origin/ccr-43ba0785-hzlrj5` into
   your topic branch. Don't rebase commits you have pushed.
@@ -349,9 +351,33 @@ The rules that agents hit most often:
   topics. After the fetch, a few commits were left.
 * Run `.github/scripts/tip-status.sh` (uPortal) at the start and the end of a coordinator session
   and before every landing. It prints the latest run of every workflow a landing needs on both
-  integration tips. It fails when the tip's latest finished run of a workflow is red, and when the
+  integration tips, or on the branch you give it. It fails when the tip's latest finished run of a workflow is red, and when the
   tip has no finished run of it yet. A pass on an older commit doesn't count, except for Workflow
   lint when the tip has no run of it, since Workflow lint runs only when `.github` changes.
+* A landing passes the full matrix on a staging branch before it is pushed (owner, 2026-11-10).
+  Landings 8 to 10 each left the tip red from a job that topic pushes didn't run (MOD-I429,
+  MOD-I430 and Integration run 42743207405). The steps:
+  1. Replay the reviewed topics onto the tip as `ccr-43ba0785-hzlrj5-landing-<n>`, with the same
+     name in both repositories. Several topics can share one staging branch and go in together.
+     Push uPortal first, because uPortal-start builds the uPortal branch of the same name
+     (section 3). Push the uPortal-start branch even when it adds nothing to the tip. Its
+     workflows then test the uPortal change.
+  2. A push to a staging branch runs every job that a push to the integration branch runs. Wait
+     for the runs. `.github/scripts/tip-status.sh ccr-43ba0785-hzlrj5-landing-<n>` lists them.
+  3. When a job fails, fix the topic or leave it out, and push the staging branch again. A new
+     push cancels the runs of the older one.
+  4. When every run passed, add the landing's log entry on top. Then run
+     `.claude/modernization/land-push.sh` in uPortal, and after that in uPortal-start. It refuses
+     a tree whose slow jobs didn't pass on a staging branch.
+  5. The push to the integration branch skips the slow jobs. The `Staging check` job of each
+     workflow gives the run that passed, and `tip-status.sh` prints it. The commit message, prose
+     and lint jobs still run.
+* A workflow's last job on a staging branch uploads a marker when its slow jobs passed. The
+  marker's name holds a hash of the tree. Markdown files under `docs/developer/modernization` and
+  `.claude/modernization` are left out of the hash, so the log entry of step 4 doesn't change it.
+  Any other change does, and then the slow jobs run again. In uPortal-start the hash also covers
+  the uPortal commit that the run built. `.github/scripts/staged.sh` has the rules, and
+  `notes/ci-prelanding.md` the design and its limits.
 * The coordinator merges only the fix for a red tip until the tip is green again. A test may count as a known flake only
   through an owner-approved LOG row with an expiry date. Past that date, it is a failure again.
   The G-migrate target suite was red on 20 Integration runs in a row, each time for a different
