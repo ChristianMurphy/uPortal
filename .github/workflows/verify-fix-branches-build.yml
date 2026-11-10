@@ -23,18 +23,28 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Upstream master, for the number of tests before any fix
+          - branch: 657741e9b365a2aaf075217065bbf5341033f63d
+            sha: 657741e9b365a2aaf075217065bbf5341033f63d
+            tests: none
           - branch: fix/permission-set-import
             sha: 9ea09028862c4d68d59d909bb9e7b1f075fd384e
+            tests: ImportExportContextTest
           - branch: fix/structure-id-race
             sha: e64627991211aba81026bebdf07ee024ef2b402e
+            tests: RDBMUserLayoutStoreStructIdTest
           - branch: fix/counter-store-read-committed
             sha: 31b0bd37354e4d6b4ac2477163cfe281482f34a8
+            tests: CounterStoreTest
           - branch: fix/layout-save-overlap
             sha: 4d5bb86f4ec79e18edb7c336e8bbb7e495078838
+            tests: RDBMUserLayoutStoreConcurrencyTest UserLayoutHelperImplTest
           - branch: fix/skin-elements-copy
             sha: 89f26f8c2c18afba30f60bf258023f0d45b82bc8
+            tests: ResourcesElementsXsltcHelperTest
           - branch: fix/logout-session-race
             sha: a478937db0321e27e64e600e34f54e09d61b1c29
+            tests: UserInstanceManagerImplTest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,16 +70,23 @@ jobs:
         run: ./gradlew -S --no-daemon --no-parallel :npm_run_lint-js
       - name: Count the tests
         if: always()
+        env:
+          BRANCH_TESTS: ${{ matrix.tests }}
         run: |
           python3 - <<'PY'
           import glob
+          import os
           import xml.etree.ElementTree as ET
           tests = failures = errors = skipped = 0
-          for path in glob.glob('**/build/test-results/test/*.xml', recursive=True):
+          wanted = os.environ['BRANCH_TESTS'].split()
+          for path in sorted(glob.glob('**/build/test-results/test/*.xml', recursive=True)):
               root = ET.parse(path).getroot()
               tests += int(root.get('tests', 0))
               failures += int(root.get('failures', 0))
               errors += int(root.get('errors', 0))
               skipped += int(root.get('skipped', 0))
-          print(f'tests {tests}, failures {failures}, errors {errors}, skipped {skipped}')
+              if root.get('name', '').rsplit('.', 1)[-1] in wanted:
+                  print(f"the branch's {root.get('name')}: tests {root.get('tests')}, failures"
+                        f" {root.get('failures')}, errors {root.get('errors')}, skipped {root.get('skipped')}")
+          print(f'all modules: tests {tests}, failures {failures}, errors {errors}, skipped {skipped}')
           PY
