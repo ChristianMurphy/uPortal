@@ -297,14 +297,7 @@ public class ImportExportContextTest {
                                 beanFactory.getBeanNamesForType(
                                         IDataExporter.class, false, false))));
 
-        final Set<PortalDataKey> importerKeys = new LinkedHashSet<>();
-        for (final IDataImporter<?> importer : beansOfType(IDataImporter.class)) {
-            importerKeys.addAll(importer.getImportDataKeys());
-        }
-        final Set<PortalDataKey> upgraderKeys = new LinkedHashSet<>();
-        for (final IDataUpgrader upgrader : beansOfType(IDataUpgrader.class)) {
-            upgraderKeys.addAll(upgrader.getSourceDataTypes());
-        }
+        final Set<PortalDataKey> handledKeys = importerAndUpgraderKeys();
         final Map<PortalDataKey, IPortalDataType> dataKeyTypes = new LinkedHashMap<>();
         for (final IPortalDataType portalDataType : portalDataTypes) {
             for (final PortalDataKey key : portalDataType.getDataKeyImportOrder()) {
@@ -329,7 +322,7 @@ public class ImportExportContextTest {
             }
             for (final PortalDataKey step :
                     portalDataType.postProcessPortalDataKey(exporter, key, null)) {
-                if (!importerKeys.contains(step) && !upgraderKeys.contains(step)) {
+                if (!handledKeys.contains(step)) {
                     problems.add(
                             exporter
                                     + " writes "
@@ -340,6 +333,47 @@ public class ImportExportContextTest {
             }
         }
         assertTrue(String.join("\n", problems), problems.isEmpty());
+    }
+
+    /**
+     * For each data key that a data type lists: an importer or an upgrader. The import reads a file
+     * whose key a data type lists and then fails when nothing takes that key.
+     */
+    @Test
+    public void testEveryListedDataKeyHasAnImporterOrUpgrader() {
+        final Set<PortalDataKey> handledKeys = importerAndUpgraderKeys();
+
+        final List<String> problems = new ArrayList<>();
+        for (final IPortalDataType portalDataType : portalDataTypes) {
+            final String dataType = portalDataType.getClass().getSimpleName();
+            for (final PortalDataKey key : portalDataType.getDataKeyImportOrder()) {
+                for (final PortalDataKey step :
+                        portalDataType.postProcessPortalDataKey(dataType, key, null)) {
+                    if (!handledKeys.contains(step)) {
+                        problems.add(
+                                dataType
+                                        + " lists "
+                                        + key
+                                        + ", and importExportContext.xml has no importer or"
+                                        + " upgrader for "
+                                        + step);
+                    }
+                }
+            }
+        }
+        assertTrue(String.join("\n", problems), problems.isEmpty());
+    }
+
+    /** The data keys that the importers and upgraders in importExportContext.xml take. */
+    private Set<PortalDataKey> importerAndUpgraderKeys() {
+        final Set<PortalDataKey> keys = new LinkedHashSet<>();
+        for (final IDataImporter<?> importer : beansOfType(IDataImporter.class)) {
+            keys.addAll(importer.getImportDataKeys());
+        }
+        for (final IDataUpgrader upgrader : beansOfType(IDataUpgrader.class)) {
+            keys.addAll(upgrader.getSourceDataTypes());
+        }
+        return keys;
     }
 
     /**

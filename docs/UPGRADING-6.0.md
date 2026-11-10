@@ -1471,3 +1471,23 @@ npx rtlcss mySkin.css mySkin-rtl.css
 
 To offer a right-to-left language, add its locale to `portal_locales` and a message bundle for
 it, as for any language.
+
+## uPortal 2.6 theme and structure files are not imported
+
+Data files from uPortal 2.6 that describe a stylesheet have a `<theme>` or `<structure>` root
+element with a `script` attribute that ends in `import-theme_v2-6.crn` or
+`import-structure_v2-6.crn`. uPortal 4.3 and 5.x couldn't import them: they listed the two kinds
+of file and then stopped the import with "has no registered importer or upgrader support". 6.0
+no longer lists them.
+
+* An import of a directory skips such a file with the warning "No IPortalDataType configured",
+  and imports the rest. In 5.x the import stopped at the file.
+* An import of the one file fails with "No IPortalDataType configured".
+* The constants `IMPORT_26_THEME_DATA_KEY`, `IMPORT_26_STRUCTURE_DATA_KEY`, `LEGACY_THEME_QNAME`
+  and `LEGACY_STRUCTURE_QNAME` of `StylesheetDescriptorPortalDataType` are gone.
+
+If you still keep such files, remove them from your data directories. Describe a stylesheet of
+your own in a `stylesheet-descriptor` file of version 4.0 instead. uPortal-start's
+`data/base/stylesheet-descriptor/Respondr.stylesheet-descriptor.xml` is one to copy, and
+`dataExport` with the type `stylesheet-descriptor` writes the descriptors of a running portal in
+that form.

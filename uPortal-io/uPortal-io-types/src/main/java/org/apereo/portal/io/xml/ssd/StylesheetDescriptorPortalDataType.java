@@ -14,7 +14,7 @@
  */
 package org.apereo.portal.io.xml.ssd;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.xml.namespace.QName;
 import org.apereo.portal.io.xml.AbstractPortalDataType;
@@ -35,42 +35,11 @@ public class StylesheetDescriptorPortalDataType extends AbstractPortalDataType
                     "https://source.jasig.org/schemas/uportal/io/stylesheet-descriptor",
                     "stylesheet-descriptor");
 
-    /**
-     * @deprecated used for importing old data files
-     */
-    @Deprecated public static final QName LEGACY_STRUCTURE_QNAME = new QName("structure");
-
-    /**
-     * @deprecated used for importing old data files
-     */
-    @Deprecated public static final QName LEGACY_THEME_QNAME = new QName("theme");
-
     public static final PortalDataKey IMPORT_40_DATA_KEY =
             new PortalDataKey(STYLESHEET_DESCRIPTOR_QNAME, null, "4.0");
 
-    /**
-     * @deprecated used for importing old data files
-     */
-    @Deprecated
-    public static final PortalDataKey IMPORT_26_STRUCTURE_DATA_KEY =
-            new PortalDataKey(
-                    LEGACY_STRUCTURE_QNAME,
-                    "classpath://org/jasig/portal/io/import-structure_v2-6.crn",
-                    null);
-
-    /**
-     * @deprecated used for importing old data files
-     */
-    @Deprecated
-    public static final PortalDataKey IMPORT_26_THEME_DATA_KEY =
-            new PortalDataKey(
-                    LEGACY_THEME_QNAME,
-                    "classpath://org/jasig/portal/io/import-theme_v2-6.crn",
-                    null);
-
     private static final List<PortalDataKey> PORTAL_DATA_KEYS =
-            Arrays.asList(
-                    IMPORT_26_THEME_DATA_KEY, IMPORT_26_STRUCTURE_DATA_KEY, IMPORT_40_DATA_KEY);
+            Collections.singletonList(IMPORT_40_DATA_KEY);
 
     public StylesheetDescriptorPortalDataType() {
         super(ORDER, STYLESHEET_DESCRIPTOR_QNAME);
