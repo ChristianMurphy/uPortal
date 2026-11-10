@@ -82,7 +82,18 @@ tests of the two changed classes pass on JDK 25.
 
 ## Runs
 
-The push runs of both branches are added here when they finish.
+The push of uPortal `c4127b6704`, and of the uPortal-start branch at `39ca485901`:
+
+| Run | Result |
+| --- | --- |
+| uPortal CI 42827209168 | passed (build and tests on Java 21 and Java 25, Prose, Commit messages) |
+| uPortal DB integration 42827209260 | passed |
+| uPortal DB copy tool 42827209159 | passed |
+| uPortal-start Integration 42827226086 | passed. Build uPortal built uPortal `c4127b6704` from this branch (notice of job 129883433184) |
+| uPortal-start CI 42827226094 | passed |
+| uPortal-start HTTP replay 42827226335 | passed |
+| uPortal-start Migration equivalence 42827226174 | passed |
+| uPortal-start G-index 42827225844 | passed |
 
 ## Proposed LOG rows
 
