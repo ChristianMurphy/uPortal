@@ -2127,6 +2127,17 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   head into the tip. The staging runs on `ccr-43ba0785-hzlrj5-landing-12` passed in both
   repositories, with uPortal-start's Integration (42768784164) among them, whose marker the
   proof runs had not covered.
+* **Landing 13 (coordinator, 2026-11-10):** `-semantic-branches` (MOD-D58, MOD-I446 to
+  MOD-I449) and `-jakarta-split` (MOD-D59), staged on `staging/landing-13`, the first branch
+  under the new names. Both were reviewed inline. Each replayed tree equals a merge of the
+  topic heads into the tip. One staging job, macOS in uPortal CI run 42839007230, was cancelled
+  before its first step and passed on its one re-run. The branch `feat/uportal-6` is pushed at
+  this landing's commit straight after.
+* **Nightly sets (coordinator, 2026-11-10):** started by hand on the integration branch for the
+  first time since 2026-10-11. uPortal's DB integration with canaries, the copy tool's nightly
+  legs and uPortal-start's CI and G-index passed. Migration equivalence 42823124306 failed in
+  four jobs, three of them with Oracle, and Integration 42823115932 failed in the Firefox,
+  WebKit and visual jobs and in one migration pair. The logs are not read yet.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
@@ -2197,6 +2208,33 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   (MOD-I429, MOD-I430, MOD-I438), and running the full matrix twice is slow.
 * **How:** `notes/ci-prelanding.md` has the marker, its limits and the landing steps. Agent
   guide section 11 has the steps in short.
+
+### MOD-D58: semantic branch names on the fork
+
+* **Decision (project owner, 2026-11-10):** the integration branch is `feat/uportal-6`. A topic
+  branch is `<type>/<topic>` with a Conventional Commits type, and a staging branch is
+  `staging/landing-<n>`. The same name is used in both repositories. The owner approved pushes
+  to these names.
+* **How:** `.github/scripts/branches.sh` holds the names. The old `ccr-43ba0785-hzlrj5` names
+  are accepted until the old branches are deleted (`notes/semantic-branches.md`).
+
+### MOD-D59: the Jakarta switch runs on Hibernate 5.6 first
+
+* **Decision (project owner, 2026-11-10):** P6-1 changes `javax` to `jakarta` on Spring 6.2 with
+  `hibernate-core-jakarta` 5.6.15. Hibernate 6.6 follows as a step of its own. ADR 0002 has the
+  change.
+* **Why:** a spike booted that pairing outside the portal, and Spring 6.0 to 6.2 are built
+  against it. The cache provider switch comes before P6-1 either way, because Spring 6 dropped
+  its Ehcache 2 support.
+* **Open:** the portal itself has not run on it. That check is the first task of P6-1. The
+  survey and the spike report are in `.claude/modernization/research/`.
+
+### MOD-D60: CI decisions after the staging change
+
+* **Decision (project owner, 2026-11-10):** the landing script doesn't get an override, so an expired
+  marker means a new staging run. Topic pushes keep the three added jobs (Java 25, SQL Server
+  2025, query budgets). The nightly and manual-only sets stay off staging branches and are
+  started by hand.
 
 ## Issues
 
@@ -2564,6 +2602,10 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I443 | CI | The nightly and manual-only sets don't run on staging branches. The schedules never fire on the fork, and those sets last ran on 2026-10-11. **Open**, for the owner. |
 | MOD-I444 | CI | `npx playwright install --with-deps chromium` hung until the job's time limit in three Integration jobs on 2026-11-10 between 05:04 and 05:22 UTC (runs 42757831859 and 42755854627). Other jobs of the same runs installed the browsers in seconds. **Open**, cause unknown. |
 | MOD-I445 | CI | Workflow lint doesn't start for a new branch without new commits, because of its path filter. Open. The topic's run covers the same commit. |
+| MOD-I446 | CI | The workflows and scripts had the old branch name in push triggers, job conditions, the staging markers, the commit range, the choice of the uPortal branch and the G-index change check, and a branch with a new name didn't start any run. `branches.sh` now says which kind a branch is, the Staging check job gives that to the other jobs, and `branches.test.sh` checks the push triggers against it. Proof runs are in `notes/semantic-branches.md`. |
+| MOD-I447 | CI | The first push of a new integration branch name would check every commit message since the scripts were added, and five old ones fail (run 42755635976). `branches.sh base` gives the commit where the new name left the old one. The cut-over then checks an empty range. |
+| MOD-I448 | Tests | Open: `tests/ux/smoke/search.spec.ts:146` (type-ahead in the header) passed only on its retry in Integration run 42826113950, job 129888198852, on HSQLDB. The suggestion didn't appear within 5 seconds. Possibly the slow `/api/portletList` of MOD-I340. Not looked into. |
+| MOD-I449 | CI | Open: the cut-over. Push `feat/uportal-6` at the tip in both repositories, uPortal first, move the open topics onto it, then remove the old names in a follow-up topic. The owner deletes the old branches and may make `feat/uportal-6` the default branch. Steps are in `notes/semantic-branches.md`. |
 
 ## Open questions
 
