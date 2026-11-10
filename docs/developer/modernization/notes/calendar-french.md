@@ -91,8 +91,25 @@ overlay. Two JSPs are easier to remove.
     (129863066052) passed too.
   * HTTP replay 42824923034 passed, and its job "Replay against 5.17" (129862924127) ran. The
     fixtures have Calendar pages in English, so the copies don't change those.
-  * CI 42824923024 and Migration equivalence 42824923031 passed. G-index 42824923057 was still
-    running when this note was written.
+  * CI 42824923024, Migration equivalence 42824923031 and G-index 42824923057 passed.
+* The test fails without the overlay. The branch `ccr-43ba0785-hzlrj5-calendar-french-proof` in
+  uPortal-start (`6d028694a7`) is the topic head with the two JSP copies removed. Its Integration
+  run 42835849083 built uPortal `7b24794905`, the integration tip. In "Playwright: hsqldb" (job
+  129901313742) 514 tests passed and one failed on all three attempts:
+  `tests/ux/portlets/calendar.spec.ts:99:3 › Calendar in French › shows its labels in French`, at
+  line 116, where the button "Semaine" wasn't found. That run is meant to be red. I cancelled its
+  other jobs and the branch's four other runs, which the proof didn't need.
+* The upstream fix works in a portal. The branch `test/verify-portlet-fixes` in uPortal-start
+  (`497f526ed8`) is upstream uPortal-start `master` (`2a519ad7f5`, uPortal 5.17.9, HSQLDB, Tomcat
+  8.5, JDK 11) plus a workflow. Run 42849262380, job "calendar" (129945086154), signed in as
+  student in Chromium, chose French in the language portlet, and opened the Calendar on the
+  Welcome tab and maximized.
+  * With the released 2.7.4 the narrow view showed Day, Week, Month and "View more events", and
+    the console had `calendar-portlet: invalid i18n JSON SyntaxError: Bad escaped character in
+    JSON at position 454 (line 13 column 48)`. The wide view was French.
+  * With the war of `fix/calendar-labels-json` deployed in the same portal, both views showed
+    Jour, Semaine and Mois, the narrow view's link read "Voir plus d'évènements", and the element
+    didn't log an error. So Tomcat finds the TLD and the tag works in both JSPs.
 
 ## Not verified
 
@@ -100,17 +117,16 @@ overlay. Two JSPs are easier to remove.
   Maven Central answered 429 to the uPortal build twice (`logback-classic` 1.5.38, then
   `netty-handler` 4.1.82.Final). An offline build of uPortal-start stopped at `buildSrc` for the
   same reason. So the new test never ran here, with or without the overlay. The CI runs show that
-  it passes with the overlay. I couldn't show the test failing without it. The MOD-I400 job
-  (116563567542) and the element check above show the two symptoms it looks for.
+  it passes with the overlay, and the proof run above shows that it fails without it.
 * **French pages in the replay.** The fixtures have no French request. The replay says nothing
   about the French page, and the Playwright test covers it.
-* **The upstream JSPs in a servlet container.** The tag is tested with Spring's mock page context.
-  No Tomcat has rendered the two JSPs with it.
+* **Other browsers and Tomcat 9 for the upstream fix.** The portal check used Chromium and
+  Tomcat 8.5.
 
 ## Proposed LOG rows
 
 | ID | Area | Description | Status |
 | --- | --- | --- | --- |
 | MOD-I? | Portlets | **The Calendar's labels work for French users again (MOD-I400).** uPortal-start overlays `calendarNarrowView.jsp` and `calendarWideView.jsp` of CalendarPortlet 2.7.4 with copies that turn each `\'` in the label JSON back into an apostrophe. `calendar.spec.ts` has a test, "Calendar in French", that opens Welcome as a French user of its own (`e2e-calendar-<slot>`) and expects the French labels and no console error. | **Fixed** (uPortal-start, `ccr-43ba0785-hzlrj5-calendar-french`), until a CalendarPortlet release has the upstream fix. Then remove the overlay as `notes/calendar-french.md` describes. |
-| MOD-I? | Portlets | **An upstream fix for CalendarPortlet is ready for the owner.** The branch `fix/calendar-labels-json` on the owner's fork (`fd519a4ac0`) adds a tag, `upcal:jsonMessage`, that writes a message escaped for JSON, and both views use it. `JsonMessageTagTest` covers the French label. The owner opens the pull request. | **Open**, for the owner. |
+| MOD-I? | Portlets | **An upstream fix for CalendarPortlet is ready for the owner.** The branch `fix/calendar-labels-json` on the owner's fork (`fd519a4ac0`) adds a tag, `upcal:jsonMessage`, that writes a message escaped for JSON, and both views use it. `JsonMessageTagTest` covers the French label, and run 42849262380 of `test/verify-portlet-fixes` in uPortal-start shows the fix in a portal built from upstream's `master`. The owner opens the pull request. | **Open**, for the owner. |
 | MOD-I? | Environment | **No local portal after a container replacement.** Gradle's cache had lost many artifacts and Maven Central answered 429, so neither uPortal nor uPortal-start could be built on this machine on 2026-11-10. The topic's Playwright test ran only in CI. | **Open**. A Gradle cache that is kept across a replacement would avoid it. |
