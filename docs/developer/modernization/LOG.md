@@ -2121,6 +2121,12 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
   a landing. SQL Server probably gets real sequences in 6.0, prototyped in the schema phase
   (MOD-I431). When weekly usage nears its limit, the order is a green tip, upstream review, the
   next migration step, then cleanup.
+* **Landing 12 (coordinator, 2026-11-10):** `-ci-prelanding` (MOD-D57, MOD-I440 to MOD-I445),
+  the first landing through a staging branch. Topic pushes gain Java 25 on Linux, SQL Server
+  2025 and the query budgets. Reviewed inline. Each replayed tree equals a merge of the topic
+  head into the tip. The staging runs on `ccr-43ba0785-hzlrj5-landing-12` passed in both
+  repositories, with uPortal-start's Integration (42768784164) among them, whose marker the
+  proof runs had not covered.
 
 ### MOD-D54: servers clear their replicated caches after a healed network split
 
@@ -2180,6 +2186,17 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
      tagged. The new history is then built on the upstream units of item 2.
   10. **NewsReaderPortlet's shared news set (MOD-I422):** a pull request for NewsReaderPortlet,
       prepared from its upstream master. No known-flake row.
+
+### MOD-D57: a landing passes the full matrix on a staging branch first
+
+* **Decision (project owner, 2026-11-10):** reviewed topics are replayed onto a staging branch,
+  `ccr-43ba0785-hzlrj5-landing-<n>`, in both repositories. The full job matrix runs there. The
+  landing script refuses a tree that didn't pass, and the integration push then skips the slow
+  jobs for that tree. Up to four topics can share one staging branch.
+* **Why:** landings 8 to 10 each left the tip red from a job that topic pushes didn't run
+  (MOD-I429, MOD-I430, MOD-I438), and running the full matrix twice is slow.
+* **How:** `notes/ci-prelanding.md` has the marker, its limits and the landing steps. Agent
+  guide section 11 has the steps in short.
 
 ## Issues
 
@@ -2539,8 +2556,14 @@ Production sites are expected to set `authMode=cas` (or their own SSO). uPortal'
 | MOD-I435 | Build | hibernate-core 5.6.15 brings `org.glassfish.jaxb:jaxb-runtime` 2.3.1 with four more jars, next to the `jaxb-impl` 2.3.3 the web application has. The root build still excluded `org.dom4j:dom4j`, which no dependency brings since 5.6. **Fixed**: `jaxb-runtime` excluded where Hibernate is declared, and the dom4j exclusion removed. |
 | MOD-I436 | Testing | Tomcat's JDBC pool with default settings opens 10 connections per pool and keeps returned ones idle. The shared JPA test context then used more connections than PostgreSQL, SQL Server and Oracle allow in the DB integration jobs. **Fixed**: `initialSize=0`, `minIdle=0`, sweeper off. |
 | MOD-I437 | Caching | On Hibernate 5.6 the eight subclasses of `Evaluator` weren't in the second-level cache: since 5.3, `@Cache` on a subclass (HHH000482) leaves that class uncached, where 5.2 applied the root's setting to the hierarchy. Each login read the fragment definitions and evaluators from the database, 19 statements more on a warm login. Found by the "Query budgets" job on the tip after landing 10 (run 42743207405). **Fixed** in `-h56-query-budget`: the subclasses inherit the root's setting. `CachedEntityHierarchyTest`. |
-| MOD-I438 | CI | uPortal-start's "Query budgets" job doesn't run on a topic push, so `-hibernate56` was merged without it. Open, for the coordinator: add it to the topic profile for persistence and cache changes. |
+| MOD-I438 | CI | uPortal-start's "Query budgets" job doesn't run on a topic push, so `-hibernate56` was merged without it. Open, for the coordinator: add it to the topic profile for persistence and cache changes. **Fixed** in landing 12: the job runs on topic pushes. |
 | MOD-I439 | Tests | `reset-password.spec.ts:134` passed only on a retry in the manual Integration run 42753109471 (job 129622410669, HSQLDB). The portal refused a sign-in with the old password after a logout, as it should. The page didn't show the "Invalid username or password" message. The agent's reading, which a test doesn't show yet, is that the session changed between the failed sign-in and the redirect to the form. The same spec passed in the push run on the same build. Open. |
+| MOD-I440 | CI | The integration push ran the full matrix after the landing, so landings 8 to 10 each left the tip red from a job that topic pushes didn't run (MOD-I429, MOD-I430, MOD-I438). **Fixed** by the staging branches. Topic pushes also run Java 25 on Linux, SQL Server 2025 and the query budgets now, which closes MOD-I438. |
+| MOD-I441 | CI | The skip is keyed by a hash of the tree, in uPortal-start together with the uPortal commit's tree. Markdown files under `docs/developer/modernization` and `.claude/modernization` are left out, so the landing's log entry doesn't repeat the matrix. A full run on the integration branch writes a marker too, so a docs-only push there skips the slow jobs. Done. Limits in `notes/ci-prelanding.md`. |
+| MOD-I442 | CI | On the first push of a new branch the commit message job checked the whole history. In uPortal it failed on five commits from before the prose rules, on every new branch (run 42755635976). **Fixed**: a new branch with the integration prefix is checked from its merge base. |
+| MOD-I443 | CI | The nightly and manual-only sets don't run on staging branches. The schedules never fire on the fork, and those sets last ran on 2026-10-11. **Open**, for the owner. |
+| MOD-I444 | CI | `npx playwright install --with-deps chromium` hung until the job's time limit in three Integration jobs on 2026-11-10 between 05:04 and 05:22 UTC (runs 42757831859 and 42755854627). Other jobs of the same runs installed the browsers in seconds. **Open**, cause unknown. |
+| MOD-I445 | CI | Workflow lint doesn't start for a new branch without new commits, because of its path filter. Open. The topic's run covers the same commit. |
 
 ## Open questions
 
