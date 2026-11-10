@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # Coordinator helper: check the commits about to land, then push them to the integration branch.
-# Run it from a clone or worktree whose HEAD is the replayed landing.
+# Run it from a clone or worktree whose HEAD is the landing: the head of the staging branch
+# (ccr-43ba0785-hzlrj5-landing-<n>) whose runs passed, with at most the log entry and other
+# modernization notes on top. Land uPortal first: uPortal-start's check uses the tip of uPortal's
+# integration branch.
 #
-# It refuses a commit that isn't the owner's, a commit message that credits a tool, and a head
-# whose message has [skip ci] (such a push starts no runs).
+# It refuses a commit that isn't the owner's, a commit message that credits a tool, a head whose
+# message has [skip ci] (such a push starts no runs), and a tree whose slow jobs haven't passed on
+# a staging branch (.github/scripts/staged.sh landing).
 set -euo pipefail
 branch=ccr-43ba0785-hzlrj5
 owner_email=${OWNER_EMAIL:-christian.murphy.42@gmail.com}
@@ -21,5 +25,10 @@ if git log -1 --format=%B | grep -qF '[skip ci]'; then
 fi
 .github/scripts/check-commit-messages.sh "$range"
 .github/scripts/vale.sh commits "$range"
+if ! .github/scripts/staged.sh landing; then
+  echo "Not staged. Push this landing to a staging branch ($branch-landing-<n>) in both"
+  echo "repositories, uPortal first, wait for its runs to pass, and land uPortal before uPortal-start."
+  exit 1
+fi
 git push -q origin "HEAD:$branch"
 git log --oneline -1

@@ -9,6 +9,11 @@
 # red run, or a tip whose run is missing, cancelled, queued or still running. A pass on an older
 # commit doesn't count. Workflow lint runs only when .github changes, so when the tip has no run of
 # it, the latest finished run on any commit counts, and a branch without a run of it isn't red.
+#
+# A run whose slow jobs were skipped because they had passed for the same tree on a staging branch
+# (.github/scripts/staged.sh) concludes with success and counts as a pass. The line below it gives
+# the run that passed. Give a staging branch (ccr-43ba0785-hzlrj5-landing-<n>) as <branch> to see
+# its runs before a landing.
 # Needs gh, signed in with read access to both repositories.
 set -euo pipefail
 
@@ -20,6 +25,18 @@ required=(
   "uPortal-start migration-equivalence.yml" "uPortal-start g-index.yml"
   "uPortal-start workflow-lint.yml"
 )
+
+# staged_note <repo> <run id>: the notice of the run's Staging check job, when it skipped the slow
+# jobs. Nothing when the run has no such job, ran them or can't be read.
+staged_note() {
+  local job
+  job=$(gh api "repos/$owner/$1/actions/runs/$2/jobs?per_page=100" \
+    --jq '.jobs[] | select(.name == "Staging check") | .id' 2>/dev/null | head -1) || return 0
+  [ -n "$job" ] || return 0
+  gh api "repos/$owner/$1/check-runs/$job/annotations" \
+    --jq '.[] | select(.title == "Staging check" and (.message | startswith("skipped"))) | .message' \
+    2>/dev/null | head -1 || true
+}
 
 red=0
 for entry in "${required[@]}"; do
@@ -70,6 +87,10 @@ for entry in "${required[@]}"; do
   else
     printf '%-14s %-26s latest %s; last finished %s %s on %s\n' "$repo" "$workflow" "$latest" \
       "$fid" "$fconclusion" "${fsha:0:10}"
+  fi
+  if [ "$fconclusion" = success ]; then
+    note=$(staged_note "$repo" "$fid")
+    if [ -n "$note" ]; then printf '%-14s %-26s   %s\n' "" "" "$note"; fi
   fi
 done
 
