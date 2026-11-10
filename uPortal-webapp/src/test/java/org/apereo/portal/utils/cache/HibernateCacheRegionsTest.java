@@ -33,6 +33,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import net.sf.ehcache.CacheManager;
@@ -139,6 +140,54 @@ public class HibernateCacheRegionsTest {
         }
     }
 
+    /**
+     * A cached query of the aggregation unit stores its result in the region with the unit's prefix
+     * once. Hibernate 5.2 also built regions with the prefix twice, AggrEvents.AggrEvents.*, from
+     * the defaultCache.
+     */
+    @Test
+    public void aCachedAggregationQueryUsesItsOwnRegion() {
+        final String region = "org.apereo.portal.events.aggr.dao.jpa.QuarterDetailImpl.Query";
+        final CacheManager cacheManager = cacheManager("ehcache.xml");
+        try {
+            final Map<String, Object> schema = new HashMap<>();
+            schema.put("hibernate.hbm2ddl.auto", "create-drop");
+            final EntityManagerFactory entityManagerFactory =
+                    boot("AggrEventsDb", "AggrEvents", cacheManager, schema);
+            try {
+                // Twice: Hibernate stores the result on the first run and reads it on the second
+                for (int i = 0; i < 2; i++) {
+                    final EntityManager entityManager = entityManagerFactory.createEntityManager();
+                    try {
+                        // The hints of BaseJpaDao.createCachedQuery
+                        entityManager
+                                .createQuery("select q from QuarterDetailImpl q")
+                                .setHint("org.hibernate.cacheable", true)
+                                .setHint("org.hibernate.cacheRegion", region)
+                                .getResultList();
+                    } finally {
+                        entityManager.close();
+                    }
+                }
+                assertEquals(
+                        "Query results in AggrEvents." + region,
+                        1,
+                        cacheManager.getCache("AggrEvents." + region).getSize());
+                final Set<String> doubled = new TreeSet<>();
+                for (final String name : cacheManager.getCacheNames()) {
+                    if (name.startsWith("AggrEvents.AggrEvents.")) {
+                        doubled.add(name);
+                    }
+                }
+                assertEquals("Regions with the prefix twice", new TreeSet<String>(), doubled);
+            } finally {
+                entityManagerFactory.close();
+            }
+        } finally {
+            cacheManager.shutdown();
+        }
+    }
+
     @Test
     public void theDefaultRegionsUseTheCurrentNames() throws IOException {
         final Set<String> expected = new TreeSet<>();
@@ -222,6 +271,11 @@ public class HibernateCacheRegionsTest {
 
     private static EntityManagerFactory boot(
             String unit, String prefix, CacheManager cacheManager) {
+        return boot(unit, prefix, cacheManager, new HashMap<String, Object>());
+    }
+
+    private static EntityManagerFactory boot(
+            String unit, String prefix, CacheManager cacheManager, Map<String, Object> extra) {
         final Map<String, Object> properties = new HashMap<>();
         properties.put("javax.persistence.jdbc.driver", "org.hsqldb.jdbcDriver");
         properties.put("javax.persistence.jdbc.url", "jdbc:hsqldb:mem:HibernateCacheRegionsTest");
@@ -233,6 +287,7 @@ public class HibernateCacheRegionsTest {
         properties.put(SpringBeanEhCacheRegionFactory.CACHE_MANAGER_NAME, cacheManager.getName());
         properties.put("hibernate.cache.region_prefix", prefix);
         properties.put("hibernate.cache.ehcache.missing_cache_strategy", "fail");
+        properties.putAll(extra);
         return Persistence.createEntityManagerFactory(unit, properties);
     }
 
