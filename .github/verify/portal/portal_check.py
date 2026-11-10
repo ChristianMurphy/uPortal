@@ -36,21 +36,35 @@ WELCOME = '/uPortal/f/welcome/normal/render.uP'
 
 
 class Client:
-    """One keep-alive connection and a cookie jar for the /uPortal path."""
+    """One keep-alive connection and a cookie jar, as one browser would have."""
+
+    # Without a User-Agent header the portal answers 500 (RemoteCookieCheckFilter)
+    HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)'
+                      ' Chrome/140.0.0.0 Safari/537.36 portal_check.py',
+        'Accept': 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+    }
 
     def __init__(self, cookies=None):
         self.conn = http.client.HTTPConnection(HOST, PORT, timeout=120)
-        self.cookies = dict(cookies or {})
+        # name -> (value, path)
+        self.cookies = {name: (value, '/uPortal') for name, value in (cookies or {}).items()}
 
     def connect(self):
         self.conn.connect()
 
+    def session_id(self):
+        return self.cookies.get('JSESSIONID', (None, None))[0]
+
     def get(self, path, follow=True):
         """GET path. Returns (status, body, final path, Set-Cookie headers of the last answer)."""
-        for _ in range(10):
-            headers = {}
-            if self.cookies and path.startswith('/uPortal'):
-                headers['Cookie'] = '; '.join(f'{k}={v}' for k, v in self.cookies.items())
+        for _ in range(12):
+            headers = dict(self.HEADERS)
+            sent = [f'{name}={value}' for name, (value, cookie_path) in self.cookies.items()
+                    if path.startswith(cookie_path)]
+            if sent:
+                headers['Cookie'] = '; '.join(sent)
             try:
                 self.conn.request('GET', path, headers=headers)
                 resp = self.conn.getresponse()
@@ -63,8 +77,12 @@ class Client:
             set_cookies = resp.headers.get_all('Set-Cookie') or []
             for sc in set_cookies:
                 name, _, value = sc.split(';', 1)[0].partition('=')
-                if re.search(r'path=/uPortal', sc, re.I):
-                    self.cookies[name.strip()] = value.strip()
+                cookie_path = re.search(r';\s*path=([^;]+)', sc, re.I)
+                cookie_path = cookie_path.group(1).strip() if cookie_path else '/'
+                if re.search(r';\s*max-age=0\b', sc, re.I):
+                    self.cookies.pop(name.strip(), None)
+                else:
+                    self.cookies[name.strip()] = (value.strip(), cookie_path)
             location = resp.headers.get('Location')
             if follow and resp.status in (301, 302, 303, 307) and location:
                 path = re.sub(r'^https?://[^/]+', '', location)
@@ -196,7 +214,7 @@ def head(_logs):
     return out
 
 
-def load(logs, seconds=60, workers=16):
+def load(logs, seconds=int(os.environ.get('CHECK_LOAD_SECONDS', '60')), workers=16):
     before = count_in_logs(logs, 'nodeList2Iterator')
     statuses = collections.Counter()
     errors = collections.Counter()
@@ -253,13 +271,13 @@ def load(logs, seconds=60, workers=16):
     }
 
 
-def race(_logs, attempts=300, probes=4):
+def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '300')), probes=4):
     user, name = 'student', USERS['student']
 
     def new_session_id(set_cookies, old):
         for sc in set_cookies:
             m = re.match(r'\s*JSESSIONID=([^;]+)', sc)
-            if m and re.search(r'path=/uPortal', sc, re.I) and m.group(1) != old:
+            if m and m.group(1) != old:
                 return m.group(1)
         return None
 
@@ -283,7 +301,8 @@ def race(_logs, attempts=300, probes=4):
             counts['sign-in failed'] += 1
             client.close()
             continue
-        old = dict(client.cookies)
+        old = {name: value for name, (value, cookie_path) in client.cookies.items()
+               if cookie_path.startswith('/uPortal') or cookie_path == '/'}
         client.close()
         # Probes start from 3 ms before the logout is sent to a little after it answers
         span = logout_time * 1.3 + 0.003
