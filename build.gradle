@@ -476,6 +476,11 @@ subprojects {
         // extension functions. A portal running on JDK 24+ needs this flag too; on JDK 21 it is
         // already the default.
         systemProperty 'jdk.xml.enableExtensionFunctions', 'true'
+        // A second-level cache region without an entry in the Ehcache file fails the test. The
+        // portal only warns (hibernate.properties, create-warn) and builds the region from the
+        // defaultCache, which doesn't replicate. Hibernate reads system properties over
+        // hibernate.properties, and a persistence unit's own properties over both.
+        systemProperty 'hibernate.cache.ehcache.missing_cache_strategy', 'fail'
         // The JVM takes its default time zone from TZ, so a run with another TZ must not reuse
         // results from the last one. Adding this input changes each test task's cache key once.
         // uPortal's CI doesn't use Gradle's build cache (no --build-cache or org.gradle.caching).

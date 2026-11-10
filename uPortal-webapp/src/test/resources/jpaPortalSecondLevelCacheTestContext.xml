@@ -38,6 +38,8 @@
                 <prop key="hibernate.cache.use_query_cache">false</prop>
                 <prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</prop>
                 <prop key="net.sf.ehcache.configurationResourceName">/secondLevelCacheTest-ehcache.xml</prop>
+                <!-- That file has only a defaultCache, and every region is created from it -->
+                <prop key="hibernate.cache.ehcache.missing_cache_strategy">create</prop>
                 <!-- Empty (the default in dataSource.properties): resolved from the JDBC metadata -->
                 <prop key="hibernate.dialect">${hibernate.dialect}</prop>
                 <prop key="persistenceUnitName">${persistenceUnitName}</prop>
