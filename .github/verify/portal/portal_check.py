@@ -308,7 +308,7 @@ def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '500')), prob
     counts = collections.Counter()
     by_offset = collections.defaultdict(collections.Counter)
     stale = []
-    rng = random.Random(1)
+    rng = random.Random(int(os.environ.get('CHECK_RACE_SEED', '1')))
     for attempt in range(attempts):
         client = Client()
         status, body, path, _ = login(client, user)

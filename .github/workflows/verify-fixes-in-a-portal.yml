@@ -5,12 +5,17 @@ name: Verify fixes in a portal
 #
 #   fix/permission-set-import  dataExport of the permission sets, delete two, dataImport, compare
 #   fix/skin-elements-copy     sign in, load pages, sign out; the head's CSS and JS links;
-#                              three minutes of parallel page loads and the nodeList2Iterator count
-#   fix/logout-session-race    the same checks; twelve page requests sent within a few
-#                              milliseconds of /Logout, 500 times, and what each session that
-#                              such a request started shows
+#                              twenty minutes of parallel page loads and the nodeList2Iterator
+#                              count
+#   fix/logout-session-race    sign in, load pages, sign out; the head's links; twelve page
+#                              requests sent within a few milliseconds of /Logout, 500 times,
+#                              and what each session that such a request started shows
 #
-# The two portal jobs run the same checks, so each fix is also checked for the other's symptom.
+# Both symptoms are rare. An earlier run of this workflow, with three minutes of loads and one
+# logout job, saw each of them only a few times on the code without its fix. So the loads run
+# longer here and the logout job runs four times side by side, to tell "fixed" from "didn't
+# happen this time".
+#
 # .github/verify/portal/verify-portal.sh has the steps. A job fails if a check fails with the fix
 # deployed. What the master build did is reported, not judged.
 #
@@ -26,16 +31,32 @@ permissions:
   contents: read
 jobs:
   portal:
-    name: "Verify in a portal: ${{ matrix.fix }}"
+    name: "Verify in a portal: ${{ matrix.fix }}${{ matrix.shard && format(' ({0} of 4)', matrix.shard) || '' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        fix:
-          - permission-set-import
-          - skin-elements-copy
-          - logout-session-race
+        include:
+          - fix: permission-set-import
+          - fix: skin-elements-copy
+            sections: smoke head load
+            load-seconds: 1200
+          - fix: logout-session-race
+            sections: smoke head race
+            shard: 1
+          - fix: logout-session-race
+            sections: smoke head race
+            shard: 2
+            no-playwright: true
+          - fix: logout-session-race
+            sections: smoke head race
+            shard: 3
+            no-playwright: true
+          - fix: logout-session-race
+            sections: smoke head race
+            shard: 4
+            no-playwright: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,6 +85,11 @@ jobs:
       - name: Check the fix in a portal, before and after
         env:
           FIX: ${{ matrix.fix }}
+          CHECK_SECTIONS: ${{ matrix.sections }}
+          CHECK_LOAD_SECONDS: ${{ matrix.load-seconds || 180 }}
+          CHECK_RACE_ATTEMPTS: 500
+          CHECK_RACE_SEED: ${{ matrix.shard || 1 }}
+          RUN_PLAYWRIGHT: ${{ matrix.no-playwright && '0' || '1' }}
         run: |
           cp -r .github/verify/portal "$RUNNER_TEMP/verify-portal"
           "$RUNNER_TEMP/verify-portal/verify-portal.sh" "$FIX" "$PWD" "$RUNNER_TEMP/uPortal-start" "$RUNNER_TEMP/out"
@@ -71,7 +97,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: portal-${{ matrix.fix }}
+          name: portal-${{ matrix.fix }}${{ matrix.shard && format('-{0}', matrix.shard) || '' }}
           path: |
             ${{ runner.temp }}/out
             !${{ runner.temp }}/out/m2-master

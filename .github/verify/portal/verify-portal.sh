@@ -12,6 +12,9 @@
 # with the master build, runs the checks, deploys the fix build's uPortal webapp over it, and runs
 # the checks again. The database stays the same throughout.
 #
+# Optional environment: CHECK_SECTIONS (sections of portal_check.py to run), CHECK_LOAD_SECONDS,
+# CHECK_RACE_ATTEMPTS, CHECK_RACE_SEED, and RUN_PLAYWRIGHT=0 to leave uPortal-start's tests out.
+#
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
 fix=$1 uportal=$2 start=$3 out=$4
@@ -98,8 +101,10 @@ checks() { # <label>
     # The first page loads compile JSPs and fill caches
     curl -s -o /dev/null 'http://localhost:8080/uPortal/Login?userName=student&password=student'
     # Playwright first: its tests expect the layouts as dataInit made them
-    playwright "$1"
-    python3 "$here/portal_check.py" "$1" "$out" "$logs" || failed=1
+    [ "${RUN_PLAYWRIGHT:-1}" = 1 ] && playwright "$1"
+    # CHECK_SECTIONS names the sections to run; all of them when it is empty
+    # shellcheck disable=SC2086
+    python3 "$here/portal_check.py" "$1" "$out" "$logs" ${CHECK_SECTIONS:-} || failed=1
     step "Stop the portal: $1"
     gw "$2" tomcatStop > "$out/tomcatStop-$1.log" 2>&1
     mkdir -p "$out/tomcat-logs-$1" && cp -r "$logs"/. "$out/tomcat-logs-$1/"
@@ -117,7 +122,7 @@ sed -i 's/^uPortalVersion=.*/uPortalVersion=5.17.10-SNAPSHOT/' "$start/gradle.pr
 gw "$m2_master" portalInit > "$out/portalInit.log" 2>&1 || { tail -60 "$out/portalInit.log"; echo "portalInit failed"; exit 1; }
 tail -3 "$out/portalInit.log"
 deployed "$m2_master" master || { echo "The deployed jars aren't the master build's"; exit 1; }
-if [ "$fix" != permission-set-import ]; then
+if [ "$fix" != permission-set-import ] && [ "${RUN_PLAYWRIGHT:-1}" = 1 ]; then
   (cd "$start" && npm ci > "$out/npm-ci.log" 2>&1 && npx playwright install --with-deps chromium > "$out/playwright-install.log" 2>&1) ||
     echo "Playwright isn't installed; its tests will fail to start"
 fi
