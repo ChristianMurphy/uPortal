@@ -16,7 +16,6 @@ package org.apereo.portal.layout.dlm.providers;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.persistence.Cacheable;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -34,8 +33,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
  * @since 2.5
  */
 @Entity
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public abstract class EvaluatorGroup extends Evaluator {
     @OneToMany(
             targetEntity = Evaluator.class,

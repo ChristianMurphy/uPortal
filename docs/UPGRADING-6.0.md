@@ -997,6 +997,11 @@ that has access to its own sequences only.
 * A commit of a transaction that was marked rollback-only now ends in Spring's
   `UnexpectedRollbackException`. In uPortal 5.17 (Hibernate 4.3) it was a
   `TransactionSystemException`. The transaction is rolled back in both cases.
+* An entity class below a cached root entity is cached only if it has neither `@Cache` nor
+  `@Cacheable`, and then it inherits the root's setting. Hibernate 5.6 ignores `@Cache` on a
+  subclass with warning HHH000482 and doesn't cache that subclass at all, where Hibernate 4.3
+  cached the whole hierarchy. uPortal's own subclasses (the DLM evaluators) no longer carry the
+  annotations. Check the entity hierarchies of your overlay for that warning.
 * A second-level cache region without an entry in `ehcache.xml` is still created from
   `defaultCache`. The warning is now HHH90001006 (it was HHH020003).
   `hibernate.properties` sets `hibernate.cache.ehcache.missing_cache_strategy=create-warn`.
