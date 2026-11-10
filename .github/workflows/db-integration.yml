@@ -16,7 +16,8 @@ name: DB integration
 #
 # Prototype only (MOD-D30): a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs the db job
 # (PostgreSQL 18 and MariaDB 12.3) and skips db-full (MySQL, SQL Server, Oracle), to spare the
-# account's runners; master, pull requests, the integration branch and the schedule run both.
+# account's runners; master, pull requests, the integration branch, a staging branch
+# (ccr-43ba0785-hzlrj5-landing-<n>) and the schedule run both.
 #
 on:
   push:
@@ -162,7 +163,7 @@ jobs:
     name: "DB integration: ${{ matrix.vendor }}"
     # Prototype only (MOD-D30): skipped on workstream branches, except in a manual run, so a
     # workstream can check SQL Server and Oracle before it lands.
-    if: ${{ github.event_name == 'workflow_dispatch' || !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || !(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
