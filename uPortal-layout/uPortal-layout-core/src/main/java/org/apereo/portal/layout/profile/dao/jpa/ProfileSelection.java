@@ -40,7 +40,7 @@ import org.hibernate.annotations.NaturalIdCache;
         name = "UP_PROFILE_SELECTION_GEN",
         sequenceName = "UP_PROFILE_SELECTION_SEQ",
         allocationSize = 1)
-@NaturalIdCache
+@NaturalIdCache(region = "org.apereo.portal.layout.profile.dao.jpa.ProfileSelection-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 class ProfileSelection implements Serializable, IProfileSelection {

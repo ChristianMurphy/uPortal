@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,13 +31,26 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.config.Configuration;
 import net.sf.ehcache.config.ConfigurationFactory;
+import org.hibernate.cache.CacheException;
+import org.hibernate.cache.ehcache.SpringBeanEhCacheRegionFactory;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.junit.Test;
 
 /**
- * The names of the second-level cache regions that every cached query of the two cached persistence
- * units uses, in ehcache.xml, ehcache-no-jgroups.xml and cacheContext.xml.
+ * Every second-level cache region of the two cached persistence units must have its own entry in
+ * ehcache.xml and in ehcache-no-jgroups.xml.
+ *
+ * <p>A region without an entry is built from the defaultCache: 1000 entries, ten minutes, and no
+ * replication, so other nodes of a cluster keep what they cached. The portal only warns about it
+ * (HHH90001006, {@code hibernate.cache.ehcache.missing_cache_strategy=create-warn}). This test
+ * boots both units with {@code fail}, as every test JVM runs, so a missing entry stops the build.
  */
 public class HibernateCacheRegionsTest {
 
@@ -60,7 +74,70 @@ public class HibernateCacheRegionsTest {
                     "org.hibernate.cache.internal.StandardQueryCache",
                     "org.hibernate.cache.spi.UpdateTimestampsCache");
 
+    private static final Pattern QUERY_ROOT =
+            Pattern.compile("\\.from\\(\\s*(\\w+)\\.class\\s*\\)");
     private static final Pattern EXCLUDED_CACHE_NAME = Pattern.compile("<value>([^<]+)</value>");
+
+    @Test
+    public void everyRegionHasAnEntry() throws IOException {
+        final Set<String> queryRoots = rootsOfCachedQueries();
+        for (final String file : FILES) {
+            final CacheManager cacheManager = cacheManager(file);
+            try {
+                final Set<String> queryRegions = new TreeSet<>();
+                final Set<String> missing = new TreeSet<>();
+                for (final Map.Entry<String, String> unit : UNITS.entrySet()) {
+                    // Fails here for an entity, collection or natural-id region without an entry
+                    final EntityManagerFactory entityManagerFactory;
+                    try {
+                        entityManagerFactory = boot(unit.getKey(), unit.getValue(), cacheManager);
+                    } catch (RuntimeException e) {
+                        throw new AssertionError(
+                                unit.getKey()
+                                        + " doesn't start with the caches of "
+                                        + file
+                                        + ". Give the region its own <cache> entry in both"
+                                        + " Ehcache files: "
+                                        + rootMessage(e),
+                                e);
+                    }
+                    try {
+                        final SessionFactoryImplementor sessionFactory =
+                                entityManagerFactory.unwrap(SessionFactoryImplementor.class);
+                        for (final String entity :
+                                sessionFactory.getMetamodel().entityPersisters().keySet()) {
+                            if (!queryRoots.contains(
+                                    entity.substring(entity.lastIndexOf('.') + 1))) {
+                                continue;
+                            }
+                            // BaseJpaDao.createCachedQuery names the region after the query's root
+                            final String region = entity + ".Query";
+                            queryRegions.add(region);
+                            try {
+                                sessionFactory.getCache().getQueryResultsCache(region);
+                            } catch (CacheException e) {
+                                missing.add(qualified(unit.getValue(), region));
+                            }
+                        }
+                    } finally {
+                        entityManagerFactory.close();
+                    }
+                }
+                assertEquals(
+                        "Cached queries read these regions, and "
+                                + file
+                                + " has no <cache> entry for them",
+                        new TreeSet<String>(),
+                        missing);
+                // Guard against a scan that finds nothing, such as after a changed source layout
+                assertTrue(
+                        "Found only these query regions: " + queryRegions,
+                        queryRegions.size() >= 20);
+            } finally {
+                cacheManager.shutdown();
+            }
+        }
+    }
 
     @Test
     public void theDefaultRegionsUseTheCurrentNames() throws IOException {
@@ -120,9 +197,72 @@ public class HibernateCacheRegionsTest {
         return prefix.isEmpty() ? region : prefix + "." + region;
     }
 
+    private static String rootMessage(Throwable t) {
+        while (t.getCause() != null) {
+            t = t.getCause();
+        }
+        return t.getMessage();
+    }
+
     private Configuration configuration(String file) {
         return ConfigurationFactory.parseConfiguration(
                 getClass().getResource("/properties/" + file));
+    }
+
+    /**
+     * The caches of the file, each with its own settings and listeners. The peer provider is left
+     * out, so the test doesn't open a JGroups channel.
+     */
+    private CacheManager cacheManager(String file) {
+        final Configuration configuration = configuration(file);
+        configuration.getCacheManagerPeerProviderFactoryConfiguration().clear();
+        configuration.setName("HibernateCacheRegionsTest." + file);
+        return CacheManager.newInstance(configuration);
+    }
+
+    private static EntityManagerFactory boot(
+            String unit, String prefix, CacheManager cacheManager) {
+        final Map<String, Object> properties = new HashMap<>();
+        properties.put("javax.persistence.jdbc.driver", "org.hsqldb.jdbcDriver");
+        properties.put("javax.persistence.jdbc.url", "jdbc:hsqldb:mem:HibernateCacheRegionsTest");
+        properties.put("javax.persistence.jdbc.user", "sa");
+        properties.put("javax.persistence.jdbc.password", "");
+        properties.put(
+                "hibernate.cache.region.factory_class",
+                SpringBeanEhCacheRegionFactory.class.getName());
+        properties.put(SpringBeanEhCacheRegionFactory.CACHE_MANAGER_NAME, cacheManager.getName());
+        properties.put("hibernate.cache.region_prefix", prefix);
+        properties.put("hibernate.cache.ehcache.missing_cache_strategy", "fail");
+        return Persistence.createEntityManagerFactory(unit, properties);
+    }
+
+    /**
+     * The simple class names of the query roots in every DAO that calls createCachedQuery. A DAO's
+     * queries that aren't cached count too, so this can ask for a region more than the portal
+     * reads, never for one less.
+     */
+    private static Set<String> rootsOfCachedQueries() throws IOException {
+        final List<Path> sources;
+        try (Stream<Path> paths = Files.walk(root())) {
+            sources =
+                    paths.filter(p -> p.toString().endsWith(".java"))
+                            .filter(p -> slashed(p).contains("/src/main/"))
+                            .filter(p -> !slashed(p).contains("/build/"))
+                            .filter(p -> !slashed(p).contains("/node_modules/"))
+                            .collect(Collectors.toList());
+        }
+        final Set<String> roots = new TreeSet<>();
+        for (final Path file : sources) {
+            final String source = read(file);
+            if (!source.contains("createCachedQuery(")) {
+                continue;
+            }
+            final Matcher m = QUERY_ROOT.matcher(source);
+            while (m.find()) {
+                roots.add(m.group(1));
+            }
+        }
+        return roots;
     }
 
     private static Path root() {
@@ -136,5 +276,10 @@ public class HibernateCacheRegionsTest {
 
     private static String read(Path file) throws IOException {
         return new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+    }
+
+    /** The path with '/' separators, so the filters match on Windows too. */
+    private static String slashed(Path path) {
+        return path.toString().replace('\\', '/');
     }
 }

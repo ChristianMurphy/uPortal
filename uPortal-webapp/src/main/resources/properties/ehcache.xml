@@ -1234,6 +1234,32 @@
     </cache>
 
     <!--
+     | Caches the lifecycle history of the portlet definitions
+     | - a few entries x published portlet
+     | - replicated by invalidation
+     +-->
+    <cache name="org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl.lifecycleEntries"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+    <cache name="org.apereo.portal.portlet.dao.jpa.PortletLifecycleEntryImpl"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+
+    <!--
      | Caches PortletEntityImpl objects
      | - 1 x subscribed portlet x user
      | - replicated by invalidation
@@ -1384,6 +1410,78 @@
     <cache name="org.apereo.portal.portlet.dao.jpa.MarketplaceRatingImpl"
         eternal="false" maxElementsInMemory="250" overflowToDisk="false" diskPersistent="false"
         timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+
+    <!--
+     | Caches the profile each user chose
+     | - 1 x user with a profile selection
+     | - replicated by invalidation
+     +-->
+    <cache name="org.apereo.portal.layout.profile.dao.jpa.ProfileSelection"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+    <cache name="org.apereo.portal.layout.profile.dao.jpa.ProfileSelection-NaturalId"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+
+    <!--
+     | Caches the portlet lists (favorites) of the users
+     | - 1 x portlet list, 1 x portlet in a list
+     | - replicated by invalidation
+     +-->
+    <cache name="org.apereo.portal.dao.portletlist.jpa.PortletList"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+    <cache name="org.apereo.portal.dao.portletlist.jpa.PortletList.items"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+    <cache name="org.apereo.portal.dao.portletlist.jpa.PortletList.Query"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
+        <cacheEventListenerFactory
+            class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
+            properties="replicateAsynchronously=true,
+                replicatePuts=false,
+                replicateUpdates=true, replicateUpdatesViaCopy=false,
+                replicateRemovals=true "/>
+    </cache>
+    <cache name="org.apereo.portal.dao.portletlist.jpa.PortletListItem"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" >
         <cacheEventListenerFactory
             class="net.sf.ehcache.distribution.jgroups.JGroupsCacheReplicatorFactory"
             properties="replicateAsynchronously=true,
@@ -1898,6 +1996,23 @@
     <cache name="AggrEvents.org.apereo.portal.events.aggr.session.EventSessionImpl.Query"
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="100000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
+
+    <!--
+     | Caches search request and portlet layout aggregations, primarily used during event aggregation
+     | - not replicated
+     +-->
+    <cache name="AggrEvents.org.apereo.portal.events.aggr.action.SearchRequestAggregationImpl"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" />
+    <cache name="AggrEvents.org.apereo.portal.events.aggr.action.SearchRequestAggregationImpl-NaturalId"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" />
+    <cache name="AggrEvents.org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregationImpl"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" />
+    <cache name="AggrEvents.org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregationImpl-NaturalId"
+        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
+        timeToIdleSeconds="0" timeToLiveSeconds="600" memoryStoreEvictionPolicy="LRU" statistics="true" />
 
     <!-- ********************************************************** -->
     <!-- ***************** Miscellaneous Caches ******************* -->
