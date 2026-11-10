@@ -7,15 +7,43 @@ with this page on one of the points below, tell the coordinator which point, and
 until it answers.
 
 The repositories are `ChristianMurphy/uPortal` and `ChristianMurphy/uPortal-start`. The integration
-branch in both is `ccr-43ba0785-hzlrj5`. Cloud sessions report to the coordinator with
+branch in both is `feat/uportal-6` (branch names are below). Cloud sessions report to the coordinator with
 `send_message` to `@parent`, and local agents with `SendMessage` to `main`. Keep your branch
 note (`docs/developer/modernization/notes/<topic>.md` in uPortal) current. Another session must
 be able to resume the work from the branch alone. Work only in uPortal-start keeps its note in
 uPortal-start under the same path, and a note your brief placed there stays there.
 
+## Branch names
+
+The owner chose these names on 2026-11-10. `.github/scripts/branches.sh` holds them in each
+repository, and the workflows and scripts ask it which kind a branch is.
+
+| Kind | Name | Name before 2026-11-10 |
+| --- | --- | --- |
+| Integration | `feat/uportal-6` | `ccr-43ba0785-hzlrj5` |
+| Staging | `staging/landing-<n>` | `ccr-43ba0785-hzlrj5-landing-<n>` |
+| Topic | `<type>/<short-topic>` | `ccr-43ba0785-hzlrj5-<topic>` |
+| Archive | `archive/2026-11-08` | `ccr-43ba0785-hzlrj5-archive-2026-11-08` |
+
+* `<type>` is a Conventional Commits type that says what the topic mostly does: `feat`, `fix`,
+  `ci`, `docs`, `test`, `build`, `refactor`, `chore` or `perf`. A branch with another first
+  part, such as `style/x` or `wip/x`, doesn't start any run.
+* Write a short topic in lowercase with hyphens, such as `fix/layout-save-lock`. Use the same
+  name in both repositories.
+* `feat/uportal-6` alone is the integration branch. A name that only starts like it, such as
+  `feat/uportal-6-x`, is a topic branch. Only `staging/landing-<n>` is a staging branch.
+* The old names are accepted until the owner deletes the old branches. Don't start new work under
+  an old name. Older notes, LOG rows and run records keep the names they were written with.
+* The fork also holds the owner's branches for upstream pull requests, such as
+  `fix/structure-id-race`. They start from upstream `master`, which doesn't have these workflows,
+  and GitHub reads the workflow files from the pushed commit. A push there doesn't start any of
+  the runs described here.
+* An archive branch only keeps old commits. Never push to one. An old archive name counts as a
+  topic branch, so a push there would start runs.
+
 ## 1. Pushing and merging (MOD-D53, MOD-D55)
 
-* Work on the topic branch `ccr-43ba0785-hzlrj5-<topic>` from your brief. Use the same name in
+* Work on the topic branch `<type>/<short-topic>` from your brief. Use the same name in
   both repositories, because uPortal-start's workflows build the uPortal branch with that name
   (section 3).
 * Compile and test what you changed before you push. Push when a step has passed locally, not
@@ -29,13 +57,13 @@ uPortal-start under the same path, and a note your brief placed there stays ther
   docs-only `[skip ci]` commit off the head of a push that also contains code: push it under your
   next code commit, or leave `[skip ci]` out of its message. A push of docs-only commits may end
   with one.
-* Never push to `ccr-43ba0785-hzlrj5` or to a staging branch (`ccr-43ba0785-hzlrj5-landing-<n>`).
+* Never push to `feat/uportal-6` or to a staging branch (`staging/landing-<n>`).
   The coordinator replays reviewed topics, up to four at a time, onto a staging branch. The full
   matrix runs there before anything reaches the integration branch (section 11). If a run fails,
   the coordinator leaves out the topic that broke it and tells you. The other topics of the batch
-  go on. Don't start a topic's name with `landing-`, because such a branch runs the full matrix.
+  go on.
 * Never force-push. Don't open pull requests.
-* To take in newer commits from the integration branch, merge `origin/ccr-43ba0785-hzlrj5` into
+* To take in newer commits from the integration branch, merge `origin/feat/uportal-6` into
   your topic branch. Don't rebase commits you have pushed.
 * The integration branch keeps a linear history (MOD-D32). The coordinator replays your
   branch's own commits onto it and leaves your merge commits out. So a merge commit contains only
@@ -115,16 +143,16 @@ Do these checks first:
 
 1. **Find the uPortal commit that a uPortal-start run built.** The workflows take the
    `uportal-ref` input if a manual run gives one. Otherwise they build the uPortal branch with the
-   same name, else the integration branch, else master (MOD-I307). They no longer drop a
-   `-suffix`: a uPortal-start branch `ccr-x-topic-2` builds the uPortal integration branch unless
-   uPortal has a `ccr-x-topic-2` too.
+   same name, else the integration branch, else master (MOD-I307). They never try a shorter
+   name: a uPortal-start branch `fix/topic-2` builds the uPortal integration branch unless
+   uPortal has a `fix/topic-2` too.
 2. To check it, read the `uPortal under test` notice annotation of the `Build uPortal` job
    (`gh api repos/ChristianMurphy/uPortal-start/check-runs/<job id>/annotations`). It gives the
    repository, the ref and the commit. The same line is near the end of that job's log.
 3. Prevent the problem. Push the uPortal branch first, under the same name, and then push
    uPortal-start. If your uPortal-start branch needs a uPortal change, give the uPortal branch
    exactly the same name.
-4. **Reproduce on the integration branch tip.** Check out `origin/ccr-43ba0785-hzlrj5` in a clean
+4. **Reproduce on the integration branch tip.** Check out `origin/feat/uportal-6` in a clean
    worktree and run the same test. If it passes there, look at your branch first.
 5. **Compare with another run.** Find the same job in the latest run on the integration branch,
    or on another topic branch that merged the same tip. If it passes there, the cause is on your
@@ -221,14 +249,14 @@ LOG rows:
 Run these from the repository root before each push, each on its own line:
 
 ```sh
-.github/scripts/check-commit-messages.sh origin/ccr-43ba0785-hzlrj5..HEAD </dev/null
-.github/scripts/vale.sh commits origin/ccr-43ba0785-hzlrj5..HEAD </dev/null
+.github/scripts/check-commit-messages.sh origin/feat/uportal-6..HEAD </dev/null
+.github/scripts/vale.sh commits origin/feat/uportal-6..HEAD </dev/null
 .github/scripts/vale.sh docs <changed .md files> </dev/null
-python3 .github/scripts/check-freeze-store.py "$(git merge-base origin/ccr-43ba0785-hzlrj5 HEAD)" HEAD </dev/null
+python3 .github/scripts/check-freeze-store.py "$(git merge-base origin/feat/uportal-6 HEAD)" HEAD </dev/null
 ```
 
 * Look at each exit status, then push with a separate command
-  (`git push origin HEAD:ccr-43ba0785-hzlrj5-<topic>`). Never pipe a check into `tail` or `grep`
+  (`git push origin HEAD:<type>/<short-topic>`). Never pipe a check into `tail` or `grep`
   and never chain it to the push with `&&`. A pipe hides the exit code, and two failing messages
   reached the integration branch that way (MOD-I171).
 * `vale.sh docs` without a path checks every doc in scope (in uPortal, `docs/UPGRADING-6.0.md`,
@@ -357,13 +385,13 @@ The rules that agents hit most often:
 * A landing passes the full matrix on a staging branch before it is pushed (owner, 2026-11-10).
   Landings 8 to 10 each left the tip red from a job that topic pushes didn't run (MOD-I429,
   MOD-I430 and Integration run 42743207405). The steps:
-  1. Replay the reviewed topics onto the tip as `ccr-43ba0785-hzlrj5-landing-<n>`, with the same
+  1. Replay the reviewed topics onto the tip as `staging/landing-<n>`, with the same
      name in both repositories. Several topics can share one staging branch and go in together.
      Push uPortal first, because uPortal-start builds the uPortal branch of the same name
      (section 3). Push the uPortal-start branch even when it adds nothing to the tip. Its
      workflows then test the uPortal change.
   2. A push to a staging branch runs every job that a push to the integration branch runs. Wait
-     for the runs. `.github/scripts/tip-status.sh ccr-43ba0785-hzlrj5-landing-<n>` lists them.
+     for the runs. `.github/scripts/tip-status.sh staging/landing-<n>` lists them.
   3. When a job fails, fix the topic or leave it out, and push the staging branch again. A new
      push cancels the runs of the older one.
   4. When every run passed, add the landing's log entry on top. Then run
@@ -392,14 +420,14 @@ The rules that agents hit most often:
   must pass in each repository:
 
   ```sh
-  .github/scripts/check-placeholders.sh "$(git merge-base origin/ccr-43ba0785-hzlrj5 <topic head>)" <topic head>
+  .github/scripts/check-placeholders.sh "$(git merge-base origin/feat/uportal-6 <topic head>)" <topic head>
   ```
 
   It fails on a `MOD-I?`, `MOD-D?`, `RUNS_PLACEHOLDER` or `START_SHA` that the topic adds to a
   Markdown file, and exits 2 when it can't run, such as on a revision that isn't a commit. Use the
   merge base, as for `check-freeze-store.py`: with the tip as the first argument, the check
   blames the topic for placeholders that the tip has numbered since. Use `origin/` refs, because
-  the local `ccr-43ba0785-hzlrj5` branch in the main clones is stale.
+  a local copy of the integration branch in the main clones is stale.
 * Re-read the topic's note against the tip. A parallel fix may have overtaken it.
 * After the replay, diff the topic head against the replayed result (`git diff <topic head>
   <replayed head>`) and explain each remaining hunk. A change made inside a merge commit shows up

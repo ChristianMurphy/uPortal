@@ -1,17 +1,19 @@
 # Common brief for local agents
 
 You are a local agent on the uPortal 6.0 modernization prototype. The coordinator lands work on the
-integration branch `ccr-43ba0785-hzlrj5` in ChristianMurphy/uPortal and ChristianMurphy/uPortal-start.
+integration branch `feat/uportal-6` in ChristianMurphy/uPortal and ChristianMurphy/uPortal-start.
+Your topic branch is `<type>/<short-topic>`, such as `fix/layout-save-lock`, with the same name in
+both repositories. The guide lists the types and the names from before 2026-11-10.
 
 ## Read first
-`docs/developer/modernization/agent-guide.md` on `origin/ccr-43ba0785-hzlrj5` in uPortal. It holds
+`docs/developer/modernization/agent-guide.md` on `origin/feat/uportal-6` in uPortal. It holds
 the rules. Section 2 lists the evidence each kind of change needs, and section 3 says which
 uPortal commit CI builds. Commit messages are in section 7, prose checks in 8, environment limits
 in 9 and flaky tests in 10. `LOG.md` beside it is the record.
 
 ## This machine
 * The container can be replaced at any time, and only pushed work survives. Clones: `/home/user/uPortal`, `/home/user/uPortal-start` (origin =
-  the forks). Make worktrees under `/home/user/wt/<dir>` from `origin/ccr-43ba0785-hzlrj5` after
+  the forks). Make worktrees under `/home/user/wt/<dir>` from `origin/feat/uportal-6` after
   `git fetch origin`.
 * JDK 11, 21 and 25 are in `/usr/lib/jvm` (`java-<n>-openjdk-amd64`), with 21 as the default.
   CI runs the portal on 11 and builds on 21 and 25. There is no Docker and no `ss`. CI covers the
@@ -28,7 +30,7 @@ in 9 and flaky tests in 10. `LOG.md` beside it is the record.
   processes you started, by PID.
 
 ## Git
-* Push only to your own topic branch. Never to `ccr-43ba0785-hzlrj5`. No pull requests. Don't
+* Push only to your own topic branch. Never to `feat/uportal-6`. No pull requests. Don't
   rebase pushed commits; merge the tip instead, and keep real changes out of merge commits.
 * Run `check-commit-messages.sh` and `vale.sh commits` on your range, and `vale.sh docs` on
   changed docs, before each push.
