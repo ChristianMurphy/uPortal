@@ -1005,6 +1005,10 @@ that has access to its own sequences only.
 * A second-level cache region without an entry in `ehcache.xml` is still created from
   `defaultCache`. The warning is now HHH90001006 (it was HHH020003).
   `hibernate.properties` sets `hibernate.cache.ehcache.missing_cache_strategy=create-warn`.
+  uPortal's own `ehcache.xml` now has an entry for every region. See "Your own `ehcache.xml`"
+  below.
+* `PortletLifecycleEntryImpl` is marked `@Immutable`. It was already cached read-only and has no
+  setter. Hibernate 5.6 warned about it at every start (HHH90001003).
 * The portal logs HHH020100 at startup, because Hibernate deprecated its Ehcache 2 module.
   uPortal replaces the cache provider in a later step.
 * `SearchRequestAggregationImpl` is a final class, as the other aggregation entities are.
@@ -1018,6 +1022,75 @@ Hibernate does not load a NULL value of an element collection, so it did not del
 its owner, and the owner's delete failed with ORA-02292. This hit a portlet entity with an empty
 window state, a layout attribute with an empty target element name, and a portlet definition with
 an empty localization. uPortal now deletes those rows with their owner.
+
+### Your own `ehcache.xml`
+
+This applies to a portal that replaces `ehcache.xml` or `ehcache-no-jgroups.xml`, or names its
+own file in `org.apereo.portal.ehcache.filename`. A portal that uses uPortal's files needs no
+change.
+
+**Rename the four default regions.** Hibernate 5.3 renamed the regions that every cached query
+uses. Keep each entry's settings and change only its name:
+
+| Name in uPortal 5.17 | Name in uPortal 6.0 |
+| --- | --- |
+| `org.hibernate.cache.internal.StandardQueryCache` | `default-query-results-region` |
+| `org.hibernate.cache.spi.UpdateTimestampsCache` | `default-update-timestamps-region` |
+| `AggrEvents.org.hibernate.cache.internal.StandardQueryCache` | `AggrEvents.default-query-results-region` |
+| `AggrEvents.org.hibernate.cache.spi.UpdateTimestampsCache` | `AggrEvents.default-update-timestamps-region` |
+
+Hibernate 5.6 still finds the old names and logs HHH90001007 for each. On a cluster the old
+names have a cost. When a split heals, each node empties its caches and leaves the two timestamps
+regions alone (`mergeViewCacheClearer` in `cacheContext.xml`), and that list now has the new
+names. With the old names in your file, a merge empties the timestamps too. A query result that
+is cached at that moment can then stay in use after its table has changed.
+
+**Add the regions that had no entry.** These twelve regions were built from `defaultCache` in
+uPortal 5.17, with 1000 entries and 600 seconds to live, and they weren't replicated. Copy their
+entries from uPortal's `ehcache.xml`. They keep that size and lifetime. The first eight now
+replicate their removals, as the regions beside them do. Another node then drops its copy when
+one of them changes.
+
+* `org.apereo.portal.portlet.dao.jpa.PortletLifecycleEntryImpl`
+* `org.apereo.portal.portlet.dao.jpa.PortletDefinitionImpl.lifecycleEntries`
+* `org.apereo.portal.layout.profile.dao.jpa.ProfileSelection`
+* `org.apereo.portal.layout.profile.dao.jpa.ProfileSelection-NaturalId` (in 5.17 Hibernate
+  called this region `ProfileSelection##NaturalId`)
+* `org.apereo.portal.dao.portletlist.jpa.PortletList`
+* `org.apereo.portal.dao.portletlist.jpa.PortletList.items`
+* `org.apereo.portal.dao.portletlist.jpa.PortletList.Query`
+* `org.apereo.portal.dao.portletlist.jpa.PortletListItem`
+* `AggrEvents.org.apereo.portal.events.aggr.action.SearchRequestAggregationImpl`
+* `AggrEvents.org.apereo.portal.events.aggr.action.SearchRequestAggregationImpl-NaturalId`
+* `AggrEvents.org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregationImpl`
+* `AggrEvents.org.apereo.portal.events.aggr.portletlayout.PortletLayoutAggregationImpl-NaturalId`
+
+Without them the portal starts and runs as before. It logs HHH90001006 for each missing region
+and builds it from `defaultCache`.
+
+**Entries you can delete.** No persistence unit builds these regions, and uPortal's files no
+longer have them. The portal ignores them if you leave them in.
+
+* `org.apereo.portal.layout.dlm.providers.AllUsersEvaluatorFactory`, `AttributeEvaluator`,
+  `GroupMembershipEvaluator`, `GuestUserEvaluatorFactory` and `ProfileEvaluator` in the same
+  package. The evaluators use the region `org.apereo.portal.layout.dlm.Evaluator`.
+* `org.apereo.portal.layout.dlm.FragmentDefinition.evaluators` and
+  `org.apereo.portal.layout.dlm.providers.Paren.evaluators`. The collection's region is
+  `org.apereo.portal.layout.dlm.providers.EvaluatorGroup.evaluators`.
+* `org.apereo.portal.portlet.dao.jpa.MarketplaceRatingImpl`. Keep `MarketplaceRatingImpl.Query`.
+* `org.apereo.portal.portlet.dao.jpa.PortalCookieImpl.Query`.
+* In the aggregation unit, the `.Query` regions of `LoginAggregationImpl`,
+  `ConcurrentUserAggregationImpl`, `TabRenderAggregationImpl`, `PortletExecutionAggregationImpl`
+  and `EventSessionImpl`.
+
+**Check your file.** Start the portal and search `portal.log` for HHH90001006 and HHH90001007.
+Hibernate builds the entity, collection and natural-id regions at startup. It builds a query
+region when the first query uses it, so sign in and open the pages your users open before you
+read the log. On a test system you can also start the JVM with
+`-Dhibernate.cache.ehcache.missing_cache_strategy=fail`. The portal then stops at startup on a
+missing region, and a cached query whose region is missing fails. uPortal's own tests run with
+that setting. Production keeps `create-warn` in 6.0, and the step that replaces Ehcache 2 is
+planned to change it to `fail`.
 
 ### SQL Server: parallel inserts
 
