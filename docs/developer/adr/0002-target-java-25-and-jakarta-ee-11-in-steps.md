@@ -67,9 +67,10 @@ The code moves along Spring and Hibernate versions that support each other:
 
 1. Spring 4.3 with Hibernate 5.2 (Spring 4.3 supports Hibernate up to 5.2).
 2. Spring 5.3 with Hibernate 5.6.
-3. Spring 6.2 with Hibernate 6.6 on Tomcat 10.1. This is a test checkpoint. It is merged so the
-   next step starts from green code. It is never tagged or released, because Spring 6.2 has no
-   open-source support.
+3. Spring 6.2 on Tomcat 10.1, in two parts: first the Jakarta namespace with Hibernate 5.6's
+   Jakarta artifact, then Hibernate 6.6. This is a test checkpoint. It is merged so the next step
+   starts from green code. It is never tagged or released, because Spring 6.2 has no open-source
+   support.
 4. Spring 7.0 with Hibernate 7.4 on Tomcat 11.
 
 The work is split into phases P0 to P8, about fifty pull requests. Each one passes the required
@@ -78,9 +79,11 @@ steps can't be split further:
 
 * P2-2, the Hibernate 5.2 upgrade (ADR 0006).
 * P4-1, Spring 5.3 together with Spring Security, Spring Session and Spring Web Flow.
-* P6-1 in uPortal and P6-2 in uPortal-start, the `javax` to `jakarta` switch on Spring 6.2,
-  Hibernate 6.6 and Tomcat 10.1, which has to happen in both repositories and in every deployed
-  portlet WAR at once.
+* P6-1 in uPortal and P6-2 in uPortal-start, the `javax` to `jakarta` switch on Spring 6.2 and
+  Tomcat 10.1, which has to happen in both repositories and in every deployed portlet WAR at
+  once. Hibernate stays on 5.6 for this step, as `hibernate-core-jakarta` 5.6.15, and moves to
+  6.6 in a step of its own afterwards (owner, 2026-11-10). The cache provider switch of the
+  P4-3 plan comes before P6-1, because Spring 6 has no Ehcache 2 support.
 * P7-1, Spring 7, Hibernate 7.4 and Tomcat 11.
 
 The runtime JDK goes from 11 to 21 at P4 and to 25 by P6. 6.0 is released on Tomcat 11 only.
@@ -160,6 +163,10 @@ G-unit, G-portal and G-db on a branch.
   Spring 7.0 with Hibernate 7.4.
 * The P6 checkpoint and P7-1 can be combined if the prototype branch shows that the step from
   Spring 6.2 to 7.0 is small.
+* A spike on 2026-11-10 booted a JPA unit with a second-level cache on Spring 6.2.19 and
+  `hibernate-core-jakarta` 5.6.15.Final, outside the portal. Spring 6.0 to 6.2 are built against
+  that artifact, and Spring 7.0 isn't. The first task of P6-1 is to boot the portal on it against
+  each database (`.claude/modernization/research/spike-jakarta56.md`).
 * A prototype converted the whole built 5.17 portal, including its 12 portlet WARs, with Tomcat's
   Jakarta migration tool. It passed the same 116 of 119 Playwright tests as the `javax` portal on
   Tomcat 11.0.26 with JDK 21 and JDK 25, and on Tomcat 10.1.60 with JDK 21. The 3 failures were
