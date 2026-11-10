@@ -1,8 +1,11 @@
 # Which CI jobs run
 
 This page lists what the `CI` workflow runs for each kind of push and which cell runs the steps
-that no other cell repeats. The rules for workstream branches (`ccr-43ba0785-hzlrj5-<topic>`) are
-prototype only (MOD-D30, MOD-D55) and go before upstreaming.
+that no other cell repeats. The rules for workstream branches (`<type>/<topic>`, such as
+`fix/layout-save-lock`) are prototype only (MOD-D30, MOD-D55) and go before upstreaming. The branch
+names are in `.github/scripts/branches.sh`: the integration branch is `feat/uportal-6`, and a
+staging branch is `staging/landing-<n>`. The names from before 2026-11-10 (`ccr-43ba0785-hzlrj5`
+and the branches that start with it) are accepted until those branches are deleted.
 
 ## Cells of the build job
 

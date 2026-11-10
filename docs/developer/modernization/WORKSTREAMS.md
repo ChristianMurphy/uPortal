@@ -31,9 +31,10 @@ behind it.
   workstream branch while working is fine. The integration branch is
   never force-pushed.
 * **Workstream CI branches (MOD-D30):** each workstream pushes its branch
-  to the forks as `ccr-43ba0785-hzlrj5-<topic>`. The `ccr-*` trigger runs
-  the full CI there, so work is proven green before the integrator merges
-  it into `ccr-43ba0785-hzlrj5`. The integrator deletes the branch after
+  to the forks as `<type>/<topic>`, with a Conventional Commits type such
+  as `fix` (`ccr-43ba0785-hzlrj5-<topic>` before 2026-11-10). The push
+  trigger runs CI there, so work is proven green before the integrator
+  merges it into `feat/uportal-6`. The integrator deletes the branch after
   the merge. Workstreams don't push to the integration branch themselves.
 * **Task size:** one future upstream PR per task, about 1 to 3 hours. Each
   task ends with a handoff note in

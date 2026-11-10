@@ -3,6 +3,10 @@
 Branch `ccr-43ba0785-hzlrj5-ci-prelanding` in uPortal and uPortal-start. The owner approved the
 change on 2026-11-10.
 
+This note uses the branch names of its day. Since the change in `semantic-branches.md` a staging
+branch is `staging/landing-<n>` and the integration branch is `feat/uportal-6`, and the names
+below still work until the old branches are deleted.
+
 ## Why
 
 Landings 8, 9 and 10 each left the integration tip red from a job that a topic push didn't run:
