@@ -50,7 +50,18 @@ on JDK 25. `spotlessCheck` and `:uPortal-io:uPortal-io-types:spotbugsMain` pass.
 
 ## Runs
 
-The push runs of both branches are added here when they finish.
+The push of uPortal `48a09f9f35`, and of the uPortal-start branch at `39ca485901`:
+
+| Run | Result |
+| --- | --- |
+| uPortal CI 42824311892 | passed (build and tests on Java 21 and Java 25, Prose, Commit messages) |
+| uPortal DB integration 42824311907 | passed |
+| uPortal DB copy tool 42824311915 | passed |
+| uPortal-start Integration 42824339664 | passed. Build uPortal built uPortal `48a09f9f35` from this branch (notice of job 129858586454) |
+| uPortal-start CI 42824339223 | passed |
+| uPortal-start HTTP replay 42824339229 | passed |
+| uPortal-start Migration equivalence 42824339227 | passed |
+| uPortal-start G-index 42824339088 | passed |
 
 ## Proposed LOG rows
 
