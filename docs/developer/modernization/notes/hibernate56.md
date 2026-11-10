@@ -1,9 +1,11 @@
 # Handoff: Hibernate 5.6.15 on the Ehcache 2 cache (P4-3 step S1)
 
-Branch `ccr-43ba0785-hzlrj5-hibernate56` in uPortal and in uPortal-start, rebased on 2026-11-09
-onto the integration branch at `a00134ea50` (uPortal) and `adbe9ea9d3` (uPortal-start). Step S1 of
-`notes/p4-3-plan.md`, decided in MOD-D56 item 1. The second-level cache stays on hibernate-ehcache
-over ehcache-core 2.6.11 with JGroups replication. The schema is frozen (ADR 0006).
+Branch `ccr-43ba0785-hzlrj5-hibernate56` in uPortal and in uPortal-start. The uPortal branch was
+rebased on 2026-11-10 onto `ccr-43ba0785-hzlrj5-mssql-id-lock` (`1d3e6313da`), which is based on
+the integration branch at `a00134ea50` and has to be merged first. uPortal-start is based on
+`adbe9ea9d3`. Step S1 of `notes/p4-3-plan.md`, decided in MOD-D56 item 1. The second-level cache
+stays on hibernate-ehcache over ehcache-core 2.6.11 with JGroups replication. The schema is frozen
+(ADR 0006).
 
 ## Status
 
@@ -218,10 +220,11 @@ production. If that is right, the deadlock exists on the integration branch sinc
 5.2 step, and this branch's test pool made the test show it. The other explanation, a change in
 Hibernate 5.6, has no support in the sources read.
 
-This part is stopped for a decision. The choices are a fix in the product (such as a lock
-hint without `holdlock` for the id tables on SQL Server, as 5.17 had), a test pool that opens
-connections one at a time again, or an owner-approved known-failure row. The test wasn't changed
-and no job was re-run to get a pass.
+The decision (coordinator, 2026-11-10) was a fix in the product, shown first on the Hibernate
+5.2 code. That is the topic `-mssql-id-lock` (`notes/mssql-id-lock.md`). Its test deadlocks on
+SQL Server on the integration branch's code: 25 of 60 inserts in run 42733496148. Hibernate 5.6
+didn't bring the deadlock. The topic's dialect returns to the lock hint of Hibernate 4.3, and
+this branch is rebased onto it.
 
 ### Before the rebase
 
@@ -271,7 +274,7 @@ uPortal `5ffc5a7369` (commit 16) and uPortal-start `60f2d9f406`.
 | MOD-I? | Caching | hibernate-ehcache 5.6's `EhcacheRegionFactory.getTimeout()` is 0 unless `net.sf.ehcache.hibernate.cache_lock_timeout` is set, where 5.2 used 60 seconds. Soft locks and query cache pre-invalidation would expire at once | **Fixed** in `SpringBeanEhCacheRegionFactory`, with a test |
 | MOD-I? | Build | With Hibernate 5.6 the web application held `hibernate-jpa-2.1-api` and `javax.persistence-api` 2.2 together, and Byte Buddy 1.12.18 (Java 20 at most) where the tests ran on Mockito's 1.18.12 | **Fixed**: one JPA jar, Byte Buddy 1.18.12 declared, Javassist removed |
 | MOD-I? | Persistence | On Oracle, Hibernate 5.6's increment check reads `all_sequences` and compares by name only, across the schemas the user has access to | Documented in UPGRADING-6.0, with the query that finds the cause (review of 2026-11-09) |
-| MOD-I? | Persistence | `JpaClusterLockDaoTest.testConcurrentCreation` deadlocks on SQL Server 2025 in two of three manual DB integration runs of this branch (42723886969 and 42726717925 failed, 42710461224 passed). The victim is in Hibernate's isolated id transaction on the one-row table `UP_MUTEX_SEQ`, read with `updlock, holdlock, rowlock`. The hint and the generator code are the same in 5.2.18 and 5.6.15. Likely exposed by the test pool's move from commons-dbcp, which opens connections one at a time, to Tomcat's | **Open, needs a decision** (section "Runs" lists the choices). Not re-run to get a pass |
+| (in `notes/mssql-id-lock.md`) | Persistence | `JpaClusterLockDaoTest.testConcurrentCreation` deadlocked on SQL Server 2025 in two of three manual runs of this branch, after its test pool moved to Tomcat's (42723886969 and 42726717925 failed, 42710461224 passed) | Cause and fix are in `-mssql-id-lock`. Hibernate 5.2 has the same deadlock |
 | MOD-I121 (update) | Tests | Rechecked on 5.6.15: `BatchFetchQueueHelper` has no `assert` statement any more | The `-da` switch is removed from the test JVMs |
 | MOD-I? | Build | hibernate-core 5.6.15 brings `org.glassfish.jaxb:jaxb-runtime` 2.3.1 with four more jars, next to the `jaxb-impl` 2.3.3 the web application has. The root build still excluded `org.dom4j:dom4j`, which no dependency brings since 5.6 | **Fixed**: `jaxb-runtime` excluded where Hibernate is declared, and the dom4j exclusion removed |
 | MOD-I125 (update) | Runtime | On 5.6 a portal logs HHH020100, HHH90001006 and HHH90001007 (the cache provider and region names, for S2 and S6) and HHH90001003 for `PortletLifecycleEntryImpl`. HHH000112 became HHH000305 with a stack trace for `SearchRequestAggregationImpl`. No `AggrEvents.AggrEvents.*` region appeared in a ten-minute local run in which no aggregation query ran | HHH000305 **fixed** (the class is final). The doubled prefix needs a run with aggregation. The rest stays for S2 |
