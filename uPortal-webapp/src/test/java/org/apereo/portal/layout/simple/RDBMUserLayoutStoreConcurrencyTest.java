@@ -18,7 +18,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
@@ -37,23 +41,49 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import org.apereo.portal.IUserPreferencesManager;
 import org.apereo.portal.IUserProfile;
+import org.apereo.portal.layout.IStylesheetUserPreferencesService;
+import org.apereo.portal.layout.IStylesheetUserPreferencesService.PreferencesScope;
+import org.apereo.portal.layout.IUserLayoutManager;
 import org.apereo.portal.layout.LayoutStructure;
+import org.apereo.portal.layout.StylesheetUserPreferencesServiceImpl;
+import org.apereo.portal.layout.dao.IStylesheetDescriptorDao;
+import org.apereo.portal.layout.dao.IStylesheetUserPreferencesDao;
+import org.apereo.portal.layout.dlm.Constants;
+import org.apereo.portal.layout.dlm.DistributedLayoutManager;
+import org.apereo.portal.layout.dlm.DistributedUserLayout;
+import org.apereo.portal.layout.dlm.ILayoutCachingService;
+import org.apereo.portal.layout.om.ILayoutAttributeDescriptor;
+import org.apereo.portal.layout.om.IStylesheetData.Scope;
+import org.apereo.portal.layout.om.IStylesheetDescriptor;
+import org.apereo.portal.layout.om.IStylesheetUserPreferences;
+import org.apereo.portal.security.IAuthorizationService;
 import org.apereo.portal.security.IPerson;
+import org.apereo.portal.user.IUserInstance;
+import org.apereo.portal.user.IUserInstanceManager;
+import org.apereo.portal.utils.IFragmentDefinitionUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionManager;
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
+import org.springframework.transaction.interceptor.TransactionInterceptor;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -303,6 +333,76 @@ public class RDBMUserLayoutStoreConcurrencyTest {
                         USER_ID));
     }
 
+    /**
+     * A sets a stylesheet preference of a layout node, such as a column width. The service reads
+     * the layout for that, the read reloads the layout, and the reload saves it, as after another
+     * session's change. A then stops before it stores the preference. B saves the layout of the
+     * same session meanwhile and must not wait for A: with the reload inside the preference's
+     * transaction, A kept the save's row locks after it left the layout manager's monitor, and B
+     * waited for them while it held the monitor. When A then needs the monitor again, as it does
+     * for a value that matches the fragment's, the two wait for each other where the database can't
+     * see it.
+     */
+    @Test
+    public void testLayoutSavedWhileAStylesheetPreferenceIsSet() throws Exception {
+        store.setUserLayout(person, profile, layout("first"), false);
+        final DistributedLayoutManager layoutManager = layoutManagerWhoseReloadSaves("reloaded");
+        final IStylesheetUserPreferencesDao preferencesDao =
+                mock(IStylesheetUserPreferencesDao.class);
+        final IStylesheetUserPreferencesService service =
+                stylesheetUserPreferencesService(layoutManager, preferencesDao);
+        final MockHttpServletRequest request = new MockHttpServletRequest();
+
+        final CountDownLatch aStoresThePreference = new CountDownLatch(1);
+        final CountDownLatch resumeA = new CountDownLatch(1);
+        doAnswer(
+                        invocation -> {
+                            aStoresThePreference.countDown();
+                            assertTrue("A resumed", resumeA.await(30, TimeUnit.SECONDS));
+                            return null;
+                        })
+                .when(preferencesDao)
+                .storeStylesheetUserPreferences(any(IStylesheetUserPreferences.class));
+
+        final AtomicReference<Throwable> errorOfA = new AtomicReference<>();
+        final AtomicReference<Throwable> errorOfB = new AtomicReference<>();
+        final Thread threadA =
+                inThread(
+                        "A",
+                        () ->
+                                service.setLayoutAttribute(
+                                        request, PreferencesScope.STRUCTURE, "n1", "width", "50%"),
+                        errorOfA);
+        final Thread threadB = inThread("B", layoutManager::saveUserLayout, errorOfB);
+
+        final boolean bWaited;
+        threadA.start();
+        try {
+            assertTrue(
+                    "A reached the store of its preference: " + errorOfA.get(),
+                    aStoresThePreference.await(30, TimeUnit.SECONDS));
+            threadB.start();
+            threadB.join(TimeUnit.SECONDS.toMillis(5));
+            bWaited = threadB.isAlive();
+        } finally {
+            resumeA.countDown();
+        }
+        threadA.join(TimeUnit.SECONDS.toMillis(60));
+        threadB.join(TimeUnit.SECONDS.toMillis(60));
+        assertFalse(threadA.isAlive());
+        assertFalse(threadB.isAlive());
+        if (errorOfA.get() != null) {
+            throw new AssertionError("A failed", errorOfA.get());
+        }
+        if (errorOfB.get() != null) {
+            throw new AssertionError("B failed", errorOfB.get());
+        }
+
+        assertFalse("B's save waited for the transaction of A's preference", bWaited);
+        assertStoredLayout("saved by B");
+        assertSavedUnderReadCommitted();
+    }
+
     /** {@link #runPausedAt(String, Runnable, Runnable, int)} with two seconds for B. */
     private boolean runPausedAt(String sqlPrefix, Runnable taskOfA, Runnable taskOfB)
             throws InterruptedException {
@@ -409,6 +509,85 @@ public class RDBMUserLayoutStoreConcurrencyTest {
                     Connection.TRANSACTION_READ_COMMITTED,
                     isolation);
         }
+    }
+
+    /**
+     * A layout manager of the user over the test's store. Its first read of the layout reloads it,
+     * and the reload saves the layout {@code name}, as RDBMDistributedLayoutStore does when it
+     * builds the layout again. A save through the manager stores "saved by B".
+     */
+    private DistributedLayoutManager layoutManagerWhoseReloadSaves(String name) {
+        final Document reloaded = layout(name);
+        doAnswer(
+                        invocation -> {
+                            store.setUserLayout(person, profile, reloaded, false);
+                            return new DistributedUserLayout(reloaded);
+                        })
+                .when(store)
+                .getUserLayout(person, profile);
+        when(person.getAttribute(Constants.PLF)).thenReturn(layout("saved by B"));
+
+        final AtomicReference<DistributedUserLayout> cached = new AtomicReference<>();
+        final ILayoutCachingService layoutCachingService = mock(ILayoutCachingService.class);
+        when(layoutCachingService.getCachedLayout(person, profile))
+                .thenAnswer(invocation -> cached.get());
+        doAnswer(
+                        invocation -> {
+                            cached.set(invocation.getArgument(2));
+                            return null;
+                        })
+                .when(layoutCachingService)
+                .cacheLayout(eq(person), eq(profile), any(DistributedUserLayout.class));
+
+        final DistributedLayoutManager layoutManager =
+                new DistributedLayoutManager(person, profile);
+        layoutManager.setDistributedLayoutStore(store);
+        layoutManager.setLayoutCachingService(layoutCachingService);
+        layoutManager.setAuthorizationService(mock(IAuthorizationService.class));
+        return layoutManager;
+    }
+
+    /**
+     * The stylesheet preferences service for the user's session, behind the portal's transaction
+     * advice. The structure stylesheet has one attribute, "width", that is stored in the database.
+     */
+    private IStylesheetUserPreferencesService stylesheetUserPreferencesService(
+            IUserLayoutManager layoutManager, IStylesheetUserPreferencesDao preferencesDao) {
+        final IUserPreferencesManager preferencesManager = mock(IUserPreferencesManager.class);
+        when(preferencesManager.getUserProfile()).thenReturn(profile);
+        when(preferencesManager.getUserLayoutManager()).thenReturn(layoutManager);
+        final IUserInstance userInstance = mock(IUserInstance.class);
+        when(userInstance.getPerson()).thenReturn(person);
+        when(userInstance.getPreferencesManager()).thenReturn(preferencesManager);
+        final IUserInstanceManager userInstanceManager = mock(IUserInstanceManager.class);
+        when(userInstanceManager.getUserInstance(any(HttpServletRequest.class)))
+                .thenReturn(userInstance);
+
+        final ILayoutAttributeDescriptor width = mock(ILayoutAttributeDescriptor.class);
+        when(width.getScope()).thenReturn(Scope.PERSISTENT);
+        final IStylesheetDescriptor stylesheetDescriptor = mock(IStylesheetDescriptor.class);
+        when(stylesheetDescriptor.getLayoutAttributeDescriptor("width")).thenReturn(width);
+        final IStylesheetDescriptorDao stylesheetDescriptorDao =
+                mock(IStylesheetDescriptorDao.class);
+        when(stylesheetDescriptorDao.getStylesheetDescriptor(anyLong()))
+                .thenReturn(stylesheetDescriptor);
+        when(preferencesDao.getStylesheetUserPreferences(stylesheetDescriptor, person, profile))
+                .thenReturn(mock(IStylesheetUserPreferences.class));
+
+        final StylesheetUserPreferencesServiceImpl service =
+                new StylesheetUserPreferencesServiceImpl();
+        service.setUserInstanceManager(userInstanceManager);
+        service.setStylesheetDescriptorDao(stylesheetDescriptorDao);
+        service.setStylesheetUserPreferencesDao(preferencesDao);
+        service.setFragmentDefinitionUtils(mock(IFragmentDefinitionUtils.class));
+        service.setTransactionOperations(new TransactionTemplate(transactionManager));
+
+        final ProxyFactory proxyFactory = new ProxyFactory(service);
+        proxyFactory.addAdvice(
+                new TransactionInterceptor(
+                        (TransactionManager) transactionManager,
+                        new AnnotationTransactionAttributeSource()));
+        return (IStylesheetUserPreferencesService) proxyFactory.getProxy();
     }
 
     private void runSql(String sql) {

@@ -16,11 +16,15 @@ package org.apereo.portal.layout;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.servlet.http.HttpServletRequest;
 import org.apereo.portal.IUserPreferencesManager;
 import org.apereo.portal.IUserProfile;
@@ -39,6 +43,9 @@ import org.apereo.portal.user.IUserInstanceManager;
 import org.apereo.portal.utils.IFragmentDefinitionUtils;
 import org.junit.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionOperations;
 
 /** */
 public class StylesheetUserPreferencesServiceImplTest {
@@ -124,6 +131,8 @@ public class StylesheetUserPreferencesServiceImplTest {
         stylesheetUserPreferencesService.setStylesheetUserPreferencesDao(
                 stylesheetUserPreferencesDao);
         stylesheetUserPreferencesService.setFragmentDefinitionUtils(fragmentUtils);
+        stylesheetUserPreferencesService.setTransactionOperations(
+                TransactionOperations.withoutTransaction());
 
         // Run test
         String actual;
@@ -154,5 +163,123 @@ public class StylesheetUserPreferencesServiceImplTest {
                 stylesheetUserPreferencesService.getStylesheetParameter(
                         request, PreferencesScope.THEME, "skin");
         assertEquals("red", actual);
+    }
+
+    /**
+     * Setting or removing a layout attribute reads the layout before its transaction starts, and
+     * never inside it. A read can reload the layout and save it, and the save's row locks would
+     * then outlast the layout manager's monitor: a save on another request of the session holds the
+     * monitor while it waits for those rows, and this request would wait for the monitor.
+     */
+    @Test
+    public void testLayoutAttributeWritesReadTheLayoutOutsideTheirTransaction() {
+        final HttpServletRequest request = new MockHttpServletRequest();
+        final AtomicBoolean inTransaction = new AtomicBoolean();
+        final AtomicInteger layoutReads = new AtomicInteger();
+        final AtomicInteger layoutReadsInTransaction = new AtomicInteger();
+        final AtomicInteger storesOutsideTransaction = new AtomicInteger();
+
+        final IUserInstanceManager userInstanceManager = mock(IUserInstanceManager.class);
+        final IUserInstance userInstance = mock(IUserInstance.class);
+        when(userInstanceManager.getUserInstance(request)).thenReturn(userInstance);
+        final IPerson person = mock(IPerson.class);
+        when(userInstance.getPerson()).thenReturn(person);
+        final IUserPreferencesManager preferencesManager = mock(IUserPreferencesManager.class);
+        when(userInstance.getPreferencesManager()).thenReturn(preferencesManager);
+        final IUserProfile userProfile = mock(IUserProfile.class);
+        when(preferencesManager.getUserProfile()).thenReturn(userProfile);
+        when(userProfile.getThemeStylesheetId()).thenReturn(1);
+
+        // The fragment's value for the attribute, which comes from the layout
+        final IStylesheetUserPreferences distributedStylesheetUserPreferences =
+                mock(IStylesheetUserPreferences.class);
+        when(distributedStylesheetUserPreferences.getLayoutAttribute("u1l1n1", "minimized"))
+                .thenReturn("fragment");
+        final IUserLayout userLayout = mock(IUserLayout.class);
+        when(userLayout.getDistributedThemeStylesheetUserPreferences())
+                .thenReturn(distributedStylesheetUserPreferences);
+        final IUserLayoutManager userLayoutManager = mock(IUserLayoutManager.class);
+        when(preferencesManager.getUserLayoutManager()).thenReturn(userLayoutManager);
+        when(userLayoutManager.getUserLayout())
+                .thenAnswer(
+                        invocation -> {
+                            layoutReads.incrementAndGet();
+                            if (inTransaction.get()) {
+                                layoutReadsInTransaction.incrementAndGet();
+                            }
+                            return userLayout;
+                        });
+
+        final ILayoutAttributeDescriptor layoutAttributeDescriptor =
+                mock(ILayoutAttributeDescriptor.class);
+        when(layoutAttributeDescriptor.getScope()).thenReturn(Scope.PERSISTENT);
+        when(layoutAttributeDescriptor.getDefaultValue()).thenReturn("default");
+        final IStylesheetDescriptor stylesheetDescriptor = mock(IStylesheetDescriptor.class);
+        when(stylesheetDescriptor.getLayoutAttributeDescriptor("minimized"))
+                .thenReturn(layoutAttributeDescriptor);
+        final IStylesheetDescriptorDao stylesheetDescriptorDao =
+                mock(IStylesheetDescriptorDao.class);
+        when(stylesheetDescriptorDao.getStylesheetDescriptor(1)).thenReturn(stylesheetDescriptor);
+
+        final IStylesheetUserPreferences persistentStylesheetUserPreferences =
+                mock(IStylesheetUserPreferences.class);
+        when(persistentStylesheetUserPreferences.removeLayoutAttribute("u1l1n1", "minimized"))
+                .thenReturn("true");
+        final IStylesheetUserPreferencesDao stylesheetUserPreferencesDao =
+                mock(IStylesheetUserPreferencesDao.class);
+        when(stylesheetUserPreferencesDao.getStylesheetUserPreferences(
+                        stylesheetDescriptor, person, userProfile))
+                .thenReturn(persistentStylesheetUserPreferences);
+        doAnswer(
+                        invocation -> {
+                            if (!inTransaction.get()) {
+                                storesOutsideTransaction.incrementAndGet();
+                            }
+                            return null;
+                        })
+                .when(stylesheetUserPreferencesDao)
+                .storeStylesheetUserPreferences(persistentStylesheetUserPreferences);
+
+        final StylesheetUserPreferencesServiceImpl stylesheetUserPreferencesService =
+                new StylesheetUserPreferencesServiceImpl();
+        stylesheetUserPreferencesService.setStylesheetDescriptorDao(stylesheetDescriptorDao);
+        stylesheetUserPreferencesService.setUserInstanceManager(userInstanceManager);
+        stylesheetUserPreferencesService.setStylesheetUserPreferencesDao(
+                stylesheetUserPreferencesDao);
+        stylesheetUserPreferencesService.setFragmentDefinitionUtils(
+                mock(IFragmentDefinitionUtils.class));
+        stylesheetUserPreferencesService.setTransactionOperations(
+                new TransactionOperations() {
+                    @Override
+                    public <T> T execute(TransactionCallback<T> action) {
+                        inTransaction.set(true);
+                        try {
+                            return action.doInTransaction(new SimpleTransactionStatus());
+                        } finally {
+                            inTransaction.set(false);
+                        }
+                    }
+                });
+
+        // A value of the user's own, the stylesheet's default, and the fragment's value
+        stylesheetUserPreferencesService.setLayoutAttribute(
+                request, PreferencesScope.THEME, "u1l1n1", "minimized", "true");
+        stylesheetUserPreferencesService.setLayoutAttribute(
+                request, PreferencesScope.THEME, "u1l1n1", "minimized", "default");
+        stylesheetUserPreferencesService.setLayoutAttribute(
+                request, PreferencesScope.THEME, "u1l1n1", "minimized", "fragment");
+        stylesheetUserPreferencesService.removeLayoutAttribute(
+                request, PreferencesScope.THEME, "u1l1n1", "minimized");
+
+        verify(persistentStylesheetUserPreferences)
+                .setLayoutAttribute("u1l1n1", "minimized", "true");
+        verify(persistentStylesheetUserPreferences, times(3))
+                .removeLayoutAttribute("u1l1n1", "minimized");
+        verify(stylesheetUserPreferencesDao, times(4))
+                .storeStylesheetUserPreferences(persistentStylesheetUserPreferences);
+        assertEquals(
+                "Reads of the layout inside the transaction", 0, layoutReadsInTransaction.get());
+        assertEquals("Reads of the layout", 4, layoutReads.get());
+        assertEquals("Stores outside the transaction", 0, storesOutsideTransaction.get());
     }
 }

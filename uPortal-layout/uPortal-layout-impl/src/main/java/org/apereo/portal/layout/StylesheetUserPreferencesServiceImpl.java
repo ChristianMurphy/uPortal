@@ -25,6 +25,7 @@ import javax.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
 import org.apereo.portal.IUserPreferencesManager;
 import org.apereo.portal.IUserProfile;
+import org.apereo.portal.jpa.BasePortalJpaDao;
 import org.apereo.portal.layout.dao.IStylesheetDescriptorDao;
 import org.apereo.portal.layout.dao.IStylesheetUserPreferencesDao;
 import org.apereo.portal.layout.om.ILayoutAttributeDescriptor;
@@ -43,8 +44,10 @@ import org.apereo.portal.utils.web.PortalWebUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.web.util.WebUtils;
 
 /** Handles retrieving and storing the various scopes of stylesheet user preference data. */
@@ -70,6 +73,7 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
     private IUserInstanceManager userInstanceManager;
     private IStylesheetDescriptorDao stylesheetDescriptorDao;
     private IStylesheetUserPreferencesDao stylesheetUserPreferencesDao;
+    private TransactionOperations transactionOperations;
 
     @Autowired
     public void setUserInstanceManager(IUserInstanceManager userInstanceManager) {
@@ -85,6 +89,12 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
     public void setStylesheetUserPreferencesDao(
             IStylesheetUserPreferencesDao stylesheetUserPreferencesDao) {
         this.stylesheetUserPreferencesDao = stylesheetUserPreferencesDao;
+    }
+
+    @Autowired
+    @Qualifier(BasePortalJpaDao.PERSISTENCE_UNIT_NAME)
+    public void setTransactionOperations(TransactionOperations transactionOperations) {
+        this.transactionOperations = transactionOperations;
     }
 
     @Autowired
@@ -774,7 +784,8 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
                 // preferences default
 
                 // Remove the user's customized value
-                this.removeLayoutAttribute(request, prefScope, nodeId, name);
+                this.removeLayoutAttribute(
+                        request, prefScope, nodeId, name, distributedStylesheetUserPreferences);
                 return null;
             }
         }
@@ -846,7 +857,12 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
                 session, LAYOUT_ATTRIBUTES_KEY + stylesheetPreferencesKey.toString(), false);
     }
 
-    @Transactional
+    /*
+     * Not @Transactional: the layout is read before the transaction starts. The read can reload
+     * the layout, and a reload can save it. Inside the transaction the save's row locks would
+     * outlast the layout manager's monitor, and a save on another request of the session, which
+     * holds the monitor while it waits for those rows, could then wait for this request for ever.
+     */
     @Override
     public String setLayoutAttribute(
             HttpServletRequest request,
@@ -854,6 +870,26 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
             String nodeId,
             String name,
             String value) {
+        final IStylesheetUserPreferences distributedStylesheetUserPreferences =
+                this.getDistributedStylesheetUserPreferences(request, prefScope);
+        return this.transactionOperations.execute(
+                status ->
+                        this.setLayoutAttribute(
+                                request,
+                                prefScope,
+                                nodeId,
+                                name,
+                                value,
+                                distributedStylesheetUserPreferences));
+    }
+
+    private String setLayoutAttribute(
+            HttpServletRequest request,
+            PreferencesScope prefScope,
+            String nodeId,
+            String name,
+            String value,
+            IStylesheetUserPreferences distributedStylesheetUserPreferences) {
         final StylesheetPreferencesKey stylesheetPreferencesKey =
                 this.getStylesheetPreferencesKey(request, prefScope);
         final IStylesheetDescriptor stylesheetDescriptor =
@@ -869,17 +905,17 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
 
         if (this.compareValues(value, layoutAttributeDescriptor.getDefaultValue())) {
             // Value matches the default value, remove the attribute
-            return this.removeLayoutAttribute(request, prefScope, nodeId, name);
+            return this.removeLayoutAttribute(
+                    request, prefScope, nodeId, name, distributedStylesheetUserPreferences);
         }
 
-        final IStylesheetUserPreferences distributedStylesheetUserPreferences =
-                this.getDistributedStylesheetUserPreferences(request, prefScope);
         if (distributedStylesheetUserPreferences != null) {
             final String defaultValue =
                     distributedStylesheetUserPreferences.getLayoutAttribute(nodeId, name);
             if (this.compareValues(value, defaultValue)) {
                 // Value matches the DLM preferences value, remove the value
-                return this.removeLayoutAttribute(request, prefScope, nodeId, name);
+                return this.removeLayoutAttribute(
+                        request, prefScope, nodeId, name, distributedStylesheetUserPreferences);
             }
         }
 
@@ -957,11 +993,29 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
         }
     }
 
-    @Transactional
+    /* Not @Transactional: it reads the layout before the transaction starts, as setLayoutAttribute. */
     @Override
-    @SuppressWarnings("FallThrough")
     public String removeLayoutAttribute(
             HttpServletRequest request, PreferencesScope prefScope, String nodeId, String name) {
+        final IStylesheetUserPreferences distributedStylesheetUserPreferences =
+                this.getDistributedStylesheetUserPreferences(request, prefScope);
+        return this.transactionOperations.execute(
+                status ->
+                        this.removeLayoutAttribute(
+                                request,
+                                prefScope,
+                                nodeId,
+                                name,
+                                distributedStylesheetUserPreferences));
+    }
+
+    @SuppressWarnings("FallThrough")
+    private String removeLayoutAttribute(
+            HttpServletRequest request,
+            PreferencesScope prefScope,
+            String nodeId,
+            String name,
+            IStylesheetUserPreferences distributedStylesheetUserPreferences) {
         final StylesheetPreferencesKey stylesheetPreferencesKey =
                 this.getStylesheetPreferencesKey(request, prefScope);
         final IStylesheetDescriptor stylesheetDescriptor =
@@ -1015,8 +1069,6 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
                 }
         }
 
-        final IStylesheetUserPreferences distributedStylesheetUserPreferences =
-                this.getDistributedStylesheetUserPreferences(request, prefScope);
         if (distributedStylesheetUserPreferences != null) {
             return distributedStylesheetUserPreferences.removeLayoutAttribute(nodeId, name);
         }
@@ -1222,7 +1274,8 @@ public class StylesheetUserPreferencesServiceImpl implements IStylesheetUserPref
 
             // If the value is equal to the default value remove the property and return null
             if (this.compareValues(value, layoutAttributeDescriptor.getDefaultValue())) {
-                this.removeLayoutAttribute(request, prefScope, nodeId, name);
+                this.removeLayoutAttribute(
+                        request, prefScope, nodeId, name, distributedStylesheetUserPreferences);
                 continue;
             }
 
