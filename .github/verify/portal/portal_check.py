@@ -6,9 +6,9 @@
 Sections, all by default:
   smoke  sign in, load the user's pages, sign out, as student and as admin
   head   the stylesheet and script links in the page head, and whether each one loads
-  load   a minute of parallel page loads, and how many nodeList2Iterator lines the logs gained
-  race   a page request sent within a few milliseconds of /Logout, many times: does a session
-         that the page request started keep showing the logged-out user?
+  load   three minutes of parallel page loads, and how many nodeList2Iterator lines the logs gained
+  race   page requests sent within a few milliseconds of /Logout, many times: does a session
+         that a page request started keep showing the logged-out user?
 
 A section that throws is recorded as an error, and the others still run.
 """
@@ -98,14 +98,20 @@ def login(client, user):
     return client.get(f'/uPortal/Login?userName={user}&password={user}')
 
 
-def render_links(body):
-    """The page's links to other portal pages, in order, without duplicates."""
-    links = []
-    for href in re.findall(r'href="(/uPortal/[^"]*render\.uP[^"]*)"', body):
+def render_links(body, maximized=0):
+    """The page's links to the user's tabs, and to the first few maximized portlets.
+
+    Only links that render and change nothing: the links that minimize a portlet or open its
+    edit mode are left out.
+    """
+    tabs, portlets = [], []
+    for href in re.findall(r'href="(/uPortal/[^"]*render\.uP)[^"]*"', body):
         href = html.unescape(href)
-        if href not in links and 'Log' not in href:
-            links.append(href)
-    return links
+        if re.fullmatch(r'/uPortal/f/[^/?#]+/normal/render\.uP', href) and href not in tabs:
+            tabs.append(href)
+        elif re.fullmatch(r'/uPortal/f/[^/?#]+/p/[^/?#]+/max/render\.uP', href) and href not in portlets:
+            portlets.append(href)
+    return tabs + portlets[:maximized]
 
 
 def session_user(client):
@@ -140,7 +146,7 @@ def smoke(_logs):
         status, body, path, _ = login(client, user)
         seen['after sign-in'] = {'status': status, 'path': path, 'shows user': name in body}
         seen['REST user after sign-in'] = session_user(client)
-        pages = render_links(body)[:8]
+        pages = render_links(body, maximized=2)
         loaded = []
         for page in pages:
             status, page_body, _, _ = client.get(page)
@@ -214,7 +220,17 @@ def head(_logs):
     return out
 
 
-def load(logs, seconds=int(os.environ.get('CHECK_LOAD_SECONDS', '60')), workers=16):
+def load(logs, seconds=int(os.environ.get('CHECK_LOAD_SECONDS', '180')), workers=16):
+    # Each user's pages once, one after the other, so that the parallel loads below don't race
+    # to create the user's portlet entities, which fails in its own way
+    for user in USERS:
+        client = Client()
+        _, body, _, _ = login(client, user)
+        for page in render_links(body):
+            client.get(page)
+        client.get('/uPortal/Logout', follow=False)
+        client.close()
+
     before = count_in_logs(logs, 'nodeList2Iterator')
     statuses = collections.Counter()
     errors = collections.Counter()
@@ -239,7 +255,7 @@ def load(logs, seconds=int(os.environ.get('CHECK_LOAD_SECONDS', '60')), workers=
                 else:
                     status, body, path, _ = client.get('/uPortal/')
                 note(status, path)
-                pages = render_links(body)[:12]
+                pages = render_links(body)
                 rng.shuffle(pages)
                 for page in pages:
                     if time.time() >= end:
@@ -271,7 +287,14 @@ def load(logs, seconds=int(os.environ.get('CHECK_LOAD_SECONDS', '60')), workers=
     }
 
 
-def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '300')), probes=4):
+def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '500')), probes=12):
+    """Sends page requests of a signed-in session around the moment its /Logout is sent.
+
+    The bug needs a page request that reads the person from the session just before the logout
+    ends the session and asks for the session just after. So each attempt sends the probes
+    between 2.5 ms before and 1.5 ms after the logout, and every session that a probe started is
+    then asked for a page: does it show the logged-out user?
+    """
     user, name = 'student', USERS['student']
 
     def new_session_id(set_cookies, old):
@@ -281,19 +304,11 @@ def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '300')), prob
                 return m.group(1)
         return None
 
-    # How long /Logout takes to answer, to know which delays to try
     latencies = []
-    for _ in range(5):
-        client = Client()
-        login(client, user)
-        start = time.time()
-        client.get('/uPortal/Logout', follow=False)
-        latencies.append(time.time() - start)
-        client.close()
-    logout_time = statistics.median(latencies)
-
     counts = collections.Counter()
+    by_offset = collections.defaultdict(collections.Counter)
     stale = []
+    rng = random.Random(1)
     for attempt in range(attempts):
         client = Client()
         status, body, path, _ = login(client, user)
@@ -301,21 +316,18 @@ def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '300')), prob
             counts['sign-in failed'] += 1
             client.close()
             continue
-        old = {name: value for name, (value, cookie_path) in client.cookies.items()
+        old = {name_: value for name_, (value, cookie_path) in client.cookies.items()
                if cookie_path.startswith('/uPortal') or cookie_path == '/'}
         client.close()
-        # Probes start from 3 ms before the logout is sent to a little after it answers
-        span = logout_time * 1.3 + 0.003
-        offset = -0.003 + (attempt % 30) / 29 * span
+        offsets = [rng.uniform(-0.0025, 0.0015) for _ in range(probes)]
         results = [None] * probes
-        lead = 0.01
-        start_at = time.time() + lead
+        start_at = time.time() + 0.02
 
-        def probe(k, offset=offset, start_at=start_at, old=old, results=results):
+        def probe(k, offsets=offsets, start_at=start_at, old=old, results=results):
             c = Client(old)
             try:
                 c.connect()
-                delay = start_at + max(0.0, offset + k * 0.0015 + 0.003) - time.time()
+                delay = start_at + 0.0025 + offsets[k] - time.time()
                 if delay > 0:
                     time.sleep(delay)
                 results[k] = c.get(WELCOME, follow=False)
@@ -324,14 +336,16 @@ def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '300')), prob
             finally:
                 c.close()
 
-        def logout(offset=offset, start_at=start_at, old=old):
+        def logout(start_at=start_at, old=old):
             c = Client(old)
             try:
                 c.connect()
-                delay = start_at + 0.003 - time.time()
+                delay = start_at + 0.0025 - time.time()
                 if delay > 0:
                     time.sleep(delay)
+                sent = time.time()
                 c.get('/uPortal/Logout', follow=False)
+                latencies.append(time.time() - sent)
             except Exception:  # noqa: BLE001
                 pass
             finally:
@@ -345,38 +359,40 @@ def race(_logs, attempts=int(os.environ.get('CHECK_RACE_ATTEMPTS', '300')), prob
             t.join()
 
         for k, result in enumerate(results):
+            bucket = f'{round(offsets[k] * 2000) / 2:+.1f} ms'
             if not isinstance(result, tuple):
                 counts['probe failed'] += 1
                 continue
             p_status, p_body, _, p_cookies = result
             sid = new_session_id(p_cookies, old.get('JSESSIONID'))
+            shows = 'page of the user' if name in p_body else 'no user name in it'
             if sid is None:
-                counts['probe kept the old session' + (', page of the user' if name in p_body else '')] += 1
-                continue
-            check = Client({'JSESSIONID': sid})
-            c_status, c_body, c_path, _ = check.get(WELCOME)
-            rest_user = session_user(check)
-            check.close()
-            if name in c_body:
-                counts['NEW SESSION SHOWS THE LOGGED-OUT USER'] += 1
-                if len(stale) < 10:
-                    stale.append({
-                        'attempt': attempt,
-                        'probe': k,
-                        'probe sent after logout (ms)': round((offset + k * 0.0015) * 1000, 1),
-                        'probe status': p_status,
-                        'next page status': c_status,
-                        'next page path': c_path,
-                        'next page shows': name,
-                        'REST user of that session': rest_user,
-                    })
+                outcome = f'answer {p_status}, {shows}, no new session'
             else:
-                counts['probe got a new session, which shows the guest page'] += 1
+                check = Client({'JSESSIONID': sid})
+                c_status, c_body, c_path, _ = check.get(WELCOME)
+                if name in c_body:
+                    outcome = 'NEW SESSION SHOWS THE LOGGED-OUT USER'
+                    if len(stale) < 10:
+                        stale.append({
+                            'attempt': attempt,
+                            'probe sent after logout (ms)': round(offsets[k] * 1000, 2),
+                            'probe answer': f'{p_status}, {shows}',
+                            'next page of that session': f'{c_status} {c_path}, shows {name}',
+                            'REST user of that session': session_user(check),
+                        })
+                else:
+                    outcome = f'answer {p_status}, {shows}, new session whose next page is the guest page'
+                check.close()
+            counts[outcome] += 1
+            by_offset[bucket]['new session' if sid else 'old session'] += 1
     return {
         'attempts': attempts,
         'page requests per attempt': probes,
-        'median time of /Logout (ms)': round(logout_time * 1000, 1),
+        'median time of /Logout (ms)': round(statistics.median(latencies) * 1000, 2) if latencies else None,
         'outcomes': dict(counts),
+        'probes by send time relative to the logout': {
+            k: dict(v) for k, v in sorted(by_offset.items(), key=lambda kv: float(kv[0].split()[0]))},
         'sessions that showed the logged-out user': counts['NEW SESSION SHOWS THE LOGGED-OUT USER'],
         'first such sessions': stale,
     }

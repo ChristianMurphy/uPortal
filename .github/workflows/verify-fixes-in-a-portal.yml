@@ -4,10 +4,11 @@ name: Verify fixes in a portal
 # a uPortal built from upstream master and then with the fix branch's build deployed over it.
 #
 #   fix/permission-set-import  dataExport of the permission sets, delete two, dataImport, compare
-#   fix/skin-elements-copy     sign in, load pages, sign out; the head's CSS and JS links; a
-#                              minute of parallel page loads and the nodeList2Iterator count
-#   fix/logout-session-race    the same checks; a page request sent within a few milliseconds of
-#                              /Logout, 300 times, and what the session it started shows
+#   fix/skin-elements-copy     sign in, load pages, sign out; the head's CSS and JS links;
+#                              three minutes of parallel page loads and the nodeList2Iterator count
+#   fix/logout-session-race    the same checks; twelve page requests sent within a few
+#                              milliseconds of /Logout, 500 times, and what each session that
+#                              such a request started shows
 #
 # The two portal jobs run the same checks, so each fix is also checked for the other's symptom.
 # .github/verify/portal/verify-portal.sh has the steps. A job fails if a check fails with the fix

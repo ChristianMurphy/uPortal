@@ -97,8 +97,9 @@ checks() { # <label>
     wait_for_portal || { failed=1; return; }
     # The first page loads compile JSPs and fill caches
     curl -s -o /dev/null 'http://localhost:8080/uPortal/Login?userName=student&password=student'
-    python3 "$here/portal_check.py" "$1" "$out" "$logs" || failed=1
+    # Playwright first: its tests expect the layouts as dataInit made them
     playwright "$1"
+    python3 "$here/portal_check.py" "$1" "$out" "$logs" || failed=1
     step "Stop the portal: $1"
     gw "$2" tomcatStop > "$out/tomcatStop-$1.log" 2>&1
     mkdir -p "$out/tomcat-logs-$1" && cp -r "$logs"/. "$out/tomcat-logs-$1/"
@@ -134,14 +135,15 @@ gw "$m2_fix" hsqlStop > "$out/hsqlStop.log" 2>&1
 rm -rf "$m2_master" "$m2_fix"
 
 if [ "$fix" != permission-set-import ]; then
-  python3 - "$out" <<'PY' || failed=1
+  # Each fix is judged on its own symptom. The other one's is in the output above.
+  python3 - "$out" "$fix" <<'PY' || failed=1
 import json, sys
 after = json.load(open(sys.argv[1] + '/portal-check-after.json'))
 problems = [name for name in ('smoke', 'head') if not after.get(name, {}).get('ok')]
 problems += [name for name in after if 'error' in after[name]]
-if after.get('race', {}).get('sessions that showed the logged-out user'):
+if sys.argv[2] == 'logout-session-race' and after.get('race', {}).get('sessions that showed the logged-out user'):
     problems.append('race')
-if after.get('load', {}).get('nodeList2Iterator log lines gained'):
+if sys.argv[2] == 'skin-elements-copy' and after.get('load', {}).get('nodeList2Iterator log lines gained'):
     problems.append('load')
 print('Problems with the fix deployed:', problems or 'none')
 sys.exit(1 if problems else 0)
