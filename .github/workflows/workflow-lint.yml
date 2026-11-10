@@ -45,3 +45,5 @@ jobs:
           args: -color
       - name: Test the check for placeholders in the notes
         run: .github/scripts/check-placeholders.test.sh
+      - name: Test the check for an earlier pass of the slow jobs
+        run: .github/scripts/staged.test.sh
