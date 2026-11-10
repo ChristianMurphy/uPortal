@@ -18,6 +18,7 @@ import java.io.Serializable;
 
 /** Simple object that contains two values who's references are immutable once initialized. */
 public class Tuple<A, B> implements Serializable {
+    // proof of the staging check: a one-line code change must run the slow jobs again
     private static final long serialVersionUID = 1L;
 
     public final A first;
