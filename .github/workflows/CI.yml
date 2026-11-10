@@ -69,8 +69,10 @@ jobs:
     needs: staged
     if: ${{ needs.staged.outputs.skip != 'true' }}
     strategy:
-      # Which cells run (MOD-D55; the one-leg topic push is MOD-D30, prototype only):
-      #   push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>): Linux, Temurin 21;
+      # Which cells run (MOD-D55; the light topic push is MOD-D30, prototype only):
+      #   push to a workstream branch (ccr-43ba0785-hzlrj5-<topic>): Linux with Temurin 21 and 25.
+      #     Java 25 is there because a test that failed only on Java 25 reached the integration
+      #     branch (MOD-I429);
       #   master, pull requests, the integration branch, a staging branch
       #     (ccr-43ba0785-hzlrj5-landing-<n>) and a manual run on any branch:
       #     Linux with Temurin 21 and 25, plus Windows and macOS with Temurin 25;
@@ -80,7 +82,7 @@ jobs:
       matrix: >-
         ${{ fromJSON(
         inputs.nightly == true && '{"platform":["ubuntu-latest"],"java-distribution":["temurin","zulu","corretto"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}'
-        || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-') && github.event_name != 'workflow_dispatch' && '{"include":[{"platform":"ubuntu-latest","java-distribution":"temurin","java-version":21}]}'
+        || startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-') && github.event_name != 'workflow_dispatch' && '{"platform":["ubuntu-latest"],"java-distribution":["temurin"],"java-version":[21,25]}'
         || '{"platform":["ubuntu-latest"],"java-distribution":["temurin"],"java-version":[21,25],"include":[{"platform":"windows-latest","java-distribution":"temurin","java-version":25},{"platform":"macos-latest","java-distribution":"temurin","java-version":25}]}') }}
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 45

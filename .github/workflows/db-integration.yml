@@ -15,7 +15,7 @@ name: DB integration
 # tests/db/vendors/*.properties. No test is skipped on any database.
 #
 # Prototype only (MOD-D30): a workstream branch (ccr-43ba0785-hzlrj5-<topic>) runs the db job
-# (PostgreSQL 18 and MariaDB 12.3) and skips db-full (MySQL, SQL Server, Oracle), to spare the
+# (PostgreSQL 18, MariaDB 12.3 and SQL Server 2025) and skips db-full (MySQL, Oracle), to spare the
 # account's runners; master, pull requests, the integration branch, a staging branch
 # (ccr-43ba0785-hzlrj5-landing-<n>) and the schedule run both.
 #
@@ -109,6 +109,15 @@ jobs:
             url: jdbc:mariadb://localhost:3306/uportal?useMysqlMetadata=true
             username: uportal
             password: uportal
+          # On every push since parallel inserts deadlocked on SQL Server only (MOD-I430)
+          - vendor: sqlserver-2025
+            image: mcr.microsoft.com/mssql/server:2025-latest@sha256:2b5b581621126574f3d1f75e78d3eebe8d05aedb59ad0cfdf9aa42cb0634d726
+            port: 1433
+            health: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P uPortal-Harness-1 -Q 'SELECT 1'
+            driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
+            url: jdbc:sqlserver://localhost:1433;databaseName=uportal;encrypt=false
+            username: sa
+            password: uPortal-Harness-1
     services:
       db:
         image: ${{ matrix.image }}
@@ -127,6 +136,9 @@ jobs:
           MYSQL_USER: uportal
           MYSQL_PASSWORD: uportal
           MYSQL_ROOT_PASSWORD: uportal-root
+          ACCEPT_EULA: 'Y'
+          MSSQL_PID: Developer
+          MSSQL_SA_PASSWORD: uPortal-Harness-1
         options: >-
           --health-cmd "${{ matrix.health }}"
           --health-interval 5s --health-timeout 5s --health-retries 60
@@ -145,6 +157,14 @@ jobs:
         with:
           cache-provider: basic
           cache-read-only: ${{ env.GRADLE_CACHE_READ_ONLY_SHARED }}
+      # The SQL Server image has no setting that creates a database
+      - name: Create the uportal database
+        if: ${{ startsWith(matrix.vendor, 'sqlserver-') }}
+        env:
+          DB_CONTAINER: ${{ job.services.db.id }}
+        run: >-
+          docker exec "$DB_CONTAINER" /opt/mssql-tools18/bin/sqlcmd -C -S localhost
+          -U sa -P uPortal-Harness-1 -Q "IF DB_ID('uportal') IS NULL CREATE DATABASE uportal"
       - name: Run uPortal-webapp's tests on ${{ matrix.vendor }}
         env:
           DB_DRIVER: ${{ matrix.driver }}
@@ -190,12 +210,12 @@ jobs:
             uPortal-webapp/build/reports/tests/
             uPortal-webapp/build/test-results/
 
-  # MySQL, SQL Server and Oracle: on master, pull requests, the integration branch and the schedule,
-  # not on workstream branches (MOD-D30)
+  # MySQL and Oracle: on master, pull requests, the integration branch, a staging branch and the
+  # schedule, not on workstream branches (MOD-D30)
   db-full:
     name: "DB integration: ${{ matrix.vendor }}"
     # Prototype only (MOD-D30): skipped on workstream branches, except in a manual run, so a
-    # workstream can check SQL Server and Oracle before it lands.
+    # workstream can check MySQL and Oracle before it lands.
     needs: staged
     if: ${{ needs.staged.outputs.skip != 'true' && (github.event_name == 'workflow_dispatch' || !(startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-') && !startsWith(github.ref_name, 'ccr-43ba0785-hzlrj5-landing-'))) }}
     runs-on: ubuntu-latest
@@ -214,14 +234,6 @@ jobs:
             url: jdbc:mysql://localhost:3306/uportal?useSSL=false&allowPublicKeyRetrieval=true
             username: uportal
             password: uportal
-          - vendor: sqlserver-2025
-            image: mcr.microsoft.com/mssql/server:2025-latest@sha256:2b5b581621126574f3d1f75e78d3eebe8d05aedb59ad0cfdf9aa42cb0634d726
-            port: 1433
-            health: /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P uPortal-Harness-1 -Q 'SELECT 1'
-            driver: com.microsoft.sqlserver.jdbc.SQLServerDriver
-            url: jdbc:sqlserver://localhost:1433;databaseName=uportal;encrypt=false
-            username: sa
-            password: uPortal-Harness-1
           - vendor: oracle-23
             image: gvenzl/oracle-free:23.26.3-slim@sha256:6d61d267a3b978c24c5ac1790e62e927416a0aec446bd86e4b3a1527562757bd
             port: 1521
@@ -242,9 +254,6 @@ jobs:
           MYSQL_USER: uportal
           MYSQL_PASSWORD: uportal
           MYSQL_ROOT_PASSWORD: uportal-root
-          ACCEPT_EULA: 'Y'
-          MSSQL_PID: Developer
-          MSSQL_SA_PASSWORD: uPortal-Harness-1
           ORACLE_PASSWORD: uportal-sys
           APP_USER: uportal
           APP_USER_PASSWORD: uportal
@@ -266,14 +275,6 @@ jobs:
         with:
           cache-provider: basic
           cache-read-only: ${{ env.GRADLE_CACHE_READ_ONLY_SHARED }}
-      # The SQL Server image has no setting that creates a database
-      - name: Create the uportal database
-        if: ${{ startsWith(matrix.vendor, 'sqlserver-') }}
-        env:
-          DB_CONTAINER: ${{ job.services.db.id }}
-        run: >-
-          docker exec "$DB_CONTAINER" /opt/mssql-tools18/bin/sqlcmd -C -S localhost
-          -U sa -P uPortal-Harness-1 -Q "IF DB_ID('uportal') IS NULL CREATE DATABASE uportal"
       - name: Run uPortal-webapp's tests on ${{ matrix.vendor }}
         env:
           DB_DRIVER: ${{ matrix.driver }}
