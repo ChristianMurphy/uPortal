@@ -690,40 +690,12 @@
         timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
         <cacheEventListenerFactory class="org.apereo.portal.utils.cache.SpringCacheEventListenerFactory" properties="beanName=insufficientSizeCacheEventListener" listenFor="local" />
     </cache>
-    <cache name="org.apereo.portal.layout.dlm.FragmentDefinition.evaluators"
-        eternal="false" maxElementsInMemory="100" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
     <cache name="org.apereo.portal.layout.dlm.FragmentDefinition.Query"
         eternal="false" maxElementsInMemory="100" overflowToDisk="false" diskPersistent="false"
         timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
     </cache>
-    <cache name="org.apereo.portal.layout.dlm.providers.Paren.evaluators"
-        eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
     <cache name="org.apereo.portal.layout.dlm.providers.EvaluatorGroup.evaluators"
         eternal="false" maxElementsInMemory="1000" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
-    <cache name="org.apereo.portal.layout.dlm.providers.AllUsersEvaluatorFactory"
-        eternal="false" maxElementsInMemory="500" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
-    <cache name="org.apereo.portal.layout.dlm.providers.AttributeEvaluator"
-        eternal="false" maxElementsInMemory="500" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
-    <cache name="org.apereo.portal.layout.dlm.providers.GroupMembershipEvaluator"
-        eternal="false" maxElementsInMemory="500" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
-    <cache name="org.apereo.portal.layout.dlm.providers.GuestUserEvaluatorFactory"
-        eternal="false" maxElementsInMemory="500" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
-    <cache name="org.apereo.portal.layout.dlm.providers.ProfileEvaluator"
-        eternal="false" maxElementsInMemory="500" overflowToDisk="false" diskPersistent="false"
         timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
     </cache>
 
@@ -795,10 +767,6 @@
     <cache name="org.apereo.portal.portlet.dao.jpa.PortalCookieImpl-NaturalId"
         eternal="false" maxElementsInMemory="2500" overflowToDisk="false" diskPersistent="false"
         timeToIdleSeconds="900" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true" >
-    </cache>
-    <cache name="org.apereo.portal.portlet.dao.jpa.PortalCookieImpl.Query"
-        eternal="false" maxElementsInMemory="2500" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="900" memoryStoreEvictionPolicy="LRU" statistics="true" >
     </cache>
     <cache name="org.apereo.portal.portlet.dao.jpa.PortalCookieImpl.portletCookies"
         eternal="false" maxElementsInMemory="2500" overflowToDisk="false" diskPersistent="false"
@@ -926,11 +894,6 @@
     <cache name="org.apereo.portal.tenants.JpaTenant.Query"
         eternal="false" maxElementsInMemory="10" overflowToDisk="false" diskPersistent="false"
         timeToIdleSeconds="0" timeToLiveSeconds="300" memoryStoreEvictionPolicy="LRU" statistics="true">
-    </cache>
-
-    <cache name="org.apereo.portal.portlet.dao.jpa.MarketplaceRatingImpl"
-        eternal="false" maxElementsInMemory="250" overflowToDisk="false" diskPersistent="false"
-        timeToIdleSeconds="0" timeToLiveSeconds="21600" memoryStoreEvictionPolicy="LRU" statistics="true" >
     </cache>
 
     <!--
@@ -1203,9 +1166,6 @@
     <cache name="AggrEvents.org.apereo.portal.events.aggr.login.LoginAggregationImpl-NaturalId"
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="5000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
-    <cache name="AggrEvents.org.apereo.portal.events.aggr.login.LoginAggregationImpl.Query"
-        eternal="false" overflowToDisk="false" diskPersistent="false"
-        maxElementsInMemory="5000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
 
     <!--
      | Caches concurrent user aggregations, primarily used during event aggregation
@@ -1215,9 +1175,6 @@
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="5000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
     <cache name="AggrEvents.org.apereo.portal.events.aggr.concuser.ConcurrentUserAggregationImpl-NaturalId"
-        eternal="false" overflowToDisk="false" diskPersistent="false"
-        maxElementsInMemory="5000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
-    <cache name="AggrEvents.org.apereo.portal.events.aggr.concuser.ConcurrentUserAggregationImpl.Query"
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="5000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
 
@@ -1231,9 +1188,6 @@
     <cache name="AggrEvents.org.apereo.portal.events.aggr.tabrender.TabRenderAggregationImpl-NaturalId"
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="10000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
-    <cache name="AggrEvents.org.apereo.portal.events.aggr.tabrender.TabRenderAggregationImpl.Query"
-        eternal="false" overflowToDisk="false" diskPersistent="false"
-        maxElementsInMemory="10000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
 
     <!--
      | Caches portlet execution aggregations, primarily used during event aggregation
@@ -1243,9 +1197,6 @@
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="100000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
     <cache name="AggrEvents.org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregationImpl-NaturalId"
-        eternal="false" overflowToDisk="false" diskPersistent="false"
-        maxElementsInMemory="100000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
-    <cache name="AggrEvents.org.apereo.portal.events.aggr.portletexec.PortletExecutionAggregationImpl.Query"
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="100000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
 
@@ -1260,9 +1211,6 @@
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="100000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
     <cache name="AggrEvents.org.apereo.portal.events.aggr.session.EventSessionImpl.groupMappings"
-        eternal="false" overflowToDisk="false" diskPersistent="false"
-        maxElementsInMemory="100000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
-    <cache name="AggrEvents.org.apereo.portal.events.aggr.session.EventSessionImpl.Query"
         eternal="false" overflowToDisk="false" diskPersistent="false"
         maxElementsInMemory="100000" timeToIdleSeconds="600" timeToLiveSeconds="0" memoryStoreEvictionPolicy="LRU" statistics="true"/>
 

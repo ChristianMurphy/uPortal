@@ -41,7 +41,6 @@ import org.dom4j.DocumentHelper;
 import org.dom4j.QName;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.NaturalIdCache;
 
 @EqualsAndHashCode
 @ToString
@@ -51,9 +50,6 @@ import org.hibernate.annotations.NaturalIdCache;
         name = "UP_PAGS_TEST_GROUP_GEN",
         sequenceName = "UP_PAGS_TEST_GROUP_SEQ",
         allocationSize = 5)
-@NaturalIdCache(
-        region =
-                "org.apereo.portal.groups.pags.dao.jpa.PersonAttributesGroupTestGroupDefinitionImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class PersonAttributesGroupTestGroupDefinitionImpl

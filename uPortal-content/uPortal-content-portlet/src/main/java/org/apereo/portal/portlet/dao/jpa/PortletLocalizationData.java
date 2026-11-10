@@ -15,12 +15,9 @@
 package org.apereo.portal.portlet.dao.jpa;
 
 import java.io.Serializable;
-import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.persistence.Table;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 /**
  * ChannelLocalizationData represents locale-specific ChannelDefinition metadata. This class is
@@ -29,8 +26,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
  */
 @Embeddable
 @Table(name = "UP_PORTLET_DEF_MDATA")
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class PortletLocalizationData implements Serializable {
     private static final long serialVersionUID = 1L;
 

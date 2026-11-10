@@ -48,7 +48,6 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.NaturalIdCache;
 
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString
@@ -59,9 +58,6 @@ import org.hibernate.annotations.NaturalIdCache;
         name = "UP_PAGS_GROUP_GEN",
         sequenceName = "UP_PAGS_GROUP_SEQ",
         allocationSize = 5)
-@NaturalIdCache(
-        region =
-                "org.apereo.portal.groups.pags.dao.jpa.PersonAttributesGroupDefinitionImpl-NaturalId")
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class PersonAttributesGroupDefinitionImpl implements IPersonAttributesGroupDefinition {
