@@ -57,8 +57,8 @@
                 <!-- CAS proxy-granting tickets, when this storage is used -->
                 <value>org.jasig.cas.client.proxy.EhcacheBackedProxyGrantingTicketStorageImpl.cache</value>
                 <!-- Hibernate's table update times must outlive the query results they validate -->
-                <value>org.hibernate.cache.spi.UpdateTimestampsCache</value>
-                <value>AggrEvents.org.hibernate.cache.spi.UpdateTimestampsCache</value>
+                <value>default-update-timestamps-region</value>
+                <value>AggrEvents.default-update-timestamps-region</value>
             </set>
         </property>
     </bean>
