@@ -18,10 +18,10 @@ import org.apereo.portal.utils.hibernate4.dialects.MySQL5InnoDBCompressedDialect
 import org.apereo.portal.utils.hibernate4.dialects.Oracle12ForceClobDialect;
 import org.apereo.portal.utils.hibernate4.dialects.PostgreSQL81Dialect;
 import org.apereo.portal.utils.hibernate4.dialects.PostgreSQL81TextClobDialect;
+import org.apereo.portal.utils.hibernate4.dialects.SQLServer2005NoHoldLockDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQL55Dialect;
 import org.hibernate.dialect.PostgreSQL9Dialect;
-import org.hibernate.dialect.SQLServer2005Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolver;
 
@@ -44,7 +44,8 @@ import org.hibernate.engine.jdbc.dialect.spi.DialectResolver;
  *       uuid} columns for {@code java.util.UUID}, other lock syntax); Hibernate 4.3 chose {@code
  *       PostgreSQL9Dialect} and {@code PostgreSQL81Dialect}.
  *   <li>SQL Server 2008+: {@code SQLServer2008Dialect} or {@code SQLServer2012Dialect}, which have
- *       sequences; uPortal already forced {@code SQLServer2005Dialect}.
+ *       sequences; uPortal already forced {@code SQLServer2005Dialect}. It gets {@code
+ *       SQLServer2005NoHoldLockDialect}, that dialect with Hibernate 4.3's write lock hint.
  * </ul>
  *
  * @see <a
@@ -90,9 +91,10 @@ public class PortalDialectResolver implements DialectResolver {
         }
 
         // This is due to a jTDS not supporting SQL Server 2008+, hence does not support some new
-        // types like TIME.
-        if ("Microsoft SQL Server".equals(databaseName) && databaseMajorVersion > 9) {
-            return new SQLServer2005Dialect();
+        // types like TIME. SQLServer2005NoHoldLockDialect is SQLServer2005Dialect with Hibernate
+        // 4.3's lock hint for the one-row id tables.
+        if ("Microsoft SQL Server".equals(databaseName) && databaseMajorVersion >= 9) {
+            return new SQLServer2005NoHoldLockDialect();
         }
 
         return null;

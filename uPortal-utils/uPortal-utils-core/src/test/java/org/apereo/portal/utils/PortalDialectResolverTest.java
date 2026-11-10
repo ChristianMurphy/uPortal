@@ -17,6 +17,8 @@ package org.apereo.portal.utils;
 import static org.junit.Assert.assertEquals;
 
 import java.sql.Types;
+import org.hibernate.LockMode;
+import org.hibernate.LockOptions;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
@@ -80,12 +82,44 @@ public class PortalDialectResolverTest {
 
     @Test
     public void sqlServer() {
-        assertDialect(
-                "org.hibernate.dialect.SQLServer2005Dialect", "Microsoft SQL Server", 16, 0, null);
-        assertDialect(
-                "org.hibernate.dialect.SQLServer2005Dialect", "Microsoft SQL Server", 10, 50, null);
-        assertDialect(
-                "org.hibernate.dialect.SQLServer2005Dialect", "Microsoft SQL Server", 9, 0, null);
+        final String noHoldLock =
+                "org.apereo.portal.utils.hibernate4.dialects.SQLServer2005NoHoldLockDialect";
+        assertDialect(noHoldLock, "Microsoft SQL Server", 17, 0, null);
+        assertDialect(noHoldLock, "Microsoft SQL Server", 16, 0, null);
+        assertDialect(noHoldLock, "Microsoft SQL Server", 10, 50, null);
+        assertDialect(noHoldLock, "Microsoft SQL Server", 9, 0, null);
+    }
+
+    /**
+     * Hibernate reads the one-row id tables with the write lock hint. With holdlock, which
+     * Hibernate 5 added, parallel inserts deadlock on SQL Server (ParallelIdAllocationTest).
+     */
+    @Test
+    public void sqlServerWriteLockHintHasNoHoldLock() {
+        final Dialect dialect = resolve("Microsoft SQL Server", 17, 0, null);
+        assertEquals(
+                "UP_MUTEX_SEQ with (updlock, rowlock)",
+                dialect.appendLockHint(
+                        new LockOptions(LockMode.PESSIMISTIC_WRITE), "UP_MUTEX_SEQ"));
+        assertEquals(
+                "T with (updlock, rowlock)",
+                dialect.appendLockHint(new LockOptions(LockMode.UPGRADE), "T"));
+        assertEquals(
+                "T with (updlock, rowlock, nowait)",
+                dialect.appendLockHint(
+                        new LockOptions(LockMode.PESSIMISTIC_WRITE).setTimeOut(LockOptions.NO_WAIT),
+                        "T"));
+        // Unchanged from SQLServer2005Dialect
+        assertEquals(
+                "T with (holdlock, rowlock)",
+                dialect.appendLockHint(new LockOptions(LockMode.PESSIMISTIC_READ), "T"));
+        assertEquals(
+                "T with (updlock, rowlock, readpast)",
+                dialect.appendLockHint(
+                        new LockOptions(LockMode.PESSIMISTIC_WRITE)
+                                .setTimeOut(LockOptions.SKIP_LOCKED),
+                        "T"));
+        assertEquals("T", dialect.appendLockHint(new LockOptions(LockMode.READ), "T"));
     }
 
     @Test

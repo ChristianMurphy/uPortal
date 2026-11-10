@@ -907,7 +907,7 @@ the dialect choice in `PortalDialectResolver`. Do not override them in your own
 
 | Setting | Why it is there |
 | --- | --- |
-| `hibernate.dialect_resolvers=org.apereo.portal.utils.PortalDialectResolver` | Keeps each database on the dialect Hibernate 4.3 chose. MySQL 8, and MariaDB reporting MySQL metadata, get `MySQL55Dialect`, where Hibernate 5.2 would pick `MySQL57Dialect` with `datetime(6)` columns, or a MariaDB dialect with sequences. PostgreSQL 10 and later get `PostgreSQL81Dialect` (as `PostgreSQL81TextClobDialect`, see below). SQL Server gets `SQLServer2005Dialect`, which doesn't use sequences. |
+| `hibernate.dialect_resolvers=org.apereo.portal.utils.PortalDialectResolver` | Keeps each database on the dialect Hibernate 4.3 chose. MySQL 8, and MariaDB reporting MySQL metadata, get `MySQL55Dialect`, where Hibernate 5.2 would pick `MySQL57Dialect` with `datetime(6)` columns, or a MariaDB dialect with sequences. PostgreSQL 10 and later get `PostgreSQL81Dialect` (as `PostgreSQL81TextClobDialect`, see below). SQL Server gets `SQLServer2005NoHoldLockDialect`: `SQLServer2005Dialect`, which doesn't use sequences, with the lock hint that Hibernate 4.3 used for the id tables (see [SQL Server: parallel inserts](#sql-server-parallel-inserts)). |
 | `hibernate.implicit_naming_strategy=org.apereo.portal.hibernate.PortalImplicitNamingStrategy` | Join column names and the `FK_…`/`UK_…` constraint names of Hibernate 4.3 |
 | `hibernate.physical_naming_strategy=…PhysicalNamingStrategyStandardImpl` | Names are used as they are mapped |
 | `hibernate.id.optimizer.pooled.preferred=pooled` | Identifiers are allocated as before from the `UP_*_SEQ` sequences or one-row tables |
@@ -941,6 +941,20 @@ Hibernate does not load a NULL value of an element collection, so it did not del
 its owner, and the owner's delete failed with ORA-02292. This hit a portlet entity with an empty
 window state, a layout attribute with an empty target element name, and a portlet definition with
 an empty localization. uPortal now deletes those rows with their owner.
+
+### SQL Server: parallel inserts
+
+On SQL Server, uPortal keeps each id generator in a one-row table (`UP_…_SEQ`), as 5.17 did.
+Hibernate 5 reads that row with `with (updlock, holdlock, rowlock)`, where Hibernate 4.3 used
+`with (updlock, rowlock)`. With `holdlock`, inserts of the same entity that run at the same
+moment deadlock, and SQL Server ends one of them with error 1205. uPortal's
+`SQLServer2005NoHoldLockDialect` goes back to the 4.3 hint. Ids stay unique, because the second
+reader waits for the first to commit.
+
+`PortalDialectResolver` picks the dialect, so most sites have nothing to do. If your own
+configuration sets `hibernate.dialect` for the portal's persistence units to
+`org.hibernate.dialect.SQLServer2005Dialect` or a later SQL Server dialect, remove the setting or
+use `org.apereo.portal.utils.hibernate4.dialects.SQLServer2005NoHoldLockDialect`.
 
 ## Timestamps are stored in UTC
 
