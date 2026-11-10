@@ -14,7 +14,6 @@
  */
 package org.apereo.portal.layout.dlm.providers;
 
-import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import org.apereo.portal.EntityIdentifier;
@@ -28,8 +27,6 @@ import org.apereo.portal.security.IPerson;
 import org.apereo.portal.services.GroupService;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 /**
  * Answers isApplicable() in the affirmative if the user represented by the passed in IPerson is a
@@ -41,8 +38,6 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
  * @since 2.5
  */
 @Entity
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class GroupMembershipEvaluator extends Evaluator {
     private static final int MEMBER_OF_MODE = 0;
 

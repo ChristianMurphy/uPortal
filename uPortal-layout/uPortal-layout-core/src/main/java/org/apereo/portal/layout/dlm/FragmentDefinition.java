@@ -16,7 +16,6 @@ package org.apereo.portal.layout.dlm;
 
 import java.util.LinkedList;
 import java.util.List;
-import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Transient;
@@ -28,8 +27,6 @@ import org.apereo.portal.xml.XmlUtilitiesImpl;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Namespace;
 import org.dom4j.QName;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -39,8 +36,6 @@ import org.w3c.dom.NodeList;
  * @since 2.5
  */
 @Entity
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class FragmentDefinition extends EvaluatorGroup {
 
     /**

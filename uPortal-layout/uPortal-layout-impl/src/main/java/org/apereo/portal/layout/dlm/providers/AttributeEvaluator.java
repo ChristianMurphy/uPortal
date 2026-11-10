@@ -14,7 +14,6 @@
  */
 package org.apereo.portal.layout.dlm.providers;
 
-import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Transient;
@@ -25,15 +24,11 @@ import org.apereo.portal.layout.dlm.EvaluatorFactory;
 import org.apereo.portal.security.IPerson;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 
 /**
  * @since 2.5
  */
 @Entity
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class AttributeEvaluator extends Evaluator {
     public static final int CONTAINS = 0;
     public static final int EQUALS = 1;

@@ -14,7 +14,6 @@
  */
 package org.apereo.portal.layout.dlm.providers;
 
-import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.servlet.http.HttpServletRequest;
@@ -26,13 +25,9 @@ import org.apereo.portal.spring.locator.ApplicationContextLocator;
 import org.apereo.portal.url.IPortalRequestUtils;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.hibernate.annotations.Cache;
-import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.springframework.context.ApplicationContext;
 
 @Entity
-@Cacheable
-@Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE)
 public class ProfileEvaluator extends Evaluator {
 
     @Column(name = "PROFILE_FNAME")
